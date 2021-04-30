@@ -20,15 +20,15 @@ const WireType = enum(u3){
 
 const FieldType = struct {
     wire: WireType,
-    real: type,
-
-    pub fn y(wire: WireType, comptime real: type) FieldType {
-        return FieldType{
-            .wire = wire,
-            .real = real
-        };
-    }
+    real: type,  
 };
+
+pub fn ft(wire: WireType, comptime real: type) FieldType {
+    return FieldType{
+        .wire = wire,
+        .real = real
+    };
+}
 
 const FieldDescriptor = struct {
     tag: u5,
@@ -36,16 +36,17 @@ const FieldDescriptor = struct {
     status: FieldStatus,
     ftype: FieldType,
 
-    pub fn x(tag: u32, name: []const u8, status: FieldStatus, comptime ftype: FieldType) FieldDescriptor {
-        return FieldDescriptor{
-            .tag = tag,
-            .name = name,
-            .status = status,
-            .ftype = ftype
-        };
-    }
+    
 };
 
+pub fn fd(tag: u32, name: []const u8, status: FieldStatus, comptime ftype: FieldType) FieldDescriptor {
+    return FieldDescriptor{
+        .tag = tag,
+        .name = name,
+        .status = status,
+        .ftype = ftype
+    };
+}
 
 pub fn as_varint(value: anytype, allocator: *std.mem.Allocator) !ProtoBuf {
     var size_in_bits : u32 = @bitSizeOf(@TypeOf(value)) - @clz(@TypeOf(value), value);
@@ -100,7 +101,7 @@ const Demo1 = struct {
     a : u32,
 
     pub const _desc_table = [_]FieldDescriptor{
-        FieldDescriptor.x(1, "a", .Required, FieldType.y(.Varint, u32)),
+        fd(1, "a", .Required, ft(.Varint, u32)),
     };
 
     pub fn encode(self: Demo1, allocator: *std.mem.Allocator) !ProtoBuf {
