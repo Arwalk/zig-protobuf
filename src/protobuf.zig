@@ -61,7 +61,7 @@ fn _append(pb : *ProtoBuf, field: FieldDescriptor, value: anytype, allocator: *s
 }
 
 pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) !ProtoBuf {
-    const field_list  = @field(@TypeOf(data), "_desc_table");
+    const field_list  = @TypeOf(data)._desc_table;
 
     var pb = ProtoBuf.init(allocator);
     errdefer pb.deinit();
