@@ -4,21 +4,16 @@ const eql = std.mem.eql;
 
 const ArrayList = std.ArrayList;
 
-const ProtoBuf = ArrayList(u8);
+pub const ProtoBuf = ArrayList(u8);
 
-const FieldStatus = enum {
-    Required,
-    Optional
-};
-
-const WireType = enum(u3){
+pub const WireType = enum(u3){
     Varint = 0,
     Fixed64 = 1,
     LenDelimited = 2,
     Fixed32 = 5
 };
 
-const FieldDescriptor = struct {
+pub const FieldDescriptor = struct {
     tag: u5,
     name: []const u8,
     wtype: WireType,
