@@ -106,7 +106,7 @@ const Demo2 = struct {
 
     pub const _desc_table = [_]FieldDescriptor{
         fd(1, "a", .Varint),
-        fd(1, "b", .Varint),
+        fd(2, "b", .Varint),
     };
 
     pub fn encode(self: Demo2, allocator: *std.mem.Allocator) !ProtoBuf {
@@ -128,4 +128,10 @@ test "basic encoding with optionals" {
     defer obtained.deinit();
     // 0x08 , 0x96, 0x01
     testing.expectEqualSlices(u8, &[_]u8{0x08, 0x96, 0x01}, obtained.items);
+
+    const demo2 = Demo2{.a = 150, .b = 150};
+    const obtained2 : ProtoBuf = try demo2.encode(testing.allocator);
+    defer obtained2.deinit();
+    // 0x08 , 0x96, 0x01
+    testing.expectEqualSlices(u8, &[_]u8{0x08, 0x96, 0x01, 0x10, 0x96, 0x01}, obtained2.items);
 }
