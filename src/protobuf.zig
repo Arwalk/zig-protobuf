@@ -18,18 +18,6 @@ const WireType = enum(u3){
     Fixed32 = 5
 };
 
-const FieldType = struct {
-    wire: WireType,
-    real: type,  
-};
-
-pub fn ft(wire: WireType, comptime real: type) FieldType {
-    return FieldType{
-        .wire = wire,
-        .real = real
-    };
-}
-
 const FieldDescriptor = struct {
     tag: u5,
     name: []const u8,
