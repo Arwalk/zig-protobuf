@@ -68,7 +68,7 @@ pub fn as_varint(value: anytype, allocator: *std.mem.Allocator) !ProtoBuf {
 }
 
 pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) !ProtoBuf {
-    const field_list  = @field(@TypeOf(data), "lookup");
+    const field_list  = @field(@TypeOf(data), "_desc_table");
 
     var pb = ProtoBuf.init(allocator);
     errdefer pb.deinit();
@@ -99,7 +99,7 @@ test "get varint" {
 const Demo1 = struct {
     a : u32,
 
-    pub const lookup = [_]FieldDescriptor{
+    pub const _desc_table = [_]FieldDescriptor{
         FieldDescriptor.x(1, "a", .Required, FieldType.y(.Varint, u32)),
     };
 
