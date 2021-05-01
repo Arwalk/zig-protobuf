@@ -1,5 +1,6 @@
 const std = @import("std");
 const testing = std.testing;
+const isSignedInt = std.meta.trait.isSignedInt;
 
 // common definitions
 
@@ -43,14 +44,17 @@ pub fn fd(tag: u32, name: []const u8, ftype: FieldType) FieldDescriptor {
 // encoding
 
 fn append_varint(pb : *ProtoBuf, value: anytype) !void {
-    var size_in_bits : u32 = @bitSizeOf(@TypeOf(value)) - @clz(@TypeOf(value), value);
+    var val = value;
+    if(isSignedInt(@TypeOf(value))){
+        val = (val >> 31) ^ (val << 1);
+    }
+    var size_in_bits : u32 = @bitSizeOf(@TypeOf(val)) - @clz(@TypeOf(val), val);
 
     if(size_in_bits == 0){
         try pb.append(0);
     }
     else
     {
-        var val = value;
         while(val != 0) {
             try pb.append(0x80 + @intCast(u8, val & 0x7F));
             val = val >> 7;

@@ -16,6 +16,14 @@ const Demo1 = struct {
     }
 };
 
+test "basic encoding" {
+    const demo = Demo1{.a = 150};
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
+    // 0x08 , 0x96, 0x01
+    testing.expectEqualSlices(u8, &[_]u8{0x08, 0x96, 0x01}, obtained);
+}
+
 const Demo2 = struct {
     a : u32,
     b : ?u32,
@@ -30,14 +38,6 @@ const Demo2 = struct {
     }
 };
 
-test "basic encoding" {
-    const demo = Demo1{.a = 150};
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
-    // 0x08 , 0x96, 0x01
-    testing.expectEqualSlices(u8, &[_]u8{0x08, 0x96, 0x01}, obtained);
-}
-
 test "basic encoding with optionals" {
     const demo = Demo2{.a = 150, .b = null};
     const obtained = try demo.encode(testing.allocator);
@@ -50,4 +50,24 @@ test "basic encoding with optionals" {
     defer testing.allocator.free(obtained2);
     // 0x08 , 0x96, 0x01
     testing.expectEqualSlices(u8, &[_]u8{0x08, 0x96, 0x01, 0x10, 0x96, 0x01}, obtained2);
+}
+
+const WithNegativeIntegers = struct {
+    a: i32,
+
+    pub const _desc_table = [_]FieldDescriptor{
+        fd(1, "a", .Varint),
+    };
+
+    pub fn encode(self: WithNegativeIntegers, allocator: *std.mem.Allocator) ![]u8 {
+        return pb_encode(self, allocator);
+    }
+};
+
+test "basic encoding with negative numbers" {
+    const demo = WithNegativeIntegers{.a = -2};
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
+    // 0x08
+    testing.expectEqualSlices(u8, &[_]u8{0x08, 0x03}, obtained);
 }
