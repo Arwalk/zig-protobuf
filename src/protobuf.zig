@@ -45,23 +45,25 @@ pub fn fd(tag: u32, name: []const u8, ftype: FieldType) FieldDescriptor {
 // encoding
 
 fn append_varint(pb : *ProtoBuf, value: anytype) !void {
-    var val = value;
-    const type_of_val = @TypeOf(value);
-    const bitsize = @bitSizeOf(type_of_val);
+    
 
-    if(isSignedInt(type_of_val)){ // zigzag encoding for signed types.
-        val = switch(bitsize){
-            32 => (val >> 31) ^ (val << 1),
-            64 => (val >> 63) ^ (val << 1),
-            else => val //comptime int is annoying.
-        };
-    }
-
-    if(val == 0){
+    if(value == 0){
         try pb.append(0);
     }
     else
     {
+        var val = value;
+        const type_of_val = @TypeOf(value);
+        const bitsize = @bitSizeOf(type_of_val);
+        
+        if(isSignedInt(type_of_val)){ // zigzag encoding for signed types.
+            val = switch(bitsize){
+                32 => (val >> 31) ^ (val << 1),
+                64 => (val >> 63) ^ (val << 1),
+                else => val //comptime int is annoying.
+            };
+        }
+
         while(val != 0) {
             try pb.append(0x80 + @intCast(u8, val & 0x7F));
             val = val >> 7;
