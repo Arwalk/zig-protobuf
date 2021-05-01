@@ -16,13 +16,14 @@ pub const FieldType = enum{
     SubMessage,
     Bytes,
     List,
+    PackedList,
 
     pub fn get_wirevalue(ftype : FieldType) u3 {
         return switch (ftype) {
             .Varint => 0,
             .Fixed64 => 1,
             .Fixed32 => 5,
-            .SubMessage, .Bytes, .List => 2
+            .SubMessage, .Bytes, .List, .PackedList => 2
         };
     }
 };
