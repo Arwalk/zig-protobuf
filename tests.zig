@@ -17,11 +17,17 @@ const Demo1 = struct {
 };
 
 test "basic encoding" {
-    const demo = Demo1{.a = 150};
+    var demo = Demo1{.a = 150};
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
     // 0x08 , 0x96, 0x01
     testing.expectEqualSlices(u8, &[_]u8{0x08, 0x96, 0x01}, obtained);
+
+    demo.a = 0;
+    const obtained2 = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained2);
+    // 0x08 , 0x96, 0x01
+    testing.expectEqualSlices(u8, &[_]u8{0x08, 0x00}, obtained2);
 }
 
 const Demo2 = struct {
@@ -65,9 +71,14 @@ const WithNegativeIntegers = struct {
 };
 
 test "basic encoding with negative numbers" {
-    const demo = WithNegativeIntegers{.a = -2};
+    var demo = WithNegativeIntegers{.a = -2};
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
     // 0x08
     testing.expectEqualSlices(u8, &[_]u8{0x08, 0x03}, obtained);
+
+    demo.a = 0;
+    const obtained2 = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained2);
+    testing.expectEqualSlices(u8, &[_]u8{0x08, 0x00}, obtained2);
 }

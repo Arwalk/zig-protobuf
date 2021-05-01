@@ -46,12 +46,18 @@ pub fn fd(tag: u32, name: []const u8, ftype: FieldType) FieldDescriptor {
 
 fn append_varint(pb : *ProtoBuf, value: anytype) !void {
     var val = value;
-    if(isSignedInt(@TypeOf(value))){
-        val = (val >> 31) ^ (val << 1);
-    }
-    var size_in_bits : u32 = @bitSizeOf(@TypeOf(val)) - @clz(@TypeOf(val), val);
+    const type_of_val = @TypeOf(value);
+    const bitsize = @bitSizeOf(type_of_val);
 
-    if(size_in_bits == 0){
+    if(isSignedInt(type_of_val)){ // zigzag encoding for signed types.
+        val = switch(bitsize){
+            32 => (val >> 31) ^ (val << 1),
+            64 => (val >> 63) ^ (val << 1),
+            else => val //comptime int is annoying.
+        };
+    }
+
+    if(val == 0){
         try pb.append(0);
     }
     else
@@ -105,8 +111,9 @@ pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
 
 test "get varint" {
     var pb = ProtoBuf.init(testing.allocator);
+    const value: u32 = 300;
     defer pb.deinit();
-    try append_varint(&pb, @intCast(u32, 300));
+    try append_varint(&pb, value);
 
     testing.expectEqualSlices(u8, &[_]u8{0b10101100, 0b00000010}, pb.items);
 }
