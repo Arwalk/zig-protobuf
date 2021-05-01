@@ -14,12 +14,12 @@ pub const WireType = enum(u3){
 };
 
 pub const FieldDescriptor = struct {
-    tag: u5,
+    tag: u32,
     name: []const u8,
     wtype: WireType,
 };
 
-pub fn fd(tag: u5, name: []const u8, wtype: WireType) FieldDescriptor {
+pub fn fd(tag: u32, name: []const u8, wtype: WireType) FieldDescriptor {
     return FieldDescriptor{
         .tag = tag,
         .name = name,
@@ -44,8 +44,9 @@ fn encode_varint(pb : *ProtoBuf, value: anytype) !void {
     }
 }
 
+
 fn _append(pb : *ProtoBuf, field: FieldDescriptor, value: anytype, allocator: *std.mem.Allocator) !void {
-    try pb.append((field.tag << 3) + @enumToInt(field.wtype));
+    try encode_varint(pb, ((field.tag << 3) | @enumToInt(field.wtype)));
     switch(field.wtype)
     {
         .Varint => {
