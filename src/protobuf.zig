@@ -1,6 +1,6 @@
 const std = @import("std");
 const testing = std.testing;
-const eql = std.mem.eql;
+
 
 const ArrayList = std.ArrayList;
 
@@ -27,9 +27,8 @@ pub fn fd(tag: u5, name: []const u8, wtype: WireType) FieldDescriptor {
     };
 }
 
-fn as_varint(value: anytype, allocator: *std.mem.Allocator) !ProtoBuf {
+fn encode_varint(pb : *ProtoBuf, value: anytype) !void {
     var size_in_bits : u32 = @bitSizeOf(@TypeOf(value)) - @clz(@TypeOf(value), value);
-    var pb = ProtoBuf.init(allocator);
 
     if(size_in_bits == 0){
         try pb.append(0);
@@ -43,8 +42,6 @@ fn as_varint(value: anytype, allocator: *std.mem.Allocator) !ProtoBuf {
         }
         pb.items[pb.items.len - 1] = pb.items[pb.items.len - 1] & 0x7F;
     }
-
-    return pb;
 }
 
 fn _append(pb : *ProtoBuf, field: FieldDescriptor, value: anytype, allocator: *std.mem.Allocator) !void {
@@ -52,9 +49,7 @@ fn _append(pb : *ProtoBuf, field: FieldDescriptor, value: anytype, allocator: *s
     switch(field.wtype)
     {
         .Varint => {
-            const varint = try as_varint(value, allocator);
-            defer varint.deinit();
-            try pb.appendSlice(varint.items);
+            try encode_varint(pb, value);
         },
         else => @panic("Not implemented")
     }
@@ -82,56 +77,10 @@ pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) !ProtoBuf {
 }
 
 test "get varint" {
-    const obtained = try as_varint(@intCast(u32, 300), testing.allocator);
-    defer obtained.deinit();
+    var pb = ProtoBuf.init(testing.allocator);
+    defer pb.deinit();
+    try encode_varint(&pb, @intCast(u32, 300));
 
-    testing.expectEqualSlices(u8, &[_]u8{0b10101100, 0b00000010}, obtained.items);
+    testing.expectEqualSlices(u8, &[_]u8{0b10101100, 0b00000010}, pb.items);
 }
 
-const Demo1 = struct {
-    a : u32,
-
-    pub const _desc_table = [_]FieldDescriptor{
-        fd(1, "a", .Varint),
-    };
-
-    pub fn encode(self: Demo1, allocator: *std.mem.Allocator) !ProtoBuf {
-        return pb_encode(self, allocator);
-    }
-};
-
-const Demo2 = struct {
-    a : u32,
-    b : ?u32,
-
-    pub const _desc_table = [_]FieldDescriptor{
-        fd(1, "a", .Varint),
-        fd(2, "b", .Varint),
-    };
-
-    pub fn encode(self: Demo2, allocator: *std.mem.Allocator) !ProtoBuf {
-        return pb_encode(self, allocator);
-    }
-};
-
-test "basic encoding" {
-    const demo = Demo1{.a = 150};
-    const obtained : ProtoBuf = try demo.encode(testing.allocator);
-    defer obtained.deinit();
-    // 0x08 , 0x96, 0x01
-    testing.expectEqualSlices(u8, &[_]u8{0x08, 0x96, 0x01}, obtained.items);
-}
-
-test "basic encoding with optionals" {
-    const demo = Demo2{.a = 150, .b = null};
-    const obtained : ProtoBuf = try demo.encode(testing.allocator);
-    defer obtained.deinit();
-    // 0x08 , 0x96, 0x01
-    testing.expectEqualSlices(u8, &[_]u8{0x08, 0x96, 0x01}, obtained.items);
-
-    const demo2 = Demo2{.a = 150, .b = 150};
-    const obtained2 : ProtoBuf = try demo2.encode(testing.allocator);
-    defer obtained2.deinit();
-    // 0x08 , 0x96, 0x01
-    testing.expectEqualSlices(u8, &[_]u8{0x08, 0x96, 0x01, 0x10, 0x96, 0x01}, obtained2.items);
-}
