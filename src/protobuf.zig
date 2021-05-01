@@ -1,10 +1,12 @@
 const std = @import("std");
 const testing = std.testing;
 
+// common definitions
 
 const ArrayList = std.ArrayList;
 
 pub const ProtoBuf = ArrayList(u8);
+
 
 pub const WireType = enum(u3){
     Varint = 0,
@@ -26,6 +28,8 @@ pub fn fd(tag: u32, name: []const u8, wtype: WireType) FieldDescriptor {
         .wtype = wtype
     };
 }
+
+// encoding
 
 fn encode_varint(pb : *ProtoBuf, value: anytype) !void {
     var size_in_bits : u32 = @bitSizeOf(@TypeOf(value)) - @clz(@TypeOf(value), value);
@@ -56,7 +60,7 @@ fn _append(pb : *ProtoBuf, field: FieldDescriptor, value: anytype, allocator: *s
     }
 }
 
-pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) !ProtoBuf {
+pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
     const field_list  = @TypeOf(data)._desc_table;
 
     var pb = ProtoBuf.init(allocator);
@@ -74,8 +78,14 @@ pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) !ProtoBuf {
         }
     }
 
-    return pb;
+    return pb.toOwnedSlice();
 }
+
+// decoding
+
+// TBD
+
+// tests
 
 test "get varint" {
     var pb = ProtoBuf.init(testing.allocator);
