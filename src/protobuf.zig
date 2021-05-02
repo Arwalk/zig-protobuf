@@ -1,5 +1,4 @@
 const std = @import("std");
-const testing = std.testing;
 const isSignedInt = std.meta.trait.isSignedInt;
 
 // common definitions
@@ -7,7 +6,6 @@ const isSignedInt = std.meta.trait.isSignedInt;
 const ArrayList = std.ArrayList;
 
 pub const ProtoBuf = ArrayList(u8);
-
 
 pub const FieldType = enum{
     Varint,
@@ -44,11 +42,10 @@ pub fn fd(tag: u32, name: []const u8, ftype: FieldType) FieldDescriptor {
 
 // encoding
 
-fn append_varint(pb : *ProtoBuf, value: anytype) !void {
-    
 
-    if(value == 0){
-        try pb.append(0);
+fn append_as_varint(pb: *ProtoBuf, value: anytype) !void {
+    if(value < 0x7F and value >= 0){
+        try pb.append(@intCast(u8, value));
     }
     else
     {
@@ -70,6 +67,14 @@ fn append_varint(pb : *ProtoBuf, value: anytype) !void {
         }
         pb.items[pb.items.len - 1] = pb.items[pb.items.len - 1] & 0x7F;
     }
+}
+
+fn append_varint(pb : *ProtoBuf, value: anytype) !void {
+    switch(@typeInfo(@TypeOf(value))) {
+        .Enum => try append_as_varint(pb, @intCast(u8, @enumToInt(value))),
+        .Bool => try append_as_varint(pb, @intCast(u8, @boolToInt(value))),
+        else => try append_as_varint(pb, value),
+    }    
 }
 
 
@@ -110,6 +115,8 @@ pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
 // TBD
 
 // tests
+
+const testing = std.testing;
 
 test "get varint" {
     var pb = ProtoBuf.init(testing.allocator);
