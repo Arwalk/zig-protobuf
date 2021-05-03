@@ -7,8 +7,24 @@ const ArrayList = std.ArrayList;
 
 pub const ProtoBuf = ArrayList(u8);
 
-pub const FieldType = enum{
+const VarintType = enum {
+    Simple,
+    ZigZagOptimized
+};
+
+pub const FieldTypeTag = enum{
     Varint,
+    Fixed64,
+    Fixed32,
+    SubMessage,
+    Bytes,
+    List,
+    PackedList,
+
+};
+
+const FieldType = union(FieldTypeTag) {
+    Varint : VarintType,
     Fixed64,
     Fixed32,
     SubMessage,
@@ -42,48 +58,59 @@ pub fn fd(tag: u32, name: []const u8, ftype: FieldType) FieldDescriptor {
 
 // encoding
 
+fn encode_varint(pb: *ProtoBuf, value: anytype) !void {
+    var copy = value;
+    while(copy != 0) {
+        try pb.append(0x80 + @intCast(u8, copy & 0x7F));
+        copy = copy >> 7;
+    }
+    pb.items[pb.items.len - 1] = pb.items[pb.items.len - 1] & 0x7F;
+}
 
-fn append_as_varint(pb: *ProtoBuf, value: anytype) !void {
+fn append_as_varint(pb: *ProtoBuf, value: anytype, varint_type: VarintType) !void {
     if(value < 0x7F and value >= 0){
         try pb.append(@intCast(u8, value));
     }
     else
     {
-        var val = value;
         const type_of_val = @TypeOf(value);
         const bitsize = @bitSizeOf(type_of_val);
-        
-        if(isSignedInt(type_of_val)){ // zigzag encoding for signed types.
-            val = switch(bitsize){
-                32 => (val >> 31) ^ (val << 1),
-                64 => (val >> 63) ^ (val << 1),
-                else => val //comptime int is annoying.
-            };
-        }
+        var val = value;
 
-        while(val != 0) {
-            try pb.append(0x80 + @intCast(u8, val & 0x7F));
-            val = val >> 7;
+        if(isSignedInt(type_of_val)){
+            switch(varint_type) {
+                .ZigZagOptimized => {
+                    try encode_varint(pb, (value >> (bitsize-1)) ^ (value << 1));
+                },
+                .Simple => {
+                    var as_unsigned = @ptrCast(*std.meta.Int(.unsigned, bitsize), &val);
+                    try encode_varint(pb, as_unsigned.*);
+                    return;
+                }
+            }
         }
-        pb.items[pb.items.len - 1] = pb.items[pb.items.len - 1] & 0x7F;
+        else
+        {
+            try encode_varint(pb, val);
+        }   
     }
 }
 
-fn append_varint(pb : *ProtoBuf, value: anytype) !void {
+fn append_varint(pb : *ProtoBuf, value: anytype, varint_type: VarintType) !void {
     switch(@typeInfo(@TypeOf(value))) {
-        .Enum => try append_as_varint(pb, @intCast(u8, @enumToInt(value))),
-        .Bool => try append_as_varint(pb, @intCast(u8, @boolToInt(value))),
-        else => try append_as_varint(pb, value),
+        .Enum => try append_as_varint(pb, @intCast(u8, @enumToInt(value)), varint_type),
+        .Bool => try append_as_varint(pb, @intCast(u8, @boolToInt(value)), varint_type),
+        else => try append_as_varint(pb, value, varint_type),
     }    
 }
 
 
 fn append(pb : *ProtoBuf, field: FieldDescriptor, value: anytype, allocator: *std.mem.Allocator) !void {
-    try append_varint(pb, ((field.tag << 3) | field.ftype.get_wirevalue()));
+    try append_varint(pb, ((field.tag << 3) | field.ftype.get_wirevalue()), .Simple);
     switch(field.ftype)
     {
-        .Varint => {
-            try append_varint(pb, value);
+        .Varint => |varint_type| {
+            try append_varint(pb, value, varint_type);
         },
         else => @panic("Not implemented")
     }
@@ -122,7 +149,7 @@ test "get varint" {
     var pb = ProtoBuf.init(testing.allocator);
     const value: u32 = 300;
     defer pb.deinit();
-    try append_varint(&pb, value);
+    try append_varint(&pb, value, .Simple);
 
     testing.expectEqualSlices(u8, &[_]u8{0b10101100, 0b00000010}, pb.items);
 }
