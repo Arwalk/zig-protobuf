@@ -14,8 +14,7 @@ const VarintType = enum {
 
 pub const FieldTypeTag = enum{
     Varint,
-    Fixed64,
-    Fixed32,
+    FixedInt,
     SubMessage,
     Bytes,
     List,
@@ -25,8 +24,7 @@ pub const FieldTypeTag = enum{
 
 const FieldType = union(FieldTypeTag) {
     Varint : VarintType,
-    Fixed64,
-    Fixed32,
+    FixedInt: u8,
     SubMessage,
     Bytes,
     List,
@@ -35,8 +33,11 @@ const FieldType = union(FieldTypeTag) {
     pub fn get_wirevalue(ftype : FieldType) u3 {
         return switch (ftype) {
             .Varint => 0,
-            .Fixed64 => 1,
-            .Fixed32 => 5,
+            .FixedInt => |size| return switch(size) {
+                64 => 1,
+                32 => 5,
+                else => @panic("Invalid size for fixed int")
+            },
             .SubMessage, .Bytes, .List, .PackedList => 2
         };
     }
@@ -104,6 +105,15 @@ fn append_varint(pb : *ProtoBuf, value: anytype, varint_type: VarintType) !void 
     }    
 }
 
+fn append_fixed(pb : *ProtoBuf, value: anytype, size : u16) !void {
+    var copy = value;
+    var as_unsigned_int = @ptrCast(*std.meta.Int(.unsigned, size), &copy).*;
+
+    while(as_unsigned_int != 0) {
+        try pb.append(0x80 + @intCast(u8, as_unsigned_int & 0xFF));
+        as_unsigned_int = as_unsigned_int >> 8;
+    }
+}
 
 fn append(pb : *ProtoBuf, field: FieldDescriptor, value: anytype, allocator: *std.mem.Allocator) !void {
     try append_varint(pb, ((field.tag << 3) | field.ftype.get_wirevalue()), .Simple);
@@ -112,6 +122,7 @@ fn append(pb : *ProtoBuf, field: FieldDescriptor, value: anytype, allocator: *st
         .Varint => |varint_type| {
             try append_varint(pb, value, varint_type);
         },
+        .FixedInt => |size| try append_fixed(pb, value, size),
         else => @panic("Not implemented")
     }
 }

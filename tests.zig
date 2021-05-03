@@ -147,3 +147,48 @@ test "DemoWithAllVarint" {
             0x50, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01
         },obtained);
 }
+
+const FixedSizes = struct {
+    sfixed64 : i64,
+    sfixed32 : i32,
+    fixed32  : u32,
+    fixed64  : u64,
+    double   : f64,
+    float    : f32,
+
+    pub const _desc_table = [_]FieldDescriptor{
+        fd( 1, "sfixed64"   , .{.FixedInt = 64}),
+        fd( 2, "sfixed32"   , .{.FixedInt = 32}),
+        fd( 3, "fixed32"    , .{.FixedInt = 32}),
+        fd( 4, "fixed64"    , .{.FixedInt = 64}),
+        fd( 5, "double"     , .{.FixedInt = 64}),
+        fd( 6, "float"      , .{.FixedInt = 32}),
+    };
+
+    pub fn encode(self: FixedSizes, allocator: *std.mem.Allocator) ![]u8 {
+        return pb_encode(self, allocator);
+    }
+};
+
+test "FixedSizes" {
+    var demo = FixedSizes{
+        .sfixed64 = -1,
+        .sfixed32 = -2,
+        .fixed32 = 1,
+        .fixed64 = 2,
+        .double = 5.0, // 0x4014000000000000 
+        .float = 5.0 // 0x40a00000
+    };
+
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
+
+    testing.expectEqualSlices(u8, &[_]u8{
+        0x08 + 1 , 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0x10 + 5 , 0xFF, 0xFF, 0xFF, 0xFE,
+        0x18 + 5 , 0x00, 0x00, 0x00, 0x01,
+        0x20 + 1 , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02,
+        0x28 + 1 , 0x40, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x30 + 5 , 0x40, 0xa0, 0x00, 0x00
+    }, obtained);
+}
