@@ -19,10 +19,9 @@ pub const FieldTypeTag = enum{
     Bytes,
     List,
     PackedList,
-
 };
 
-const FieldType = union(FieldTypeTag) {
+pub const FieldType = union(FieldTypeTag) {
     Varint : VarintType,
     FixedInt,
     SubMessage,
@@ -99,7 +98,7 @@ fn append_as_varint(pb: *ProtoBuf, value: anytype, varint_type: VarintType) !voi
 
 fn append_varint(pb : *ProtoBuf, value: anytype, varint_type: VarintType) !void {
     switch(@typeInfo(@TypeOf(value))) {
-        .Enum => try append_as_varint(pb, @intCast(u8, @enumToInt(value)), varint_type),
+        .Enum => try append_as_varint(pb, @intCast(i32, @enumToInt(value)), varint_type),
         .Bool => try append_as_varint(pb, @intCast(u8, @boolToInt(value)), varint_type),
         else => try append_as_varint(pb, value, varint_type),
     }    

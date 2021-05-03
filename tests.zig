@@ -82,7 +82,7 @@ test "basic encoding with negative numbers" {
 
 const DemoWithAllVarint = struct {
     
-    const DemoEnum = enum {
+    const DemoEnum = enum(i32) {
         SomeValue,
         SomeOther,
         AndAnother
