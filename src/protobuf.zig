@@ -24,16 +24,16 @@ pub const FieldTypeTag = enum{
 
 const FieldType = union(FieldTypeTag) {
     Varint : VarintType,
-    FixedInt: u8,
+    FixedInt,
     SubMessage,
     Bytes,
     List,
     PackedList,
 
-    pub fn get_wirevalue(ftype : FieldType) u3 {
+    pub fn get_wirevalue(ftype : FieldType, value: anytype) u3 {
         return switch (ftype) {
             .Varint => 0,
-            .FixedInt => |size| return switch(size) {
+            .FixedInt => return switch(@bitSizeOf(@TypeOf(value))) {
                 64 => 1,
                 32 => 5,
                 else => @panic("Invalid size for fixed int")
@@ -105,24 +105,27 @@ fn append_varint(pb : *ProtoBuf, value: anytype, varint_type: VarintType) !void 
     }    
 }
 
-fn append_fixed(pb : *ProtoBuf, value: anytype, size : u16) !void {
+fn append_fixed(pb : *ProtoBuf, value: anytype) !void {
     var copy = value;
-    var as_unsigned_int = @ptrCast(*std.meta.Int(.unsigned, size), &copy).*;
+    const bitsize = @bitSizeOf(@TypeOf(value));
+    var as_unsigned_int = @ptrCast(*std.meta.Int(.unsigned, bitsize), &copy).*;
 
-    while(as_unsigned_int != 0) {
-        try pb.append(0x80 + @intCast(u8, as_unsigned_int & 0xFF));
+    var index : usize = 0;
+
+    while(index < (bitsize/8)) : (index += 1) {
+        try pb.append(@intCast(u8, as_unsigned_int & 0xFF));
         as_unsigned_int = as_unsigned_int >> 8;
     }
 }
 
-fn append(pb : *ProtoBuf, field: FieldDescriptor, value: anytype, allocator: *std.mem.Allocator) !void {
-    try append_varint(pb, ((field.tag << 3) | field.ftype.get_wirevalue()), .Simple);
+fn append(pb : *ProtoBuf, comptime field: FieldDescriptor, value: anytype, allocator: *std.mem.Allocator) !void {
+    try append_varint(pb, ((field.tag << 3) | field.ftype.get_wirevalue(value)), .Simple);
     switch(field.ftype)
     {
         .Varint => |varint_type| {
             try append_varint(pb, value, varint_type);
         },
-        .FixedInt => |size| try append_fixed(pb, value, size),
+        .FixedInt => try append_fixed(pb, value),
         else => @panic("Not implemented")
     }
 }
