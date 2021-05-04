@@ -148,6 +148,7 @@ test "DemoWithAllVarint" {
         },obtained);
 }
 
+
 const FixedSizes = struct {
     sfixed64 : i64,
     sfixed32 : i32,
