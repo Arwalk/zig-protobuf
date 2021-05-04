@@ -117,6 +117,12 @@ fn append_fixed(pb : *ProtoBuf, value: anytype) !void {
     }
 }
 
+fn append_submessage(pb :* ProtoBuf, value: anytype) !void {
+    const previous_len = pb.items.len;
+    try internal_pb_encode(pb, value);
+    try pb.insert(previous_len, @intCast(u8, pb.items.len - previous_len));
+}
+
 fn append(pb : *ProtoBuf, comptime field: FieldDescriptor, value: anytype) !void {
     try append_varint(pb, ((field.tag << 3) | field.ftype.get_wirevalue(value)), .Simple);
     switch(field.ftype)
@@ -125,11 +131,12 @@ fn append(pb : *ProtoBuf, comptime field: FieldDescriptor, value: anytype) !void
             try append_varint(pb, value, varint_type);
         },
         .FixedInt => try append_fixed(pb, value),
+        .SubMessage => try append_submessage(pb, value),
         else => @panic("Not implemented")
     }
 }
 
-fn internal_pb_encode(pb : *ProtoBuf, data: anytype) ![]u8 {
+fn internal_pb_encode(pb : *ProtoBuf, data: anytype) !void {
     const field_list  = @TypeOf(data)._desc_table;
 
     inline for(field_list) |field| {
@@ -144,14 +151,16 @@ fn internal_pb_encode(pb : *ProtoBuf, data: anytype) ![]u8 {
         }
     }
 
-    return pb.toOwnedSlice();
+    
 }
 
 pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
     var pb = ProtoBuf.init(allocator);
     errdefer pb.deinit();
 
-    return try internal_pb_encode(&pb, data);
+    try internal_pb_encode(&pb, data);
+    
+    return pb.toOwnedSlice();
 }
 
 // decoding

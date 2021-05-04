@@ -193,3 +193,35 @@ test "FixedSizes" {
         0x30 + 5 , 0x00, 0x00, 0xa0, 0x40
     }, obtained);
 }
+
+const WithSubmessages = struct {
+    sub_demo1 : Demo1,
+    sub_demo2 : Demo2,
+
+    pub const _desc_table = [_]FieldDescriptor{
+        fd( 1, "sub_demo1"   , .SubMessage),
+        fd( 2, "sub_demo2"   , .SubMessage),
+    };
+
+    pub fn encode(self: WithSubmessages, allocator: *std.mem.Allocator) ![]u8 {
+        return pb_encode(self, allocator);
+    }
+};
+
+test "WithSubmessages" {
+    var demo = WithSubmessages{
+        .sub_demo1 = .{.a = 1},
+        .sub_demo2 = .{.a = 2, .b = 3}
+    };
+
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
+
+    testing.expectEqualSlices(u8, &[_]u8{
+        0x08 + 2, 0x02,
+            0x08, 0x01,
+        0x10 + 2, 0x04,
+            0x08, 0x02,
+            0x10, 0x03
+    }, obtained);
+}
