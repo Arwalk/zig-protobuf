@@ -167,8 +167,6 @@ fn internal_pb_encode(pb : *ProtoBuf, data: anytype) !void {
             try append(pb, field, @field(data, field.name));
         }
     }
-
-    
 }
 
 pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
