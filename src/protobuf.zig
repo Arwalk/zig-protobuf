@@ -153,7 +153,7 @@ fn append(pb : *ProtoBuf, comptime field: FieldDescriptor, value: anytype) !void
     }
 }
 
-fn internal_pb_encode(pb : *ProtoBuf, data: anytype) !void {
+fn internal_pb_encode(pb : *ProtoBuf, data: anytype) ![]u8 {
     const field_list  = @TypeOf(data)._desc_table;
 
     inline for(field_list) |field| {
@@ -176,6 +176,13 @@ pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
     try internal_pb_encode(&pb, data);
     
     return pb.toOwnedSlice();
+}
+
+pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
+    var pb = ProtoBuf.init(allocator);
+    errdefer pb.deinit();
+
+    return try internal_pb_encode(&pb, data);
 }
 
 // decoding
