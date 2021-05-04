@@ -67,6 +67,22 @@ fn encode_varint(pb: *ProtoBuf, value: anytype) !void {
     pb.items[pb.items.len - 1] = pb.items[pb.items.len - 1] & 0x7F;
 }
 
+fn insert_size_as_varint(pb: *ProtoBuf, size: u64, start_index: usize) !void {
+    if(size < 0x7F){
+        try pb.insert(start_index, @intCast(u8, size));
+    }
+    else
+    {
+        var copy = size;
+        var index = start_index;
+        while(copy != 0) : (index += 1 ) {
+            try pb.insert(index, 0x80 + @intCast(u8, copy & 0x7F));
+            copy = copy >> 7;
+        }
+        pb.items[pb.items.len - 1] = pb.items[pb.items.len - 1] & 0x7F;
+    }
+}
+
 fn append_as_varint(pb: *ProtoBuf, value: anytype, varint_type: VarintType) !void {
     if(value < 0x7F and value >= 0){
         try pb.append(@intCast(u8, value));
@@ -101,7 +117,7 @@ fn append_varint(pb : *ProtoBuf, value: anytype, varint_type: VarintType) !void 
         .Enum => try append_as_varint(pb, @intCast(i32, @enumToInt(value)), varint_type),
         .Bool => try append_as_varint(pb, @intCast(u8, @boolToInt(value)), varint_type),
         else => try append_as_varint(pb, value, varint_type),
-    }    
+    }
 }
 
 fn append_fixed(pb : *ProtoBuf, value: anytype) !void {
@@ -118,9 +134,10 @@ fn append_fixed(pb : *ProtoBuf, value: anytype) !void {
 }
 
 fn append_submessage(pb :* ProtoBuf, value: anytype) !void {
-    const previous_len = pb.items.len;
+    const len_index = pb.items.len;
     try internal_pb_encode(pb, value);
-    try pb.insert(previous_len, @intCast(u8, pb.items.len - previous_len));
+    const size_encoded = pb.items.len - len_index;
+    try insert_size_as_varint(pb, size_encoded, len_index);
 }
 
 fn append(pb : *ProtoBuf, comptime field: FieldDescriptor, value: anytype) !void {
