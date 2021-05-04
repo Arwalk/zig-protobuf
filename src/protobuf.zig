@@ -161,7 +161,7 @@ fn append(pb : *Bytes, comptime field: FieldDescriptor, value: anytype) !void {
     }
 }
 
-fn internal_pb_encode(pb : *ProtoBuf, data: anytype) ![]u8 {
+fn internal_pb_encode(pb : *ProtoBuf, data: anytype) !void {
     const field_list  = @TypeOf(data)._desc_table;
 
     inline for(field_list) |field| {
@@ -181,16 +181,22 @@ pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
     var pb = Bytes.init(allocator);
     errdefer pb.deinit();
 
+<<<<<<< HEAD
     try internal_pb_encode(&pb, data);
     
     return pb.toOwnedSlice();
+=======
+    
+>>>>>>> submessage encoding is done.
 }
 
 pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
     var pb = ProtoBuf.init(allocator);
     errdefer pb.deinit();
 
-    return try internal_pb_encode(&pb, data);
+    try internal_pb_encode(&pb, data);
+    
+    return pb.toOwnedSlice();
 }
 
 // decoding
