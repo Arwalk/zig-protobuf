@@ -225,3 +225,30 @@ test "WithSubmessages" {
             0x10, 0x03
     }, obtained);
 }
+
+const WithBytes = struct {
+    list_of_data: Bytes,
+
+    pub const _desc_table = [_]FieldDescriptor{
+        fd( 1, "list_of_data", .List),
+    };
+
+    pub fn encode(self: WithBytes, allocator: *std.mem.Allocator) ![]u8 {
+        return pb_encode(self, allocator);
+    }
+};
+
+test "bytes"  {
+    var demo = WithBytes{.list_of_data = Bytes.init(testing.allocator)};
+    try demo.list_of_data.append(0x08);
+    try demo.list_of_data.append(0x01);
+    defer demo.list_of_data.deinit();
+
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
+
+    testing.expectEqualSlices(u8, &[_]u8{
+        0x08 + 2, 0x02,
+            0x08, 0x01,
+    }, obtained);
+}

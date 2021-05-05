@@ -5,7 +5,7 @@ const isSignedInt = std.meta.trait.isSignedInt;
 
 const ArrayList = std.ArrayList;
 
-pub const ProtoBuf = ArrayList(u8);
+pub const Bytes = ArrayList(u8);
 
 const VarintType = enum {
     Simple,
@@ -58,7 +58,7 @@ pub fn fd(tag: u32, name: []const u8, ftype: FieldType) FieldDescriptor {
 
 // encoding
 
-fn encode_varint(pb: *ProtoBuf, value: anytype) !void {
+fn encode_varint(pb: *Bytes, value: anytype) !void {
     var copy = value;
     while(copy != 0) {
         try pb.append(0x80 + @intCast(u8, copy & 0x7F));
@@ -67,7 +67,7 @@ fn encode_varint(pb: *ProtoBuf, value: anytype) !void {
     pb.items[pb.items.len - 1] = pb.items[pb.items.len - 1] & 0x7F;
 }
 
-fn insert_size_as_varint(pb: *ProtoBuf, size: u64, start_index: usize) !void {
+fn insert_size_as_varint(pb: *Bytes, size: u64, start_index: usize) !void {
     if(size < 0x7F){
         try pb.insert(start_index, @intCast(u8, size));
     }
@@ -83,7 +83,7 @@ fn insert_size_as_varint(pb: *ProtoBuf, size: u64, start_index: usize) !void {
     }
 }
 
-fn append_as_varint(pb: *ProtoBuf, value: anytype, varint_type: VarintType) !void {
+fn append_as_varint(pb: *Bytes, value: anytype, varint_type: VarintType) !void {
     if(value < 0x7F and value >= 0){
         try pb.append(@intCast(u8, value));
     }
@@ -112,7 +112,7 @@ fn append_as_varint(pb: *ProtoBuf, value: anytype, varint_type: VarintType) !voi
     }
 }
 
-fn append_varint(pb : *ProtoBuf, value: anytype, varint_type: VarintType) !void {
+fn append_varint(pb : *Bytes, value: anytype, varint_type: VarintType) !void {
     switch(@typeInfo(@TypeOf(value))) {
         .Enum => try append_as_varint(pb, @intCast(i32, @enumToInt(value)), varint_type),
         .Bool => try append_as_varint(pb, @intCast(u8, @boolToInt(value)), varint_type),
@@ -120,7 +120,7 @@ fn append_varint(pb : *ProtoBuf, value: anytype, varint_type: VarintType) !void 
     }
 }
 
-fn append_fixed(pb : *ProtoBuf, value: anytype) !void {
+fn append_fixed(pb : *Bytes, value: anytype) !void {
     var copy = value;
     const bitsize = @bitSizeOf(@TypeOf(value));
     var as_unsigned_int = @ptrCast(*std.meta.Int(.unsigned, bitsize), &copy).*;
@@ -133,14 +133,21 @@ fn append_fixed(pb : *ProtoBuf, value: anytype) !void {
     }
 }
 
-fn append_submessage(pb :* ProtoBuf, value: anytype) !void {
+fn append_submessage(pb :* Bytes, value: anytype) !void {
     const len_index = pb.items.len;
     try internal_pb_encode(pb, value);
     const size_encoded = pb.items.len - len_index;
     try insert_size_as_varint(pb, size_encoded, len_index);
 }
 
-fn append(pb : *ProtoBuf, comptime field: FieldDescriptor, value: anytype) !void {
+fn append_bytes(pb: *Bytes, value: *const Bytes) !void {
+    const len_index = pb.items.len;
+    try pb.appendSlice(value.items);
+    const size_encoded = pb.items.len - len_index;
+    try insert_size_as_varint(pb, size_encoded, len_index);
+}
+
+fn append(pb : *Bytes, comptime field: FieldDescriptor, value: anytype) !void {
     try append_varint(pb, ((field.tag << 3) | field.ftype.get_wirevalue(value)), .Simple);
     switch(field.ftype)
     {
@@ -149,6 +156,7 @@ fn append(pb : *ProtoBuf, comptime field: FieldDescriptor, value: anytype) !void
         },
         .FixedInt => try append_fixed(pb, value),
         .SubMessage => try append_submessage(pb, value),
+        .List => try append_bytes(pb, &value),
         else => @panic("Not implemented")
     }
 }
@@ -170,7 +178,7 @@ fn internal_pb_encode(pb : *ProtoBuf, data: anytype) ![]u8 {
 }
 
 pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
-    var pb = ProtoBuf.init(allocator);
+    var pb = Bytes.init(allocator);
     errdefer pb.deinit();
 
     try internal_pb_encode(&pb, data);
@@ -194,7 +202,7 @@ pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
 const testing = std.testing;
 
 test "get varint" {
-    var pb = ProtoBuf.init(testing.allocator);
+    var pb = Bytes.init(testing.allocator);
     const value: u32 = 300;
     defer pb.deinit();
     try append_varint(&pb, value, .Simple);
