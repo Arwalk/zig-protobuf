@@ -5,8 +5,6 @@ const isSignedInt = std.meta.trait.isSignedInt;
 
 const ArrayList = std.ArrayList;
 
-pub const Bytes = ArrayList(u8);
-
 const VarintType = enum {
     Simple,
     ZigZagOptimized
@@ -58,7 +56,7 @@ pub fn fd(tag: u32, name: []const u8, ftype: FieldType) FieldDescriptor {
 
 // encoding
 
-fn encode_varint(pb: *Bytes, value: anytype) !void {
+fn encode_varint(pb: *ArrayList(u8), value: anytype) !void {
     var copy = value;
     while(copy != 0) {
         try pb.append(0x80 + @intCast(u8, copy & 0x7F));
@@ -67,7 +65,7 @@ fn encode_varint(pb: *Bytes, value: anytype) !void {
     pb.items[pb.items.len - 1] = pb.items[pb.items.len - 1] & 0x7F;
 }
 
-fn insert_size_as_varint(pb: *Bytes, size: u64, start_index: usize) !void {
+fn insert_size_as_varint(pb: *ArrayList(u8), size: u64, start_index: usize) !void {
     if(size < 0x7F){
         try pb.insert(start_index, @intCast(u8, size));
     }
@@ -83,7 +81,7 @@ fn insert_size_as_varint(pb: *Bytes, size: u64, start_index: usize) !void {
     }
 }
 
-fn append_as_varint(pb: *Bytes, value: anytype, varint_type: VarintType) !void {
+fn append_as_varint(pb: *ArrayList(u8), value: anytype, varint_type: VarintType) !void {
     if(value < 0x7F and value >= 0){
         try pb.append(@intCast(u8, value));
     }
@@ -112,7 +110,7 @@ fn append_as_varint(pb: *Bytes, value: anytype, varint_type: VarintType) !void {
     }
 }
 
-fn append_varint(pb : *Bytes, value: anytype, varint_type: VarintType) !void {
+fn append_varint(pb : *ArrayList(u8), value: anytype, varint_type: VarintType) !void {
     switch(@typeInfo(@TypeOf(value))) {
         .Enum => try append_as_varint(pb, @intCast(i32, @enumToInt(value)), varint_type),
         .Bool => try append_as_varint(pb, @intCast(u8, @boolToInt(value)), varint_type),
@@ -120,7 +118,7 @@ fn append_varint(pb : *Bytes, value: anytype, varint_type: VarintType) !void {
     }
 }
 
-fn append_fixed(pb : *Bytes, value: anytype) !void {
+fn append_fixed(pb : *ArrayList(u8), value: anytype) !void {
     var copy = value;
     const bitsize = @bitSizeOf(@TypeOf(value));
     var as_unsigned_int = @ptrCast(*std.meta.Int(.unsigned, bitsize), &copy).*;
@@ -133,21 +131,21 @@ fn append_fixed(pb : *Bytes, value: anytype) !void {
     }
 }
 
-fn append_submessage(pb :* Bytes, value: anytype) !void {
+fn append_submessage(pb :* ArrayList(u8), value: anytype) !void {
     const len_index = pb.items.len;
     try internal_pb_encode(pb, value);
     const size_encoded = pb.items.len - len_index;
     try insert_size_as_varint(pb, size_encoded, len_index);
 }
 
-fn append_bytes(pb: *Bytes, value: *const Bytes) !void {
+fn append_bytes(pb: *ArrayList(u8), value: *const ArrayList(u8)) !void {
     const len_index = pb.items.len;
     try pb.appendSlice(value.items);
     const size_encoded = pb.items.len - len_index;
     try insert_size_as_varint(pb, size_encoded, len_index);
 }
 
-fn append(pb : *Bytes, comptime field: FieldDescriptor, value: anytype) !void {
+fn append(pb : *ArrayList(u8), comptime field: FieldDescriptor, value: anytype) !void {
     try append_varint(pb, ((field.tag << 3) | field.ftype.get_wirevalue(value)), .Simple);
     switch(field.ftype)
     {
@@ -161,7 +159,7 @@ fn append(pb : *Bytes, comptime field: FieldDescriptor, value: anytype) !void {
     }
 }
 
-fn internal_pb_encode(pb : *ProtoBuf, data: anytype) !void {
+fn internal_pb_encode(pb : *ArrayList(u8), data: anytype) !void {
     const field_list  = @TypeOf(data)._desc_table;
 
     inline for(field_list) |field| {
@@ -175,19 +173,6 @@ fn internal_pb_encode(pb : *ProtoBuf, data: anytype) !void {
             try append(pb, field, @field(data, field.name));
         }
     }
-}
-
-pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
-    var pb = Bytes.init(allocator);
-    errdefer pb.deinit();
-
-<<<<<<< HEAD
-    try internal_pb_encode(&pb, data);
-    
-    return pb.toOwnedSlice();
-=======
-    
->>>>>>> submessage encoding is done.
 }
 
 pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
@@ -208,7 +193,7 @@ pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
 const testing = std.testing;
 
 test "get varint" {
-    var pb = Bytes.init(testing.allocator);
+    var pb = ArrayList(u8).init(testing.allocator);
     const value: u32 = 300;
     defer pb.deinit();
     try append_varint(&pb, value, .Simple);

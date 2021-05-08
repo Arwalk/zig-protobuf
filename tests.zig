@@ -1,8 +1,8 @@
 const std = @import("std");
 const protobuf = @import("src/protobuf.zig");
 usingnamespace protobuf;
-const testing = std.testing;
-const eql = std.mem.eql;
+usingnamespace std;
+const eql = mem.eql;
 
 const Demo1 = struct {
     a : u32,
@@ -11,7 +11,7 @@ const Demo1 = struct {
         fd(1, "a", .{.Varint = .ZigZagOptimized}),
     };
 
-    pub fn encode(self: Demo1, allocator: *std.mem.Allocator) ![]u8 {
+    pub fn encode(self: Demo1, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 };
@@ -39,7 +39,7 @@ const Demo2 = struct {
         fd(2, "b", .{.Varint = .ZigZagOptimized}),
     };
 
-    pub fn encode(self: Demo2, allocator: *std.mem.Allocator) ![]u8 {
+    pub fn encode(self: Demo2, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 };
@@ -67,7 +67,7 @@ const WithNegativeIntegers = struct {
         fd(2, "b", .{.Varint = .Simple}),
     };
 
-    pub fn encode(self: WithNegativeIntegers, allocator: *std.mem.Allocator) ![]u8 {
+    pub fn encode(self: WithNegativeIntegers, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 };
@@ -113,7 +113,7 @@ const DemoWithAllVarint = struct {
         fd(10, "neg_int64"  , .{.Varint = .Simple}),
     };
 
-    pub fn encode(self: DemoWithAllVarint, allocator: *std.mem.Allocator) ![]u8 {
+    pub fn encode(self: DemoWithAllVarint, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 };
@@ -166,7 +166,7 @@ const FixedSizes = struct {
         fd( 6, "float"      , .FixedInt),
     };
 
-    pub fn encode(self: FixedSizes, allocator: *std.mem.Allocator) ![]u8 {
+    pub fn encode(self: FixedSizes, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 };
@@ -203,7 +203,7 @@ const WithSubmessages = struct {
         fd( 2, "sub_demo2"   , .SubMessage),
     };
 
-    pub fn encode(self: WithSubmessages, allocator: *std.mem.Allocator) ![]u8 {
+    pub fn encode(self: WithSubmessages, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 };
@@ -227,19 +227,19 @@ test "WithSubmessages" {
 }
 
 const WithBytes = struct {
-    list_of_data: Bytes,
+    list_of_data: ArrayList(u8),
 
     pub const _desc_table = [_]FieldDescriptor{
         fd( 1, "list_of_data", .List),
     };
 
-    pub fn encode(self: WithBytes, allocator: *std.mem.Allocator) ![]u8 {
+    pub fn encode(self: WithBytes, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 };
 
 test "bytes"  {
-    var demo = WithBytes{.list_of_data = Bytes.init(testing.allocator)};
+    var demo = WithBytes{.list_of_data = ArrayList(u8).init(testing.allocator)};
     try demo.list_of_data.append(0x08);
     try demo.list_of_data.append(0x01);
     defer demo.list_of_data.deinit();
