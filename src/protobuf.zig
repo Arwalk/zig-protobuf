@@ -37,10 +37,10 @@ pub const FieldType = union(FieldTypeTag) {
     List : ListType,
     PackedList,
 
-    pub fn get_wirevalue(ftype : FieldType, value: anytype) u3 {
+    pub fn get_wirevalue(ftype : FieldType, comptime value_type: type) u3 {
         return switch (ftype) {
             .Varint => 0,
-            .FixedInt => return switch(@bitSizeOf(@TypeOf(value))) {
+            .FixedInt => return switch(@bitSizeOf(value_type)) {
                 64 => 1,
                 32 => 5,
                 else => @panic("Invalid size for fixed int")
@@ -159,30 +159,30 @@ fn append_list_of_fixed(pb: *ArrayList(u8), value: anytype) !void {
 
 }
 
-fn append_tag(pb : *ArrayList(u8), comptime field: FieldDescriptor,  value: anytype) !void {
-    try append_varint(pb, ((field.tag << 3) | field.ftype.get_wirevalue(value)), .Simple);
+fn append_tag(pb : *ArrayList(u8), comptime field: FieldDescriptor,  value_type: type) !void {
+    try append_varint(pb, ((field.tag << 3) | field.ftype.get_wirevalue(value_type)), .Simple);
 }
 
-fn append(pb : *ArrayList(u8), comptime field: FieldDescriptor, value: anytype) !void {
+fn append(pb : *ArrayList(u8), comptime field: FieldDescriptor, value_type: type, value: anytype) !void {
     switch(field.ftype)
     {
         .Varint => |varint_type| {
-            try append_tag(pb, field, value);
+            try append_tag(pb, field, value_type);
             try append_varint(pb, value, varint_type);
         },
         .FixedInt => {
-            try append_tag(pb, field, value);
+            try append_tag(pb, field, value_type);
             try append_fixed(pb, value);  
         },
         .SubMessage => {
-            try append_tag(pb, field, value);
+            try append_tag(pb, field, value_type);
             try append_submessage(pb, value);
         },
         .List => |list_type| switch(list_type) {
             .FixedInt => {
                 switch(@typeInfo(@TypeOf(value.items)).Pointer.child) {
                     u8 => {
-                        try append_tag(pb, field, value);
+                        try append_tag(pb, field, value_type);
                         try append_bytes(pb, &value);
                     },
                     else => {}
@@ -202,12 +202,12 @@ fn internal_pb_encode(pb : *ArrayList(u8), data: anytype) !void {
     inline for(field_list) |field| {
         if (@typeInfo(@TypeOf(@field(data, field.name))) == .Optional){
             if(@field(data, field.name)) |value| {
-                try append(pb, field, value);
+                try append(pb, field, @TypeOf(value), value);
             }
         }
         else
         {
-            try append(pb, field, @field(data, field.name));
+            try append(pb, field, @TypeOf(@field(data, field.name)), @field(data, field.name));
         }
     }
 }
