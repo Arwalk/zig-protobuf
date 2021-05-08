@@ -18,11 +18,23 @@ pub const FieldTypeTag = enum{
     PackedList,
 };
 
+pub const ListTypeTag = enum {
+    Varint,
+    FixedInt,
+    SubMessage,
+};
+
+pub const ListType = union(ListTypeTag) {
+    Varint : VarintType,
+    FixedInt,
+    SubMessage,
+};
+
 pub const FieldType = union(FieldTypeTag) {
     Varint : VarintType,
     FixedInt,
     SubMessage,
-    List,
+    List : ListType,
     PackedList,
 
     pub fn get_wirevalue(ftype : FieldType, value: anytype) u3 {
@@ -143,18 +155,42 @@ fn append_bytes(pb: *ArrayList(u8), value: *const ArrayList(u8)) !void {
     try insert_size_as_varint(pb, size_encoded, len_index);
 }
 
-fn append(pb : *ArrayList(u8), comptime field: FieldDescriptor, value: anytype) !void {
+fn append_list_of_fixed(pb: *ArrayList(u8), value: anytype) !void {
+
+}
+
+fn append_tag(pb : *ArrayList(u8), comptime field: FieldDescriptor,  value: anytype) !void {
     try append_varint(pb, ((field.tag << 3) | field.ftype.get_wirevalue(value)), .Simple);
+}
+
+fn append(pb : *ArrayList(u8), comptime field: FieldDescriptor, value: anytype) !void {
     switch(field.ftype)
     {
         .Varint => |varint_type| {
+            try append_tag(pb, field, value);
             try append_varint(pb, value, varint_type);
         },
-        .FixedInt => try append_fixed(pb, value),
-        .SubMessage => try append_submessage(pb, value),
-        .List => switch(@TypeOf(value)){
-            ArrayList(u8) => try append_bytes(pb, &value),
-            else => @panic("Not implemented")
+        .FixedInt => {
+            try append_tag(pb, field, value);
+            try append_fixed(pb, value);  
+        },
+        .SubMessage => {
+            try append_tag(pb, field, value);
+            try append_submessage(pb, value);
+        },
+        .List => |list_type| switch(list_type) {
+            .FixedInt => {
+                switch(@typeInfo(@TypeOf(value.items)).Pointer.child) {
+                    u8 => {
+                        try append_tag(pb, field, value);
+                        try append_bytes(pb, &value);
+                    },
+                    else => {}
+                }
+            },
+            .SubMessage => {},
+            .Varint => |varint_type| {
+            }
         },
         else => @panic("Not implemented")
     }

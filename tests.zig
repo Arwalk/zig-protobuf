@@ -230,7 +230,7 @@ const WithBytes = struct {
     list_of_data: ArrayList(u8),
 
     pub const _desc_table = [_]FieldDescriptor{
-        fd( 1, "list_of_data", .List),
+        fd( 1, "list_of_data", .{.List = .FixedInt}),
     };
 
     pub fn encode(self: WithBytes, allocator: *mem.Allocator) ![]u8 {
