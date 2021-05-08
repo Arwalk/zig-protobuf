@@ -14,7 +14,6 @@ pub const FieldTypeTag = enum{
     Varint,
     FixedInt,
     SubMessage,
-    Bytes,
     List,
     PackedList,
 };
@@ -23,7 +22,6 @@ pub const FieldType = union(FieldTypeTag) {
     Varint : VarintType,
     FixedInt,
     SubMessage,
-    Bytes,
     List,
     PackedList,
 
@@ -35,7 +33,7 @@ pub const FieldType = union(FieldTypeTag) {
                 32 => 5,
                 else => @panic("Invalid size for fixed int")
             },
-            .SubMessage, .Bytes, .List, .PackedList => 2
+            .SubMessage, .List, .PackedList => 2
         };
     }
 };
@@ -154,7 +152,10 @@ fn append(pb : *ArrayList(u8), comptime field: FieldDescriptor, value: anytype) 
         },
         .FixedInt => try append_fixed(pb, value),
         .SubMessage => try append_submessage(pb, value),
-        .List => try append_bytes(pb, &value),
+        .List => switch(@TypeOf(value)){
+            ArrayList(u8) => try append_bytes(pb, &value),
+            else => @panic("Not implemented")
+        },
         else => @panic("Not implemented")
     }
 }
