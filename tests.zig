@@ -230,7 +230,7 @@ const WithBytes = struct {
     list_of_data: ArrayList(u8),
 
     pub const _desc_table = [_]FieldDescriptor{
-        fd( 1, "list_of_data", .{.List = .FixedInt}),
+        fd( 1, "list_of_data", .{.PackedList = .FixedInt}),
     };
 
     pub fn encode(self: WithBytes, allocator: *mem.Allocator) ![]u8 {
@@ -250,5 +250,40 @@ test "bytes"  {
     testing.expectEqualSlices(u8, &[_]u8{
         0x08 + 2, 0x02,
             0x08, 0x01,
+    }, obtained);
+}
+
+const FixedSizesList = struct {
+    fixed32List  : ArrayList(u32),
+
+    pub const _desc_table = [_]FieldDescriptor{
+        fd( 1, "fixed32List"   , .{.List = .FixedInt}),
+    };
+
+    pub fn encode(self: FixedSizesList, allocator: *mem.Allocator) ![]u8 {
+        return pb_encode(self, allocator);
+    }
+};
+
+fn log_slice(slice : []const u8) void {
+    std.log.warn("{}", .{std.fmt.fmtSliceHexUpper(slice)});
+}
+
+test "FixedSizesList" {
+    var demo = FixedSizesList{.fixed32List = ArrayList(u32).init(testing.allocator)};
+    try demo.fixed32List.append(0x01);
+    try demo.fixed32List.append(0x02);
+    try demo.fixed32List.append(0x03);
+    try demo.fixed32List.append(0x04);
+    defer demo.fixed32List.deinit();
+
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
+
+    testing.expectEqualSlices(u8, &[_]u8{
+        0x08 + 5, 0x01, 0x00, 0x00, 0x00,
+        0x08 + 5, 0x02, 0x00, 0x00, 0x00,
+        0x08 + 5, 0x03, 0x00, 0x00, 0x00,
+        0x08 + 5, 0x04, 0x00, 0x00, 0x00,
     }, obtained);
 }
