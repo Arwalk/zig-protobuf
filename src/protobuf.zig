@@ -193,17 +193,28 @@ fn append(pb : *ArrayList(u8), comptime field: FieldDescriptor, value_type: type
             .FixedInt => {
                 try append_list_of_fixed(pb, field, &value);
             },
-            .SubMessage => {},
+            .SubMessage => {
+                // todo
+            },
             .Varint => |varint_type| {
+                //todo
             }
         },
-        .PackedList =>  |list_type| {
-            switch(@typeInfo(@TypeOf(value.items)).Pointer.child) {
-                    u8 => {
-                        try append_tag(pb, field, value_type);
-                        try append_bytes(pb, &value);
-                    },
-                    else => @panic("Not implemented")
+        .PackedList =>  |list_type| switch(list_type) {
+            .FixedInt => {
+                switch(@typeInfo(@TypeOf(value.items)).Pointer.child) {
+                        u8 => {
+                            try append_tag(pb, field, value_type);
+                            try append_bytes(pb, &value);
+                        },
+                        else => @panic("Not implemented")
+                }
+            },
+            .SubMessage => {
+                // todo
+            },
+            .Varint => |varint_type| { //todo
+
             }
         }
     }
