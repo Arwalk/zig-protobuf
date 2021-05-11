@@ -230,7 +230,9 @@ fn internal_pb_encode(pb : *ArrayList(u8), data: anytype) !void {
         }
         else
         {
-            try append(pb, field, @TypeOf(@field(data, field.name)), @field(data, field.name));
+            if(@field(data, field.name).items.len != 0){
+                try append(pb, field, @TypeOf(@field(data, field.name)), @field(data, field.name));
+            }
         }
     }
 }
