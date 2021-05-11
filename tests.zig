@@ -230,7 +230,7 @@ const WithBytes = struct {
     list_of_data: ArrayList(u8),
 
     pub const _desc_table = [_]FieldDescriptor{
-        fd( 1, "list_of_data", .{.PackedList = .FixedInt}),
+        fd( 1, "list_of_data", .{.List = .FixedInt}),
     };
 
     pub fn encode(self: WithBytes, allocator: *mem.Allocator) ![]u8 {
@@ -281,9 +281,10 @@ test "FixedSizesList" {
     defer testing.allocator.free(obtained);
 
     testing.expectEqualSlices(u8, &[_]u8{
-        0x08 + 5, 0x01, 0x00, 0x00, 0x00,
-        0x08 + 5, 0x02, 0x00, 0x00, 0x00,
-        0x08 + 5, 0x03, 0x00, 0x00, 0x00,
-        0x08 + 5, 0x04, 0x00, 0x00, 0x00,
+        0x08 + 2, 0x10,
+            0x01, 0x00, 0x00, 0x00,
+            0x02, 0x00, 0x00, 0x00,
+            0x03, 0x00, 0x00, 0x00,
+            0x04, 0x00, 0x00, 0x00,
     }, obtained);
 }

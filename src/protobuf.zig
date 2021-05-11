@@ -15,7 +15,6 @@ pub const FieldTypeTag = enum{
     FixedInt,
     SubMessage,
     List,
-    PackedList,
 };
 
 pub const ListTypeTag = enum {
@@ -35,7 +34,6 @@ pub const FieldType = union(FieldTypeTag) {
     FixedInt,
     SubMessage,
     List : ListType,
-    PackedList : ListType,
 
     pub fn get_wirevalue(ftype : FieldType, comptime value_type: type) u3 {
         return switch (ftype) {
@@ -45,14 +43,7 @@ pub const FieldType = union(FieldTypeTag) {
                 32 => 5,
                 else => @panic("Invalid size for fixed int")
             },
-            .SubMessage, .PackedList => 2,
-            .List => |list_type| 
-                switch(list_type) {
-                    .FixedInt => get_wirevalue(.FixedInt, value_type),
-                    .SubMessage => 2,
-                    .Varint => 0
-                }
-            
+            .SubMessage, .List => 2,            
         };
     }
 };
@@ -163,11 +154,18 @@ fn append_bytes(pb: *ArrayList(u8), value: *const ArrayList(u8)) !void {
 }
 
 fn append_list_of_fixed(pb: *ArrayList(u8), comptime field: FieldDescriptor,  value: anytype) !void {
-    const list_type = @typeInfo(@TypeOf(value.*.items)).Pointer.child;
-    for(value.*.items) |item| {
-        try append_tag(pb, field, list_type);
-        try append_fixed(pb, item);
+    const len_index = pb.items.len;
+    if(@TypeOf(value) == ArrayList(u8)) {
+        try pb.appendSlice(value.items);
     }
+    else {
+        const list_type = @typeInfo(@TypeOf(value.items)).Pointer.child;
+        for(value.items) |item| {
+            try append_fixed(pb, item);
+        }
+    }
+    const size_encoded = pb.items.len - len_index;
+    try insert_size_as_varint(pb, size_encoded, len_index);
 }
 
 fn append_tag(pb : *ArrayList(u8), comptime field: FieldDescriptor,  value_type: type) !void {
@@ -175,23 +173,21 @@ fn append_tag(pb : *ArrayList(u8), comptime field: FieldDescriptor,  value_type:
 }
 
 fn append(pb : *ArrayList(u8), comptime field: FieldDescriptor, value_type: type, value: anytype) !void {
+    try append_tag(pb, field, value_type);
     switch(field.ftype)
     {
         .Varint => |varint_type| {
-            try append_tag(pb, field, value_type);
             try append_varint(pb, value, varint_type);
         },
         .FixedInt => {
-            try append_tag(pb, field, value_type);
             try append_fixed(pb, value);  
         },
         .SubMessage => {
-            try append_tag(pb, field, value_type);
             try append_submessage(pb, value);
         },
         .List => |list_type| switch(list_type) {
             .FixedInt => {
-                try append_list_of_fixed(pb, field, &value);
+                try append_list_of_fixed(pb, field, value);
             },
             .SubMessage => {
                 // todo
@@ -200,23 +196,6 @@ fn append(pb : *ArrayList(u8), comptime field: FieldDescriptor, value_type: type
                 //todo
             }
         },
-        .PackedList =>  |list_type| switch(list_type) {
-            .FixedInt => {
-                switch(@typeInfo(@TypeOf(value.items)).Pointer.child) {
-                        u8 => {
-                            try append_tag(pb, field, value_type);
-                            try append_bytes(pb, &value);
-                        },
-                        else => @panic("Not implemented")
-                }
-            },
-            .SubMessage => {
-                // todo
-            },
-            .Varint => |varint_type| { //todo
-
-            }
-        }
     }
 }
 
