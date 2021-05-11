@@ -5,7 +5,7 @@ usingnamespace std;
 const eql = mem.eql;
 
 const Demo1 = struct {
-    a : u32,
+    a : ?u32,
 
     pub const _desc_table = [_]FieldDescriptor{
         fd(1, "a", .{.Varint = .ZigZagOptimized}),
@@ -35,7 +35,7 @@ test "basic encoding" {
 }
 
 const Demo2 = struct {
-    a : u32,
+    a : ?u32,
     b : ?u32,
 
     pub const _desc_table = [_]FieldDescriptor{
@@ -67,8 +67,8 @@ test "basic encoding with optionals" {
 }
 
 const WithNegativeIntegers = struct {
-    a: i32, // int32
-    b: i32, // sint32
+    a: ?i32, // int32
+    b: ?i32, // sint32
 
     pub const _desc_table = [_]FieldDescriptor{
         fd(1, "a", .{.Varint = .ZigZagOptimized}),
@@ -100,16 +100,16 @@ const DemoWithAllVarint = struct {
         AndAnother
     };
     
-    sint32: i32,  //sint32
-    sint64: i64,  //sint64
-    uint32: u32,  //uint32
-    uint64: u64,  //uint64
-    a_bool: bool, //bool
-    a_enum: DemoEnum, // enum
-    pos_int32: i32,
-    pos_int64: i64,
-    neg_int32: i32,
-    neg_int64: i64,
+    sint32: ?i32,  //sint32
+    sint64: ?i64,  //sint64
+    uint32: ?u32,  //uint32
+    uint64: ?u64,  //uint64
+    a_bool: ?bool, //bool
+    a_enum: ?DemoEnum, // enum
+    pos_int32: ?i32,
+    pos_int64: ?i64,
+    neg_int32: ?i32,
+    neg_int64: ?i64,
 
 
     pub const _desc_table = [_]FieldDescriptor{
@@ -166,12 +166,12 @@ test "DemoWithAllVarint" {
 
 
 const FixedSizes = struct {
-    sfixed64 : i64,
-    sfixed32 : i32,
-    fixed32  : u32,
-    fixed64  : u64,
-    double   : f64,
-    float    : f32,
+    sfixed64 : ?i64,
+    sfixed32 : ?i32,
+    fixed32  : ?u32,
+    fixed64  : ?u64,
+    double   : ?f64,
+    float    : ?f32,
 
     pub const _desc_table = [_]FieldDescriptor{
         fd( 1, "sfixed64"   , .FixedInt),
@@ -215,8 +215,8 @@ test "FixedSizes" {
 }
 
 const WithSubmessages = struct {
-    sub_demo1 : Demo1,
-    sub_demo2 : Demo2,
+    sub_demo1 : ?Demo1,
+    sub_demo2 : ?Demo2,
 
     pub const _desc_table = [_]FieldDescriptor{
         fd( 1, "sub_demo1"   , .SubMessage),
