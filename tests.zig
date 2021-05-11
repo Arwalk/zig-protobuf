@@ -14,6 +14,10 @@ const Demo1 = struct {
     pub fn encode(self: Demo1, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
+
+    pub fn deinit(self: Demo1) void {
+        pb_deinit(self);
+    }
 };
 
 test "basic encoding" {
@@ -42,6 +46,10 @@ const Demo2 = struct {
     pub fn encode(self: Demo2, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
+
+    pub fn deinit(self: Demo2) void {
+        pb_deinit(self);
+    }
 };
 
 test "basic encoding with optionals" {
@@ -69,6 +77,10 @@ const WithNegativeIntegers = struct {
 
     pub fn encode(self: WithNegativeIntegers, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
+    }
+
+    pub fn deinit(self: WithNegativeIntegers) void {
+        pb_deinit(self);
     }
 };
 
@@ -115,6 +127,10 @@ const DemoWithAllVarint = struct {
 
     pub fn encode(self: DemoWithAllVarint, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
+    }
+
+    pub fn deinit(self: DemoWithAllVarint) void {
+        pb_deinit(self);
     }
 };
 
@@ -169,6 +185,10 @@ const FixedSizes = struct {
     pub fn encode(self: FixedSizes, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
+
+    pub fn deinit(self: FixedSizes) void {
+        pb_deinit(self);
+    }
 };
 
 test "FixedSizes" {
@@ -206,6 +226,10 @@ const WithSubmessages = struct {
     pub fn encode(self: WithSubmessages, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
+
+    pub fn deinit(self: WithSubmessages) void {
+        pb_deinit(self);
+    }
 };
 
 test "WithSubmessages" {
@@ -236,13 +260,17 @@ const WithBytes = struct {
     pub fn encode(self: WithBytes, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
+
+    pub fn deinit(self: WithBytes) void {
+        pb_deinit(self);
+    }
 };
 
 test "bytes"  {
     var demo = WithBytes{.list_of_data = ArrayList(u8).init(testing.allocator)};
     try demo.list_of_data.append(0x08);
     try demo.list_of_data.append(0x01);
-    defer demo.list_of_data.deinit();
+    defer demo.deinit();
 
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
@@ -263,6 +291,10 @@ const FixedSizesList = struct {
     pub fn encode(self: FixedSizesList, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
+
+    pub fn deinit(self: FixedSizesList) void {
+        pb_deinit(self);
+    }
 };
 
 fn log_slice(slice : []const u8) void {
@@ -275,7 +307,7 @@ test "FixedSizesList" {
     try demo.fixed32List.append(0x02);
     try demo.fixed32List.append(0x03);
     try demo.fixed32List.append(0x04);
-    defer demo.fixed32List.deinit();
+    defer demo.deinit();
 
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
@@ -299,6 +331,10 @@ const VarintList = struct {
     pub fn encode(self: VarintList, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
+
+    pub fn deinit(self: VarintList) void {
+        pb_deinit(self);
+    }
 };
 
 test "VarintList" {
@@ -309,7 +345,7 @@ test "VarintList" {
     try demo.varuint32List.append(0x02);
     try demo.varuint32List.append(0x03);
     try demo.varuint32List.append(0x04);
-    defer demo.varuint32List.deinit();
+    defer demo.deinit();
 
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
@@ -333,6 +369,10 @@ const SubMessageList = struct {
     pub fn encode(self: SubMessageList, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
+
+    pub fn deinit(self: SubMessageList) void {
+        pb_deinit(self);
+    }
 };
 
 // .{.a = 1}
@@ -345,7 +385,7 @@ test "SubMessageList" {
     try demo.subMessageList.append(.{.a = 2});
     try demo.subMessageList.append(.{.a = 3});
     try demo.subMessageList.append(.{.a = 4});
-    defer demo.subMessageList.deinit();
+    defer demo.deinit();
 
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
