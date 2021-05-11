@@ -153,7 +153,7 @@ fn append_bytes(pb: *ArrayList(u8), value: *const ArrayList(u8)) !void {
     try insert_size_as_varint(pb, size_encoded, len_index);
 }
 
-fn append_list_of_fixed(pb: *ArrayList(u8), comptime field: FieldDescriptor,  value: anytype) !void {
+fn append_list_of_fixed(pb: *ArrayList(u8), value: anytype) !void {
     const len_index = pb.items.len;
     if(@TypeOf(value) == ArrayList(u8)) {
         try pb.appendSlice(value.items);
@@ -163,6 +163,24 @@ fn append_list_of_fixed(pb: *ArrayList(u8), comptime field: FieldDescriptor,  va
         for(value.items) |item| {
             try append_fixed(pb, item);
         }
+    }
+    const size_encoded = pb.items.len - len_index;
+    try insert_size_as_varint(pb, size_encoded, len_index);
+}
+
+fn append_list_of_varint(pb : *ArrayList(u8), value_list: anytype, varint_type: VarintType) !void {
+    const len_index = pb.items.len;
+    for(value_list.items) |item| {
+        try append_varint(pb, item, varint_type);
+    }
+    const size_encoded = pb.items.len - len_index;
+    try insert_size_as_varint(pb, size_encoded, len_index);
+}
+
+fn append_list_of_submessages(pb: *ArrayList(u8), value_list: anytype) !void {
+    const len_index = pb.items.len;
+    for(value_list.items) |item| {
+        try append_submessage(pb, item);
     }
     const size_encoded = pb.items.len - len_index;
     try insert_size_as_varint(pb, size_encoded, len_index);
@@ -185,17 +203,19 @@ fn append(pb : *ArrayList(u8), comptime field: FieldDescriptor, value_type: type
         .SubMessage => {
             try append_submessage(pb, value);
         },
-        .List => |list_type| switch(list_type) {
-            .FixedInt => {
-                try append_list_of_fixed(pb, field, value);
-            },
-            .SubMessage => {
-                // todo
-            },
-            .Varint => |varint_type| {
-                //todo
+        .List => |list_type| {
+            switch(list_type) {
+                .FixedInt => {
+                    try append_list_of_fixed(pb, value);
+                },
+                .SubMessage => {
+                    try append_list_of_submessages(pb, value);
+                },
+                .Varint => |varint_type| {
+                    try append_list_of_varint(pb, value, varint_type);
+                }
             }
-        },
+        }
     }
 }
 

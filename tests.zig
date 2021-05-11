@@ -288,3 +288,78 @@ test "FixedSizesList" {
             0x04, 0x00, 0x00, 0x00,
     }, obtained);
 }
+
+const VarintList = struct {
+    varuint32List  : ArrayList(u32),
+
+    pub const _desc_table = [_]FieldDescriptor{
+        fd( 1, "varuint32List"   , .{.List = .{.Varint = .Simple}}),
+    };
+
+    pub fn encode(self: VarintList, allocator: *mem.Allocator) ![]u8 {
+        return pb_encode(self, allocator);
+    }
+};
+
+test "VarintList" {
+    var demo = VarintList{
+        .varuint32List = ArrayList(u32).init(testing.allocator)
+    };
+    try demo.varuint32List.append(0x01);
+    try demo.varuint32List.append(0x02);
+    try demo.varuint32List.append(0x03);
+    try demo.varuint32List.append(0x04);
+    defer demo.varuint32List.deinit();
+
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
+
+    testing.expectEqualSlices(u8, &[_]u8{
+        0x08 + 2, 0x04,
+            0x01,
+            0x02,
+            0x03,
+            0x04,
+    }, obtained);
+}
+
+const SubMessageList = struct {
+    subMessageList  : ArrayList(Demo1),
+
+    pub const _desc_table = [_]FieldDescriptor{
+        fd( 1, "subMessageList"   , .{.List = .SubMessage}),
+    };
+
+    pub fn encode(self: SubMessageList, allocator: *mem.Allocator) ![]u8 {
+        return pb_encode(self, allocator);
+    }
+};
+
+// .{.a = 1}
+
+test "SubMessageList" {
+    var demo = SubMessageList{
+        .subMessageList = ArrayList(Demo1).init(testing.allocator)
+    };
+    try demo.subMessageList.append(.{.a = 1});
+    try demo.subMessageList.append(.{.a = 2});
+    try demo.subMessageList.append(.{.a = 3});
+    try demo.subMessageList.append(.{.a = 4});
+    defer demo.subMessageList.deinit();
+
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
+
+    testing.expectEqualSlices(u8, &[_]u8{
+        0x08 + 2, 
+            0x0C,
+                0x02, 
+                    0x08, 0x01,
+                0x02, 
+                    0x08, 0x02,
+                0x02, 
+                    0x08, 0x03,
+                0x02, 
+                    0x08, 0x04,
+    }, obtained);
+}
