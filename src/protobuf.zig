@@ -75,7 +75,7 @@ fn encode_varint(pb: *ArrayList(u8), value: anytype) !void {
 
 fn insert_size_as_varint(pb: *ArrayList(u8), size: u64, start_index: usize) !void {
     if(size < 0x7F){
-        try pb.insert(start_index, @intCast(u8, size));
+        try pb.insert(start_index, @truncate(u8, size));
     }
     else
     {
@@ -120,8 +120,8 @@ fn append_as_varint(pb: *ArrayList(u8), value: anytype, varint_type: VarintType)
 
 fn append_varint(pb : *ArrayList(u8), value: anytype, varint_type: VarintType) !void {
     switch(@typeInfo(@TypeOf(value))) {
-        .Enum => try append_as_varint(pb, @intCast(i32, @enumToInt(value)), varint_type),
-        .Bool => try append_as_varint(pb, @intCast(u8, @boolToInt(value)), varint_type),
+        .Enum => try append_as_varint(pb, @as(i32, @enumToInt(value)), varint_type),
+        .Bool => try append_as_varint(pb, @as(u8, @boolToInt(value)), varint_type),
         else => try append_as_varint(pb, value, varint_type),
     }
 }
@@ -129,12 +129,12 @@ fn append_varint(pb : *ArrayList(u8), value: anytype, varint_type: VarintType) !
 fn append_fixed(pb : *ArrayList(u8), value: anytype) !void {
     var copy = value;
     const bitsize = @bitSizeOf(@TypeOf(value));
-    var as_unsigned_int = @ptrCast(*std.meta.Int(.unsigned, bitsize), &copy).*;
+    var as_unsigned_int = @bitCast(std.meta.Int(.unsigned, bitsize), copy);
 
     var index : usize = 0;
 
     while(index < (bitsize/8)) : (index += 1) {
-        try pb.append(@intCast(u8, as_unsigned_int & 0xFF));
+        try pb.append(@truncate(u8, as_unsigned_int));
         as_unsigned_int = as_unsigned_int >> 8;
     }
 }
