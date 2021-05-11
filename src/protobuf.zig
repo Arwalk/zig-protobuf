@@ -246,6 +246,24 @@ pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
     return pb.toOwnedSlice();
 }
 
+pub fn pb_init(comptime T: type, allocator : *std.mem.Allocator) T {
+
+    var value: T = undefined;
+
+    inline for (T._desc_table) |field| {
+        switch (field.ftype) {
+            .Varint, .FixedInt => {
+                @field(value, field.name) = null;
+            },
+            .SubMessage, .List => {
+                @field(value, field.name) = @TypeOf(@field(value, field.name)).init(allocator);
+            },
+        }
+    }
+
+    return value;
+}
+
 pub fn pb_deinit(data: anytype) void {
     const field_list  = @TypeOf(data)._desc_table;
 

@@ -264,10 +264,14 @@ const WithBytes = struct {
     pub fn deinit(self: WithBytes) void {
         pb_deinit(self);
     }
+
+    pub fn init(allocator: *mem.Allocator) WithBytes {
+        return pb_init(WithBytes, allocator);
+    }
 };
 
 test "bytes"  {
-    var demo = WithBytes{.list_of_data = ArrayList(u8).init(testing.allocator)};
+    var demo = WithBytes.init(testing.allocator);
     try demo.list_of_data.append(0x08);
     try demo.list_of_data.append(0x01);
     defer demo.deinit();
@@ -295,6 +299,10 @@ const FixedSizesList = struct {
     pub fn deinit(self: FixedSizesList) void {
         pb_deinit(self);
     }
+
+    pub fn init(allocator: *mem.Allocator) FixedSizesList {
+        return pb_init(FixedSizesList, allocator);
+    }
 };
 
 fn log_slice(slice : []const u8) void {
@@ -302,7 +310,7 @@ fn log_slice(slice : []const u8) void {
 }
 
 test "FixedSizesList" {
-    var demo = FixedSizesList{.fixed32List = ArrayList(u32).init(testing.allocator)};
+    var demo = FixedSizesList.init(testing.allocator);
     try demo.fixed32List.append(0x01);
     try demo.fixed32List.append(0x02);
     try demo.fixed32List.append(0x03);
@@ -335,12 +343,14 @@ const VarintList = struct {
     pub fn deinit(self: VarintList) void {
         pb_deinit(self);
     }
+
+    pub fn init(allocator: *mem.Allocator) VarintList {
+        return pb_init(VarintList, allocator);
+    }
 };
 
 test "VarintList" {
-    var demo = VarintList{
-        .varuint32List = ArrayList(u32).init(testing.allocator)
-    };
+    var demo = VarintList.init(testing.allocator);
     try demo.varuint32List.append(0x01);
     try demo.varuint32List.append(0x02);
     try demo.varuint32List.append(0x03);
@@ -373,14 +383,16 @@ const SubMessageList = struct {
     pub fn deinit(self: SubMessageList) void {
         pb_deinit(self);
     }
+
+    pub fn init(allocator: *mem.Allocator) SubMessageList {
+        return pb_init(SubMessageList, allocator);
+    }
 };
 
 // .{.a = 1}
 
 test "SubMessageList" {
-    var demo = SubMessageList{
-        .subMessageList = ArrayList(Demo1).init(testing.allocator)
-    };
+    var demo = SubMessageList.init(testing.allocator);
     try demo.subMessageList.append(.{.a = 1});
     try demo.subMessageList.append(.{.a = 2});
     try demo.subMessageList.append(.{.a = 3});
@@ -421,13 +433,14 @@ const EmptyLists = struct {
     pub fn deinit(self: EmptyLists) void {
         pb_deinit(self);
     }
+
+    pub fn init(allocator: *mem.Allocator) EmptyLists {
+        return pb_init(EmptyLists, allocator);
+    }
 };
 
 test "EmptyLists" {
-    var demo = EmptyLists{
-        .varuint32List = ArrayList(u32).init(testing.allocator),
-        .varuint32Empty = ArrayList(u32).init(testing.allocator)
-    };
+    var demo = EmptyLists.init(testing.allocator);
     try demo.varuint32List.append(0x01);
     try demo.varuint32List.append(0x02);
     try demo.varuint32List.append(0x03);
