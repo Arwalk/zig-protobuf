@@ -251,7 +251,7 @@ pub fn pb_deinit(data: anytype) void {
         switch (field.ftype) {
             .Varint, .FixedInt => {},
             .SubMessage => {
-                pb_deinit(@field(data, field.name));
+                @field(data, field.name).deinit();
             },
             .List => |list_type| {
                 switch(list_type) {
