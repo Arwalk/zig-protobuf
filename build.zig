@@ -9,13 +9,19 @@ pub fn build(b: *std.build.Builder) void {
     lib.setBuildMode(mode);
     lib.install();
 
-    var unit_tests = b.addTest("src/protobuf.zig");
-    unit_tests.setBuildMode(mode);
-
-    var functional_tests = b.addTest("tests.zig");
-    functional_tests.setBuildMode(mode);
+    var tests = [_]*std.build.LibExeObjStep{
+        b.addTest("src/protobuf.zig"),
+        b.addTest("tests/tests.zig"),
+    };
 
     const test_step = b.step("test", "Run library tests");
-    test_step.dependOn(&unit_tests.step);
-    test_step.dependOn(&functional_tests.step);
+    for(tests) |test_item| {
+        test_item.addPackage(.{
+            .name = "protobuf",
+            .path = "src/protobuf.zig"
+        });
+        test_item.setBuildMode(mode);
+        test_step.dependOn(&test_item.step);
+    }
+
 }

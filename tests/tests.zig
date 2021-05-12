@@ -1,5 +1,5 @@
 const std = @import("std");
-const protobuf = @import("src/protobuf.zig");
+const protobuf = @import("protobuf");
 usingnamespace protobuf;
 usingnamespace std;
 const eql = mem.eql;
