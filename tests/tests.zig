@@ -458,3 +458,30 @@ test "EmptyLists" {
             0x04,
     }, obtained);
 }
+
+const EmptyMessage = struct {
+    
+    pub const _desc_table = [_]FieldDescriptor{};
+
+    pub fn encode(self: EmptyMessage, allocator: *mem.Allocator) ![]u8 {
+        return pb_encode(self, allocator);
+    }
+
+    pub fn deinit(self: EmptyMessage) void {
+        pb_deinit(self);
+    }
+
+    pub fn init(allocator: *mem.Allocator) EmptyMessage {
+        return pb_init(EmptyMessage, allocator);
+    }
+};
+
+test "EmptyMessage" {
+    var demo = EmptyMessage.init(testing.allocator);
+    defer demo.deinit();
+
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
+
+    testing.expectEqualSlices(u8, &[_]u8{}, obtained);
+}
