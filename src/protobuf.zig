@@ -274,17 +274,12 @@ pub fn pb_deinit(data: anytype) void {
                 @field(data, field.name).deinit();
             },
             .List => |list_type| {
-                switch(list_type) {
-                    .Varint, .FixedInt => {
-                        @field(data, field.name).deinit();
-                    },
-                    .SubMessage => {
-                        for(@field(data, field.name).items) |item| {
-                            item.deinit();
-                        }
-                        @field(data, field.name).deinit();
+                if(list_type == .SubMessage) {
+                    for(@field(data, field.name).items) |item| {
+                        item.deinit();
                     }
                 }
+                @field(data, field.name).deinit();
             }
         }
     }
