@@ -97,15 +97,14 @@ fn append_as_varint(pb: *ArrayList(u8), value: anytype, comptime varint_type: Va
     {
         const type_of_val = @TypeOf(value);
         const bitsize = @bitSizeOf(type_of_val);
-        const val : u64 = blk: {
+        const val : u64 = comptime blk: {
             if(isSignedInt(type_of_val)){
                 switch(varint_type) {
                     .ZigZagOptimized => {
                         break :blk @intCast(u64, (value >> (bitsize-1)) ^ (value << 1));
                     },
                     .Simple => {
-                        const as_unsigned = @ptrCast(*const std.meta.Int(.unsigned, bitsize), &value);
-                        break :blk as_unsigned.*;
+                        break :blk @ptrCast(*const std.meta.Int(.unsigned, bitsize), &value).*;
                     }
                 }
             }
