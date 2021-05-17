@@ -485,3 +485,28 @@ test "EmptyMessage" {
 
     testing.expectEqualSlices(u8, &[_]u8{}, obtained);
 }
+
+const DefaultValuesInit = struct {
+    a : ?u32 = 5,
+
+    pub const _desc_table = [_]FieldDescriptor{
+        fd(1, "a", .{.Varint = .ZigZagOptimized}),
+    };
+
+    pub fn encode(self: DefaultValuesInit, allocator: *mem.Allocator) ![]u8 {
+        return pb_encode(self, allocator);
+    }
+
+    pub fn init(allocator: *mem.Allocator) DefaultValuesInit {
+        return pb_init(DefaultValuesInit, allocator);
+    }
+
+    pub fn deinit(self: DefaultValuesInit) void {
+        pb_deinit(self);
+    }
+};
+
+test "DefaultValuesInit" {
+    var demo = DefaultValuesInit.init(testing.allocator);
+    testing.expectEqual(@as(u32, 5), demo.a.?);
+}

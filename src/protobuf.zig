@@ -247,6 +247,14 @@ pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
     return pb.toOwnedSlice();
 }
 
+fn get_struct_field(comptime T: type, comptime field_name: []const u8 ) std.builtin.TypeInfo.StructField {
+    return inline for (@typeInfo(T).Struct.fields) |field| {
+        if(std.mem.eql(u8, field.name, field_name)) {
+            break field;
+        } else @compileError("This shouldnt happen");
+    };
+}
+
 pub fn pb_init(comptime T: type, allocator : *std.mem.Allocator) T {
 
     var value: T = undefined;
@@ -254,7 +262,8 @@ pub fn pb_init(comptime T: type, allocator : *std.mem.Allocator) T {
     inline for (T._desc_table) |field| {
         switch (field.ftype) {
             .Varint, .FixedInt => {
-                @field(value, field.name) = null;
+                const struct_field = get_struct_field(T, field.name);
+                @field(value, field.name) = if(struct_field.default_value) |val| val else null;
             },
             .SubMessage, .List => {
                 @field(value, field.name) = @TypeOf(@field(value, field.name)).init(allocator);
