@@ -89,7 +89,7 @@ fn insert_size_as_varint(pb: *ArrayList(u8), size: u64, start_index: usize) !voi
     }
 }
 
-fn append_as_varint(pb: *ArrayList(u8), value: anytype, varint_type: VarintType) !void {
+fn append_as_varint(pb: *ArrayList(u8), value: anytype, comptime varint_type: VarintType) !void {
     if(value < 0x7F and value >= 0){
         try pb.append(@intCast(u8, value));
     }
@@ -97,28 +97,29 @@ fn append_as_varint(pb: *ArrayList(u8), value: anytype, varint_type: VarintType)
     {
         const type_of_val = @TypeOf(value);
         const bitsize = @bitSizeOf(type_of_val);
-        var val = value;
-
-        if(isSignedInt(type_of_val)){
-            switch(varint_type) {
-                .ZigZagOptimized => {
-                    try encode_varint(pb, (value >> (bitsize-1)) ^ (value << 1));
-                },
-                .Simple => {
-                    var as_unsigned = @ptrCast(*std.meta.Int(.unsigned, bitsize), &val);
-                    try encode_varint(pb, as_unsigned.*);
-                    return;
+        const val : u64 = blk: {
+            if(isSignedInt(type_of_val)){
+                switch(varint_type) {
+                    .ZigZagOptimized => {
+                        break :blk @intCast(u64, (value >> (bitsize-1)) ^ (value << 1));
+                    },
+                    .Simple => {
+                        const as_unsigned = @ptrCast(*const std.meta.Int(.unsigned, bitsize), &value);
+                        break :blk as_unsigned.*;
+                    }
                 }
             }
-        }
-        else
-        {
-            try encode_varint(pb, val);
-        }   
+            else
+            {
+                break :blk @intCast(u64, value);
+            }   
+        };
+
+        try encode_varint(pb, val);
     }
 }
 
-fn append_varint(pb : *ArrayList(u8), value: anytype, varint_type: VarintType) !void {
+fn append_varint(pb : *ArrayList(u8), value: anytype, comptime varint_type: VarintType) !void {
     switch(@typeInfo(@TypeOf(value))) {
         .Enum => try append_as_varint(pb, @as(i32, @enumToInt(value)), varint_type),
         .Bool => try append_as_varint(pb, @as(u8, @boolToInt(value)), varint_type),
@@ -168,7 +169,7 @@ fn append_list_of_fixed(pb: *ArrayList(u8), value: anytype) !void {
     try insert_size_as_varint(pb, size_encoded, len_index);
 }
 
-fn append_list_of_varint(pb : *ArrayList(u8), value_list: anytype, varint_type: VarintType) !void {
+fn append_list_of_varint(pb : *ArrayList(u8), value_list: anytype, comptime varint_type: VarintType) !void {
     const len_index = pb.items.len;
     for(value_list.items) |item| {
         try append_varint(pb, item, varint_type);
