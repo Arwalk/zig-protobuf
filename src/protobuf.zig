@@ -159,7 +159,6 @@ fn append_list_of_fixed(pb: *ArrayList(u8), value: anytype) !void {
         try pb.appendSlice(value.items);
     }
     else {
-        const list_type = @typeInfo(@TypeOf(value.items)).Pointer.child;
         for(value.items) |item| {
             try append_fixed(pb, item);
         }
