@@ -488,9 +488,15 @@ test "EmptyMessage" {
 
 const DefaultValuesInit = struct {
     a : ?u32 = 5,
+    b : ?u32,
+    c : ?u32 = 3,
+    d : ?u32,
 
     pub const _desc_table = [_]FieldDescriptor{
         fd(1, "a", .{.Varint = .ZigZagOptimized}),
+        fd(2, "b", .{.Varint = .ZigZagOptimized}),
+        fd(3, "c", .{.Varint = .ZigZagOptimized}),
+        fd(4, "d", .{.Varint = .ZigZagOptimized}),
     };
 
     pub fn encode(self: DefaultValuesInit, allocator: *mem.Allocator) ![]u8 {
@@ -509,4 +515,7 @@ const DefaultValuesInit = struct {
 test "DefaultValuesInit" {
     var demo = DefaultValuesInit.init(testing.allocator);
     testing.expectEqual(@as(u32, 5), demo.a.?);
+    testing.expectEqual(@as(u32, 3), demo.c.?);
+    testing.expect(if(demo.b) |val| false else true);
+    testing.expect(if(demo.d) |val| false else true);
 }

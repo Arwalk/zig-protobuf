@@ -249,8 +249,8 @@ fn get_struct_field(comptime T: type, comptime field_name: []const u8 ) std.buil
     return inline for (@typeInfo(T).Struct.fields) |field| {
         if(std.mem.eql(u8, field.name, field_name)) {
             break field;
-        } else @compileError("This shouldnt happen");
-    };
+        }
+    } else @compileError("This shouldnt happen");
 }
 
 pub fn pb_init(comptime T: type, allocator : *std.mem.Allocator) T {
