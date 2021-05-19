@@ -237,7 +237,7 @@ fn internal_pb_encode(pb : *ArrayList(u8), data: anytype) !void {
 }
 
 pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
-    var pb = ProtoBuf.init(allocator);
+    var pb = ArrayList(u8).init(allocator);
     errdefer pb.deinit();
 
     try internal_pb_encode(&pb, data);
