@@ -255,6 +255,14 @@ fn get_struct_field(comptime T: type, comptime field_name: []const u8 ) std.buil
 
 pub fn pb_init(comptime T: type, allocator : *std.mem.Allocator) T {
 
+    comptime {
+        if(@typeInfo(T).Struct.fields.len != T._desc_table.len) {
+            @compileLog("malformed structure or desc table for structure", T);
+            @compileLog("@typeInfo(T).Struct.fields.len =", @typeInfo(T).Struct.fields.len);
+            @compileLog("T._desc_table.len =", T._desc_table.len);
+        }
+    }
+
     var value: T = undefined;
 
     inline for (T._desc_table) |field| {
