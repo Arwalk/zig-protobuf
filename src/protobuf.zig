@@ -250,7 +250,7 @@ fn get_struct_field(comptime T: type, comptime field_name: []const u8 ) std.buil
         if(std.mem.eql(u8, field.name, field_name)) {
             break field;
         }
-    } else @compileError("This shouldnt happen");
+    } else @compileLog("Could not find field ", field_name, " in struct", T);
 }
 
 pub fn pb_init(comptime T: type, allocator : *std.mem.Allocator) T {
