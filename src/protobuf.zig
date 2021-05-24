@@ -428,20 +428,20 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
         if(data) |extracted| {
             switch(field.pb_type) {
                 .Varint => |varint_type| {
-                    @field(result, field.field_name) = blk: {
+                    @field(result, field.field_name) = comptime blk: {
                         const child_type = @typeInfo(field.real_type).Optional.child;
-                        switch (@typeInfo(child_type)) {
-                            .Int => {
-                                if(varint_type == .ZigZagOptimized){
-                                    break :blk @intCast(child_type, (@intCast(child_type, extracted.data.RawValue) >> 1) ^ (-(@intCast(child_type, extracted.data.RawValue) & 1)));
-                                }
-                                else {
-                                    break :blk @intCast(child_type, extracted.data.RawValue);
-                                }
+                        switch(varint_type) {
+                            .ZigZagOptimized => {
+                                break :blk 0;
                             },
-                            .Bool => break :blk extracted.data.RawValue == 1,
-                            .Enum => break :blk @intToEnum(child_type, @intCast(i32, extracted.data.RawValue)),
-                            else => @panic("Not implemented")
+                            .Simple => {
+                                switch (@typeInfo(child_type)) {
+                                    .Int =>  break :blk @intCast(child_type, extracted.data.RawValue),
+                                    .Bool => break :blk extracted.data.RawValue == 1,
+                                    .Enum => break :blk @intToEnum(child_type, @intCast(i32, extracted.data.RawValue)),
+                                    else => @panic("Not implemented")
+                                }
+                            }
                         }
                     };
                 },
@@ -466,6 +466,6 @@ test "get varint" {
     defer pb.deinit();
     try append_varint(&pb, value, .Simple);
 
-    testing.expectEqualSlices(u8, &[_]u8{0b10101100, 0b00000010}, pb.items);
+    try testing.expectEqualSlices(u8, &[_]u8{0b10101100, 0b00000010}, pb.items);
 }
 

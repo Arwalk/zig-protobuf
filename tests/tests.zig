@@ -29,24 +29,24 @@ test "basic encoding" {
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
     // 0x08 , 0x96, 0x01
-    testing.expectEqualSlices(u8, &[_]u8{0x08, 0x96, 0x01}, obtained);
+    try testing.expectEqualSlices(u8, &[_]u8{0x08, 0x96, 0x01}, obtained);
 
     demo.a = 0;
     const obtained2 = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained2);
     // 0x08 , 0x96, 0x01
-    testing.expectEqualSlices(u8, &[_]u8{0x08, 0x00}, obtained2);
+    try testing.expectEqualSlices(u8, &[_]u8{0x08, 0x00}, obtained2);
 }
 
 test "basic decoding" {
     const input = [_]u8{0x08, 0x96, 0x01};
     const obtained = try Demo1.decode(&input, testing.allocator);
 
-    testing.expectEqual(Demo1{.a = 150}, obtained);
+    try testing.expectEqual(Demo1{.a = 150}, obtained);
 
     const input2 = [_]u8{0x08, 0x00};
     const obtained2 = try Demo1.decode(&input2, testing.allocator);
-    testing.expectEqual(Demo1{.a = 0}, obtained2);
+    try testing.expectEqual(Demo1{.a = 0}, obtained2);
 
 }
 
@@ -73,13 +73,13 @@ test "basic encoding with optionals" {
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
     // 0x08 , 0x96, 0x01
-    testing.expectEqualSlices(u8, &[_]u8{0x08, 0x96, 0x01}, obtained);
+    try testing.expectEqualSlices(u8, &[_]u8{0x08, 0x96, 0x01}, obtained);
 
     const demo2 = Demo2{.a = 150, .b = 150};
     const obtained2 = try demo2.encode(testing.allocator);
     defer testing.allocator.free(obtained2);
     // 0x08 , 0x96, 0x01
-    testing.expectEqualSlices(u8, &[_]u8{0x08, 0x96, 0x01, 0x10, 0x96, 0x01}, obtained2);
+    try testing.expectEqualSlices(u8, &[_]u8{0x08, 0x96, 0x01, 0x10, 0x96, 0x01}, obtained2);
 }
 
 const WithNegativeIntegers = struct {
@@ -105,7 +105,7 @@ test "basic encoding with negative numbers" {
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
     // 0x08
-    testing.expectEqualSlices(u8, &[_]u8{0x08, 0x03, 0x10, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F}, obtained);
+    try testing.expectEqualSlices(u8, &[_]u8{0x08, 0x03, 0x10, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F}, obtained);
 }
 
 const DemoWithAllVarint = struct {
@@ -134,7 +134,7 @@ const DemoWithAllVarint = struct {
         fd( 3, "uint32"     , .{.Varint = .Simple}),
         fd( 4, "uint64"     , .{.Varint = .Simple}),
         fd( 5, "a_bool"     , .{.Varint = .Simple}),
-        fd( 6, "a_enum"     , .{.Varint = .ZigZagOptimized}),
+        fd( 6, "a_enum"     , .{.Varint = .Simple}),
         fd( 7, "pos_int32"  , .{.Varint = .Simple}),
         fd( 8, "pos_int64"  , .{.Varint = .Simple}),
         fd( 9, "neg_int32"  , .{.Varint = .Simple}),
@@ -170,7 +170,7 @@ test "DemoWithAllVarint" {
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
     // 0x08 , 0x96, 0x01
-    testing.expectEqualSlices(u8, &[_]u8{
+    try testing.expectEqualSlices(u8, &[_]u8{
             0x08, 0x01,
             0x10, 0x01,
             0x18, 0x96, 0x01,
@@ -212,7 +212,7 @@ test "decodevarint" {
     };
 
     const decoded = try DemoWithAllVarint.decode(&encoded, testing.allocator);
-    testing.expectEqual(expected, decoded);
+    try testing.expectEqual(expected, decoded);
 }
 
 
@@ -255,7 +255,7 @@ test "FixedSizes" {
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
 
-    testing.expectEqualSlices(u8, &[_]u8{
+    try testing.expectEqualSlices(u8, &[_]u8{
         0x08 + 1 , 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         0x10 + 5 , 0xFE, 0xFF, 0xFF, 0xFF,
         0x18 + 5 , 0x01, 0x00, 0x00, 0x00,
@@ -292,7 +292,7 @@ test "WithSubmessages" {
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
 
-    testing.expectEqualSlices(u8, &[_]u8{
+    try testing.expectEqualSlices(u8, &[_]u8{
         0x08 + 2, 0x02,
             0x08, 0x01,
         0x10 + 2, 0x04,
@@ -330,7 +330,7 @@ test "bytes"  {
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
 
-    testing.expectEqualSlices(u8, &[_]u8{
+    try testing.expectEqualSlices(u8, &[_]u8{
         0x08 + 2, 0x02,
             0x08, 0x01,
     }, obtained);
@@ -371,7 +371,7 @@ test "FixedSizesList" {
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
 
-    testing.expectEqualSlices(u8, &[_]u8{
+    try testing.expectEqualSlices(u8, &[_]u8{
         0x08 + 2, 0x10,
             0x01, 0x00, 0x00, 0x00,
             0x02, 0x00, 0x00, 0x00,
@@ -411,7 +411,7 @@ test "VarintList" {
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
 
-    testing.expectEqualSlices(u8, &[_]u8{
+    try testing.expectEqualSlices(u8, &[_]u8{
         0x08 + 2, 0x04,
             0x01,
             0x02,
@@ -453,7 +453,7 @@ test "SubMessageList" {
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
 
-    testing.expectEqualSlices(u8, &[_]u8{
+    try testing.expectEqualSlices(u8, &[_]u8{
         0x08 + 2, 
             0x0C,
                 0x02, 
@@ -501,7 +501,7 @@ test "EmptyLists" {
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
 
-    testing.expectEqualSlices(u8, &[_]u8{
+    try testing.expectEqualSlices(u8, &[_]u8{
         0x08 + 2, 0x04,
             0x01,
             0x02,
@@ -534,7 +534,7 @@ test "EmptyMessage" {
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
 
-    testing.expectEqualSlices(u8, &[_]u8{}, obtained);
+    try testing.expectEqualSlices(u8, &[_]u8{}, obtained);
 }
 
 const DefaultValuesInit = struct {
@@ -565,8 +565,8 @@ const DefaultValuesInit = struct {
 
 test "DefaultValuesInit" {
     var demo = DefaultValuesInit.init(testing.allocator);
-    testing.expectEqual(@as(u32, 5), demo.a.?);
-    testing.expectEqual(@as(u32, 3), demo.c.?);
-    testing.expect(if(demo.b) |val| false else true);
-    testing.expect(if(demo.d) |val| false else true);
+    try testing.expectEqual(@as(u32, 5), demo.a.?);
+    try testing.expectEqual(@as(u32, 3), demo.c.?);
+    try testing.expect(if(demo.b) |val| false else true);
+    try testing.expect(if(demo.d) |val| false else true);
 }
