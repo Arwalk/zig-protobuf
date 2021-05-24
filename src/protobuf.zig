@@ -380,12 +380,38 @@ fn get_descriptor(comptime fields : []const FieldDescriptor, tag: u32) ?comptime
     } else null;
 }
 
+const FullFieldDescriptor = struct {
+    field_name: []const u8,
+    tag: u32,
+    pb_type: FieldType,
+    real_type: type
+};
+
 pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Allocator) !T {
     var result = pb_init(T, allocator);
     
     var decoder = WireDecoder{.input = input};
 
-    comptime const field_lists = T._desc_table;
+    comptime const field_lists = blk: {
+        var fields : [T._desc_table.len]FullFieldDescriptor = [_]FullFieldDescriptor{
+            .{
+                .field_name = "",
+                .tag = 0,
+                .pb_type = .FixedInt,
+                .real_type = bool,
+            }
+        } ** T._desc_table.len;
+
+        inline for (T._desc_table) |field, index| {
+            const real_field = get_struct_field(T, field.name);
+            fields[index].field_name = field.name;
+            fields[index].tag = field.tag;
+            fields[index].pb_type = field.ftype;
+            fields[index].real_type = real_field.field_type;
+        }
+
+        break :blk fields;
+    };
 
     const data_found = blk: {
         var found = ArrayList(Extracted).init(allocator);
@@ -394,20 +420,35 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
     };
     defer allocator.free(data_found);
 
-    inline for(@typeInfo(T).Struct.fields) |field| {
-        for(data_found) |item| {
-            if(get_descriptor(&T._desc_table, item.tag)) |desc| {
-                if(std.mem.eql(u8, desc.name, field.name)) {
-                    switch(desc.ftype) {
-                        .Varint => |varint_type| {
-                            @field(result, field.name) = if(varint_type == .ZigZagOptimized) @panic("Not implemented")
-                                else @intCast(@typeInfo(field.field_type).Optional.child, item.data.RawValue);
-                        },
-                        else => @panic("Not implemented")
-                    }
-                }
+    inline for(field_lists) |field| {
+        const data = for(data_found) |item| {
+            if(field.tag == item.tag) break item;
+        } else null;
+
+        if(data) |extracted| {
+            switch(field.pb_type) {
+                .Varint => |varint_type| {
+                    @field(result, field.field_name) = blk: {
+                        const child_type = @typeInfo(field.real_type).Optional.child;
+                        switch (@typeInfo(child_type)) {
+                            .Int => {
+                                if(varint_type == .ZigZagOptimized){
+                                    break :blk @intCast(child_type, (@intCast(child_type, extracted.data.RawValue) >> 1) ^ (-(@intCast(child_type, extracted.data.RawValue) & 1)));
+                                }
+                                else {
+                                    break :blk @intCast(child_type, extracted.data.RawValue);
+                                }
+                            },
+                            .Bool => break :blk extracted.data.RawValue == 1,
+                            .Enum => break :blk @intToEnum(child_type, @intCast(i32, extracted.data.RawValue)),
+                            else => @panic("Not implemented")
+                        }
+                    };
+                },
+                else => @panic("Not implemented")
             }
         }
+
     }
 
     return result;

@@ -131,9 +131,9 @@ const DemoWithAllVarint = struct {
     pub const _desc_table = [_]FieldDescriptor{
         fd( 1, "sint32"     , .{.Varint = .ZigZagOptimized}),
         fd( 2, "sint64"     , .{.Varint = .ZigZagOptimized}),
-        fd( 3, "uint32"     , .{.Varint = .ZigZagOptimized}),
-        fd( 4, "uint64"     , .{.Varint = .ZigZagOptimized}),
-        fd( 5, "a_bool"     , .{.Varint = .ZigZagOptimized}),
+        fd( 3, "uint32"     , .{.Varint = .Simple}),
+        fd( 4, "uint64"     , .{.Varint = .Simple}),
+        fd( 5, "a_bool"     , .{.Varint = .Simple}),
         fd( 6, "a_enum"     , .{.Varint = .ZigZagOptimized}),
         fd( 7, "pos_int32"  , .{.Varint = .Simple}),
         fd( 8, "pos_int64"  , .{.Varint = .Simple}),
@@ -143,6 +143,10 @@ const DemoWithAllVarint = struct {
 
     pub fn encode(self: DemoWithAllVarint, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
+    }
+
+    pub fn decode(input: []const u8, allocator: *mem.Allocator) !DemoWithAllVarint {
+        return pb_decode(DemoWithAllVarint, input, allocator);
     }
 
     pub fn deinit(self: DemoWithAllVarint) void {
@@ -178,6 +182,37 @@ test "DemoWithAllVarint" {
             0x48, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F,
             0x50, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01
         },obtained);
+}
+
+test "decodevarint" {
+    var expected = DemoWithAllVarint{
+        .sint32 = -1,
+        .sint64 = -1,
+        .uint32 = 150,
+        .uint64 = 150,
+        .a_bool = true,
+        .a_enum = DemoWithAllVarint.DemoEnum.AndAnother,
+        .pos_int32 = 1,
+        .pos_int64 = 2,
+        .neg_int32 = -1,
+        .neg_int64 = -2
+    };
+
+    const encoded = [_]u8{
+            0x08, 0x01,
+            0x10, 0x01,
+            0x18, 0x96, 0x01,
+            0x20, 0x96, 0x01,
+            0x28, 0x01,
+            0x30, 0x02,
+            0x38, 0x01,
+            0x40, 0x02,
+            0x48, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F,
+            0x50, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01
+    };
+
+    const decoded = try DemoWithAllVarint.decode(&encoded, testing.allocator);
+    testing.expectEqual(expected, decoded);
 }
 
 
