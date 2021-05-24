@@ -8,11 +8,15 @@ const Demo1 = struct {
     a : ?u32,
 
     pub const _desc_table = [_]FieldDescriptor{
-        fd(1, "a", .{.Varint = .ZigZagOptimized}),
+        fd(1, "a", .{.Varint = .Simple}),
     };
 
     pub fn encode(self: Demo1, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
+    }
+
+    pub fn decode(input: []const u8, allocator: *mem.Allocator) !Demo1 {
+        return pb_decode(Demo1, input, allocator);
     }
 
     pub fn deinit(self: Demo1) void {
@@ -32,6 +36,18 @@ test "basic encoding" {
     defer testing.allocator.free(obtained2);
     // 0x08 , 0x96, 0x01
     testing.expectEqualSlices(u8, &[_]u8{0x08, 0x00}, obtained2);
+}
+
+test "basic decoding" {
+    const input = [_]u8{0x08, 0x96, 0x01};
+    const obtained = try Demo1.decode(&input, testing.allocator);
+
+    testing.expectEqual(Demo1{.a = 150}, obtained);
+
+    const input2 = [_]u8{0x08, 0x00};
+    const obtained2 = try Demo1.decode(&input2, testing.allocator);
+    testing.expectEqual(Demo1{.a = 0}, obtained2);
+
 }
 
 const Demo2 = struct {

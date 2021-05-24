@@ -50,7 +50,7 @@ pub const FieldType = union(FieldTypeTag) {
 
 pub const FieldDescriptor = struct {
     tag: u32,
-    name: []const u8,
+    name: comptime []const u8,
     ftype: FieldType,
 };
 
@@ -302,6 +302,116 @@ pub fn pb_deinit(data: anytype) void {
 }
 
 // decoding
+
+const ExtractedDataTag = enum {
+    RawValue,
+    Slice,
+};
+
+const ExtractedData = union(ExtractedDataTag) {
+    RawValue : u64,
+    Slice: []const u8
+};
+
+const Extracted = struct {
+    tag: u32,
+    data: ExtractedData
+};
+
+fn DecodedVarint(comptime T: type) type {
+    return struct {
+        value: T,
+        size: usize,
+    };
+}
+
+fn decode_varint(comptime T: type, input: []const u8) DecodedVarint(T) {
+    var value: T = 0;
+    var index: usize = 0;
+
+    while((input[index] & 0b10000000) != 0) : (index += 1) {
+        value += (@as(T, input[index] & 0x7F)) << (@intCast(std.math.Log2Int(T), index*7));
+    }
+
+    value += (@as(T, input[index] & 0x7F)) << (@intCast(std.math.Log2Int(T), index*7));
+
+    return DecodedVarint(T){
+        .value = value,
+        .size = index +1,
+    };
+}
+
+const WireDecoder = struct {
+    input: []const u8,
+    current_index : usize = 0,
+    
+    fn get_next(state: *WireDecoder) !?Extracted {
+        if(state.current_index < state.input.len) {
+            const tag_and_wire = decode_varint(u32, state.input[state.current_index..]);
+            state.current_index += tag_and_wire.size;
+            const tag : u32 = (tag_and_wire.value >> 3);
+            const wire_value = tag_and_wire.value & 0b00000111;
+            const data : ExtractedData = switch(wire_value) {
+                0 => blk: {
+                    const varint = decode_varint(u64, state.input[state.current_index..]);
+                    state.current_index += varint.size;
+                    break :blk ExtractedData{
+                        .RawValue = varint.value,
+                    };
+                },
+                else => @panic("Not implemented yet")
+            };
+
+            return Extracted{
+                .tag = tag,
+                .data = data
+            };
+        }
+        else
+        {
+            return null;
+        }    
+    }
+};
+
+fn get_descriptor(comptime fields : []const FieldDescriptor, tag: u32) ?comptime *const FieldDescriptor {
+    return inline for(fields) |*desc| {
+        if(desc.tag == tag) break desc;
+    } else null;
+}
+
+pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Allocator) !T {
+    var result = pb_init(T, allocator);
+    
+    var decoder = WireDecoder{.input = input};
+
+    comptime const field_lists = T._desc_table;
+
+    const data_found = blk: {
+        var found = ArrayList(Extracted).init(allocator);
+        while(try decoder.get_next()) |extracted_data| try found.append(extracted_data);
+        break :blk found.toOwnedSlice();
+    };
+    defer allocator.free(data_found);
+
+    inline for(@typeInfo(T).Struct.fields) |field| {
+        for(data_found) |item| {
+            if(get_descriptor(&T._desc_table, item.tag)) |desc| {
+                if(std.mem.eql(u8, desc.name, field.name)) {
+                    switch(desc.ftype) {
+                        .Varint => |varint_type| {
+                            @field(result, field.name) = if(varint_type == .ZigZagOptimized) @panic("Not implemented")
+                                else @intCast(@typeInfo(field.field_type).Optional.child, item.data.RawValue);
+                        },
+                        else => @panic("Not implemented")
+                    }
+                }
+            }
+        }
+    }
+
+    return result;
+}
 
 // TBD
 
