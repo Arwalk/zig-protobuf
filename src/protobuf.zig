@@ -392,8 +392,8 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
     
     var decoder = WireDecoder{.input = input};
 
-    comptime const field_lists = blk: {
-        var fields : [T._desc_table.len]FullFieldDescriptor = [_]FullFieldDescriptor{
+    const field_lists = blk: {
+        comptime var fields : [T._desc_table.len]FullFieldDescriptor = [_]FullFieldDescriptor{
             .{
                 .field_name = "",
                 .tag = 0,
@@ -413,33 +413,34 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
         break :blk fields;
     };
 
-    const data_found = blk: {
-        var found = ArrayList(Extracted).init(allocator);
-        while(try decoder.get_next()) |extracted_data| try found.append(extracted_data);
-        break :blk found.toOwnedSlice();
-    };
-    defer allocator.free(data_found);
-
-    inline for(field_lists) |field| {
-        const data = for(data_found) |item| {
-            if(field.tag == item.tag) break item;
+    while(try decoder.get_next()) |extracted_data| {
+        const field_found : ?*const FullFieldDescriptor = inline for (field_lists) |*field| {
+            if(field.tag == extracted_data.tag) break field;
         } else null;
 
-        if(data) |extracted| {
+        if(field_found) |field| {
             switch(field.pb_type) {
                 .Varint => |varint_type| {
                     @field(result, field.field_name) = comptime blk: {
                         const child_type = @typeInfo(field.real_type).Optional.child;
                         switch(varint_type) {
                             .ZigZagOptimized => {
-                                break :blk 0;
+                                switch (@typeInfo(child_type)) {
+                                    .Int =>  break :blk @intCast(child_type, (@intCast(i64, extracted_data.data.RawValue) >> 1) ^ (-(@intCast(i64, extracted_data.data.RawValue) & 1))),
+                                    .Enum => break :blk @intToEnum(child_type, @intCast(i32, (@intCast(i64, extracted_data.data.RawValue) >> 1) ^ (-(@intCast(i64, extracted_data.data.RawValue) & 1)))),
+                                    else => unreachable
+                                }
                             },
                             .Simple => {
                                 switch (@typeInfo(child_type)) {
-                                    .Int =>  break :blk @intCast(child_type, extracted.data.RawValue),
-                                    .Bool => break :blk extracted.data.RawValue == 1,
-                                    .Enum => break :blk @intToEnum(child_type, @intCast(i32, extracted.data.RawValue)),
-                                    else => @panic("Not implemented")
+                                    .Int => switch(child_type) {
+                                        u32, u64 => break :blk @intCast(child_type, extracted_data.data.RawValue),
+                                        i32, i64 => break :blk @ptrCast(*const child_type, &extracted_data.data.RawValue).*,
+                                        else => unreachable
+                                    },
+                                    .Bool => break :blk extracted_data.data.RawValue == 1,
+                                    .Enum => break :blk @intToEnum(child_type, @intCast(i32, extracted_data.data.RawValue)),
+                                    else => unreachable
                                 }
                             }
                         }
@@ -448,7 +449,6 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
                 else => @panic("Not implemented")
             }
         }
-
     }
 
     return result;
