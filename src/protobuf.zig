@@ -341,11 +341,11 @@ fn decode_varint(comptime T: type, input: []const u8) DecodedVarint(T) {
     };
 }
 
-const WireDecoder = struct {
+const WireDecoderIterator = struct {
     input: []const u8,
     current_index : usize = 0,
     
-    fn get_next(state: *WireDecoder) !?Extracted {
+    fn next(state: *WireDecoderIterator) !?Extracted {
         if(state.current_index < state.input.len) {
             const tag_and_wire = decode_varint(u32, state.input[state.current_index..]);
             state.current_index += tag_and_wire.size;
@@ -413,7 +413,7 @@ fn get_varint_value(comptime T : type, comptime varint_type : VarintType, extrac
 pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Allocator) !T {
     var result = pb_init(T, allocator);
     
-    var decoder = WireDecoder{.input = input};
+    var iterator = WireDecoderIterator{.input = input};
 
     comptime const field_lists = blk: {
         comptime var fields : [T._desc_table.len]FullFieldDescriptor = [_]FullFieldDescriptor{
@@ -436,7 +436,7 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
         break :blk fields;
     };
 
-    while(try decoder.get_next()) |extracted_data| {
+    while(try iterator.next()) |extracted_data| {
         
         const field_found : ?*const FullFieldDescriptor = inline for (field_lists) |*field| {
             if(field.tag == extracted_data.tag) break field;
