@@ -387,12 +387,35 @@ const FullFieldDescriptor = struct {
     real_type: type
 };
 
+fn get_varint_value(comptime T : type, comptime varint_type : VarintType, extracted_data: Extracted) T {
+    return comptime switch(varint_type) {
+        .ZigZagOptimized => 
+            switch (@typeInfo(T)) {
+                .Int =>  @intCast(T, (@intCast(i64, extracted_data.data.RawValue) >> 1) ^ (-(@intCast(i64, extracted_data.data.RawValue) & 1))),
+                .Enum => @intToEnum(T, @intCast(i32, (@intCast(i64, extracted_data.data.RawValue) >> 1) ^ (-(@intCast(i64, extracted_data.data.RawValue) & 1)))),
+                else => unreachable
+            }
+        ,
+        .Simple => 
+            switch (@typeInfo(T)) {
+                .Int => switch(T) {
+                    u32, u64 => @intCast(T, extracted_data.data.RawValue),
+                    i32, i64 => @ptrCast(*const T, &extracted_data.data.RawValue).*,
+                    else => unreachable
+                },
+                .Bool => extracted_data.data.RawValue == 1,
+                .Enum => @intToEnum(T, @intCast(i32, extracted_data.data.RawValue)),
+                else => unreachable
+            }
+    };
+}
+
 pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Allocator) !T {
     var result = pb_init(T, allocator);
     
     var decoder = WireDecoder{.input = input};
 
-    const field_lists = blk: {
+    comptime const field_lists = blk: {
         comptime var fields : [T._desc_table.len]FullFieldDescriptor = [_]FullFieldDescriptor{
             .{
                 .field_name = "",
@@ -414,40 +437,19 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
     };
 
     while(try decoder.get_next()) |extracted_data| {
+        
         const field_found : ?*const FullFieldDescriptor = inline for (field_lists) |*field| {
             if(field.tag == extracted_data.tag) break field;
         } else null;
 
         if(field_found) |field| {
-            switch(field.pb_type) {
-                .Varint => |varint_type| {
-                    @field(result, field.field_name) = comptime blk: {
-                        const child_type = @typeInfo(field.real_type).Optional.child;
-                        switch(varint_type) {
-                            .ZigZagOptimized => {
-                                switch (@typeInfo(child_type)) {
-                                    .Int =>  break :blk @intCast(child_type, (@intCast(i64, extracted_data.data.RawValue) >> 1) ^ (-(@intCast(i64, extracted_data.data.RawValue) & 1))),
-                                    .Enum => break :blk @intToEnum(child_type, @intCast(i32, (@intCast(i64, extracted_data.data.RawValue) >> 1) ^ (-(@intCast(i64, extracted_data.data.RawValue) & 1)))),
-                                    else => unreachable
-                                }
-                            },
-                            .Simple => {
-                                switch (@typeInfo(child_type)) {
-                                    .Int => switch(child_type) {
-                                        u32, u64 => break :blk @intCast(child_type, extracted_data.data.RawValue),
-                                        i32, i64 => break :blk @ptrCast(*const child_type, &extracted_data.data.RawValue).*,
-                                        else => unreachable
-                                    },
-                                    .Bool => break :blk extracted_data.data.RawValue == 1,
-                                    .Enum => break :blk @intToEnum(child_type, @intCast(i32, extracted_data.data.RawValue)),
-                                    else => unreachable
-                                }
-                            }
-                        }
-                    };
-                },
+            const child_type = @typeInfo(field.real_type).Optional.child;
+            
+            @field(result, field.field_name) = switch(field.pb_type) {
+                .Varint => |varint_type| get_varint_value(child_type, varint_type, extracted_data),
+                
                 else => @panic("Not implemented")
-            }
+            };
         }
     }
 
