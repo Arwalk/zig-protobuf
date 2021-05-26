@@ -44,18 +44,18 @@ This repository, so far, only aims at implementing [protocol buffers version 3](
 ### Decoding
 
 - Scalar Value Types
-    - [ ] double
-    - [ ] float
+    - [x] double
+    - [x] float
     - [x] int32
     - [x] int64
     - [x] uint32
     - [x] uint64
     - [x] sint32
     - [x] sint64
-    - [ ] fixed32
-    - [ ] fixed64
-    - [ ] sfixed32
-    - [ ] sfixed64
+    - [x] fixed32
+    - [x] fixed64
+    - [x] sfixed32
+    - [x] sfixed64
     - [x] bool
     - [ ] string / bytes
 - [x] Enumerations
