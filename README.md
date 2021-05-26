@@ -58,7 +58,7 @@ This repository, so far, only aims at implementing [protocol buffers version 3](
     - [ ] sfixed64
     - [x] bool
     - [ ] string / bytes
-- [ ] Enumerations
+- [x] Enumerations
 - [ ] Submessages
 - [ ] Any
 - [ ] Oneof
