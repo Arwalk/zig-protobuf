@@ -400,7 +400,7 @@ fn get_varint_value(comptime T : type, comptime varint_type : VarintType, extrac
             switch (@typeInfo(T)) {
                 .Int => switch(T) {
                     u32, u64 => @intCast(T, extracted_data.data.RawValue),
-                    i32, i64 => @ptrCast(*const T, &extracted_data.data.RawValue).*,
+                    i32, i64 => @bitCast(T, @truncate(std.meta.Int(.unsigned, @bitSizeOf(T)), extracted_data.data.RawValue)),
                     else => unreachable
                 },
                 .Bool => extracted_data.data.RawValue == 1,
