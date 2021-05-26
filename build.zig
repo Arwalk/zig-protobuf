@@ -12,7 +12,7 @@ pub fn build(b: *std.build.Builder) void {
     var tests = [_]*std.build.LibExeObjStep{
         b.addTest("src/protobuf.zig"),
         b.addTest("tests/tests.zig"),
-        b.addTest("tests/encoding_alltypes.zig"),
+        b.addTest("tests/alltypes.zig"),
     };
 
     const test_step = b.step("test", "Run library tests");
