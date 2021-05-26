@@ -127,9 +127,8 @@ fn append_varint(pb : *ArrayList(u8), value: anytype, comptime varint_type: Vari
 }
 
 fn append_fixed(pb : *ArrayList(u8), value: anytype) !void {
-    var copy = value;
     const bitsize = @bitSizeOf(@TypeOf(value));
-    var as_unsigned_int = @bitCast(std.meta.Int(.unsigned, bitsize), copy);
+    var as_unsigned_int = @bitCast(std.meta.Int(.unsigned, bitsize), value);
 
     var index : usize = 0;
 
@@ -341,10 +340,19 @@ fn decode_varint(comptime T: type, input: []const u8) DecodedVarint(T) {
     };
 }
 
+fn decode_fixed(comptime T : type, slice: []const u8) T {
+    var result : T = 0;
+
+    for(slice) |byte, index| {
+        result += @as(T, byte) << (@intCast(std.math.Log2Int(T), index * 8));
+    }
+    return result;
+}
+
 const WireDecoderIterator = struct {
     input: []const u8,
     current_index : usize = 0,
-    
+
     fn next(state: *WireDecoderIterator) !?Extracted {
         if(state.current_index < state.input.len) {
             const tag_and_wire = decode_varint(u32, state.input[state.current_index..]);
@@ -358,6 +366,16 @@ const WireDecoderIterator = struct {
                     break :blk ExtractedData{
                         .RawValue = varint.value,
                     };
+                },
+                1 => blk: {
+                        const value = ExtractedData{.RawValue = decode_fixed(u64, state.input[state.current_index..state.current_index+8])};
+                        state.current_index += 8;
+                        break :blk value;
+                },
+                5 => blk: {
+                        const value = ExtractedData{.RawValue = decode_fixed(u32, state.input[state.current_index..state.current_index+4])};
+                        state.current_index += 4;
+                        break :blk value;
                 },
                 else => @panic("Not implemented yet")
             };
@@ -387,26 +405,34 @@ const FullFieldDescriptor = struct {
     real_type: type
 };
 
-fn get_varint_value(comptime T : type, comptime varint_type : VarintType, extracted_data: Extracted) T {
+fn get_varint_value(comptime T : type, comptime varint_type : VarintType, raw: u64) T {
     return comptime switch(varint_type) {
         .ZigZagOptimized => 
             switch (@typeInfo(T)) {
-                .Int =>  @intCast(T, (@intCast(i64, extracted_data.data.RawValue) >> 1) ^ (-(@intCast(i64, extracted_data.data.RawValue) & 1))),
-                .Enum => @intToEnum(T, @intCast(i32, (@intCast(i64, extracted_data.data.RawValue) >> 1) ^ (-(@intCast(i64, extracted_data.data.RawValue) & 1)))),
+                .Int =>  @intCast(T, (@intCast(i64, raw) >> 1) ^ (-(@intCast(i64, raw) & 1))),
+                .Enum => @intToEnum(T, @intCast(i32, (@intCast(i64, raw) >> 1) ^ (-(@intCast(i64, raw) & 1)))),
                 else => unreachable
             }
         ,
-        .Simple => 
+        .Simple =>
             switch (@typeInfo(T)) {
                 .Int => switch(T) {
-                    u32, u64 => @intCast(T, extracted_data.data.RawValue),
-                    i32, i64 => @bitCast(T, @truncate(std.meta.Int(.unsigned, @bitSizeOf(T)), extracted_data.data.RawValue)),
+                    u32, u64 => @intCast(T, raw),
+                    i32, i64 => @bitCast(T, @truncate(std.meta.Int(.unsigned, @bitSizeOf(T)), raw)),
                     else => unreachable
                 },
-                .Bool => extracted_data.data.RawValue == 1,
-                .Enum => @intToEnum(T, @intCast(i32, extracted_data.data.RawValue)),
+                .Bool => raw == 1,
+                .Enum => @intToEnum(T, @intCast(i32, raw)),
                 else => unreachable
             }
+    };
+}
+
+fn get_fixed_value(comptime T: type, raw: u64) T {
+    return switch(T) {
+        i32, u32, i64, u64 => @ptrCast(*const T, &@truncate(std.meta.Int(.unsigned, @bitSizeOf(T)), raw)).*,
+        f32, f64 => @ptrCast(*T, &@intCast(std.meta.Int(.unsigned, @bitSizeOf(T)), raw)).*,
+        else => @panic("Not Implemented")
     };
 }
 
@@ -446,8 +472,8 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
             const child_type = @typeInfo(field.real_type).Optional.child;
             
             @field(result, field.field_name) = switch(field.pb_type) {
-                .Varint => |varint_type| get_varint_value(child_type, varint_type, extracted_data),
-                
+                .Varint => |varint_type| get_varint_value(child_type, varint_type, extracted_data.data.RawValue),
+                .FixedInt => get_fixed_value(child_type, extracted_data.data.RawValue),
                 else => @panic("Not implemented")
             };
         }

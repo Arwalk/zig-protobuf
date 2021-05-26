@@ -237,6 +237,10 @@ const FixedSizes = struct {
         return pb_encode(self, allocator);
     }
 
+    pub fn decode(input : []const u8, allocator: *mem.Allocator) !FixedSizes {
+        return pb_decode(FixedSizes, input, allocator);
+    }
+
     pub fn deinit(self: FixedSizes) void {
         pb_deinit(self);
     }
@@ -255,14 +259,20 @@ test "FixedSizes" {
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
 
-    try testing.expectEqualSlices(u8, &[_]u8{
+    const expected = [_]u8{
         0x08 + 1 , 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         0x10 + 5 , 0xFE, 0xFF, 0xFF, 0xFF,
         0x18 + 5 , 0x01, 0x00, 0x00, 0x00,
         0x20 + 1 , 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x28 + 1 , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x40,
         0x30 + 5 , 0x00, 0x00, 0xa0, 0x40
-    }, obtained);
+    };
+
+    try testing.expectEqualSlices(u8, &expected, obtained);
+
+    // decoding
+    const decoded = try FixedSizes.decode(&expected, testing.allocator);
+    try testing.expectEqual(demo, decoded);
 }
 
 const WithSubmessages = struct {
