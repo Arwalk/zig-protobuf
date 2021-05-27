@@ -1,4 +1,5 @@
 const std = @import("std");
+const StructField = std.builtin.TypeInfo.StructField;
 const isSignedInt = std.meta.trait.isSignedInt;
 
 // common definitions
@@ -242,14 +243,6 @@ pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
     return pb.toOwnedSlice();
 }
 
-fn get_struct_field(comptime T: type, comptime field_name: []const u8 ) std.builtin.TypeInfo.StructField {
-    return inline for (@typeInfo(T).Struct.fields) |field| {
-        if(std.mem.eql(u8, field.name, field_name)) {
-            break field;
-        }
-    } else @compileLog("Could not find field ", field_name, " in struct", T);
-}
-
 pub fn pb_init(comptime T: type, allocator : *std.mem.Allocator) T {
 
     var value: T = undefined;
@@ -257,8 +250,7 @@ pub fn pb_init(comptime T: type, allocator : *std.mem.Allocator) T {
     inline for (@typeInfo(T).Struct.fields) |field| {
         switch (@field(T._desc_table, field.name).ftype) {
             .Varint, .FixedInt => {
-                const struct_field = get_struct_field(T, field.name);
-                @field(value, field.name) = if(struct_field.default_value) |val| val else null;
+                @field(value, field.name) = if(field.default_value) |val| val else null;
             },
             .SubMessage, .List => {
                 @field(value, field.name) = @TypeOf(@field(value, field.name)).init(allocator);
@@ -433,7 +425,7 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
 
     while(try iterator.next()) |extracted_data| {
         
-        const field_found : ?std.builtin.TypeInfo.StructField = inline for (@typeInfo(T).Struct.fields) |field| {
+        const field_found : ?StructField = inline for (@typeInfo(T).Struct.fields) |field| {
             if(@field(T._desc_table, field.name).tag == extracted_data.tag) break field;
         } else null;
 
