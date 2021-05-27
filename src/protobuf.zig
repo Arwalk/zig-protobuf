@@ -50,14 +50,12 @@ pub const FieldType = union(FieldTypeTag) {
 
 pub const FieldDescriptor = struct {
     tag: u32,
-    name: comptime []const u8,
     ftype: FieldType,
 };
 
-pub fn fd(tag: u32, name: []const u8, ftype: FieldType) FieldDescriptor {
+pub fn fd(tag: u32, ftype: FieldType) FieldDescriptor {
     return FieldDescriptor{
         .tag = tag,
-        .name = name,
         .ftype = ftype
     };
 }
@@ -218,18 +216,18 @@ fn append(pb : *ArrayList(u8), comptime field: FieldDescriptor, value_type: type
 }
 
 fn internal_pb_encode(pb : *ArrayList(u8), data: anytype) !void {
-    const field_list  = @TypeOf(data)._desc_table;
+    const field_list  = @typeInfo(@TypeOf(data)).Struct.fields;
 
     inline for(field_list) |field| {
-        if (@typeInfo(@TypeOf(@field(data, field.name))) == .Optional){
+        if (@typeInfo(field.field_type) == .Optional){
             if(@field(data, field.name)) |value| {
-                try append(pb, field, @TypeOf(value), value);
+                try append(pb, @field(@TypeOf(data)._desc_table, field.name), @TypeOf(value), value);
             }
         }
         else
         {
             if(@field(data, field.name).items.len != 0){
-                try append(pb, field, @TypeOf(@field(data, field.name)), @field(data, field.name));
+                try append(pb, @field(@TypeOf(data)._desc_table, field.name), @TypeOf(@field(data, field.name)), @field(data, field.name));
             }
         }
     }
@@ -254,18 +252,10 @@ fn get_struct_field(comptime T: type, comptime field_name: []const u8 ) std.buil
 
 pub fn pb_init(comptime T: type, allocator : *std.mem.Allocator) T {
 
-    comptime {
-        if(@typeInfo(T).Struct.fields.len != T._desc_table.len) {
-            @compileLog("malformed structure or desc table for structure", T);
-            @compileLog("@typeInfo(T).Struct.fields.len =", @typeInfo(T).Struct.fields.len);
-            @compileLog("T._desc_table.len =", T._desc_table.len);
-        }
-    }
-
     var value: T = undefined;
 
-    inline for (T._desc_table) |field| {
-        switch (field.ftype) {
+    inline for (@typeInfo(T).Struct.fields) |field| {
+        switch (@field(T._desc_table, field.name).ftype) {
             .Varint, .FixedInt => {
                 const struct_field = get_struct_field(T, field.name);
                 @field(value, field.name) = if(struct_field.default_value) |val| val else null;
@@ -280,10 +270,10 @@ pub fn pb_init(comptime T: type, allocator : *std.mem.Allocator) T {
 }
 
 pub fn pb_deinit(data: anytype) void {
-    const field_list  = @TypeOf(data)._desc_table;
+    const T  = @TypeOf(data);
 
-    inline for(field_list) |field| {
-        switch (field.ftype) {
+    inline for (@typeInfo(T).Struct.fields) |field| {
+        switch (@field(T._desc_table, field.name).ftype) {
             .Varint, .FixedInt => {},
             .SubMessage => {
                 @field(data, field.name).deinit();
@@ -441,37 +431,16 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
     
     var iterator = WireDecoderIterator{.input = input};
 
-    comptime const field_lists = blk: {
-        comptime var fields : [T._desc_table.len]FullFieldDescriptor = [_]FullFieldDescriptor{
-            .{
-                .field_name = "",
-                .tag = 0,
-                .pb_type = .FixedInt,
-                .real_type = bool,
-            }
-        } ** T._desc_table.len;
-
-        inline for (T._desc_table) |field, index| {
-            const real_field = get_struct_field(T, field.name);
-            fields[index].field_name = field.name;
-            fields[index].tag = field.tag;
-            fields[index].pb_type = field.ftype;
-            fields[index].real_type = real_field.field_type;
-        }
-
-        break :blk fields;
-    };
-
     while(try iterator.next()) |extracted_data| {
         
-        const field_found : ?*const FullFieldDescriptor = inline for (field_lists) |*field| {
-            if(field.tag == extracted_data.tag) break field;
+        const field_found : ?std.builtin.TypeInfo.StructField = inline for (@typeInfo(T).Struct.fields) |field| {
+            if(@field(T._desc_table, field.name).tag == extracted_data.tag) break field;
         } else null;
 
         if(field_found) |field| {
-            const child_type = @typeInfo(field.real_type).Optional.child;
+            const child_type = @typeInfo(field.field_type).Optional.child;
             
-            @field(result, field.field_name) = switch(field.pb_type) {
+            @field(result, field.name) = switch(@field(T._desc_table, field.name).ftype) {
                 .Varint => |varint_type| get_varint_value(child_type, varint_type, extracted_data.data.RawValue),
                 .FixedInt => get_fixed_value(child_type, extracted_data.data.RawValue),
                 else => @panic("Not implemented")

@@ -7,8 +7,8 @@ const eql = mem.eql;
 const Demo1 = struct {
     a : ?u32,
 
-    pub const _desc_table = [_]FieldDescriptor{
-        fd(1, "a", .{.Varint = .Simple}),
+    pub const _desc_table = .{
+        .a = fd(1, FieldType{.Varint = .Simple})
     };
 
     pub fn encode(self: Demo1, allocator: *mem.Allocator) ![]u8 {
@@ -54,9 +54,9 @@ const Demo2 = struct {
     a : ?u32,
     b : ?u32,
 
-    pub const _desc_table = [_]FieldDescriptor{
-        fd(1, "a", .{.Varint = .ZigZagOptimized}),
-        fd(2, "b", .{.Varint = .ZigZagOptimized}),
+    pub const _desc_table = .{
+        .a = fd(1, .{.Varint = .ZigZagOptimized}),
+        .b = fd(2, .{.Varint = .ZigZagOptimized}),
     };
 
     pub fn encode(self: Demo2, allocator: *mem.Allocator) ![]u8 {
@@ -86,9 +86,9 @@ const WithNegativeIntegers = struct {
     a: ?i32, // int32
     b: ?i32, // sint32
 
-    pub const _desc_table = [_]FieldDescriptor{
-        fd(1, "a", .{.Varint = .ZigZagOptimized}),
-        fd(2, "b", .{.Varint = .Simple}),
+    pub const _desc_table = .{
+        .a = fd(1, .{.Varint = .ZigZagOptimized}),
+        .b = fd(2, .{.Varint = .Simple}),
     };
 
     pub fn encode(self: WithNegativeIntegers, allocator: *mem.Allocator) ![]u8 {
@@ -128,17 +128,17 @@ const DemoWithAllVarint = struct {
     neg_int64: ?i64,
 
 
-    pub const _desc_table = [_]FieldDescriptor{
-        fd( 1, "sint32"     , .{.Varint = .ZigZagOptimized}),
-        fd( 2, "sint64"     , .{.Varint = .ZigZagOptimized}),
-        fd( 3, "uint32"     , .{.Varint = .Simple}),
-        fd( 4, "uint64"     , .{.Varint = .Simple}),
-        fd( 5, "a_bool"     , .{.Varint = .Simple}),
-        fd( 6, "a_enum"     , .{.Varint = .Simple}),
-        fd( 7, "pos_int32"  , .{.Varint = .Simple}),
-        fd( 8, "pos_int64"  , .{.Varint = .Simple}),
-        fd( 9, "neg_int32"  , .{.Varint = .Simple}),
-        fd(10, "neg_int64"  , .{.Varint = .Simple}),
+    pub const _desc_table = .{
+        .sint32    = fd( 1, .{.Varint = .ZigZagOptimized}),
+        .sint64    = fd( 2, .{.Varint = .ZigZagOptimized}),
+        .uint32    = fd( 3, .{.Varint = .Simple}),
+        .uint64    = fd( 4, .{.Varint = .Simple}),
+        .a_bool    = fd( 5, .{.Varint = .Simple}),
+        .a_enum    = fd( 6, .{.Varint = .Simple}),
+        .pos_int32 = fd( 7, .{.Varint = .Simple}),
+        .pos_int64 = fd( 8, .{.Varint = .Simple}),
+        .neg_int32 = fd( 9, .{.Varint = .Simple}),
+        .neg_int64 = fd(10, .{.Varint = .Simple}),
     };
 
     pub fn encode(self: DemoWithAllVarint, allocator: *mem.Allocator) ![]u8 {
@@ -224,13 +224,13 @@ const FixedSizes = struct {
     double   : ?f64,
     float    : ?f32,
 
-    pub const _desc_table = [_]FieldDescriptor{
-        fd( 1, "sfixed64"   , .FixedInt),
-        fd( 2, "sfixed32"   , .FixedInt),
-        fd( 3, "fixed32"    , .FixedInt),
-        fd( 4, "fixed64"    , .FixedInt),
-        fd( 5, "double"     , .FixedInt),
-        fd( 6, "float"      , .FixedInt),
+    pub const _desc_table = .{
+        .sfixed64   = fd( 1, .FixedInt),
+        .sfixed32   = fd( 2, .FixedInt),
+        .fixed32    = fd( 3, .FixedInt),
+        .fixed64    = fd( 4, .FixedInt),
+        .double     = fd( 5, .FixedInt),
+        .float      = fd( 6, .FixedInt),
     };
 
     pub fn encode(self: FixedSizes, allocator: *mem.Allocator) ![]u8 {
@@ -279,9 +279,9 @@ const WithSubmessages = struct {
     sub_demo1 : ?Demo1,
     sub_demo2 : ?Demo2,
 
-    pub const _desc_table = [_]FieldDescriptor{
-        fd( 1, "sub_demo1"   , .SubMessage),
-        fd( 2, "sub_demo2"   , .SubMessage),
+    pub const _desc_table = .{
+        .sub_demo1 = fd( 1, .SubMessage),
+        .sub_demo2 = fd( 2, .SubMessage),
     };
 
     pub fn encode(self: WithSubmessages, allocator: *mem.Allocator) ![]u8 {
@@ -314,8 +314,8 @@ test "WithSubmessages" {
 const WithBytes = struct {
     list_of_data: ArrayList(u8),
 
-    pub const _desc_table = [_]FieldDescriptor{
-        fd( 1, "list_of_data", .{.List = .FixedInt}),
+    pub const _desc_table = .{
+        .list_of_data = fd( 1, .{.List = .FixedInt}),
     };
 
     pub fn encode(self: WithBytes, allocator: *mem.Allocator) ![]u8 {
@@ -349,8 +349,8 @@ test "bytes"  {
 const FixedSizesList = struct {
     fixed32List  : ArrayList(u32),
 
-    pub const _desc_table = [_]FieldDescriptor{
-        fd( 1, "fixed32List"   , .{.List = .FixedInt}),
+    pub const _desc_table = .{
+        .fixed32List = fd( 1, .{.List = .FixedInt}),
     };
 
     pub fn encode(self: FixedSizesList, allocator: *mem.Allocator) ![]u8 {
@@ -393,8 +393,8 @@ test "FixedSizesList" {
 const VarintList = struct {
     varuint32List  : ArrayList(u32),
 
-    pub const _desc_table = [_]FieldDescriptor{
-        fd( 1, "varuint32List"   , .{.List = .{.Varint = .Simple}}),
+    pub const _desc_table = .{
+        .varuint32List = fd( 1, .{.List = .{.Varint = .Simple}}),
     };
 
     pub fn encode(self: VarintList, allocator: *mem.Allocator) ![]u8 {
@@ -433,8 +433,8 @@ test "VarintList" {
 const SubMessageList = struct {
     subMessageList  : ArrayList(Demo1),
 
-    pub const _desc_table = [_]FieldDescriptor{
-        fd( 1, "subMessageList"   , .{.List = .SubMessage}),
+    pub const _desc_table = .{
+        .subMessageList = fd( 1, .{.List = .SubMessage}),
     };
 
     pub fn encode(self: SubMessageList, allocator: *mem.Allocator) ![]u8 {
@@ -482,9 +482,9 @@ const EmptyLists = struct {
     varuint32Empty : ArrayList(u32),
 
 
-    pub const _desc_table = [_]FieldDescriptor{
-        fd( 1, "varuint32List"   , .{.List = .{.Varint = .Simple}}),
-        fd( 2, "varuint32Empty"  , .{.List = .{.Varint = .Simple}}),
+    pub const _desc_table = .{
+        .varuint32List  = fd( 1, .{.List = .{.Varint = .Simple}}),
+        .varuint32Empty = fd( 2, .{.List = .{.Varint = .Simple}}),
     };
 
     pub fn encode(self: EmptyLists, allocator: *mem.Allocator) ![]u8 {
@@ -522,7 +522,7 @@ test "EmptyLists" {
 
 const EmptyMessage = struct {
     
-    pub const _desc_table = [_]FieldDescriptor{};
+    pub const _desc_table = .{};
 
     pub fn encode(self: EmptyMessage, allocator: *mem.Allocator) ![]u8 {
         return pb_encode(self, allocator);
@@ -553,11 +553,11 @@ const DefaultValuesInit = struct {
     c : ?u32 = 3,
     d : ?u32,
 
-    pub const _desc_table = [_]FieldDescriptor{
-        fd(1, "a", .{.Varint = .ZigZagOptimized}),
-        fd(2, "b", .{.Varint = .ZigZagOptimized}),
-        fd(3, "c", .{.Varint = .ZigZagOptimized}),
-        fd(4, "d", .{.Varint = .ZigZagOptimized}),
+    pub const _desc_table = .{
+        .a = fd(1, .{.Varint = .ZigZagOptimized}),
+        .b = fd(2, .{.Varint = .ZigZagOptimized}),
+        .c = fd(3, .{.Varint = .ZigZagOptimized}),
+        .d = fd(4, .{.Varint = .ZigZagOptimized}),
     };
 
     pub fn encode(self: DefaultValuesInit, allocator: *mem.Allocator) ![]u8 {
