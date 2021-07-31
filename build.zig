@@ -19,7 +19,7 @@ pub fn build(b: *std.build.Builder) void {
     for(tests) |test_item| {
         test_item.addPackage(.{
             .name = "protobuf",
-            .path = "src/protobuf.zig"
+            .path = std.build.FileSource{.path = "src/protobuf.zig"}
         });
         test_item.setBuildMode(mode);
         test_step.dependOn(&test_item.step);

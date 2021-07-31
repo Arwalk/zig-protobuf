@@ -16,6 +16,7 @@ pub const FieldTypeTag = enum{
     FixedInt,
     SubMessage,
     List,
+    OneOf,
 };
 
 pub const ListTypeTag = enum {
@@ -35,8 +36,9 @@ pub const FieldType = union(FieldTypeTag) {
     FixedInt,
     SubMessage,
     List : ListType,
+    OneOf: type,
 
-    pub fn get_wirevalue(ftype : FieldType, comptime value_type: type) u3 {
+    pub fn get_wirevalue(comptime ftype : FieldType, comptime value_type: type) u3 {
         return switch (ftype) {
             .Varint => 0,
             .FixedInt => return switch(@bitSizeOf(value_type)) {
@@ -44,17 +46,18 @@ pub const FieldType = union(FieldTypeTag) {
                 32 => 5,
                 else => @panic("Invalid size for fixed int")
             },
-            .SubMessage, .List => 2,            
+            .SubMessage, .List => 2,
+            .OneOf => unreachable
         };
     }
 };
 
 pub const FieldDescriptor = struct {
-    tag: u32,
+    tag: ?u32,
     ftype: FieldType,
 };
 
-pub fn fd(tag: u32, ftype: FieldType) FieldDescriptor {
+pub fn fd(tag: ?u32, comptime ftype: FieldType) FieldDescriptor {
     return FieldDescriptor{
         .tag = tag,
         .ftype = ftype
@@ -184,7 +187,9 @@ fn append_list_of_submessages(pb: *ArrayList(u8), value_list: anytype) !void {
 }
 
 fn append_tag(pb : *ArrayList(u8), comptime field: FieldDescriptor,  value_type: type) !void {
-    try append_varint(pb, ((field.tag << 3) | field.ftype.get_wirevalue(value_type)), .Simple);
+    if(field.tag) |tag|{
+        try append_varint(pb, ((tag << 3) | field.ftype.get_wirevalue(value_type)), .Simple);
+    }
 }
 
 fn append(pb : *ArrayList(u8), comptime field: FieldDescriptor, value_type: type, value: anytype) !void {
@@ -210,6 +215,14 @@ fn append(pb : *ArrayList(u8), comptime field: FieldDescriptor, value_type: type
                 },
                 .Varint => |varint_type| {
                     try append_list_of_varint(pb, value, varint_type);
+                }
+            }
+        },
+        .OneOf => |union_type| {
+            const active = @tagName(value);
+            inline for (@typeInfo(@TypeOf(union_type._union_desc)).Struct.fields) |union_field| {
+                if(std.mem.eql(u8, union_field.name, active)) {
+                    try append(pb, @field(union_type._union_desc, union_field.name), @TypeOf(@field(value, union_field.name)), @field(value, union_field.name));
                 }
             }
         }
@@ -255,30 +268,48 @@ pub fn pb_init(comptime T: type, allocator : *std.mem.Allocator) T {
             .SubMessage, .List => {
                 @field(value, field.name) = @TypeOf(@field(value, field.name)).init(allocator);
             },
+            .OneOf => {
+                @field(value, field.name) = null;
+            }
         }
     }
 
     return value;
 }
 
+fn deinit_field(field: anytype, comptime field_name: []const u8, ftype: FieldType) void {
+    switch(ftype) {
+        .Varint, .FixedInt => {},
+        .SubMessage => {
+            @field(field, field_name).deinit();
+        },
+        .List => |list_type| {
+            if(list_type == .SubMessage) {
+                for(@field(field, field_name).items) |item| {
+                    item.deinit();
+                }
+            }
+            @field(field, field_name).deinit();
+        },
+        .OneOf => |union_type| {
+            if(@field(field, field_name)) |union_value| {
+                const active = @tagName(union_value);
+                inline for (@typeInfo(@TypeOf(union_type._union_desc)).Struct.fields) |union_field| {
+                    if(std.mem.eql(u8, union_field.name, active)) {
+                        deinit_field(union_value, union_field.name, @field(union_type._union_desc, union_field.name).ftype);
+                    }
+                } 
+            } 
+        }
+    }
+    
+}
+
 pub fn pb_deinit(data: anytype) void {
     const T  = @TypeOf(data);
 
     inline for (@typeInfo(T).Struct.fields) |field| {
-        switch (@field(T._desc_table, field.name).ftype) {
-            .Varint, .FixedInt => {},
-            .SubMessage => {
-                @field(data, field.name).deinit();
-            },
-            .List => |list_type| {
-                if(list_type == .SubMessage) {
-                    for(@field(data, field.name).items) |item| {
-                        item.deinit();
-                    }
-                }
-                @field(data, field.name).deinit();
-            }
-        }
+        deinit_field(data, field.name, @field(T._desc_table, field.name).ftype);
     }
 }
 
@@ -374,7 +405,7 @@ const WireDecoderIterator = struct {
     }
 };
 
-fn get_descriptor(comptime fields : []const FieldDescriptor, tag: u32) ?comptime *const FieldDescriptor {
+fn get_descriptor(comptime fields : []const FieldDescriptor, tag: u32) ?*const FieldDescriptor {
     return inline for(fields) |*desc| {
         if(desc.tag == tag) break desc;
     } else null;

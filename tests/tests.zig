@@ -577,6 +577,70 @@ test "DefaultValuesInit" {
     var demo = DefaultValuesInit.init(testing.allocator);
     try testing.expectEqual(@as(u32, 5), demo.a.?);
     try testing.expectEqual(@as(u32, 3), demo.c.?);
-    try testing.expect(if(demo.b) |val| false else true);
-    try testing.expect(if(demo.d) |val| false else true);
+    try testing.expect(if(demo.b) |_| false else true);
+    try testing.expect(if(demo.d) |_| false else true);
+}
+
+const OneOfDemo = struct {
+    const a_case = enum {
+        value_1,
+        value_2
+    };
+
+    const a_union = union(a_case) {
+        value_1: u32,
+        value_2: ArrayList(u32),
+
+        pub const _union_desc = .{
+            .value_1 = fd( 1, .{.Varint = .ZigZagOptimized}),
+            .value_2 = fd( 2, .{.List = .{.Varint = .Simple}})
+        };
+    };
+
+    a : ?a_union,
+
+    pub const _desc_table = .{
+        .a = fd(null, .{.OneOf = a_union}) 
+    };
+
+    pub fn encode(self: OneOfDemo, allocator: *mem.Allocator) ![]u8 {
+        return pb_encode(self, allocator);
+    }
+
+    pub fn init(allocator: *mem.Allocator) OneOfDemo {
+        return pb_init(OneOfDemo, allocator);
+    }
+
+    pub fn deinit(self: OneOfDemo) void {
+        pb_deinit(self);
+    }
+};
+
+test "OneOfDemo" {
+    var demo = OneOfDemo.init(testing.allocator);
+    defer demo.deinit();
+
+    demo.a = .{.value_1 = 10};
+    
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
+    try testing.expectEqualSlices(u8, &[_]u8{
+        0x08 , 10,
+    }, obtained);
+
+    //demo.a = .{.value_2 = ArrayList(u32).init(testing.allocator)};
+    //try demo.a.?.value_2.append(1);
+    //try demo.a.?.value_2.append(2);
+    //try demo.a.?.value_2.append(3);
+    //try demo.a.?.value_2.append(4);
+//
+    //const obtained2 = try demo.encode(testing.allocator);
+    //defer testing.allocator.free(obtained2);
+    //try testing.expectEqualSlices(u8, &[_]u8{
+    //    0x10 + 2, 0x04,
+    //        0x01,
+    //        0x02,
+    //        0x03,
+    //        0x04,
+    //}, obtained2);
 }
