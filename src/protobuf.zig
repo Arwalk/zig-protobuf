@@ -277,7 +277,7 @@ pub fn pb_init(comptime T: type, allocator : *std.mem.Allocator) T {
     return value;
 }
 
-fn deinit_field(field: anytype, comptime field_name: []const u8, ftype: FieldType) void {
+fn deinit_field(field: anytype, comptime field_name: []const u8, comptime ftype: FieldType) void {
     switch(ftype) {
         .Varint, .FixedInt => {},
         .SubMessage => {
