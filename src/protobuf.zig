@@ -302,7 +302,6 @@ fn deinit_field(field: anytype, comptime field_name: []const u8, ftype: FieldTyp
             } 
         }
     }
-    
 }
 
 pub fn pb_deinit(data: anytype) void {

@@ -38,7 +38,7 @@ This repository, so far, only aims at implementing [protocol buffers version 3](
 - [x] Enumerations
 - [x] Submessages
 - [x] Any
-- [ ] Oneof
+- [x] Oneof
 - [ ] Maps
 
 ### Decoding
