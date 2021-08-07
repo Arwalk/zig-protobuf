@@ -628,19 +628,19 @@ test "OneOfDemo" {
         0x08 , 10,
     }, obtained);
 
-    //demo.a = .{.value_2 = ArrayList(u32).init(testing.allocator)};
-    //try demo.a.?.value_2.append(1);
-    //try demo.a.?.value_2.append(2);
-    //try demo.a.?.value_2.append(3);
-    //try demo.a.?.value_2.append(4);
-//
-    //const obtained2 = try demo.encode(testing.allocator);
-    //defer testing.allocator.free(obtained2);
-    //try testing.expectEqualSlices(u8, &[_]u8{
-    //    0x10 + 2, 0x04,
-    //        0x01,
-    //        0x02,
-    //        0x03,
-    //        0x04,
-    //}, obtained2);
+    demo.a = .{.value_2 = ArrayList(u32).init(testing.allocator)};
+    try demo.a.?.value_2.append(1);
+    try demo.a.?.value_2.append(2);
+    try demo.a.?.value_2.append(3);
+    try demo.a.?.value_2.append(4);
+
+    const obtained2 = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained2);
+    try testing.expectEqualSlices(u8, &[_]u8{
+        0x10 + 2, 0x04,
+            0x01,
+            0x02,
+            0x03,
+            0x04,
+    }, obtained2);
 }
