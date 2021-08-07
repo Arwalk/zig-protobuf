@@ -444,7 +444,7 @@ fn get_fixed_value(comptime T: type, raw: u64) T {
     return switch(T) {
         i32, u32, i64, u64 => @ptrCast(*const T, &@truncate(std.meta.Int(.unsigned, @bitSizeOf(T)), raw)).*,
         f32, f64 => @ptrCast(*T, &@intCast(std.meta.Int(.unsigned, @bitSizeOf(T)), raw)).*,
-        else => @panic("Not Implemented")
+        else => @compileLog("Not implemented")
     };
 }
 
