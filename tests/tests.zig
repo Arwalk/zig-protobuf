@@ -644,3 +644,45 @@ test "OneOfDemo" {
             0x04,
     }, obtained2);
 }
+
+const MapDemo = struct {
+
+    a_map : AutoHashMap(u64, u64),
+
+    pub const _desc_table = .{
+        .a_map = fd(1, .{.Map = .{
+            .key = .{.Varint = .ZigZagOptimized},
+            .value = .{.Varint = .ZigZagOptimized},
+        }}),
+    };
+
+    pub fn encode(self: MapDemo, allocator: *mem.Allocator) ![]u8 {
+        return pb_encode(self, allocator);
+    }
+
+    pub fn init(allocator: *mem.Allocator) MapDemo {
+        return pb_init(MapDemo, allocator);
+    }
+
+    pub fn deinit(self: MapDemo) void {
+        pb_deinit(self);
+    }
+};
+
+test "MapDemo" {
+    var demo = MapDemo.init(testing.allocator);
+    defer demo.deinit();
+
+    try demo.a_map.put(1, 2);
+
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
+
+    try testing.expectEqualSlices(u8, &[_]u8{
+        0x08 + 2, 4,
+            0x08,
+                0x01,
+            0x10,
+                0x02,
+    }, obtained);
+}

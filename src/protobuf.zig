@@ -17,6 +17,7 @@ pub const FieldTypeTag = enum{
     SubMessage,
     List,
     OneOf,
+    Map
 };
 
 pub const ListTypeTag = enum {
@@ -31,12 +32,43 @@ pub const ListType = union(ListTypeTag) {
     SubMessage,
 };
 
+pub const KeyValueTypeTag = enum {
+    Varint,
+    FixedInt,
+    SubMessage,
+    List,
+
+};
+
+pub const  KeyValueType = union(KeyValueTypeTag) {
+    Varint : VarintType,
+    FixedInt,
+    SubMessage,
+    List : ListType,
+
+    pub fn toFieldType(self: KeyValueType) FieldType {
+        return switch(self)
+        {
+            .Varint => |varint_type| .{.Varint, varint_type},
+            .FixedInt => .{.FixedInt},
+            .SubMessage => .{.SubMessage},
+            .List => |list_type| .{.List = list_type}
+        };
+    }
+};
+
+pub const KeyValueData = struct {
+    key: KeyValueType,
+    value: KeyValueType
+};
+
 pub const FieldType = union(FieldTypeTag) {
     Varint : VarintType,
     FixedInt,
     SubMessage,
     List : ListType,
     OneOf: type,
+    Map: KeyValueData,
 
     pub fn get_wirevalue(comptime ftype : FieldType, comptime value_type: type) u3 {
         return switch (ftype) {
@@ -46,8 +78,8 @@ pub const FieldType = union(FieldTypeTag) {
                 32 => 5,
                 else => @panic("Invalid size for fixed int")
             },
-            .SubMessage, .List => 2,
-            .OneOf => unreachable
+            .SubMessage, .List, .Map => 2,
+            .OneOf => unreachable,
         };
     }
 };
@@ -192,6 +224,17 @@ fn append_tag(pb : *ArrayList(u8), comptime field: FieldDescriptor,  value_type:
     }
 }
 
+fn append_map(pb : *ArrayList(u8), comptime field: FieldDescriptor, map: anytype) !void {
+    try append_varint(pb, field.tag.?, .Simple); // appending the map tag
+    var iterator : @TypeOf(map).Iterator = map.iterator();
+    for (iterator.next()) |data| {
+        try append_varint(pb, 1, .Simple); // key tag
+        try append(pb, field.ftype.Map.key.toFieldType(), data.key_ptr.?);
+        try append_varint(pb, 2, .Simple); // value tag
+        try append(pb, field.ftype.Map.value.toFieldType(), data.value_ptr.?);
+    }
+}
+
 fn append(pb : *ArrayList(u8), comptime field: FieldDescriptor, value_type: type, value: anytype) !void {
     try append_tag(pb, field, value_type);
     switch(field.ftype)
@@ -225,23 +268,34 @@ fn append(pb : *ArrayList(u8), comptime field: FieldDescriptor, value_type: type
                     try append(pb, @field(union_type._union_desc, union_field.name), @TypeOf(@field(value, union_field.name)), @field(value, union_field.name));
                 }
             }
+        },
+        .Map => {        
+            try append_map(pb, field, value);    
         }
     }
 }
 
 fn internal_pb_encode(pb : *ArrayList(u8), data: anytype) !void {
     const field_list  = @typeInfo(@TypeOf(data)).Struct.fields;
+    const data_type = @TypeOf(data);
 
     inline for(field_list) |field| {
         if (@typeInfo(field.field_type) == .Optional){
             if(@field(data, field.name)) |value| {
-                try append(pb, @field(@TypeOf(data)._desc_table, field.name), @TypeOf(value), value);
+                try append(pb, @field(data_type._desc_table, field.name), @TypeOf(value), value);
             }
         }
         else
         {
-            if(@field(data, field.name).items.len != 0){
-                try append(pb, @field(@TypeOf(data)._desc_table, field.name), @TypeOf(@field(data, field.name)), @field(data, field.name));
+            switch(@field(data_type._desc_table, field.name).ftype)
+            {
+                .List => if(@field(data, field.name).items.len != 0) {
+                    try append(pb, @field(data_type._desc_table, field.name), @TypeOf(@field(data, field.name)), @field(data, field.name));
+                },
+                .Map => if(@field(data, field.name).count() != 0) {
+                    try append(pb, @field(data_type._desc_table, field.name), @TypeOf(@field(data, field.name)), @field(data, field.name));
+                },
+                else => @compileLog("You shouldn't be here")
             }
         }
     }
@@ -265,7 +319,7 @@ pub fn pb_init(comptime T: type, allocator : *std.mem.Allocator) T {
             .Varint, .FixedInt => {
                 @field(value, field.name) = if(field.default_value) |val| val else null;
             },
-            .SubMessage, .List => {
+            .SubMessage, .List, .Map => {
                 @field(value, field.name) = @TypeOf(@field(value, field.name)).init(allocator);
             },
             .OneOf => {
@@ -300,6 +354,11 @@ fn deinit_field(field: anytype, comptime field_name: []const u8, comptime ftype:
                     }
                 } 
             } 
+        },
+        .Map => |_| {
+            // for unknown reason i have to specifically made it var here. Otherwise it's a const field.
+            var temp = @field(field, field_name); // key/values requiring dealloc aren't managed yet!
+            temp.deinit();
         }
     }
 }
