@@ -651,8 +651,8 @@ const MapDemo = struct {
 
     pub const _desc_table = .{
         .a_map = fd(1, .{.Map = .{
-            .key = .{.Varint = .ZigZagOptimized},
-            .value = .{.Varint = .ZigZagOptimized},
+            .key = .{.t = u64, .pb_data = .{.Varint = .ZigZagOptimized}},
+            .value = .{.t = u64, .pb_data = .{.Varint = .ZigZagOptimized}},
         }}),
     };
 
@@ -679,10 +679,12 @@ test "MapDemo" {
     defer testing.allocator.free(obtained);
 
     try testing.expectEqualSlices(u8, &[_]u8{
-        0x08 + 2, 4,
-            0x08,
-                0x01,
-            0x10,
-                0x02,
+        0x08 + 2,           // tag of a_map
+            5,              // size of a_map
+                4,          // size of the first item in a_map
+                  0x08,     // key tag
+                      0x01, // key value
+                  0x10,     // value tag
+                      0x02, // value value
     }, obtained);
 }

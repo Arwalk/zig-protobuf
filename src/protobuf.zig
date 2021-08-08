@@ -49,7 +49,7 @@ pub const  KeyValueType = union(KeyValueTypeTag) {
     pub fn toFieldType(self: KeyValueType) FieldType {
         return switch(self)
         {
-            .Varint => |varint_type| .{.Varint, varint_type},
+            .Varint => |varint_type| .{.Varint = varint_type},
             .FixedInt => .{.FixedInt},
             .SubMessage => .{.SubMessage},
             .List => |list_type| .{.List = list_type}
@@ -57,9 +57,14 @@ pub const  KeyValueType = union(KeyValueTypeTag) {
     }
 };
 
+pub const KeyValueTypeData = struct {
+    t: type,
+    pb_data: KeyValueType,
+};
+
 pub const KeyValueData = struct {
-    key: KeyValueType,
-    value: KeyValueType
+    key: KeyValueTypeData,
+    value: KeyValueTypeData
 };
 
 pub const FieldType = union(FieldTypeTag) {
@@ -224,15 +229,38 @@ fn append_tag(pb : *ArrayList(u8), comptime field: FieldDescriptor,  value_type:
     }
 }
 
+
 fn append_map(pb : *ArrayList(u8), comptime field: FieldDescriptor, map: anytype) !void {
-    try append_varint(pb, field.tag.?, .Simple); // appending the map tag
+    const len_index = pb.items.len;
     var iterator : @TypeOf(map).Iterator = map.iterator();
-    for (iterator.next()) |data| {
-        try append_varint(pb, 1, .Simple); // key tag
-        try append(pb, field.ftype.Map.key.toFieldType(), data.key_ptr.?);
-        try append_varint(pb, 2, .Simple); // value tag
-        try append(pb, field.ftype.Map.value.toFieldType(), data.value_ptr.?);
+    const key_type_data = field.ftype.Map.key;
+    const value_type_data = field.ftype.Map.value;
+    const Submessage = struct {
+        key : ?key_type_data.t,
+        value : ?value_type_data.t,
+
+        pub const _desc_table = .{
+            .key = fd(1, key_type_data.pb_data.toFieldType()),
+            .value = fd(2, value_type_data.pb_data.toFieldType())
+        };
+
+        pub fn encode(self: Submessage, allocator: *mem.Allocator) ![]u8 {
+        return pb_encode(self, allocator);
+        }
+
+        pub fn init(allocator: *mem.Allocator) Submessage {
+            return pb_init(Submessage, allocator);
+        }
+
+        pub fn deinit(self: Submessage) void {
+            pb_deinit(self);
+        }
+    };
+    while (iterator.next()) |data| {
+        try append_submessage(pb, Submessage{.key = data.key_ptr.*, .value = data.value_ptr.*});
     }
+    const size_encoded = pb.items.len - len_index;
+    try insert_size_as_varint(pb, size_encoded, len_index);
 }
 
 fn append(pb : *ArrayList(u8), comptime field: FieldDescriptor, value_type: type, value: anytype) !void {
