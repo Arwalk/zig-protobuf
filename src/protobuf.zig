@@ -185,14 +185,13 @@ fn append_submessage(pb :* ArrayList(u8), value: anytype) !void {
 }
 
 fn append_bytes(pb: *ArrayList(u8), value: *const ArrayList(u8)) !void {
-    const len_index = pb.items.len;
+    try append_as_varint(pb, value.len, .ZigZagOptimized);
     try pb.appendSlice(value.items);
-    const size_encoded = pb.items.len - len_index;
-    try insert_size_as_varint(pb, size_encoded, len_index);
 }
 
 fn append_list_of_fixed(pb: *ArrayList(u8), value: anytype) !void {
-    const len_index = pb.items.len;
+    const total_len = @divFloor(value.items.len * @bitSizeOf(@typeInfo(@TypeOf(value.items)).Pointer.child), 8);
+    try append_as_varint(pb, total_len, .ZigZagOptimized);
     if(@TypeOf(value) == ArrayList(u8)) {
         try pb.appendSlice(value.items);
     }
@@ -201,8 +200,6 @@ fn append_list_of_fixed(pb: *ArrayList(u8), value: anytype) !void {
             try append_fixed(pb, item);
         }
     }
-    const size_encoded = pb.items.len - len_index;
-    try insert_size_as_varint(pb, size_encoded, len_index);
 }
 
 fn append_list_of_varint(pb : *ArrayList(u8), value_list: anytype, comptime varint_type: VarintType) !void {
@@ -228,7 +225,6 @@ fn append_tag(pb : *ArrayList(u8), comptime field: FieldDescriptor,  value_type:
         try append_varint(pb, ((tag << 3) | field.ftype.get_wirevalue(value_type)), .Simple);
     }
 }
-
 
 fn append_map(pb : *ArrayList(u8), comptime field: FieldDescriptor, map: anytype) !void {
     const len_index = pb.items.len;
