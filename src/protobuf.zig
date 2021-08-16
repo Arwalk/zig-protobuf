@@ -185,13 +185,13 @@ fn append_submessage(pb :* ArrayList(u8), value: anytype) !void {
 }
 
 fn append_bytes(pb: *ArrayList(u8), value: *const ArrayList(u8)) !void {
-    try append_as_varint(pb, value.len, .ZigZagOptimized);
+    try append_as_varint(pb, value.len, .Simple);
     try pb.appendSlice(value.items);
 }
 
 fn append_list_of_fixed(pb: *ArrayList(u8), value: anytype) !void {
     const total_len = @divFloor(value.items.len * @bitSizeOf(@typeInfo(@TypeOf(value.items)).Pointer.child), 8);
-    try append_as_varint(pb, total_len, .ZigZagOptimized);
+    try append_as_varint(pb, total_len, .Simple);
     if(@TypeOf(value) == ArrayList(u8)) {
         try pb.appendSlice(value.items);
     }
