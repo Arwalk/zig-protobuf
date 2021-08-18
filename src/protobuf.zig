@@ -220,9 +220,13 @@ fn append_list_of_submessages(pb: *ArrayList(u8), value_list: anytype) !void {
     try insert_size_as_varint(pb, size_encoded, len_index);
 }
 
+fn get_full_tag_value(comptime field: FieldDescriptor, comptime value_type: type) u32 {
+    return (field.tag.? << 3) | field.ftype.get_wirevalue(value_type);
+}
+
 fn append_tag(pb : *ArrayList(u8), comptime field: FieldDescriptor,  value_type: type) !void {
-    if(field.tag) |tag|{
-        try append_varint(pb, ((tag << 3) | field.ftype.get_wirevalue(value_type)), .Simple);
+    if(field.tag) |_|{
+        try append_varint(pb, get_full_tag_value(field, value_type), .Simple);
     }
 }
 
