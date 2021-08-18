@@ -77,7 +77,7 @@ pub const FieldType = union(FieldTypeTag) {
 
     pub fn get_wirevalue(comptime ftype : FieldType, comptime value_type: type) u3 {
         const real_type: type = switch(@typeInfo(value_type)) {
-            .Optional => |capture| capture.child,
+            .Optional => |opt| opt.child,
             else => value_type
         };
         return switch (ftype) {
