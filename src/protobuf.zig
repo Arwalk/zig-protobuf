@@ -173,6 +173,14 @@ fn append_fixed(pb : *ArrayList(u8), value: anytype) !void {
     const bitsize = @bitSizeOf(@TypeOf(value));
     var as_unsigned_int = @bitCast(std.meta.Int(.unsigned, bitsize), value);
 
+    var as_unsigned_int = switch(@TypeOf(value)) {
+        f32, f64, i32, i64 => @bitCast(std.meta.Int(.unsigned, bitsize), value),
+        u32, u64, u8 => value,
+        else => blk: {
+            @compileLog("error in append_fixed, value type is",  @TypeOf(value));
+            break :blk unreachable;
+        }
+    };
     var index : usize = 0;
 
     while(index < (bitsize/8)) : (index += 1) {
