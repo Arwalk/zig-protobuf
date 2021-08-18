@@ -242,37 +242,53 @@ fn append_tag(pb : *ArrayList(u8), comptime field: FieldDescriptor,  value_type:
     }
 }
 
+fn MapSubmessage(comptime key_data : KeyValueTypeData, comptime value_data : KeyValueTypeData) type {
+    return struct {
+        const Self = @This();
+
+        key : ?key_data.t,
+        value : ?value_data.t,
+
+        pub const _desc_table = .{
+            .key = fd(1, key_data.pb_data.toFieldType()),
+            .value = fd(2, value_data.pb_data.toFieldType())
+        };
+
+        pub fn encode(self: Self, allocator: *mem.Allocator) ![]u8 {
+            return pb_encode(self, allocator);
+        }
+
+        pub fn decode(input: []const u8, allocator: *mem.Allocator) !Self {
+            return pb_decode(Self, input, allocator);
+        }
+
+        pub fn init(allocator: *mem.Allocator) Self {
+            return pb_init(Self, allocator);
+        }
+
+        pub fn deinit(self: Self) void {
+            pb_deinit(self);
+        }
+    };
+}
+
+/// Appends the content of a Map field to the pb buffer.
+/// Relies on a property of maps being basically a list of submessage with key index = 1 and value index = 2
+/// By relying on this property, encoding maps is as easy as building an internal
+/// Struct type with this data, and encoding using all the rest of the tool already
+/// at hand.
+/// See this note for details https://developers.google.com/protocol-buffers/docs/proto3#backwards_compatibility
 fn append_map(pb : *ArrayList(u8), comptime field: FieldDescriptor, map: anytype) !void {
     const len_index = pb.items.len;
     var iterator : @TypeOf(map).Iterator = map.iterator();
     const key_type_data = field.ftype.Map.key;
     const value_type_data = field.ftype.Map.value;
-    const Submessage = struct {
-        key : ?key_type_data.t,
-        value : ?value_type_data.t,
-
-        pub const _desc_table = .{
-            .key = fd(1, key_type_data.pb_data.toFieldType()),
-            .value = fd(2, value_type_data.pb_data.toFieldType())
-        };
-
-        pub fn encode(self: Submessage, allocator: *mem.Allocator) ![]u8 {
-        return pb_encode(self, allocator);
-        }
-
-        pub fn init(allocator: *mem.Allocator) Submessage {
-            return pb_init(Submessage, allocator);
-        }
-
-        pub fn deinit(self: Submessage) void {
-            pb_deinit(self);
-        }
-    };
+    const Submessage = MapSubmessage(key_type_data, value_type_data);
     while (iterator.next()) |data| {
         try append_submessage(pb, Submessage{.key = data.key_ptr.*, .value = data.value_ptr.*});
     }
     const size_encoded = pb.items.len - len_index;
-    try insert_size_as_varint(pb, size_encoded, len_index);
+    try insert_raw_varint(pb, size_encoded, len_index);
 }
 
 fn append(pb : *ArrayList(u8), comptime field: FieldDescriptor, value_type: type, value: anytype) !void {
