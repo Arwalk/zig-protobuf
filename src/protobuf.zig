@@ -109,11 +109,11 @@ pub fn fd(tag: ?u32, comptime ftype: FieldType) FieldDescriptor {
 
 fn encode_varint(pb: *ArrayList(u8), value: anytype) !void {
     var copy = value;
-    while(copy != 0) {
+    while(copy > 0x7F) {
         try pb.append(0x80 + @intCast(u8, copy & 0x7F));
         copy = copy >> 7;
     }
-    pb.items[pb.items.len - 1] = pb.items[pb.items.len - 1] & 0x7F;
+    try pb.append(@intCast(u8, copy & 0x7F));
 }
 
 fn insert_size_as_varint(pb: *ArrayList(u8), size: u64, start_index: usize) !void {
@@ -124,11 +124,11 @@ fn insert_size_as_varint(pb: *ArrayList(u8), size: u64, start_index: usize) !voi
     {
         var copy = size;
         var index = start_index;
-        while(copy != 0) : (index += 1 ) {
+        while(copy > 0x7F) : (index += 1 ) {
             try pb.insert(index, 0x80 + @intCast(u8, copy & 0x7F));
             copy = copy >> 7;
         }
-        pb.items[pb.items.len - 1] = pb.items[pb.items.len - 1] & 0x7F;
+        try pb.insert(index, @intCast(u8, copy & 0x7F));
     }
 }
 
