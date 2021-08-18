@@ -76,12 +76,16 @@ pub const FieldType = union(FieldTypeTag) {
     Map: KeyValueData,
 
     pub fn get_wirevalue(comptime ftype : FieldType, comptime value_type: type) u3 {
+        const real_type: type = switch(@typeInfo(value_type)) {
+            .Optional => |capture| capture.child,
+            else => value_type
+        };
         return switch (ftype) {
             .Varint => 0,
-            .FixedInt => return switch(@bitSizeOf(value_type)) {
+            .FixedInt => return switch(@bitSizeOf(real_type)) {
                 64 => 1,
                 32 => 5,
-                else => @panic("Invalid size for fixed int")
+                else => @compileLog("Invalid size for fixed int :", @bitSizeOf(real_type), "type is ", real_type)
             },
             .SubMessage, .List, .Map => 2,
             .OneOf => unreachable,
@@ -220,13 +224,13 @@ fn append_list_of_submessages(pb: *ArrayList(u8), value_list: anytype) !void {
     try insert_size_as_varint(pb, size_encoded, len_index);
 }
 
-fn get_full_tag_value(comptime field: FieldDescriptor, comptime value_type: type) u32 {
-    return (field.tag.? << 3) | field.ftype.get_wirevalue(value_type);
+fn get_full_tag_value(comptime field: FieldDescriptor, comptime value_type: type) ?u32 {
+    return if(field.tag) |tag| ((tag << 3)| field.ftype.get_wirevalue(value_type)) else null;
 }
 
 fn append_tag(pb : *ArrayList(u8), comptime field: FieldDescriptor,  value_type: type) !void {
-    if(field.tag) |_|{
-        try append_varint(pb, get_full_tag_value(field, value_type), .Simple);
+    if(get_full_tag_value(field, value_type)) |tag_value|{
+        try append_varint(pb, tag_value, .Simple);
     }
 }
 
@@ -456,7 +460,7 @@ const WireDecoderIterator = struct {
         if(state.current_index < state.input.len) {
             const tag_and_wire = decode_varint(u32, state.input[state.current_index..]);
             state.current_index += tag_and_wire.size;
-            const tag : u32 = (tag_and_wire.value >> 3);
+            const tag : u32 = tag_and_wire.value;
             const wire_value = tag_and_wire.value & 0b00000111;
             const data : ExtractedData = switch(wire_value) {
                 0 => blk: {
@@ -543,7 +547,10 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
     while(try iterator.next()) |extracted_data| {
         
         const field_found : ?StructField = inline for (@typeInfo(T).Struct.fields) |field| {
-            if(@field(T._desc_table, field.name).tag == extracted_data.tag) break field;
+            if(get_full_tag_value(@field(T._desc_table, field.name), field.field_type)) |tag_value|
+            {
+                if(tag_value == extracted_data.tag) break field;
+            }
         } else null;
 
         if(field_found) |field| {
