@@ -1,16 +1,19 @@
 const std = @import("std");
 const StructField = std.builtin.TypeInfo.StructField;
 const isSignedInt = std.meta.trait.isSignedInt;
+const isIntegral = std.meta.trait.isIntegral;
 
 // common definitions
 
 const ArrayList = std.ArrayList;
 
+/// Type of encoding for a Varint value.
 const VarintType = enum {
     Simple,
     ZigZagOptimized
 };
 
+/// Enum describing the different field types available.
 pub const FieldTypeTag = enum{
     Varint,
     FixedInt,
@@ -20,18 +23,21 @@ pub const FieldTypeTag = enum{
     Map
 };
 
+/// Enum describing the content type of a repeated field.
 pub const ListTypeTag = enum {
     Varint,
     FixedInt,
     SubMessage,
 };
 
+/// Tagged union for repeated fields, giving the details of the underlying type.
 pub const ListType = union(ListTypeTag) {
     Varint : VarintType,
     FixedInt,
     SubMessage,
 };
 
+/// Enum describing the details of keys or values for a map type.
 pub const KeyValueTypeTag = enum {
     Varint,
     FixedInt,
@@ -40,6 +46,7 @@ pub const KeyValueTypeTag = enum {
 
 };
 
+/// Tagged union giving the details of underlying types in a map field
 pub const  KeyValueType = union(KeyValueTypeTag) {
     Varint : VarintType,
     FixedInt,
@@ -57,24 +64,29 @@ pub const  KeyValueType = union(KeyValueTypeTag) {
     }
 };
 
+/// Struct for key and values of a map type
 pub const KeyValueTypeData = struct {
     t: type,
     pb_data: KeyValueType,
 };
 
-pub const KeyValueData = struct {
+
+/// Struct describing keys and values of a map
+pub const MapData = struct {
     key: KeyValueTypeData,
     value: KeyValueTypeData
 };
 
+/// Main tagged union holding the details of any field type.
 pub const FieldType = union(FieldTypeTag) {
     Varint : VarintType,
     FixedInt,
     SubMessage,
     List : ListType,
     OneOf: type,
-    Map: KeyValueData,
+    Map: MapData,
 
+    /// returns the wire type of a field. see https://developers.google.com/protocol-buffers/docs/encoding#structure
     pub fn get_wirevalue(comptime ftype : FieldType, comptime value_type: type) u3 {
         const real_type: type = switch(@typeInfo(value_type)) {
             .Optional => |opt| opt.child,
@@ -93,11 +105,15 @@ pub const FieldType = union(FieldTypeTag) {
     }
 };
 
+
+/// Structure describing a field. Most of the relevant informations are
+/// In the FieldType data. Tag is optional as OneOf fields are "virtual" fields.
 pub const FieldDescriptor = struct {
     tag: ?u32,
     ftype: FieldType,
 };
 
+/// Helper function to build a FieldDescriptor. Makes code clearer, mostly.
 pub fn fd(tag: ?u32, comptime ftype: FieldType) FieldDescriptor {
     return FieldDescriptor{
         .tag = tag,
@@ -107,7 +123,10 @@ pub fn fd(tag: ?u32, comptime ftype: FieldType) FieldDescriptor {
 
 // encoding
 
-fn encode_varint(pb: *ArrayList(u8), value: anytype) !void {
+/// Appends an unsigned varint value.
+/// Awaits a u64 value as it's the biggest unsigned varint possible,
+// so anything can be cast to it by definition
+fn append_raw_varint(pb: *ArrayList(u8), value: u64) !void {
     var copy = value;
     while(copy > 0x7F) {
         try pb.append(0x80 + @intCast(u8, copy & 0x7F));
@@ -116,7 +135,10 @@ fn encode_varint(pb: *ArrayList(u8), value: anytype) !void {
     try pb.append(@intCast(u8, copy & 0x7F));
 }
 
-fn insert_size_as_varint(pb: *ArrayList(u8), size: u64, start_index: usize) !void {
+/// Inserts a varint into the pb at start_index
+/// Mostly useful when inserting the size of a field after it has been
+/// Appended to the pb buffer.
+fn insert_raw_varint(pb: *ArrayList(u8), size: u64, start_index: usize) !void {
     if(size < 0x7F){
         try pb.insert(start_index, @truncate(u8, size));
     }
@@ -132,6 +154,9 @@ fn insert_size_as_varint(pb: *ArrayList(u8), size: u64, start_index: usize) !voi
     }
 }
 
+/// Appends a varint to the pb array. 
+/// Mostly does the required transformations to use append_raw_varint
+/// after making the value some kind of unsigned value.
 fn append_as_varint(pb: *ArrayList(u8), value: anytype, comptime varint_type: VarintType) !void {
     if(value < 0x7F and value >= 0){
         try pb.append(@intCast(u8, value));
@@ -154,13 +179,15 @@ fn append_as_varint(pb: *ArrayList(u8), value: anytype, comptime varint_type: Va
             else
             {
                 break :blk @intCast(u64, value);
-            }   
+            }
         };
 
-        try encode_varint(pb, val);
+        try append_raw_varint(pb, val);
     }
 }
 
+/// Append a value of any complex type that can be transfered as a varint
+/// Only serves as an indirection to manage Enum and Booleans properly.
 fn append_varint(pb : *ArrayList(u8), value: anytype, comptime varint_type: VarintType) !void {
     switch(@typeInfo(@TypeOf(value))) {
         .Enum => try append_as_varint(pb, @as(i32, @enumToInt(value)), varint_type),
@@ -169,9 +196,10 @@ fn append_varint(pb : *ArrayList(u8), value: anytype, comptime varint_type: Vari
     }
 }
 
+/// Appends a fixed size int to the pb buffer.
+/// Takes care of casting any signed/float value to an appropriate unsigned type
 fn append_fixed(pb : *ArrayList(u8), value: anytype) !void {
     const bitsize = @bitSizeOf(@TypeOf(value));
-    var as_unsigned_int = @bitCast(std.meta.Int(.unsigned, bitsize), value);
 
     var as_unsigned_int = switch(@TypeOf(value)) {
         f32, f64, i32, i64 => @bitCast(std.meta.Int(.unsigned, bitsize), value),
@@ -189,18 +217,22 @@ fn append_fixed(pb : *ArrayList(u8), value: anytype) !void {
     }
 }
 
+/// Appends a submessage to the array.
+/// Recursively calls internal_pb_encode.
 fn append_submessage(pb :* ArrayList(u8), value: anytype) !void {
     const len_index = pb.items.len;
     try internal_pb_encode(pb, value);
     const size_encoded = pb.items.len - len_index;
-    try insert_size_as_varint(pb, size_encoded, len_index);
+    try insert_raw_varint(pb, size_encoded, len_index);
 }
 
+/// Simple appending of a list of bytes.
 fn append_bytes(pb: *ArrayList(u8), value: *const ArrayList(u8)) !void {
     try append_as_varint(pb, value.len, .Simple);
     try pb.appendSlice(value.items);
 }
 
+/// simple appending of a list of fixed-size data.
 fn append_list_of_fixed(pb: *ArrayList(u8), value: anytype) !void {
     const total_len = @divFloor(value.items.len * @bitSizeOf(@typeInfo(@TypeOf(value.items)).Pointer.child), 8);
     try append_as_varint(pb, total_len, .Simple);
@@ -214,28 +246,34 @@ fn append_list_of_fixed(pb: *ArrayList(u8), value: anytype) !void {
     }
 }
 
+/// Appends a list of varint to the pb buffer.
 fn append_list_of_varint(pb : *ArrayList(u8), value_list: anytype, comptime varint_type: VarintType) !void {
     const len_index = pb.items.len;
     for(value_list.items) |item| {
         try append_varint(pb, item, varint_type);
     }
     const size_encoded = pb.items.len - len_index;
-    try insert_size_as_varint(pb, size_encoded, len_index);
+    try insert_raw_varint(pb, size_encoded, len_index);
 }
 
+/// Appends a list of submessages to the pb_buffer.
 fn append_list_of_submessages(pb: *ArrayList(u8), value_list: anytype) !void {
     const len_index = pb.items.len;
     for(value_list.items) |item| {
         try append_submessage(pb, item);
     }
     const size_encoded = pb.items.len - len_index;
-    try insert_size_as_varint(pb, size_encoded, len_index);
+    try insert_raw_varint(pb, size_encoded, len_index);
 }
 
+
+/// calculates the comptime value of (tag_index << 3) + wire type. 
+/// This is fully calculated at comptime which is great.
 fn get_full_tag_value(comptime field: FieldDescriptor, comptime value_type: type) ?u32 {
     return if(field.tag) |tag| ((tag << 3)| field.ftype.get_wirevalue(value_type)) else null;
 }
 
+/// Appends the full tag of the field in the pb buffer, if there is any.
 fn append_tag(pb : *ArrayList(u8), comptime field: FieldDescriptor,  value_type: type) !void {
     if(get_full_tag_value(field, value_type)) |tag_value|{
         try append_varint(pb, tag_value, .Simple);
@@ -291,6 +329,8 @@ fn append_map(pb : *ArrayList(u8), comptime field: FieldDescriptor, map: anytype
     try insert_raw_varint(pb, size_encoded, len_index);
 }
 
+/// Appends a value to the pb buffer. Starts by appending the tag, then a comptime switch
+/// routes the code to the correct type of data to append. 
 fn append(pb : *ArrayList(u8), comptime field: FieldDescriptor, value_type: type, value: anytype) !void {
     try append_tag(pb, field, value_type);
     switch(field.ftype)
@@ -331,6 +371,8 @@ fn append(pb : *ArrayList(u8), comptime field: FieldDescriptor, value_type: type
     }
 }
 
+/// Internal function that decodes the descriptor information and struct fields
+/// before passing them to the append function
 fn internal_pb_encode(pb : *ArrayList(u8), data: anytype) !void {
     const field_list  = @typeInfo(@TypeOf(data)).Struct.fields;
     const data_type = @TypeOf(data);
@@ -357,6 +399,7 @@ fn internal_pb_encode(pb : *ArrayList(u8), data: anytype) !void {
     }
 }
 
+/// Public encoding function, meant to be embdedded in generated structs
 pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
     var pb = ArrayList(u8).init(allocator);
     errdefer pb.deinit();
@@ -366,6 +409,7 @@ pub fn pb_encode(data : anytype, allocator: *std.mem.Allocator) ![]u8 {
     return pb.toOwnedSlice();
 }
 
+/// Generic init function. Properly initialise any field required. Meant to be embedded in generated structs.
 pub fn pb_init(comptime T: type, allocator : *std.mem.Allocator) T {
 
     var value: T = undefined;
@@ -387,6 +431,16 @@ pub fn pb_init(comptime T: type, allocator : *std.mem.Allocator) T {
     return value;
 }
 
+/// Generic deinit function. Properly initialise any field required. Meant to be embedded in generated structs.
+pub fn pb_deinit(data: anytype) void {
+    const T  = @TypeOf(data);
+
+    inline for (@typeInfo(T).Struct.fields) |field| {
+        deinit_field(data, field.name, @field(T._desc_table, field.name).ftype);
+    }
+}
+
+/// Internal deinit function for a specific field
 fn deinit_field(field: anytype, comptime field_name: []const u8, comptime ftype: FieldType) void {
     switch(ftype) {
         .Varint, .FixedInt => {},
@@ -419,31 +473,28 @@ fn deinit_field(field: anytype, comptime field_name: []const u8, comptime ftype:
     }
 }
 
-pub fn pb_deinit(data: anytype) void {
-    const T  = @TypeOf(data);
-
-    inline for (@typeInfo(T).Struct.fields) |field| {
-        deinit_field(data, field.name, @field(T._desc_table, field.name).ftype);
-    }
-}
-
 // decoding
 
+/// Enum describing if described data is raw (<u64) data or a byte slice.
 const ExtractedDataTag = enum {
     RawValue,
     Slice,
 };
 
+/// Union enclosing either a u64 raw value, or a byte slice.
 const ExtractedData = union(ExtractedDataTag) {
     RawValue : u64,
     Slice: []const u8
 };
 
+/// Unit of extracted data from a stream
+/// Please not that "tag" is supposed to be the full tag. See get_full_tag_value.
 const Extracted = struct {
     tag: u32,
     data: ExtractedData
 };
 
+/// Decoded varint value generic type
 fn DecodedVarint(comptime T: type) type {
     return struct {
         value: T,
@@ -451,6 +502,7 @@ fn DecodedVarint(comptime T: type) type {
     };
 }
 
+/// Decodes a varint from a slice, to type T.
 fn decode_varint(comptime T: type, input: []const u8) DecodedVarint(T) {
     var value: T = 0;
     var index: usize = 0;
@@ -467,6 +519,7 @@ fn decode_varint(comptime T: type, input: []const u8) DecodedVarint(T) {
     };
 }
 
+/// Decodes a fixed value to type T
 fn decode_fixed(comptime T : type, slice: []const u8) T {
     var result : T = 0;
 
@@ -476,10 +529,12 @@ fn decode_fixed(comptime T : type, slice: []const u8) T {
     return result;
 }
 
+/// "Tokenizer" of a byte slice to raw pb data.
 const WireDecoderIterator = struct {
     input: []const u8,
     current_index : usize = 0,
 
+    /// Attempts at decoding the next pb_buffer data.
     fn next(state: *WireDecoderIterator) !?Extracted {
         if(state.current_index < state.input.len) {
             const tag_and_wire = decode_varint(u32, state.input[state.current_index..]);
@@ -519,19 +574,7 @@ const WireDecoderIterator = struct {
     }
 };
 
-fn get_descriptor(comptime fields : []const FieldDescriptor, tag: u32) ?*const FieldDescriptor {
-    return inline for(fields) |*desc| {
-        if(desc.tag == tag) break desc;
-    } else null;
-}
-
-const FullFieldDescriptor = struct {
-    field_name: []const u8,
-    tag: u32,
-    pb_type: FieldType,
-    real_type: type
-};
-
+/// Get a real varint of type T from a raw u64 data.
 fn get_varint_value(comptime T : type, comptime varint_type : VarintType, raw: u64) T {
     return comptime switch(varint_type) {
         .ZigZagOptimized => 
@@ -555,6 +598,7 @@ fn get_varint_value(comptime T : type, comptime varint_type : VarintType, raw: u
     };
 }
 
+/// Get a real fixed value of type T from a raw u64 value.
 fn get_fixed_value(comptime T: type, raw: u64) T {
     return switch(T) {
         i32, u32, i64, u64 => @ptrCast(*const T, &@truncate(std.meta.Int(.unsigned, @bitSizeOf(T)), raw)).*,
@@ -563,6 +607,9 @@ fn get_fixed_value(comptime T: type, raw: u64) T {
     };
 }
 
+
+/// public decoding function meant to be embedded in message structures
+/// Iterates over the input and try to fill the resulting structure accordingly.
 pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Allocator) !T {
     var result = pb_init(T, allocator);
     
