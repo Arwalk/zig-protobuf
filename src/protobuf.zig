@@ -88,6 +88,13 @@ pub const FieldType = union(FieldTypeTag) {
 
     /// returns the wire type of a field. see https://developers.google.com/protocol-buffers/docs/encoding#structure
     pub fn get_wirevalue(comptime ftype : FieldType, comptime value_type: type) u3 {
+        comptime{
+            switch(ftype)
+            {
+                .OneOf => @compileError("Shouldn't pass a .OneOf field to this function here."),
+                else => {}
+            }
+        }
         const real_type: type = switch(@typeInfo(value_type)) {
             .Optional => |opt| opt.child,
             else => value_type
@@ -199,15 +206,20 @@ fn append_varint(pb : *ArrayList(u8), value: anytype, comptime varint_type: Vari
 /// Appends a fixed size int to the pb buffer.
 /// Takes care of casting any signed/float value to an appropriate unsigned type
 fn append_fixed(pb : *ArrayList(u8), value: anytype) !void {
+
+    comptime {
+        switch(@TypeOf(value)) {
+            f32, f64, i32, i64, u32, u64, u8 => {},
+            else => @compileError("Invalid type for append_fixed")
+        }
+    }
+
     const bitsize = @bitSizeOf(@TypeOf(value));
 
     var as_unsigned_int = switch(@TypeOf(value)) {
         f32, f64, i32, i64 => @bitCast(std.meta.Int(.unsigned, bitsize), value),
         u32, u64, u8 => value,
-        else => blk: {
-            @compileLog("error in append_fixed, value type is",  @TypeOf(value));
-            break :blk unreachable;
-        }
+        else => unreachable
     };
     var index : usize = 0;
 
@@ -600,10 +612,18 @@ fn get_varint_value(comptime T : type, comptime varint_type : VarintType, raw: u
 
 /// Get a real fixed value of type T from a raw u64 value.
 fn get_fixed_value(comptime T: type, raw: u64) T {
+
+    comptime {
+        switch(T) {
+            i32, u32, i64, u64, f32, f64 => {},
+            else => @compileError("Invalid type for get_fixed_value")
+        }
+    }
+
     return switch(T) {
         i32, u32, i64, u64 => @ptrCast(*const T, &@truncate(std.meta.Int(.unsigned, @bitSizeOf(T)), raw)).*,
         f32, f64 => @ptrCast(*T, &@intCast(std.meta.Int(.unsigned, @bitSizeOf(T)), raw)).*,
-        else => @compileLog("Not implemented")
+        else => unreachable
     };
 }
 
