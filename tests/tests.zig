@@ -98,14 +98,22 @@ const WithNegativeIntegers = struct {
     pub fn deinit(self: WithNegativeIntegers) void {
         pb_deinit(self);
     }
+
+    pub fn decode(input: []const u8, allocator: *mem.Allocator) !WithNegativeIntegers {
+        return pb_decode(WithNegativeIntegers, input, allocator);
+    }
+
 };
 
 test "basic encoding with negative numbers" {
     var demo = WithNegativeIntegers{.a = -2, .b = -1};
     const obtained = try demo.encode(testing.allocator);
+    defer demo.deinit();
     defer testing.allocator.free(obtained);
     // 0x08
     try testing.expectEqualSlices(u8, &[_]u8{0x08, 0x03, 0x10, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F}, obtained);
+    const decoded = try WithNegativeIntegers.decode(obtained, testing.allocator);
+    try testing.expectEqual(demo, decoded);
 }
 
 const DemoWithAllVarint = struct {
@@ -182,6 +190,9 @@ test "DemoWithAllVarint" {
             0x48, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F,
             0x50, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01
         },obtained);
+    
+    const decoded = try DemoWithAllVarint.decode(obtained, testing.allocator);
+    try testing.expectEqual(demo, decoded);
 }
 
 test "decodevarint" {
@@ -290,6 +301,10 @@ const WithSubmessages = struct {
 
     pub fn deinit(self: WithSubmessages) void {
         pb_deinit(self);
+    }
+
+    pub fn decode(input : []const u8, allocator: *mem.Allocator) !WithSubmessages {
+        return pb_decode(WithSubmessages, input, allocator);
     }
 };
 
