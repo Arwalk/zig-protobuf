@@ -595,14 +595,25 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
         } else null;
 
         if (field_found) |field| {
-            const child_type = @typeInfo(field.field_type).Optional.child;
+            switch (@field(T._desc_table, field.name).ftype) {
+                .Varint, .FixedInt, .SubMessage => {
+                    const child_type = @typeInfo(field.field_type).Optional.child;
 
-            @field(result, field.name) = switch (@field(T._desc_table, field.name).ftype) {
-                .Varint => |varint_type| get_varint_value(child_type, varint_type, extracted_data.data.RawValue),
-                .FixedInt => get_fixed_value(child_type, extracted_data.data.RawValue),
-                .SubMessage => try pb_decode(child_type, extracted_data.data.Slice, allocator),
-                else => @panic("Not implemented"),
-            };
+                    @field(result, field.name) = switch (@field(T._desc_table, field.name).ftype) {
+                        .Varint => |varint_type| get_varint_value(child_type, varint_type, extracted_data.data.RawValue),
+                        .FixedInt => get_fixed_value(child_type, extracted_data.data.RawValue),
+                        .SubMessage => try pb_decode(child_type, extracted_data.data.Slice, allocator),
+                        else => @panic("Not implemented"),
+                    };
+                },
+                .List => {
+                    for (extracted_data.data.Slice) |item| {
+                        try @field(result, field.name).append(item);
+                    }
+                },
+                else => @panic("Not implemented")
+            }
+            
         }
     }
 

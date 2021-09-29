@@ -195,37 +195,6 @@ test "DemoWithAllVarint" {
     try testing.expectEqual(demo, decoded);
 }
 
-test "decodevarint" {
-    var expected = DemoWithAllVarint{
-        .sint32 = -1,
-        .sint64 = -1,
-        .uint32 = 150,
-        .uint64 = 150,
-        .a_bool = true,
-        .a_enum = DemoWithAllVarint.DemoEnum.AndAnother,
-        .pos_int32 = 1,
-        .pos_int64 = 2,
-        .neg_int32 = -1,
-        .neg_int64 = -2
-    };
-
-    const encoded = [_]u8{
-            0x08, 0x01,
-            0x10, 0x01,
-            0x18, 0x96, 0x01,
-            0x20, 0x96, 0x01,
-            0x28, 0x01,
-            0x30, 0x02,
-            0x38, 0x01,
-            0x40, 0x02,
-            0x48, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F,
-            0x50, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01
-    };
-
-    const decoded = try DemoWithAllVarint.decode(&encoded, testing.allocator);
-    try testing.expectEqual(expected, decoded);
-}
-
 
 const FixedSizes = struct {
     sfixed64 : ?i64,
@@ -351,6 +320,11 @@ const WithBytes = struct {
     pub fn init(allocator: *mem.Allocator) WithBytes {
         return pb_init(WithBytes, allocator);
     }
+    
+    pub fn decode(input : []const u8, allocator: *mem.Allocator) !WithBytes {
+        return pb_decode(WithBytes, input, allocator);
+    }
+
 };
 
 test "bytes"  {
@@ -366,6 +340,10 @@ test "bytes"  {
         0x08 + 2, 0x02,
             0x08, 0x01,
     }, obtained);
+
+    const decoded = try WithBytes.decode(obtained, testing.allocator);
+    defer decoded.deinit();
+    try testing.expectEqualSlices(u8, demo.list_of_data.items, decoded.list_of_data.items);
 }
 
 const FixedSizesList = struct {
