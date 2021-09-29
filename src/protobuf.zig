@@ -390,10 +390,10 @@ pub fn pb_init(comptime T: type, allocator: *std.mem.Allocator) T {
 
     inline for (@typeInfo(T).Struct.fields) |field| {
         switch (@field(T._desc_table, field.name).ftype) {
-            .Varint, .FixedInt => {
+            .Varint, .FixedInt, .SubMessage => {
                 @field(value, field.name) = if (field.default_value) |val| val else null;
             },
-            .SubMessage, .List, .Map => {
+            .List, .Map => {
                 @field(value, field.name) = @TypeOf(@field(value, field.name)).init(allocator);
             },
             .OneOf => {
@@ -527,6 +527,12 @@ const WireDecoderIterator = struct {
                     state.current_index += 4;
                     break :blk value;
                 },
+                2 => blk: {
+                    const size = decode_varint(u32, state.input[state.current_index..]);
+                    const value = ExtractedData{ .Slice = state.input[(state.current_index + size.size)..(state.current_index + size.size + size.value)]};
+                    state.current_index += size.value + size.size;
+                    break :blk value;
+                },
                 else => @panic("Not implemented yet"),
             };
 
@@ -594,6 +600,7 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
             @field(result, field.name) = switch (@field(T._desc_table, field.name).ftype) {
                 .Varint => |varint_type| get_varint_value(child_type, varint_type, extracted_data.data.RawValue),
                 .FixedInt => get_fixed_value(child_type, extracted_data.data.RawValue),
+                .SubMessage => try pb_decode(child_type, extracted_data.data.Slice, allocator),
                 else => @panic("Not implemented"),
             };
         }

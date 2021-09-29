@@ -1,5 +1,5 @@
 const std = @import("std");
-const protobuf = @import("protobuf");
+const protobuf = @import("protobuf.zig");
 usingnamespace protobuf;
 usingnamespace std;
 const eql = mem.eql;
@@ -55,8 +55,8 @@ const Demo2 = struct {
     b : ?u32,
 
     pub const _desc_table = .{
-        .a = fd(1, .{.Varint = .ZigZagOptimized}),
-        .b = fd(2, .{.Varint = .ZigZagOptimized}),
+        .a = fd(1, .{.Varint = .Simple}),
+        .b = fd(2, .{.Varint = .Simple}),
     };
 
     pub fn encode(self: Demo2, allocator: *mem.Allocator) ![]u8 {
@@ -306,6 +306,10 @@ const WithSubmessages = struct {
     pub fn decode(input : []const u8, allocator: *mem.Allocator) !WithSubmessages {
         return pb_decode(WithSubmessages, input, allocator);
     }
+
+    pub fn init(allocator: *mem.Allocator) WithSubmessages {
+        return pb_init(WithSubmessages, allocator);
+    }
 };
 
 test "WithSubmessages" {
@@ -324,6 +328,9 @@ test "WithSubmessages" {
             0x08, 0x02,
             0x10, 0x03
     }, obtained);
+
+    const decoded = try WithSubmessages.decode(obtained, testing.allocator);
+    try testing.expectEqual(demo, decoded);
 }
 
 const WithBytes = struct {
@@ -569,10 +576,10 @@ const DefaultValuesInit = struct {
     d : ?u32,
 
     pub const _desc_table = .{
-        .a = fd(1, .{.Varint = .ZigZagOptimized}),
-        .b = fd(2, .{.Varint = .ZigZagOptimized}),
-        .c = fd(3, .{.Varint = .ZigZagOptimized}),
-        .d = fd(4, .{.Varint = .ZigZagOptimized}),
+        .a = fd(1, .{.Varint = .Simple}),
+        .b = fd(2, .{.Varint = .Simple}),
+        .c = fd(3, .{.Varint = .Simple}),
+        .d = fd(4, .{.Varint = .Simple}),
     };
 
     pub fn encode(self: DefaultValuesInit, allocator: *mem.Allocator) ![]u8 {
@@ -607,7 +614,7 @@ const OneOfDemo = struct {
         value_2: ArrayList(u32),
 
         pub const _union_desc = .{
-            .value_1 = fd( 1, .{.Varint = .ZigZagOptimized}),
+            .value_1 = fd( 1, .{.Varint = .Simple}),
             .value_2 = fd( 2, .{.List = .{.Varint = .Simple}})
         };
     };

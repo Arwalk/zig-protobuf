@@ -11,7 +11,7 @@ pub fn build(b: *std.build.Builder) void {
 
     var tests = [_]*std.build.LibExeObjStep{
         b.addTest("src/protobuf.zig"),
-        b.addTest("tests/tests.zig"),
+        b.addTest("src/tests.zig"),
         b.addTest("tests/alltypes.zig"),
     };
 
