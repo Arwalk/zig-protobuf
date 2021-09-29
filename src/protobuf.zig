@@ -529,7 +529,7 @@ const WireDecoderIterator = struct {
                 },
                 2 => blk: {
                     const size = decode_varint(u32, state.input[state.current_index..]);
-                    const value = ExtractedData{ .Slice = state.input[(state.current_index + size.size)..(state.current_index + size.size + size.value)]};
+                    const value = ExtractedData{ .Slice = state.input[(state.current_index + size.size)..(state.current_index + size.size + size.value)] };
                     state.current_index += size.value + size.size;
                     break :blk value;
                 },
@@ -609,9 +609,8 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
                 .List => {
                     try @field(result, field.name).appendSlice(extracted_data.data.Slice);
                 },
-                else => @panic("Not implemented")
+                else => @panic("Not implemented"),
             }
-            
         }
     }
 
