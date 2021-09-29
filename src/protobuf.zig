@@ -607,9 +607,7 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
                     };
                 },
                 .List => {
-                    for (extracted_data.data.Slice) |item| {
-                        try @field(result, field.name).append(item);
-                    }
+                    try @field(result, field.name).appendSlice(extracted_data.data.Slice);
                 },
                 else => @panic("Not implemented")
             }
