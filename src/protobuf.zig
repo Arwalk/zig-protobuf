@@ -489,12 +489,65 @@ fn decode_varint(comptime T: type, input: []const u8) DecodedVarint(T) {
 
 /// Decodes a fixed value to type T
 fn decode_fixed(comptime T: type, slice: []const u8) T {
-    var result: T = 0;
+    const result_base: type = switch (@bitSizeOf(T)) {
+        32 => u32,
+        64 => u64,
+        else => @compileError("can only manage 32 or 64 bit sizes"),
+    };
+    var result: result_base = 0;
 
     for (slice) |byte, index| {
-        result += @as(T, byte) << (@intCast(std.math.Log2Int(T), index * 8));
+        result += @intCast(result_base, byte) << (@intCast(std.math.Log2Int(result_base), index * 8));
     }
-    return result;
+    return switch (T) {
+        u32, u64 => result,
+        else => @bitCast(T, result),
+    };
+}
+
+test "decode fixed" {
+    const u_32 = [_]u8{ 2, 0, 0, 0 };
+    const u_32_result: u32 = 2;
+    try testing.expectEqual(u_32_result, decode_fixed(u32, &u_32));
+
+    const u_64 = [_]u8{ 1, 0, 0, 0, 0, 0, 0, 0 };
+    const u_64_result: u64 = 1;
+    try testing.expectEqual(u_64_result, decode_fixed(u64, &u_64));
+
+    const i_32 = [_]u8{ 0xFF, 0xFF, 0xFF, 0xFF };
+    const i_32_result: i32 = -1;
+    try testing.expectEqual(i_32_result, decode_fixed(i32, &i_32));
+
+    const i_64 = [_]u8{ 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+    const i_64_result: i64 = -2;
+    try testing.expectEqual(i_64_result, decode_fixed(i64, &i_64));
+
+    const f_32 = [_]u8{ 0x00, 0x00, 0xa0, 0x40 };
+    const f_32_result: f32 = 5.0;
+    try testing.expectEqual(f_32_result, decode_fixed(f32, &f_32));
+
+    const f_64 = [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x40 };
+    const f_64_result: f64 = 5.0;
+    try testing.expectEqual(f_64_result, decode_fixed(f64, &f_64));
+}
+
+fn FixedDecoderIterator(comptime T: type) type {
+    return struct {
+        const Self = @This();
+        const value_type = T;
+        const num_bytes = @divFloor(@bitSizeOf(T), 8);
+
+        input: []const u8,
+        current_index: usize = 0,
+
+        fn next(self: *Self) ?T {
+            if (self.current_index < self.input.len) {
+                defer self.current_index += Self.num_bytes;
+                return decode_fixed(T, self.input[self.current_index .. self.current_index + Self.num_bytes]);
+            }
+            return null;
+        }
+    };
 }
 
 /// "Tokenizer" of a byte slice to raw pb data.
@@ -609,9 +662,16 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
                 .List => |list_type| {
                     switch (list_type) {
                         .FixedInt => {
-                            switch (@typeInfo(@TypeOf(@field(result, field.name).items)).Pointer.child) {
+                            const child_type = @typeInfo(@TypeOf(@field(result, field.name).items)).Pointer.child;
+                            switch (child_type) {
                                 u8 => try @field(result, field.name).appendSlice(extracted_data.data.Slice),
-                                else => @panic("Not implemented"),
+                                u32, i32, u64, i64, f32, f64 => {
+                                    var fixed_iterator = FixedDecoderIterator(child_type){ .input = extracted_data.data.Slice };
+                                    while (fixed_iterator.next()) |value| {
+                                        try @field(result, field.name).append(value);
+                                    }
+                                },
+                                else => @compileError("can't encode this bruh"),
                             }
                         },
                         else => @panic("Not implemented"),

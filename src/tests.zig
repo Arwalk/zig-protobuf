@@ -314,6 +314,10 @@ const FixedSizesList = struct {
     pub fn init(allocator: *mem.Allocator) FixedSizesList {
         return pb_init(FixedSizesList, allocator);
     }
+
+    pub fn decode(input: []const u8, allocator: *mem.Allocator) !FixedSizesList {
+        return pb_decode(FixedSizesList, input, allocator);
+    }
 };
 
 fn log_slice(slice: []const u8) void {
@@ -342,6 +346,10 @@ test "FixedSizesList" {
         0x04,     0x00,
         0x00,     0x00,
     }, obtained);
+
+    const decoded = try FixedSizesList.decode(obtained, testing.allocator);
+    defer decoded.deinit();
+    try testing.expectEqualSlices(u32, demo.fixed32List.items, decoded.fixed32List.items);
 }
 
 const VarintList = struct {
