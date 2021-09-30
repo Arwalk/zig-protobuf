@@ -606,8 +606,16 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
                         else => @panic("Not implemented"),
                     };
                 },
-                .List => {
-                    try @field(result, field.name).appendSlice(extracted_data.data.Slice);
+                .List => |list_type| {
+                    switch (list_type) {
+                        .FixedInt => {
+                            switch (@typeInfo(@TypeOf(@field(result, field.name).items)).Pointer.child) {
+                                u8 => try @field(result, field.name).appendSlice(extracted_data.data.Slice),
+                                else => @panic("Not implemented"),
+                            }
+                        },
+                        else => @panic("Not implemented"),
+                    }
                 },
                 else => @panic("Not implemented"),
             }
