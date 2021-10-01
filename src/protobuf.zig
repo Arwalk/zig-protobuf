@@ -534,7 +534,6 @@ test "decode fixed" {
 fn FixedDecoderIterator(comptime T: type) type {
     return struct {
         const Self = @This();
-        const value_type = T;
         const num_bytes = @divFloor(@bitSizeOf(T), 8);
 
         input: []const u8,
@@ -544,6 +543,24 @@ fn FixedDecoderIterator(comptime T: type) type {
             if (self.current_index < self.input.len) {
                 defer self.current_index += Self.num_bytes;
                 return decode_fixed(T, self.input[self.current_index .. self.current_index + Self.num_bytes]);
+            }
+            return null;
+        }
+    };
+}
+
+fn VarintDecoderIterator(comptime T: type, comptime varint_type: VarintType) type {
+    return struct {
+        const Self = @This();
+
+        input: []const u8,
+        current_index: usize = 0,
+
+        fn next(self: *Self) ?T {
+            if (self.current_index < self.input.len) {
+                const raw_value = decode_varint(u64, self.input[self.current_index..]);
+                defer self.current_index += raw_value.size;
+                return get_varint_value(T, varint_type, raw_value.value);
             }
             return null;
         }
@@ -660,9 +677,9 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
                     };
                 },
                 .List => |list_type| {
+                    const child_type = @typeInfo(@TypeOf(@field(result, field.name).items)).Pointer.child;
                     switch (list_type) {
                         .FixedInt => {
-                            const child_type = @typeInfo(@TypeOf(@field(result, field.name).items)).Pointer.child;
                             switch (child_type) {
                                 u8 => try @field(result, field.name).appendSlice(extracted_data.data.Slice),
                                 u32, i32, u64, i64, f32, f64 => {
@@ -672,6 +689,12 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
                                     }
                                 },
                                 else => @compileError("can't encode this bruh"),
+                            }
+                        },
+                        .Varint => |varint_type| {
+                            var varint_iterator = VarintDecoderIterator(child_type, varint_type) {.input = extracted_data.data.Slice };
+                            while(varint_iterator.next()) |value| {
+                                try @field(result, field.name).append(value);
                             }
                         },
                         else => @panic("Not implemented"),

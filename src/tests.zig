@@ -370,6 +370,10 @@ const VarintList = struct {
     pub fn init(allocator: *mem.Allocator) VarintList {
         return pb_init(VarintList, allocator);
     }
+
+     pub fn decode(input: []const u8, allocator: *mem.Allocator) !VarintList {
+        return pb_decode(VarintList, input, allocator);
+    }
 };
 
 test "VarintList" {
@@ -388,6 +392,10 @@ test "VarintList" {
         0x01,     0x02,
         0x03,     0x04,
     }, obtained);
+
+    const decoded = try VarintList.decode(obtained, testing.allocator);
+    defer decoded.deinit();
+    try testing.expectEqualSlices(u32, demo.varuint32List.items, decoded.varuint32List.items);
 }
 
 const SubMessageList = struct {
