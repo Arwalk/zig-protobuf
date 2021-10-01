@@ -637,10 +637,7 @@ fn get_varint_value(comptime T: type, comptime varint_type: VarintType, raw: u64
 /// Get a real fixed value of type T from a raw u64 value.
 fn get_fixed_value(comptime T: type, raw: u64) T {
     return switch (T) {
-        i32,
-        u32,
-        f32,
-        => @bitCast(T, @truncate(std.meta.Int(.unsigned, @bitSizeOf(T)), raw)),
+        i32, u32, f32 => @bitCast(T, @truncate(std.meta.Int(.unsigned, @bitSizeOf(T)), raw)),
         i64, f64, u64 => @bitCast(T, raw),
         else => @compileError("Invalid type for get_fixed_value"),
     };
