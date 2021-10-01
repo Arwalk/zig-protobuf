@@ -619,17 +619,17 @@ fn get_varint_value(comptime T: type, comptime varint_type: VarintType, raw: u64
         .ZigZagOptimized => switch (@typeInfo(T)) {
             .Int => @intCast(T, (@intCast(i64, raw) >> 1) ^ (-(@intCast(i64, raw) & 1))),
             .Enum => @intToEnum(T, @intCast(i32, (@intCast(i64, raw) >> 1) ^ (-(@intCast(i64, raw) & 1)))),
-            else => unreachable,
+            else => @compileError("Invalid type passed"),
         },
         .Simple => switch (@typeInfo(T)) {
             .Int => switch (T) {
                 u32, u64 => @intCast(T, raw),
                 i32, i64 => @bitCast(T, @truncate(std.meta.Int(.unsigned, @bitSizeOf(T)), raw)),
-                else => unreachable,
+                else => @compileError("Invalid type passed"),
             },
             .Bool => raw == 1,
             .Enum => @intToEnum(T, @intCast(i32, raw)),
-            else => unreachable,
+            else => @compileError("Invalid type passed"),
         },
     };
 }
