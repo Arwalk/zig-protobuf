@@ -62,7 +62,7 @@ The current version of the zig compiler used for this project is 0.9.0-dev.689+5
     - [x] string / bytes
 - [x] Enumerations
 - [x] Submessages
-- [ ] Any
+- [x] Any
 - [ ] Oneof
 - [ ] Maps
 
