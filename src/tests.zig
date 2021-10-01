@@ -371,7 +371,7 @@ const VarintList = struct {
         return pb_init(VarintList, allocator);
     }
 
-     pub fn decode(input: []const u8, allocator: *mem.Allocator) !VarintList {
+    pub fn decode(input: []const u8, allocator: *mem.Allocator) !VarintList {
         return pb_decode(VarintList, input, allocator);
     }
 };
@@ -416,6 +416,10 @@ const SubMessageList = struct {
     pub fn init(allocator: *mem.Allocator) SubMessageList {
         return pb_init(SubMessageList, allocator);
     }
+
+    pub fn decode(input: []const u8, allocator: *mem.Allocator) !SubMessageList {
+        return pb_decode(SubMessageList, input, allocator);
+    }
 };
 
 // .{.a = 1}
@@ -447,6 +451,10 @@ test "SubMessageList" {
         0x08,
         0x04,
     }, obtained);
+
+    const decoded = try SubMessageList.decode(obtained, testing.allocator);
+    defer decoded.deinit();
+    try testing.expectEqualSlices(Demo1, demo.subMessageList.items, decoded.subMessageList.items);
 }
 
 const EmptyLists = struct {

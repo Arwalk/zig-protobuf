@@ -567,6 +567,26 @@ fn VarintDecoderIterator(comptime T: type, comptime varint_type: VarintType) typ
     };
 }
 
+fn SubmessageDecoderIterator(comptime T: type)  type {
+    return struct {
+        const Self = @This();
+
+        input: []const u8,
+        current_index: usize = 0,
+        allocator: *std.mem.Allocator,
+
+        fn next(self: *Self) !?T {
+            if (self.current_index < self.input.len) {
+                const size = decode_varint(u64, self.input[self.current_index..]);
+                self.current_index += size.size;
+                defer self.current_index += size.value;
+                return try T.decode(self.input[self.current_index..self.current_index+size.value], self.allocator);
+            }
+            return null;
+        }
+    };
+}
+
 /// "Tokenizer" of a byte slice to raw pb data.
 const WireDecoderIterator = struct {
     input: []const u8,
@@ -690,7 +710,12 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
                                 try @field(result, field.name).append(value);
                             }
                         },
-                        else => @panic("Not implemented"),
+                        .SubMessage => {
+                            var submessage_iterator = SubmessageDecoderIterator(child_type){.input = extracted_data.data.Slice, .allocator = allocator };
+                            while(try submessage_iterator.next()) |value| {
+                                try @field(result, field.name).append(value);
+                            }
+                        }
                     }
                 },
                 else => @panic("Not implemented"),
