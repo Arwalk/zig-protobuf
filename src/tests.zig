@@ -520,6 +520,10 @@ const EmptyMessage = struct {
     pub fn init(allocator: *mem.Allocator) EmptyMessage {
         return pb_init(EmptyMessage, allocator);
     }
+
+    pub fn decode(input: []const u8, allocator: *mem.Allocator) !EmptyMessage {
+        return pb_decode(EmptyMessage, input, allocator);
+    }
 };
 
 test "EmptyMessage" {
@@ -530,6 +534,10 @@ test "EmptyMessage" {
     defer testing.allocator.free(obtained);
 
     try testing.expectEqualSlices(u8, &[_]u8{}, obtained);
+
+    const decoded = try EmptyMessage.decode(obtained, testing.allocator);
+    defer decoded.deinit();
+    try testing.expectEqual(demo, decoded);
 }
 
 const DefaultValuesInit = struct {
