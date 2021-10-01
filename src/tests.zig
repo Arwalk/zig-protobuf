@@ -477,6 +477,10 @@ const EmptyLists = struct {
     pub fn init(allocator: *mem.Allocator) EmptyLists {
         return pb_init(EmptyLists, allocator);
     }
+
+    pub fn decode(input: []const u8, allocator: *mem.Allocator) !EmptyLists {
+        return pb_decode(EmptyLists, input, allocator);
+    }
 };
 
 test "EmptyLists" {
@@ -495,6 +499,11 @@ test "EmptyLists" {
         0x01,     0x02,
         0x03,     0x04,
     }, obtained);
+
+    const decoded = try EmptyLists.decode(obtained, testing.allocator);
+    defer decoded.deinit();
+    try testing.expectEqualSlices(u32, demo.varuint32List.items, decoded.varuint32List.items);
+    try testing.expectEqualSlices(u32, demo.varuint32Empty.items, decoded.varuint32Empty.items);
 }
 
 const EmptyMessage = struct {

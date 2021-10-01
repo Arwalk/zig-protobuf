@@ -567,7 +567,7 @@ fn VarintDecoderIterator(comptime T: type, comptime varint_type: VarintType) typ
     };
 }
 
-fn SubmessageDecoderIterator(comptime T: type)  type {
+fn SubmessageDecoderIterator(comptime T: type) type {
     return struct {
         const Self = @This();
 
@@ -580,7 +580,7 @@ fn SubmessageDecoderIterator(comptime T: type)  type {
                 const size = decode_varint(u64, self.input[self.current_index..]);
                 self.current_index += size.size;
                 defer self.current_index += size.value;
-                return try T.decode(self.input[self.current_index..self.current_index+size.value], self.allocator);
+                return try T.decode(self.input[self.current_index .. self.current_index + size.value], self.allocator);
             }
             return null;
         }
@@ -711,11 +711,11 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
                             }
                         },
                         .SubMessage => {
-                            var submessage_iterator = SubmessageDecoderIterator(child_type){.input = extracted_data.data.Slice, .allocator = allocator };
-                            while(try submessage_iterator.next()) |value| {
+                            var submessage_iterator = SubmessageDecoderIterator(child_type){ .input = extracted_data.data.Slice, .allocator = allocator };
+                            while (try submessage_iterator.next()) |value| {
                                 try @field(result, field.name).append(value);
                             }
-                        }
+                        },
                     }
                 },
                 else => @panic("Not implemented"),
