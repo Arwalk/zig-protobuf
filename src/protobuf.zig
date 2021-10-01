@@ -154,7 +154,7 @@ fn append_as_varint(pb: *ArrayList(u8), value: anytype, comptime varint_type: Va
                         break :blk @intCast(u64, (value >> (bitsize - 1)) ^ (value << 1));
                     },
                     .Simple => {
-                        break :blk @ptrCast(*const std.meta.Int(.unsigned, bitsize), &value).*;
+                        break :blk @bitCast(std.meta.Int(.unsigned, bitsize), value);
                     },
                 }
             } else {
@@ -636,17 +636,13 @@ fn get_varint_value(comptime T: type, comptime varint_type: VarintType, raw: u64
 
 /// Get a real fixed value of type T from a raw u64 value.
 fn get_fixed_value(comptime T: type, raw: u64) T {
-    comptime {
-        switch (T) {
-            i32, u32, i64, u64, f32, f64 => {},
-            else => @compileError("Invalid type for get_fixed_value"),
-        }
-    }
-
     return switch (T) {
-        i32, u32, i64, u64 => @ptrCast(*const T, &@truncate(std.meta.Int(.unsigned, @bitSizeOf(T)), raw)).*,
-        f32, f64 => @ptrCast(*T, &@intCast(std.meta.Int(.unsigned, @bitSizeOf(T)), raw)).*,
-        else => unreachable,
+        i32,
+        u32,
+        f32,
+        => @bitCast(T, @truncate(std.meta.Int(.unsigned, @bitSizeOf(T)), raw)),
+        i64, f64, u64 => @bitCast(T, raw),
+        else => @compileError("Invalid type for get_fixed_value"),
     };
 }
 
@@ -692,8 +688,8 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
                             }
                         },
                         .Varint => |varint_type| {
-                            var varint_iterator = VarintDecoderIterator(child_type, varint_type) {.input = extracted_data.data.Slice };
-                            while(varint_iterator.next()) |value| {
+                            var varint_iterator = VarintDecoderIterator(child_type, varint_type){ .input = extracted_data.data.Slice };
+                            while (varint_iterator.next()) |value| {
                                 try @field(result, field.name).append(value);
                             }
                         },
