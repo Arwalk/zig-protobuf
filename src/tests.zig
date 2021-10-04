@@ -633,8 +633,8 @@ const MapDemo = struct {
 
     pub const _desc_table = .{
         .a_map = fd(1, .{ .Map = .{
-            .key = .{ .t = u64, .pb_data = .{ .Varint = .ZigZagOptimized } },
-            .value = .{ .t = u64, .pb_data = .{ .Varint = .ZigZagOptimized } },
+            .key = .{ .t = u64, .pb_data = .{ .Varint = .Simple } },
+            .value = .{ .t = u64, .pb_data = .{ .Varint = .Simple } },
         } }),
     };
 
@@ -649,6 +649,10 @@ const MapDemo = struct {
     pub fn deinit(self: MapDemo) void {
         pb_deinit(self);
     }
+
+    pub fn decode(input: []const u8, allocator: *mem.Allocator) !MapDemo {
+        return pb_decode(MapDemo, input, allocator);
+    }
 };
 
 test "MapDemo" {
@@ -656,17 +660,28 @@ test "MapDemo" {
     defer demo.deinit();
 
     try demo.a_map.put(1, 2);
+    try demo.a_map.put(4, 5);
 
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
 
     try testing.expectEqualSlices(u8, &[_]u8{
         0x08 + 2, // tag of a_map
-        5, // size of a_map
+        10, // size of a_map
         4, // size of the first item in a_map
         0x08, // key tag
         0x01, // key value
         0x10, // value tag
         0x02, // value value
+        4,
+        0x08,
+        0x04,
+        0x10,
+        0x05
     }, obtained);
+
+    const decoded = try MapDemo.decode(obtained, testing.allocator);
+    defer decoded.deinit();
+    try testing.expectEqual(demo.a_map.get(1), decoded.a_map.get(1));
+    try testing.expectEqual(demo.a_map.get(4), decoded.a_map.get(4));
 }

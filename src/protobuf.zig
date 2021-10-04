@@ -271,15 +271,15 @@ fn MapSubmessage(comptime key_data: KeyValueTypeData, comptime value_data: KeyVa
 
         pub const _desc_table = .{ .key = fd(1, key_data.pb_data.toFieldType()), .value = fd(2, value_data.pb_data.toFieldType()) };
 
-        pub fn encode(self: Self, allocator: *mem.Allocator) ![]u8 {
+        pub fn encode(self: Self, allocator: *std.mem.Allocator) ![]u8 {
             return pb_encode(self, allocator);
         }
 
-        pub fn decode(input: []const u8, allocator: *mem.Allocator) !Self {
+        pub fn decode(input: []const u8, allocator: *std.mem.Allocator) !Self {
             return pb_decode(Self, input, allocator);
         }
 
-        pub fn init(allocator: *mem.Allocator) Self {
+        pub fn init(allocator: *std.mem.Allocator) Self {
             return pb_init(Self, allocator);
         }
 
@@ -287,6 +287,10 @@ fn MapSubmessage(comptime key_data: KeyValueTypeData, comptime value_data: KeyVa
             pb_deinit(self);
         }
     };
+}
+
+fn get_map_submessage(comptime map_data : MapData) type {
+    return MapSubmessage(map_data.key, map_data.value);
 }
 
 /// Appends the content of a Map field to the pb buffer.
@@ -298,12 +302,12 @@ fn MapSubmessage(comptime key_data: KeyValueTypeData, comptime value_data: KeyVa
 fn append_map(pb: *ArrayList(u8), comptime field: FieldDescriptor, map: anytype) !void {
     const len_index = pb.items.len;
     var iterator: @TypeOf(map).Iterator = map.iterator();
-    const key_type_data = field.ftype.Map.key;
-    const value_type_data = field.ftype.Map.value;
-    const Submessage = MapSubmessage(key_type_data, value_type_data);
+
+    const Submessage = get_map_submessage(field.ftype.Map);
     while (iterator.next()) |data| {
         try append_submessage(pb, Submessage{ .key = data.key_ptr.*, .value = data.value_ptr.* });
     }
+
     const size_encoded = pb.items.len - len_index;
     try insert_raw_varint(pb, size_encoded, len_index);
 }
@@ -707,6 +711,13 @@ fn decode_data(comptime T: type, field: StructField, result: *T, extracted_data:
         .List => |list_type| {
             const child_type = @typeInfo(@TypeOf(@field(result, field.name).items)).Pointer.child;
             try decode_list(extracted_data.data.Slice, list_type, child_type, &@field(result, field.name), allocator);
+        },
+        .Map => |map_data| {
+            const map_type = get_map_submessage(map_data);
+            var submessage_iterator = SubmessageDecoderIterator(map_type){ .input = extracted_data.data.Slice, .allocator = allocator };
+            while (try submessage_iterator.next()) |value| {
+                try @field(result, field.name).put(value.key.?, value.value.?);
+            }
         },
         else => @panic("Not implemented"),
     }
