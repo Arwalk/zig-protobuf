@@ -289,7 +289,7 @@ fn MapSubmessage(comptime key_data: KeyValueTypeData, comptime value_data: KeyVa
     };
 }
 
-fn get_map_submessage(comptime map_data : MapData) type {
+fn get_map_submessage_type(comptime map_data : MapData) type {
     return MapSubmessage(map_data.key, map_data.value);
 }
 
@@ -303,7 +303,7 @@ fn append_map(pb: *ArrayList(u8), comptime field: FieldDescriptor, map: anytype)
     const len_index = pb.items.len;
     var iterator: @TypeOf(map).Iterator = map.iterator();
 
-    const Submessage = get_map_submessage(field.ftype.Map);
+    const Submessage = get_map_submessage_type(field.ftype.Map);
     while (iterator.next()) |data| {
         try append_submessage(pb, Submessage{ .key = data.key_ptr.*, .value = data.value_ptr.* });
     }
@@ -713,7 +713,7 @@ fn decode_data(comptime T: type, field: StructField, result: *T, extracted_data:
             try decode_list(extracted_data.data.Slice, list_type, child_type, &@field(result, field.name), allocator);
         },
         .Map => |map_data| {
-            const map_type = get_map_submessage(map_data);
+            const map_type = get_map_submessage_type(map_data);
             var submessage_iterator = SubmessageDecoderIterator(map_type){ .input = extracted_data.data.Slice, .allocator = allocator };
             while (try submessage_iterator.next()) |value| {
                 try @field(result, field.name).put(value.key.?, value.value.?);
