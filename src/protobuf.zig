@@ -696,12 +696,12 @@ fn decode_list(input : []const u8, comptime list_type: ListType, comptime T: typ
     }
 }
 
-fn decode_data(comptime T: type, field: StructField, result: *T, extracted_data: Extracted, allocator: *std.mem.Allocator) !void {
-    switch (@field(T._desc_table, field.name).ftype) {
+fn decode_data(comptime T: type, field_desc : FieldDescriptor, field: StructField, result: *T, extracted_data: Extracted, allocator: *std.mem.Allocator) !void {
+    switch (field_desc.ftype) {
         .Varint, .FixedInt, .SubMessage => {
             const child_type = @typeInfo(field.field_type).Optional.child;
 
-            @field(result, field.name) = switch (@field(T._desc_table, field.name).ftype) {
+            @field(result, field.name) = switch (field_desc.ftype) {
                 .Varint => |varint_type| get_varint_value(child_type, varint_type, extracted_data.data.RawValue),
                 .FixedInt => get_fixed_value(child_type, extracted_data.data.RawValue),
                 .SubMessage => try pb_decode(child_type, extracted_data.data.Slice, allocator),
@@ -719,7 +719,14 @@ fn decode_data(comptime T: type, field: StructField, result: *T, extracted_data:
                 try @field(result, field.name).put(value.key.?, value.value.?);
             }
         },
-        else => @panic("Not implemented"),
+        .OneOf => |_| {
+            //inline for (@typeInfo(@TypeOf(desc_union)).Struct.fields) |union_field| {
+            //    if(is_tag_known(@field(desc_union, union_field.name), union_field.field_type, extracted_data.tag))
+            //    {
+            //        @field(@field(result, field.name), union_field.name) = decode_data(union_field.field_type, extracted_data, allocator);
+            //    }
+            //}
+        }
     }
 }
 
@@ -755,7 +762,7 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
             }
         } else null;
 
-        if (field_found) |field| try decode_data(T, field, &result, extracted_data, allocator);
+        if (field_found) |field| try decode_data(T, @field(T._desc_table, field.name),  field, &result, extracted_data, allocator);
     }
 
     return result;
