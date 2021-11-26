@@ -599,6 +599,10 @@ const OneOfDemo = struct {
     pub fn deinit(self: OneOfDemo) void {
         pb_deinit(self);
     }
+
+    pub fn decode(input: []const u8, allocator: *mem.Allocator) !OneOfDemo {
+        return pb_decode(OneOfDemo, input, allocator);
+    }
 };
 
 test "OneOfDemo" {
@@ -612,6 +616,9 @@ test "OneOfDemo" {
     try testing.expectEqualSlices(u8, &[_]u8{
         0x08, 10,
     }, obtained);
+    const decoded = try OneOfDemo.decode(obtained, testing.allocator);
+    defer decoded.deinit();
+    try testing.expectEqual(demo.a.?.value_1, decoded.a.?.value_1);
 
     demo.a = .{ .value_2 = ArrayList(u32).init(testing.allocator) };
     try demo.a.?.value_2.append(1);
@@ -626,6 +633,9 @@ test "OneOfDemo" {
         0x01,     0x02,
         0x03,     0x04,
     }, obtained2);
+    const decoded2 = try OneOfDemo.decode(obtained2, testing.allocator);
+    defer decoded2.deinit();
+    try testing.expectEqualSlices(u32, demo.a.?.value_2.items, decoded2.a.?.value_2.items);
 }
 
 const MapDemo = struct {

@@ -723,6 +723,24 @@ fn decode_data(comptime T: type, field: StructField, result: *T, extracted_data:
     }
 }
 
+fn is_tag_known(comptime field_desc: FieldDescriptor, comptime T: type, tag_to_check : u32) bool {
+    if (field_desc.tag) |_| {
+        if (get_full_tag_value(field_desc, T)) |tag_value| {
+            return tag_value == tag_to_check;
+        }
+    } else {
+        const desc_union = field_desc.ftype.OneOf._union_desc;
+        inline for (@typeInfo(@TypeOf(desc_union)).Struct.fields) |union_field| {
+            if(is_tag_known(@field(desc_union, union_field.name), union_field.field_type, tag_to_check))
+            {
+                return true;
+            }
+        }
+    }
+    
+    return false;
+}
+
 /// public decoding function meant to be embedded in message structures
 /// Iterates over the input and try to fill the resulting structure accordingly.
 pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Allocator) !T {
@@ -732,8 +750,8 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Alloca
 
     while (try iterator.next()) |extracted_data| {
         const field_found: ?StructField = inline for (@typeInfo(T).Struct.fields) |field| {
-            if (get_full_tag_value(@field(T._desc_table, field.name), field.field_type)) |tag_value| {
-                if (tag_value == extracted_data.tag) break field;
+            if (is_tag_known(@field(T._desc_table, field.name), field.field_type, extracted_data.tag)) {
+                break field;
             }
         } else null;
 
