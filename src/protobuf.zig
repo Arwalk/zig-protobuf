@@ -290,7 +290,7 @@ fn MapSubmessage(comptime key_data: KeyValueTypeData, comptime value_data: KeyVa
     };
 }
 
-fn get_map_submessage_type(comptime map_data : MapData) type {
+fn get_map_submessage_type(comptime map_data: MapData) type {
     return MapSubmessage(map_data.key, map_data.value);
 }
 
@@ -668,7 +668,7 @@ fn get_fixed_value(comptime T: type, raw: u64) T {
     };
 }
 
-fn decode_list(input : []const u8, comptime list_type: ListType, comptime T: type, array: *ArrayList(T), allocator: Allocator) !void {
+fn decode_list(input: []const u8, comptime list_type: ListType, comptime T: type, array: *ArrayList(T), allocator: Allocator) !void {
     switch (list_type) {
         .FixedInt => {
             switch (T) {
@@ -697,7 +697,7 @@ fn decode_list(input : []const u8, comptime list_type: ListType, comptime T: typ
     }
 }
 
-fn decode_data(comptime T: type, field_desc : FieldDescriptor, field: StructField, result: *T, extracted_data: Extracted, allocator: Allocator) !void {
+fn decode_data(comptime T: type, field_desc: FieldDescriptor, field: StructField, result: *T, extracted_data: Extracted, allocator: Allocator) !void {
     switch (field_desc.ftype) {
         .Varint, .FixedInt, .SubMessage => {
             const child_type = @typeInfo(field.field_type).Optional.child;
@@ -723,27 +723,25 @@ fn decode_data(comptime T: type, field_desc : FieldDescriptor, field: StructFiel
         .OneOf => |union_type| {
             const desc_union = field_desc.ftype.OneOf._union_desc;
             inline for (@typeInfo(@TypeOf(desc_union)).Struct.fields) |union_field| {
-                if(is_tag_known(@field(desc_union, union_field.name), union_field.field_type, extracted_data.tag))
-                {
-                    const temp_field_type : type = inline for (@typeInfo(union_type).Union.fields) |union_type_item| {
-                        if(std.mem.eql(u8, union_type_item.name, union_field.name)) {
-                            break switch(@typeInfo(union_type_item.field_type))
-                            {
+                if (is_tag_known(@field(desc_union, union_field.name), union_field.field_type, extracted_data.tag)) {
+                    const temp_field_type: type = inline for (@typeInfo(union_type).Union.fields) |union_type_item| {
+                        if (std.mem.eql(u8, union_type_item.name, union_field.name)) {
+                            break switch (@typeInfo(union_type_item.field_type)) {
                                 .Struct => union_type_item.field_type,
-                                else => ?union_type_item.field_type
+                                else => ?union_type_item.field_type,
                             };
                         }
                     };
-                    var temp_field : temp_field_type = undefined;
+                    var temp_field: temp_field_type = undefined;
                     try decode_data(temp_field_type, @field(desc_union, union_field.name), union_field, &temp_field, extracted_data, allocator);
                     @field(result, field.name) = @unionInit(union_type, union_field.name, temp_field);
                 }
             }
-        }
+        },
     }
 }
 
-fn is_tag_known(comptime field_desc: FieldDescriptor, comptime T: type, tag_to_check : u32) bool {
+fn is_tag_known(comptime field_desc: FieldDescriptor, comptime T: type, tag_to_check: u32) bool {
     if (field_desc.tag) |_| {
         if (get_full_tag_value(field_desc, T)) |tag_value| {
             return tag_value == tag_to_check;
@@ -751,13 +749,12 @@ fn is_tag_known(comptime field_desc: FieldDescriptor, comptime T: type, tag_to_c
     } else {
         const desc_union = field_desc.ftype.OneOf._union_desc;
         inline for (@typeInfo(@TypeOf(desc_union)).Struct.fields) |union_field| {
-            if(is_tag_known(@field(desc_union, union_field.name), union_field.field_type, tag_to_check))
-            {
+            if (is_tag_known(@field(desc_union, union_field.name), union_field.field_type, tag_to_check)) {
                 return true;
             }
         }
     }
-    
+
     return false;
 }
 
@@ -775,7 +772,7 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) !T {
             }
         } else null;
 
-        if (field_found) |field| try decode_data(T, @field(T._desc_table, field.name),  field, &result, extracted_data, allocator);
+        if (field_found) |field| try decode_data(T, @field(T._desc_table, field.name), field, &result, extracted_data, allocator);
     }
 
     return result;
