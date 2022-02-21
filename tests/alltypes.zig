@@ -1,7 +1,13 @@
 const std = @import("std");
 const protobuf = @import("protobuf");
-usingnamespace protobuf;
-usingnamespace std;
+const ArrayList = std.ArrayList;
+const FieldDescriptor = protobuf.FieldDescriptor;
+const mem = std.mem;
+const pb_decode = protobuf.pb_decode;
+const pb_encode = protobuf.pb_encode;
+const pb_deinit = protobuf.pb_deinit;
+const pb_init = protobuf.pb_init;
+const fd = protobuf.fd;
 
 const expected = @embedFile("encode_alltypes.output");
 
@@ -46,7 +52,7 @@ const EmptyMessage = struct {
     }
 };
 
-const DemoEnum = enum(i32) {
+const HugeEnum = enum(i32) {
     HE_Zero = 0,
     Negative = -2147483647,
     Positive = 2147483647
@@ -65,16 +71,16 @@ const Limits = struct {
     enum_max    : ?HugeEnum,
 
     pub const _desc_table = [_]FieldDescriptor{
-        fd( 1,  "int32_min"     , .{.Varint = .Simple}),
-        fd( 2,  "int32_max"     , .{.Varint = .Simple}),
+        fd( 1,  "int32_min"     , .{.Varint = .ZigZagOptimized}),
+        fd( 2,  "int32_max"     , .{.Varint = .ZigZagOptimized}),
         fd( 3,  "uint32_min"    , .{.Varint = .Simple}),
         fd( 4,  "uint32_max"    , .{.Varint = .Simple}),
-        fd( 5,  "int64_min"     , .{.Varint = .Simple}),
-        fd( 6,  "int64_max"     , .{.Varint = .Simple}),
+        fd( 5,  "int64_min"     , .{.Varint = .ZigZagOptimized}),
+        fd( 6,  "int64_max"     , .{.Varint = .ZigZagOptimized}),
         fd( 7,  "uint64_min"    , .{.Varint = .Simple}),
         fd( 8,  "uint64_max"    , .{.Varint = .Simple}),
-        fd( 9,  "enum_min"      , .{.Varint = .Simple}),
-        fd( 10, "enum_max"      , .{.Varint = .Simple}),
+        fd( 9,  "enum_min"      , .{.Varint = .ZigZagOptimized}),
+        fd( 10, "enum_max"      , .{.Varint = .ZigZagOptimized}),
     };
 
     pub fn encode(self: Limits, allocator: *mem.Allocator) ![]u8 {

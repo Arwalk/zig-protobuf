@@ -1,19 +1,28 @@
 const std = @import("std");
 const protobuf = @import("protobuf.zig");
-usingnamespace protobuf;
-usingnamespace std;
+const mem = std.mem;
+const Allocator = mem.Allocator;
 const eql = mem.eql;
+const fd = protobuf.fd;
+const pb_decode = protobuf.pb_decode;
+const pb_encode = protobuf.pb_encode;
+const pb_deinit = protobuf.pb_deinit;
+const pb_init = protobuf.pb_init;
+const testing = std.testing;
+const ArrayList = std.ArrayList;
+const AutoHashMap = std.AutoHashMap;
+const FieldType = protobuf.FieldType;
 
 const Demo1 = struct {
     a: ?u32,
 
     pub const _desc_table = .{ .a = fd(1, FieldType{ .Varint = .Simple }) };
 
-    pub fn encode(self: Demo1, allocator: *mem.Allocator) ![]u8 {
+    pub fn encode(self: Demo1, allocator: Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 
-    pub fn decode(input: []const u8, allocator: *mem.Allocator) !Demo1 {
+    pub fn decode(input: []const u8, allocator: Allocator) !Demo1 {
         return pb_decode(Demo1, input, allocator);
     }
 
@@ -56,7 +65,7 @@ const Demo2 = struct {
         .b = fd(2, .{ .Varint = .Simple }),
     };
 
-    pub fn encode(self: Demo2, allocator: *mem.Allocator) ![]u8 {
+    pub fn encode(self: Demo2, allocator: Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 
@@ -88,7 +97,7 @@ const WithNegativeIntegers = struct {
         .b = fd(2, .{ .Varint = .Simple }),
     };
 
-    pub fn encode(self: WithNegativeIntegers, allocator: *mem.Allocator) ![]u8 {
+    pub fn encode(self: WithNegativeIntegers, allocator: Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 
@@ -96,7 +105,7 @@ const WithNegativeIntegers = struct {
         pb_deinit(self);
     }
 
-    pub fn decode(input: []const u8, allocator: *mem.Allocator) !WithNegativeIntegers {
+    pub fn decode(input: []const u8, allocator: Allocator) !WithNegativeIntegers {
         return pb_decode(WithNegativeIntegers, input, allocator);
     }
 };
@@ -139,11 +148,11 @@ const DemoWithAllVarint = struct {
         .neg_int64 = fd(10, .{ .Varint = .Simple }),
     };
 
-    pub fn encode(self: DemoWithAllVarint, allocator: *mem.Allocator) ![]u8 {
+    pub fn encode(self: DemoWithAllVarint, allocator: Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 
-    pub fn decode(input: []const u8, allocator: *mem.Allocator) !DemoWithAllVarint {
+    pub fn decode(input: []const u8, allocator: Allocator) !DemoWithAllVarint {
         return pb_decode(DemoWithAllVarint, input, allocator);
     }
 
@@ -180,11 +189,11 @@ const FixedSizes = struct {
         .float = fd(6, .FixedInt),
     };
 
-    pub fn encode(self: FixedSizes, allocator: *mem.Allocator) ![]u8 {
+    pub fn encode(self: FixedSizes, allocator: Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 
-    pub fn decode(input: []const u8, allocator: *mem.Allocator) !FixedSizes {
+    pub fn decode(input: []const u8, allocator: Allocator) !FixedSizes {
         return pb_decode(FixedSizes, input, allocator);
     }
 
@@ -224,7 +233,7 @@ const WithSubmessages = struct {
         .sub_demo2 = fd(2, .SubMessage),
     };
 
-    pub fn encode(self: WithSubmessages, allocator: *mem.Allocator) ![]u8 {
+    pub fn encode(self: WithSubmessages, allocator: Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 
@@ -232,11 +241,11 @@ const WithSubmessages = struct {
         pb_deinit(self);
     }
 
-    pub fn decode(input: []const u8, allocator: *mem.Allocator) !WithSubmessages {
+    pub fn decode(input: []const u8, allocator: Allocator) !WithSubmessages {
         return pb_decode(WithSubmessages, input, allocator);
     }
 
-    pub fn init(allocator: *mem.Allocator) WithSubmessages {
+    pub fn init(allocator: Allocator) WithSubmessages {
         return pb_init(WithSubmessages, allocator);
     }
 };
@@ -260,7 +269,7 @@ const WithBytes = struct {
         .list_of_data = fd(1, .{ .List = .FixedInt }),
     };
 
-    pub fn encode(self: WithBytes, allocator: *mem.Allocator) ![]u8 {
+    pub fn encode(self: WithBytes, allocator: Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 
@@ -268,11 +277,11 @@ const WithBytes = struct {
         pb_deinit(self);
     }
 
-    pub fn init(allocator: *mem.Allocator) WithBytes {
+    pub fn init(allocator: Allocator) WithBytes {
         return pb_init(WithBytes, allocator);
     }
 
-    pub fn decode(input: []const u8, allocator: *mem.Allocator) !WithBytes {
+    pub fn decode(input: []const u8, allocator: Allocator) !WithBytes {
         return pb_decode(WithBytes, input, allocator);
     }
 };
@@ -303,7 +312,7 @@ const FixedSizesList = struct {
         .fixed32List = fd(1, .{ .List = .FixedInt }),
     };
 
-    pub fn encode(self: FixedSizesList, allocator: *mem.Allocator) ![]u8 {
+    pub fn encode(self: FixedSizesList, allocator: Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 
@@ -311,11 +320,11 @@ const FixedSizesList = struct {
         pb_deinit(self);
     }
 
-    pub fn init(allocator: *mem.Allocator) FixedSizesList {
+    pub fn init(allocator: Allocator) FixedSizesList {
         return pb_init(FixedSizesList, allocator);
     }
 
-    pub fn decode(input: []const u8, allocator: *mem.Allocator) !FixedSizesList {
+    pub fn decode(input: []const u8, allocator: Allocator) !FixedSizesList {
         return pb_decode(FixedSizesList, input, allocator);
     }
 };
@@ -359,7 +368,7 @@ const VarintList = struct {
         .varuint32List = fd(1, .{ .List = .{ .Varint = .Simple } }),
     };
 
-    pub fn encode(self: VarintList, allocator: *mem.Allocator) ![]u8 {
+    pub fn encode(self: VarintList, allocator: Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 
@@ -367,11 +376,11 @@ const VarintList = struct {
         pb_deinit(self);
     }
 
-    pub fn init(allocator: *mem.Allocator) VarintList {
+    pub fn init(allocator: Allocator) VarintList {
         return pb_init(VarintList, allocator);
     }
 
-    pub fn decode(input: []const u8, allocator: *mem.Allocator) !VarintList {
+    pub fn decode(input: []const u8, allocator: Allocator) !VarintList {
         return pb_decode(VarintList, input, allocator);
     }
 };
@@ -405,7 +414,7 @@ const SubMessageList = struct {
         .subMessageList = fd(1, .{ .List = .SubMessage }),
     };
 
-    pub fn encode(self: SubMessageList, allocator: *mem.Allocator) ![]u8 {
+    pub fn encode(self: SubMessageList, allocator: Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 
@@ -413,11 +422,11 @@ const SubMessageList = struct {
         pb_deinit(self);
     }
 
-    pub fn init(allocator: *mem.Allocator) SubMessageList {
+    pub fn init(allocator: Allocator) SubMessageList {
         return pb_init(SubMessageList, allocator);
     }
 
-    pub fn decode(input: []const u8, allocator: *mem.Allocator) !SubMessageList {
+    pub fn decode(input: []const u8, allocator: Allocator) !SubMessageList {
         return pb_decode(SubMessageList, input, allocator);
     }
 };
@@ -466,7 +475,7 @@ const EmptyLists = struct {
         .varuint32Empty = fd(2, .{ .List = .{ .Varint = .Simple } }),
     };
 
-    pub fn encode(self: EmptyLists, allocator: *mem.Allocator) ![]u8 {
+    pub fn encode(self: EmptyLists, allocator: Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 
@@ -474,11 +483,11 @@ const EmptyLists = struct {
         pb_deinit(self);
     }
 
-    pub fn init(allocator: *mem.Allocator) EmptyLists {
+    pub fn init(allocator: Allocator) EmptyLists {
         return pb_init(EmptyLists, allocator);
     }
 
-    pub fn decode(input: []const u8, allocator: *mem.Allocator) !EmptyLists {
+    pub fn decode(input: []const u8, allocator: Allocator) !EmptyLists {
         return pb_decode(EmptyLists, input, allocator);
     }
 };
@@ -509,7 +518,7 @@ test "EmptyLists" {
 const EmptyMessage = struct {
     pub const _desc_table = .{};
 
-    pub fn encode(self: EmptyMessage, allocator: *mem.Allocator) ![]u8 {
+    pub fn encode(self: EmptyMessage, allocator: Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 
@@ -517,11 +526,11 @@ const EmptyMessage = struct {
         pb_deinit(self);
     }
 
-    pub fn init(allocator: *mem.Allocator) EmptyMessage {
+    pub fn init(allocator: Allocator) EmptyMessage {
         return pb_init(EmptyMessage, allocator);
     }
 
-    pub fn decode(input: []const u8, allocator: *mem.Allocator) !EmptyMessage {
+    pub fn decode(input: []const u8, allocator: Allocator) !EmptyMessage {
         return pb_decode(EmptyMessage, input, allocator);
     }
 };
@@ -553,11 +562,11 @@ const DefaultValuesInit = struct {
         .d = fd(4, .{ .Varint = .Simple }),
     };
 
-    pub fn encode(self: DefaultValuesInit, allocator: *mem.Allocator) ![]u8 {
+    pub fn encode(self: DefaultValuesInit, allocator: Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 
-    pub fn init(allocator: *mem.Allocator) DefaultValuesInit {
+    pub fn init(allocator: Allocator) DefaultValuesInit {
         return pb_init(DefaultValuesInit, allocator);
     }
 
@@ -588,11 +597,11 @@ const OneOfDemo = struct {
 
     pub const _desc_table = .{ .a = fd(null, .{ .OneOf = a_union }) };
 
-    pub fn encode(self: OneOfDemo, allocator: *mem.Allocator) ![]u8 {
+    pub fn encode(self: OneOfDemo, allocator: Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 
-    pub fn init(allocator: *mem.Allocator) OneOfDemo {
+    pub fn init(allocator: Allocator) OneOfDemo {
         return pb_init(OneOfDemo, allocator);
     }
 
@@ -600,7 +609,7 @@ const OneOfDemo = struct {
         pb_deinit(self);
     }
 
-    pub fn decode(input: []const u8, allocator: *mem.Allocator) !OneOfDemo {
+    pub fn decode(input: []const u8, allocator: Allocator) !OneOfDemo {
         return pb_decode(OneOfDemo, input, allocator);
     }
 };
@@ -648,11 +657,11 @@ const MapDemo = struct {
         } }),
     };
 
-    pub fn encode(self: MapDemo, allocator: *mem.Allocator) ![]u8 {
+    pub fn encode(self: MapDemo, allocator: Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
 
-    pub fn init(allocator: *mem.Allocator) MapDemo {
+    pub fn init(allocator: Allocator) MapDemo {
         return pb_init(MapDemo, allocator);
     }
 
@@ -660,7 +669,7 @@ const MapDemo = struct {
         pb_deinit(self);
     }
 
-    pub fn decode(input: []const u8, allocator: *mem.Allocator) !MapDemo {
+    pub fn decode(input: []const u8, allocator: Allocator) !MapDemo {
         return pb_decode(MapDemo, input, allocator);
     }
 };

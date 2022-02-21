@@ -2,6 +2,7 @@ const std = @import("std");
 const StructField = std.builtin.TypeInfo.StructField;
 const isSignedInt = std.meta.trait.isSignedInt;
 const isIntegral = std.meta.trait.isIntegral;
+const Allocator = std.mem.Allocator;
 
 // common definitions
 
@@ -271,15 +272,15 @@ fn MapSubmessage(comptime key_data: KeyValueTypeData, comptime value_data: KeyVa
 
         pub const _desc_table = .{ .key = fd(1, key_data.pb_data.toFieldType()), .value = fd(2, value_data.pb_data.toFieldType()) };
 
-        pub fn encode(self: Self, allocator: *std.mem.Allocator) ![]u8 {
+        pub fn encode(self: Self, allocator: Allocator) ![]u8 {
             return pb_encode(self, allocator);
         }
 
-        pub fn decode(input: []const u8, allocator: *std.mem.Allocator) !Self {
+        pub fn decode(input: []const u8, allocator: Allocator) !Self {
             return pb_decode(Self, input, allocator);
         }
 
-        pub fn init(allocator: *std.mem.Allocator) Self {
+        pub fn init(allocator: Allocator) Self {
             return pb_init(Self, allocator);
         }
 
@@ -379,7 +380,7 @@ fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) !void {
 }
 
 /// Public encoding function, meant to be embdedded in generated structs
-pub fn pb_encode(data: anytype, allocator: *std.mem.Allocator) ![]u8 {
+pub fn pb_encode(data: anytype, allocator: Allocator) ![]u8 {
     var pb = ArrayList(u8).init(allocator);
     errdefer pb.deinit();
 
@@ -389,7 +390,7 @@ pub fn pb_encode(data: anytype, allocator: *std.mem.Allocator) ![]u8 {
 }
 
 /// Generic init function. Properly initialise any field required. Meant to be embedded in generated structs.
-pub fn pb_init(comptime T: type, allocator: *std.mem.Allocator) T {
+pub fn pb_init(comptime T: type, allocator: Allocator) T {
     var value: T = undefined;
 
     inline for (@typeInfo(T).Struct.fields) |field| {
@@ -577,7 +578,7 @@ fn SubmessageDecoderIterator(comptime T: type) type {
 
         input: []const u8,
         current_index: usize = 0,
-        allocator: *std.mem.Allocator,
+        allocator: Allocator,
 
         fn next(self: *Self) !?T {
             if (self.current_index < self.input.len) {
@@ -667,7 +668,7 @@ fn get_fixed_value(comptime T: type, raw: u64) T {
     };
 }
 
-fn decode_list(input : []const u8, comptime list_type: ListType, comptime T: type, array: *ArrayList(T), allocator: *std.mem.Allocator) !void {
+fn decode_list(input : []const u8, comptime list_type: ListType, comptime T: type, array: *ArrayList(T), allocator: Allocator) !void {
     switch (list_type) {
         .FixedInt => {
             switch (T) {
@@ -696,7 +697,7 @@ fn decode_list(input : []const u8, comptime list_type: ListType, comptime T: typ
     }
 }
 
-fn decode_data(comptime T: type, field_desc : FieldDescriptor, field: StructField, result: *T, extracted_data: Extracted, allocator: *std.mem.Allocator) !void {
+fn decode_data(comptime T: type, field_desc : FieldDescriptor, field: StructField, result: *T, extracted_data: Extracted, allocator: Allocator) !void {
     switch (field_desc.ftype) {
         .Varint, .FixedInt, .SubMessage => {
             const child_type = @typeInfo(field.field_type).Optional.child;
@@ -762,7 +763,7 @@ fn is_tag_known(comptime field_desc: FieldDescriptor, comptime T: type, tag_to_c
 
 /// public decoding function meant to be embedded in message structures
 /// Iterates over the input and try to fill the resulting structure accordingly.
-pub fn pb_decode(comptime T: type, input: []const u8, allocator: *std.mem.Allocator) !T {
+pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) !T {
     var result = pb_init(T, allocator);
 
     var iterator = WireDecoderIterator{ .input = input };
