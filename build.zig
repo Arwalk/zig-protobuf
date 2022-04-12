@@ -13,7 +13,7 @@ pub fn build(b: *std.build.Builder) void {
         b.addTest("src/protobuf.zig"),
         b.addTest("src/tests.zig"),
         b.addTest("tests/alltypes.zig"),
-        b.addTest("tests/fixedsizes.pb.zig")
+        b.addTest("tests/tests_fixedsizes.zig")
     };
 
     const test_step = b.step("test", "Run library tests");

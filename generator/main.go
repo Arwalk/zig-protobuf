@@ -80,7 +80,7 @@ func generateFile(p *protogen.Plugin, f *protogen.File) error {
 	for _, m := range f.Messages {
 		msgName := m.Desc.Name()
 
-		g.P("const ", msgName, " = struct {")
+		g.P("pub const ", msgName, " = struct {")
 
 		// field definitions
 		for _, field := range m.Fields {
@@ -98,6 +98,7 @@ func generateFile(p *protogen.Plugin, f *protogen.File) error {
 			}
 		}
 		g.P("    };")
+		g.P()
 
 		g.P("    pub fn encode(self: ", msgName, ", allocator: Allocator) ![]u8 {")
 		g.P("        return pb_encode(self, allocator);")

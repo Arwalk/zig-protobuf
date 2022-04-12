@@ -13,7 +13,7 @@ const pb_deinit = protobuf.pb_deinit;
 const pb_init = protobuf.pb_init;
 const fd = protobuf.fd;
 
-const FixedSizes = struct {
+pub const FixedSizes = struct {
     sfixed64: ?i64,
     sfixed32: ?i32,
     fixed32: ?u32,
@@ -29,6 +29,7 @@ const FixedSizes = struct {
         .double = fd(5, .FixedInt),
         .float = fd(6, .FixedInt),
     };
+
     pub fn encode(self: FixedSizes, allocator: Allocator) ![]u8 {
         return pb_encode(self, allocator);
     }
@@ -45,30 +46,3 @@ const FixedSizes = struct {
         return pb_deinit(self);
     }
 };
-
-
-
-
-const testing = std.testing;
-
-test "FixedSizes" {
-    var demo = FixedSizes{
-        .sfixed64 = -1,
-        .sfixed32 = -2,
-        .fixed32 = 1,
-        .fixed64 = 2,
-        .double = 5.0, // 0x4014000000000000
-        .float = 5.0, // 0x40a00000
-    };
-
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
-
-    const expected = [_]u8{ 0x08 + 1, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x10 + 5, 0xFE, 0xFF, 0xFF, 0xFF, 0x18 + 5, 0x01, 0x00, 0x00, 0x00, 0x20 + 1, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28 + 1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x40, 0x30 + 5, 0x00, 0x00, 0xa0, 0x40 };
-
-    try testing.expectEqualSlices(u8, &expected, obtained);
-
-    // decoding
-    const decoded = try FixedSizes.decode(&expected, testing.allocator);
-    try testing.expectEqual(demo, decoded);
-}
