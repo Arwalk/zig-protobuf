@@ -614,38 +614,38 @@ const OneOfDemo = struct {
     }
 };
 
-//test "OneOfDemo" {
-//    var demo = OneOfDemo.init(testing.allocator);
-//    defer demo.deinit();
-//
-//    demo.a = .{ .value_1 = 10 };
-//
-//    const obtained = try demo.encode(testing.allocator);
-//    defer testing.allocator.free(obtained);
-//    try testing.expectEqualSlices(u8, &[_]u8{
-//        0x08, 10,
-//    }, obtained);
-//    const decoded = try OneOfDemo.decode(obtained, testing.allocator);
-//    defer decoded.deinit();
-//    try testing.expectEqual(demo.a.?.value_1, decoded.a.?.value_1);
-//
-//    //demo.a = .{ .value_2 = ArrayList(u32).init(testing.allocator) };
-//    //try demo.a.?.value_2.append(1);
-//    //try demo.a.?.value_2.append(2);
-//    //try demo.a.?.value_2.append(3);
-//    //try demo.a.?.value_2.append(4);
-//
-//    //const obtained2 = try demo.encode(testing.allocator);
-//    //defer testing.allocator.free(obtained2);
-//    //try testing.expectEqualSlices(u8, &[_]u8{
-//    //    0x10 + 2, 0x04,
-//    //    0x01,     0x02,
-//    //    0x03,     0x04,
-//    //}, obtained2);
-//    //const decoded2 = try OneOfDemo.decode(obtained2, testing.allocator);
-//    //defer decoded2.deinit();
-//    //try testing.expectEqualSlices(u32, demo.a.?.value_2.items, decoded2.a.?.value_2.items);
-//}
+test "OneOfDemo" {
+    var demo = OneOfDemo.init(testing.allocator);
+    defer demo.deinit();
+
+    demo.a = .{ .value_1 = 10 };
+
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
+    try testing.expectEqualSlices(u8, &[_]u8{
+        0x08, 10,
+    }, obtained);
+    // const decoded = try OneOfDemo.decode(obtained, testing.allocator);
+    // defer decoded.deinit();
+    // try testing.expectEqual(demo.a.?.value_1, decoded.a.?.value_1);
+
+    demo.a = .{ .value_2 = ArrayList(u32).init(testing.allocator) };
+    try demo.a.?.value_2.append(1);
+    try demo.a.?.value_2.append(2);
+    try demo.a.?.value_2.append(3);
+    try demo.a.?.value_2.append(4);
+
+    const obtained2 = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained2);
+    try testing.expectEqualSlices(u8, &[_]u8{
+        0x10 + 2, 0x04,
+        0x01,     0x02,
+        0x03,     0x04,
+    }, obtained2);
+    //const decoded2 = try OneOfDemo.decode(obtained2, testing.allocator);
+    //defer decoded2.deinit();
+    //try testing.expectEqualSlices(u32, demo.a.?.value_2.items, decoded2.a.?.value_2.items);
+}
 
 const MapDemo = struct {
     a_map: AutoHashMap(u64, u64),

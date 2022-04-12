@@ -720,23 +720,8 @@ fn decode_data(comptime T: type, field_desc: FieldDescriptor, field: StructField
                 try @field(result, field.name).put(value.key.?, value.value.?);
             }
         },
-        .OneOf => |union_type| {
-            const desc_union = field_desc.ftype.OneOf._union_desc;
-            inline for (@typeInfo(@TypeOf(desc_union)).Struct.fields) |union_field| {
-                if (is_tag_known(@field(desc_union, union_field.name), union_field.field_type, extracted_data.tag)) {
-                    const temp_field_type: type = inline for (@typeInfo(union_type).Union.fields) |union_type_item| {
-                        if (std.mem.eql(u8, union_type_item.name, union_field.name)) {
-                            break switch (@typeInfo(union_type_item.field_type)) {
-                                .Struct => union_type_item.field_type,
-                                else => ?union_type_item.field_type,
-                            };
-                        }
-                    };
-                    var temp_field: temp_field_type = undefined;
-                    try decode_data(temp_field_type, @field(desc_union, union_field.name), union_field, &temp_field, extracted_data, allocator);
-                    @field(result, field.name) = @unionInit(union_type, union_field.name, temp_field);
-                }
-            }
+        .OneOf => |_| {
+            @compileError("Can not decode OneOf fields yet");
         },
     }
 }
