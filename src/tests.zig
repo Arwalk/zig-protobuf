@@ -172,58 +172,6 @@ test "DemoWithAllVarint" {
     try testing.expectEqual(demo, decoded);
 }
 
-const FixedSizes = struct {
-    sfixed64: ?i64,
-    sfixed32: ?i32,
-    fixed32: ?u32,
-    fixed64: ?u64,
-    double: ?f64,
-    float: ?f32,
-
-    pub const _desc_table = .{
-        .sfixed64 = fd(1, .FixedInt),
-        .sfixed32 = fd(2, .FixedInt),
-        .fixed32 = fd(3, .FixedInt),
-        .fixed64 = fd(4, .FixedInt),
-        .double = fd(5, .FixedInt),
-        .float = fd(6, .FixedInt),
-    };
-
-    pub fn encode(self: FixedSizes, allocator: Allocator) ![]u8 {
-        return pb_encode(self, allocator);
-    }
-
-    pub fn decode(input: []const u8, allocator: Allocator) !FixedSizes {
-        return pb_decode(FixedSizes, input, allocator);
-    }
-
-    pub fn deinit(self: FixedSizes) void {
-        pb_deinit(self);
-    }
-};
-
-test "FixedSizes" {
-    var demo = FixedSizes{
-        .sfixed64 = -1,
-        .sfixed32 = -2,
-        .fixed32 = 1,
-        .fixed64 = 2,
-        .double = 5.0, // 0x4014000000000000
-        .float = 5.0, // 0x40a00000
-    };
-
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
-
-    const expected = [_]u8{ 0x08 + 1, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x10 + 5, 0xFE, 0xFF, 0xFF, 0xFF, 0x18 + 5, 0x01, 0x00, 0x00, 0x00, 0x20 + 1, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28 + 1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x40, 0x30 + 5, 0x00, 0x00, 0xa0, 0x40 };
-
-    try testing.expectEqualSlices(u8, &expected, obtained);
-
-    // decoding
-    const decoded = try FixedSizes.decode(&expected, testing.allocator);
-    try testing.expectEqual(demo, decoded);
-}
-
 const WithSubmessages = struct {
     sub_demo1: ?Demo1,
     sub_demo2: ?Demo2,

@@ -1,0 +1,10 @@
+syntax = "proto3";
+option go_package = "./";
+
+message AllVarint {
+    sint32 sint32 = 1;
+    sint64 sint64 = 2;
+    uint32 uint32 = 3;
+    uint64 uint64 = 4;
+    bool   bool = 5;
+}

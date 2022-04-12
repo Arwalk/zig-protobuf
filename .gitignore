@@ -2,3 +2,4 @@ zig-cache
 .vscode*
 .idea*
 *.exe
+generator/**/*.zig
