@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"google.golang.org/protobuf/compiler/protogen"
 	. "google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -31,6 +32,10 @@ func getFieldDescriptor(field *protogen.Field) (string, error) {
 	switch field.Desc.Kind() {
 	case Sfixed64Kind, Sfixed32Kind, Fixed32Kind, Fixed64Kind, DoubleKind, FloatKind:
 		return fmt.Sprintf("fd(%d, .FixedInt)", field.Desc.Number()), nil
+	case Sint32Kind, Sint64Kind:
+		return fmt.Sprintf("fd(%d, .{ .Varint = .ZigZagOptimized })", field.Desc.Number()), nil
+	case Uint32Kind, Uint64Kind, BoolKind:
+		return fmt.Sprintf("fd(%d, .{ .Varint = .Simple })", field.Desc.Number()), nil
 	default:
 		return "", fmt.Errorf("unmanaged field type in  getFieldDescriptor %s", field.Desc.Kind())
 	}

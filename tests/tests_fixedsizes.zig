@@ -5,14 +5,14 @@ const std = @import("std");
 const testing = std.testing;
 
 test "FixedSizes" {
-    var demo = FixedSizes{
-        .sfixed64 = -1,
-        .sfixed32 = -2,
-        .fixed32 = 1,
-        .fixed64 = 2,
-        .double = 5.0, // 0x4014000000000000
-        .float = 5.0, // 0x40a00000
-    };
+    var demo = FixedSizes.init(testing.allocator);
+    defer demo.deinit();
+    demo.sfixed64 = -1;
+    demo.sfixed32 = -2;
+    demo.fixed32 = 1;
+    demo.fixed64 = 2;
+    demo.double = 5.0;// 0x4014000000000000
+    demo.float = 5.0; // 0x40a00000
 
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
@@ -23,5 +23,6 @@ test "FixedSizes" {
 
     // decoding
     const decoded = try FixedSizes.decode(&expected, testing.allocator);
+    defer decoded.deinit();
     try testing.expectEqual(demo, decoded);
 }
