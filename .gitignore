@@ -3,3 +3,4 @@ zig-cache
 .idea*
 *.exe
 generator/**/*.zig
+generator/**/protoc-gen-zig*
