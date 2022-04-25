@@ -63,25 +63,25 @@ The current version of the zig compiler used for this project is 0.9.1.
 - [x] Enumerations
 - [x] Submessages
 - [x] Any
-- [ ] Oneof
+- [ ] Oneof **currently on hiatus to find a solution, focusing on generator**
 - [x] Maps
 
 ### Code generator
 
 - Scalar Value Types
-    - [ ] double
-    - [ ] float
-    - [ ] int32
-    - [ ] int64
-    - [ ] uint32
-    - [ ] uint64
-    - [ ] sint32
-    - [ ] sint64
-    - [ ] fixed32
-    - [ ] fixed64
-    - [ ] sfixed32
-    - [ ] sfixed64
-    - [ ] bool
+    - [x] double
+    - [x] float
+    - [x] int32
+    - [x] int64
+    - [x] uint32
+    - [x] uint64
+    - [x] sint32
+    - [x] sint64
+    - [x] fixed32
+    - [x] fixed64
+    - [x] sfixed32
+    - [x] sfixed64
+    - [x] bool
     - [ ] string / bytes
 - [ ] Enumerations
 - [ ] Submessages
