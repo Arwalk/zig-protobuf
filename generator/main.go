@@ -7,37 +7,84 @@ import (
 	. "google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func getFieldKindName(kind Kind) (string, error) {
-	switch kind {
-	case Sint32Kind, Sfixed32Kind:
-		return "?i32", nil
-	case Uint32Kind, Fixed32Kind:
-		return "?u32", nil
-	case Sint64Kind, Sfixed64Kind:
-		return "?i64", nil
-	case Uint64Kind, Fixed64Kind:
-		return "?u64", nil
-	case BoolKind:
-		return "?bool", nil
-	case DoubleKind:
-		return "?f64", nil
-	case FloatKind:
-		return "?f32", nil
-	default:
-		return "", fmt.Errorf("unmanaged field type in getFieldKindName %s", kind)
+func getFieldKindName(field *protogen.Field) (string, error) {
+	var prefix = ""
+	// TODO: support for optional fields
+	//if(field.Desc.HasOptionalKeyword()) {
+	prefix = "?"
+	//}
+
+	if field.Desc.IsMap() {
+		return "", fmt.Errorf("Maps are not supported, field type: %s", field.Desc.Name)
 	}
+
+	if field.Desc.IsList() {
+		prefix += "ArrayList("
+	}
+
+	switch field.Desc.Kind() {
+	case Sint32Kind, Sfixed32Kind:
+		prefix += "i32"
+	case Uint32Kind, Fixed32Kind:
+		prefix += "u32"
+	case Sint64Kind, Sfixed64Kind:
+		prefix += "i64"
+	case Uint64Kind, Fixed64Kind:
+		prefix += "u64"
+	case BoolKind:
+		prefix += "bool"
+	case DoubleKind:
+		prefix += "f64"
+	case FloatKind:
+		prefix += "f32"
+	case StringKind: // TODO: validate if repeated strings and bytes are supported
+		prefix += "ArrayList(u8)"
+	case BytesKind:
+		prefix += "ArrayList(u8)"
+	case MessageKind:
+		prefix += string(field.Message.Desc.Name())
+	case EnumKind:
+		prefix += string(field.Enum.Desc.Name())
+	default:
+		return "", fmt.Errorf("unmanaged field type in getFieldKindName %s", field.Desc.Kind())
+	}
+
+	if field.Desc.IsList() {
+		prefix += ")"
+	}
+
+	return prefix, nil
 }
 
 func getFieldDescriptor(field *protogen.Field) (string, error) {
-	switch field.Desc.Kind() {
-	case Sfixed64Kind, Sfixed32Kind, Fixed32Kind, Fixed64Kind, DoubleKind, FloatKind:
-		return fmt.Sprintf("fd(%d, .FixedInt)", field.Desc.Number()), nil
-	case Sint32Kind, Sint64Kind:
-		return fmt.Sprintf("fd(%d, .{ .Varint = .ZigZagOptimized })", field.Desc.Number()), nil
-	case Uint32Kind, Uint64Kind, BoolKind:
-		return fmt.Sprintf("fd(%d, .{ .Varint = .Simple })", field.Desc.Number()), nil
-	default:
-		return "", fmt.Errorf("unmanaged field type in  getFieldDescriptor %s", field.Desc.Kind())
+	if field.Desc.IsList() {
+		switch field.Desc.Kind() {
+		case StringKind, BytesKind:
+			return fmt.Sprintf("fd(%d, .{ .List = .FixedInt })", field.Desc.Number()), nil
+		case MessageKind:
+			return fmt.Sprintf("fd(%d, .{ .List = .SubMessage })", field.Desc.Number()), nil
+		case EnumKind:
+			return fmt.Sprintf("fd(%d, .{ .List = .{ .Varint = .ZigZagOptimized } })", field.Desc.Number()), nil
+		default:
+			return "", fmt.Errorf("unmanaged field type in  getFieldDescriptor %s", field.Desc.Kind())
+		}
+	} else {
+		switch field.Desc.Kind() {
+		case Sfixed64Kind, Sfixed32Kind, Fixed32Kind, Fixed64Kind, DoubleKind, FloatKind:
+			return fmt.Sprintf("fd(%d, .FixedInt)", field.Desc.Number()), nil
+		case Sint32Kind, Sint64Kind:
+			return fmt.Sprintf("fd(%d, .{ .Varint = .ZigZagOptimized })", field.Desc.Number()), nil
+		case Uint32Kind, Uint64Kind, BoolKind:
+			return fmt.Sprintf("fd(%d, .{ .Varint = .Simple })", field.Desc.Number()), nil
+		case StringKind, BytesKind:
+			return fmt.Sprintf("fd(%d, .{ .List = .FixedInt })", field.Desc.Number()), nil
+		case MessageKind:
+			return fmt.Sprintf("fd(%d, .{ .SubMessage = {} })", field.Desc.Number()), nil
+		case EnumKind:
+			return fmt.Sprintf("fd(%d, .{ .Varint = .ZigZagOptimized })", field.Desc.Number()), nil
+		default:
+			return "", fmt.Errorf("unmanaged field type in  getFieldDescriptor %s", field.Desc.Kind())
+		}
 	}
 }
 
@@ -51,7 +98,7 @@ func generateFieldDescriptor(field *protogen.Field, g *protogen.GeneratedFile) e
 }
 
 func generateFieldDef(field *protogen.Field, g *protogen.GeneratedFile) error {
-	if fieldKindName, err := getFieldKindName(field.Desc.Kind()); err != nil {
+	if fieldKindName, err := getFieldKindName(field); err != nil {
 		return err
 	} else {
 		g.P("    ", field.Desc.Name(), ": ", fieldKindName, ",")
@@ -81,6 +128,18 @@ func generateFile(p *protogen.Plugin, f *protogen.File) error {
 	g.P("const pb_init = protobuf.pb_init;")
 	g.P("const fd = protobuf.fd;")
 	g.P()
+
+	for _, m := range f.Enums {
+		msgName := m.Desc.Name()
+
+		g.P("pub const ", msgName, " = enum(i32) {") // TODO: type
+		for _, f := range m.Values {
+			g.P("    ", f.Desc.Name(), " = ", f.Desc.Number(), ",")
+		}
+		g.P("    _,")
+		g.P("};")
+		g.P("")
+	}
 
 	for _, m := range f.Messages {
 		msgName := m.Desc.Name()
@@ -125,6 +184,7 @@ func generateFile(p *protogen.Plugin, f *protogen.File) error {
 		g.P("    }")
 
 		g.P("};")
+		g.P("")
 	}
 
 	return nil
