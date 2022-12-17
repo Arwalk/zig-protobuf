@@ -82,9 +82,9 @@ The current version of the zig compiler used for this project is 0.9.1.
     - [x] sfixed32
     - [x] sfixed64
     - [x] bool
-    - [ ] string / bytes
-- [ ] Enumerations
-- [ ] Submessages
+    - [x] string / bytes
+- [x] Enumerations
+- [x] Submessages
 - [ ] Any
 - [ ] Oneof
 - [ ] Maps
