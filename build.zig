@@ -1,30 +1,75 @@
 const std = @import("std");
 
 pub fn build(b: *std.build.Builder) void {
-    // Standard release options allow the person running `zig build` to select
-    // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
-    const mode = b.standardReleaseOptions();
+    // Standard target options allows the person running `zig build` to choose
+    // what target to build for. Here we do not override the defaults, which
+    // means any target is allowed, and the default is native. Other options
+    // for restricting supported target set are available.
+    const target = b.standardTargetOptions(.{});
 
-    const lib = b.addStaticLibrary("zig-protobuf", "src/protobuf.zig");
-    lib.setBuildMode(mode);
-    lib.install();
+    // Standard optimization options allow the person running `zig build` to select
+    // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall. Here we do not
+    // set a preferred release mode, allowing the user to decide how to optimize.
+    const optimize = b.standardOptimizeOption(.{});
+
+    const lib = b.addStaticLibrary(.{
+        .name = "zig-protobuf",
+        // In this case the main source file is merely a path, however, in more
+        // complicated build scripts, this could be a generated file.
+        .root_source_file = .{ .path = "src/protobuf.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+
+    // This declares intent for the library to be installed into the standard
+    // location when the user invokes the "install" step (the default step when
+    // running `zig build`).
+    b.installArtifact(lib);
 
     var tests = [_]*std.build.LibExeObjStep{
-        b.addTest("src/protobuf.zig"),
-        b.addTest("src/tests.zig"),
-        b.addTest("tests/alltypes.zig"),
-        b.addTest("tests/tests_fixedsizes.zig"),
-        b.addTest("tests/tests_varints.zig")
+        b.addTest(.{
+            .name = "protobuf",
+            .root_source_file = .{ .path = "src/protobuf.zig" },
+            .target = target,
+            .optimize = optimize,
+        }),
+        b.addTest(.{
+            .name = "tests",
+            .root_source_file = .{ .path = "src/tests.zig" },
+            .target = target,
+            .optimize = optimize,
+        }),
+        b.addTest(.{
+            .name = "alltypes",
+            .root_source_file = .{ .path = "tests/alltypes.zig" },
+            .target = target,
+            .optimize = optimize,
+        }),
+        b.addTest(.{
+            .name = "fixedsizes",
+            .root_source_file = .{ .path = "tests/tests_fixedsizes.zig" },
+            .target = target,
+            .optimize = optimize,
+        }),
+        b.addTest(.{
+            .name = "varints",
+            .root_source_file = .{ .path = "tests/tests_varints.zig" },
+            .target = target,
+            .optimize = optimize,
+        }),
     };
 
     const test_step = b.step("test", "Run library tests");
-    for(tests) |test_item| {
-        test_item.addPackage(.{
-            .name = "protobuf",
-            .path = std.build.FileSource{.path = "src/protobuf.zig"}
-        });
-        test_item.setBuildMode(mode);
-        test_step.dependOn(&test_item.step);
-    }
 
+    const protobuf = b.createModule(.{ .source_file = .{ .path = "src/protobuf.zig" } });
+
+    for (tests) |test_item| {
+        test_item.addModule("protobuf", protobuf);
+
+        // This creates a build step. It will be visible in the `zig build --help` menu,
+        // and can be selected like this: `zig build test`
+        // This will evaluate the `test` step rather than the default, which is "install".
+        const run_main_tests = b.addRunArtifact(test_item);
+        test_step.dependOn(&run_main_tests.step);
+    }
 }

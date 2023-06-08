@@ -1,5 +1,5 @@
 const std = @import("std");
-const StructField = std.builtin.TypeInfo.StructField;
+const StructField = std.builtin.Type.StructField;
 const isSignedInt = std.meta.trait.isSignedInt;
 const isIntegral = std.meta.trait.isIntegral;
 const Allocator = std.mem.Allocator;
@@ -43,8 +43,8 @@ pub const KeyValueType = union(KeyValueTypeTag) {
     SubMessage,
     List: ListType,
 
-    pub fn toFieldType(self: KeyValueType) FieldType {
-        return switch (self) {
+    pub fn toFieldType(comptime self: KeyValueType) FieldType {
+        return comptime switch (self) {
             .Varint => |varint_type| .{ .Varint = varint_type },
             .FixedInt => .{.FixedInt},
             .SubMessage => .{.SubMessage},
@@ -142,28 +142,28 @@ fn insert_raw_varint(pb: *ArrayList(u8), size: u64, start_index: usize) !void {
 /// Appends a varint to the pb array.
 /// Mostly does the required transformations to use append_raw_varint
 /// after making the value some kind of unsigned value.
-fn append_as_varint(pb: *ArrayList(u8), value: anytype, comptime varint_type: VarintType) !void {
-    if (value < 0x7F and value >= 0) {
-        try pb.append(@intCast(u8, value));
+fn append_as_varint(pb: *ArrayList(u8), int: anytype, comptime varint_type: VarintType) !void {
+    if (int < 0x7F and int >= 0) {
+        try pb.append(@intCast(u8, int));
     } else {
-        const type_of_val = @TypeOf(value);
+        const type_of_val = @TypeOf(int);
         const bitsize = @bitSizeOf(type_of_val);
-        const val: u64 = comptime blk: {
+        const val: ?u64 = blk: {
             if (isSignedInt(type_of_val)) {
                 switch (varint_type) {
                     .ZigZagOptimized => {
-                        break :blk @intCast(u64, (value >> (bitsize - 1)) ^ (value << 1));
+                        break :blk @intCast(u64, (int >> (bitsize - 1)) ^ (int << 1));
                     },
                     .Simple => {
-                        break :blk @bitCast(std.meta.Int(.unsigned, bitsize), value);
+                        break :blk @bitCast(std.meta.Int(.unsigned, bitsize), int);
                     },
                 }
             } else {
-                break :blk @intCast(u64, value);
+                break :blk null;
             }
         };
 
-        try append_raw_varint(pb, val);
+        try append_raw_varint(pb, val orelse @intCast(u64, int));
     }
 }
 
@@ -361,7 +361,7 @@ fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) !void {
     const data_type = @TypeOf(data);
 
     inline for (field_list) |field| {
-        if (@typeInfo(field.field_type) == .Optional) {
+        if (@typeInfo(field.type) == .Optional) {
             if (@field(data, field.name)) |value| {
                 try append(pb, @field(data_type._desc_table, field.name), @TypeOf(value), value);
             }
@@ -396,7 +396,10 @@ pub fn pb_init(comptime T: type, allocator: Allocator) T {
     inline for (@typeInfo(T).Struct.fields) |field| {
         switch (@field(T._desc_table, field.name).ftype) {
             .Varint, .FixedInt, .SubMessage => {
-                @field(value, field.name) = if (field.default_value) |val| val else null;
+                @field(value, field.name) = if (field.default_value) |val|
+                    @ptrCast(*align(1) const field.type, val).*
+                else
+                    null;
             },
             .List, .Map => {
                 @field(value, field.name) = @TypeOf(@field(value, field.name)).init(allocator);
@@ -501,7 +504,7 @@ fn decode_fixed(comptime T: type, slice: []const u8) T {
     };
     var result: result_base = 0;
 
-    for (slice) |byte, index| {
+    for (slice, 0..) |byte, index| {
         result += @intCast(result_base, byte) << (@intCast(std.math.Log2Int(result_base), index * 8));
     }
     return switch (T) {
@@ -640,7 +643,7 @@ const WireDecoderIterator = struct {
 
 /// Get a real varint of type T from a raw u64 data.
 fn get_varint_value(comptime T: type, comptime varint_type: VarintType, raw: u64) T {
-    return comptime switch (varint_type) {
+    return switch (varint_type) {
         .ZigZagOptimized => switch (@typeInfo(T)) {
             .Int => @intCast(T, (@intCast(i64, raw) >> 1) ^ (-(@intCast(i64, raw) & 1))),
             .Enum => @intToEnum(T, @intCast(i32, (@intCast(i64, raw) >> 1) ^ (-(@intCast(i64, raw) & 1)))),
@@ -697,10 +700,10 @@ fn decode_list(input: []const u8, comptime list_type: ListType, comptime T: type
     }
 }
 
-fn decode_data(comptime T: type, field_desc: FieldDescriptor, field: StructField, result: *T, extracted_data: Extracted, allocator: Allocator) !void {
+fn decode_data(comptime T: type, comptime field_desc: FieldDescriptor, comptime field: StructField, result: *T, extracted_data: Extracted, allocator: Allocator) !void {
     switch (field_desc.ftype) {
         .Varint, .FixedInt, .SubMessage => {
-            const child_type = @typeInfo(field.field_type).Optional.child;
+            const child_type = @typeInfo(field.type).Optional.child;
 
             @field(result, field.name) = switch (field_desc.ftype) {
                 .Varint => |varint_type| get_varint_value(child_type, varint_type, extracted_data.data.RawValue),
@@ -726,7 +729,7 @@ fn decode_data(comptime T: type, field_desc: FieldDescriptor, field: StructField
     }
 }
 
-fn is_tag_known(comptime field_desc: FieldDescriptor, comptime T: type, tag_to_check: u32) bool {
+inline fn is_tag_known(comptime field_desc: FieldDescriptor, comptime T: type, tag_to_check: u32) bool {
     if (field_desc.tag) |_| {
         if (get_full_tag_value(field_desc, T)) |tag_value| {
             return tag_value == tag_to_check;
@@ -751,13 +754,12 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) !T {
     var iterator = WireDecoderIterator{ .input = input };
 
     while (try iterator.next()) |extracted_data| {
-        const field_found: ?StructField = inline for (@typeInfo(T).Struct.fields) |field| {
-            if (is_tag_known(@field(T._desc_table, field.name), field.field_type, extracted_data.tag)) {
-                break field;
+        _ = inline for (@typeInfo(T).Struct.fields) |field| {
+            const v = @field(T._desc_table, field.name);
+            if (is_tag_known(v, field.type, extracted_data.tag)) {
+                try decode_data(T, v, field, &result, extracted_data, allocator);
             }
         } else null;
-
-        if (field_found) |field| try decode_data(T, @field(T._desc_table, field.name), field, &result, extracted_data, allocator);
     }
 
     return result;
