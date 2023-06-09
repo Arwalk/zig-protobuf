@@ -11,7 +11,7 @@ test "FixedSizes" {
     demo.sfixed32 = -2;
     demo.fixed32 = 1;
     demo.fixed64 = 2;
-    demo.double = 5.0;// 0x4014000000000000
+    demo.double = 5.0; // 0x4014000000000000
     demo.float = 5.0; // 0x40a00000
 
     const obtained = try demo.encode(testing.allocator);

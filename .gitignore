@@ -4,3 +4,4 @@ zig-cache
 *.exe
 generator/**/*.zig
 generator/**/protoc-gen-zig*
+zig-out
