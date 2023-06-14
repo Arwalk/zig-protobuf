@@ -11,8 +11,25 @@ jobs:
       - uses: goto-bus-stop/setup-zig@v1
         with:
           version: master
+      - run: zig build
       - run: zig build test
-        continue-on-error: true
+
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: install protoc
+        run: sudo bash .devcontainer/install-protoc.sh
+      - uses: goto-bus-stop/setup-zig@v1
+        with:
+          version: master
+      - run: zig build
+      - run: zig build test
+      - run: bash ./bootstrap.sh
+      - run: zig build
+      - run: bash ./generate-tests.sh
+      - run: zig build test
+      - run: git diff
 
   lint:
     runs-on: ubuntu-latest

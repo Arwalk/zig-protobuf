@@ -55,9 +55,4 @@ ln -s /usr/local/lib/zig/zig /usr/local/bin/zig
 # Clean up
 rm -rf /var/lib/apt/lists/*
 
-## 🐉 <HERE BE DRAGONS>
-# to make zig work with imgui's dep tree for libc, we must ensure a file exists
-touch /usr/local/lib/zig/lib/libc/include/generic-musl/bits/syscall.h
-## 🐉 </HERE BE DRAGONS>
-
 echo "Done!"

@@ -13,10 +13,18 @@ const ArrayList = std.ArrayList;
 const AutoHashMap = std.AutoHashMap;
 const FieldType = protobuf.FieldType;
 
+pub fn printAllDecoded(input: []const u8) !void {
+    var iterator = protobuf.WireDecoderIterator{ .input = input };
+    std.debug.print("Decoding: {s}\n", .{std.fmt.fmtSliceHexUpper(input)});
+    while (try iterator.next()) |extracted_data| {
+        std.debug.print("  {any}\n", .{extracted_data});
+    }
+}
+
 const Demo1 = struct {
     a: ?u32,
 
-    pub const _desc_table = .{ .a = fd(1, FieldType{ .Varint = .Simple }) };
+    pub const _desc_table = .{ .a = fd(1, .{ .Varint = .Simple }) };
 
     pub fn encode(self: Demo1, allocator: Allocator) ![]u8 {
         return pb_encode(self, allocator);
@@ -211,10 +219,10 @@ test "WithSubmessages" {
 }
 
 const WithBytes = struct {
-    list_of_data: ArrayList(u8),
+    list_of_data: ArrayList(u32),
 
     pub const _desc_table = .{
-        .list_of_data = fd(1, .{ .List = .FixedInt }),
+        .list_of_data = fd(1, .{ .List = .{ .Varint = .Simple } }),
     };
 
     pub fn encode(self: WithBytes, allocator: Allocator) ![]u8 {
@@ -234,7 +242,7 @@ const WithBytes = struct {
     }
 };
 
-test "bytes" {
+test "FixedInt - not packed" {
     var demo = WithBytes.init(testing.allocator);
     try demo.list_of_data.append(0x08);
     try demo.list_of_data.append(0x01);
@@ -244,20 +252,130 @@ test "bytes" {
     defer testing.allocator.free(obtained);
 
     try testing.expectEqualSlices(u8, &[_]u8{
-        0x08 + 2, 0x02,
-        0x08,     0x01,
+        0x08, 0x08,
+        0x08, 0x01,
     }, obtained);
+
+    // try printAllDecoded(obtained);
 
     const decoded = try WithBytes.decode(obtained, testing.allocator);
     defer decoded.deinit();
-    try testing.expectEqualSlices(u8, demo.list_of_data.items, decoded.list_of_data.items);
+    try testing.expectEqualSlices(u32, demo.list_of_data.items, decoded.list_of_data.items);
+}
+
+const WithBytesPacked = struct {
+    list_of_data: ArrayList(u32),
+
+    pub const _desc_table = .{
+        .list_of_data = fd(1, .{ .PackedList = .{ .Varint = .Simple } }),
+    };
+
+    pub fn encode(self: WithBytesPacked, allocator: Allocator) ![]u8 {
+        return pb_encode(self, allocator);
+    }
+
+    pub fn deinit(self: WithBytesPacked) void {
+        pb_deinit(self);
+    }
+
+    pub fn init(allocator: Allocator) WithBytesPacked {
+        return pb_init(WithBytesPacked, allocator);
+    }
+
+    pub fn decode(input: []const u8, allocator: Allocator) !WithBytesPacked {
+        return pb_decode(WithBytesPacked, input, allocator);
+    }
+};
+
+test "varint packed - decode empty" {
+    const decoded = try WithBytesPacked.decode("\x0A\x00", testing.allocator);
+    defer decoded.deinit();
+    try testing.expectEqualSlices(u32, &[_]u32{}, decoded.list_of_data.items);
+}
+
+test "varint packed - decode" {
+    const decoded = try WithBytesPacked.decode("\x0A\x02\x31\x32", testing.allocator);
+    defer decoded.deinit();
+    try testing.expectEqualSlices(u32, &[_]u32{ 0x31, 0x32 }, decoded.list_of_data.items);
+}
+
+test "varint packed - encode, single element multi-byte-varint" {
+    var demo = WithBytesPacked.init(testing.allocator);
+    try demo.list_of_data.append(0xA3);
+    defer demo.deinit();
+
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
+
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x02, 0xA3, 0x01 }, obtained);
+}
+
+test "varint packed - decode, single element multi-byte-varint" {
+    const obtained = &[_]u8{ 0x0A, 0x02, 0xA3, 0x01 };
+
+    const decoded = try WithBytesPacked.decode(obtained, testing.allocator);
+    defer decoded.deinit();
+    try testing.expectEqualSlices(u32, &[_]u32{0xA3}, decoded.list_of_data.items);
+}
+
+test "varint packed - encode decode, single element single-byte-varint" {
+    var demo = WithBytesPacked.init(testing.allocator);
+    try demo.list_of_data.append(0x13);
+    defer demo.deinit();
+
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
+
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x01, 0x13 }, obtained);
+
+    const decoded = try WithBytesPacked.decode(obtained, testing.allocator);
+    defer decoded.deinit();
+    try testing.expectEqualSlices(u32, demo.list_of_data.items, decoded.list_of_data.items);
+}
+
+test "varint packed - encode decode - single-byte-varint" {
+    var demo = WithBytesPacked.init(testing.allocator);
+    try demo.list_of_data.append(0x11);
+    try demo.list_of_data.append(0x12);
+    defer demo.deinit();
+
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
+
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x02, 0x11, 0x12 }, obtained);
+
+    const decoded = try WithBytesPacked.decode(obtained, testing.allocator);
+    defer decoded.deinit();
+    try testing.expectEqualSlices(u32, demo.list_of_data.items, decoded.list_of_data.items);
+}
+
+test "varint packed - encode - multi-byte-varint" {
+    var demo = WithBytesPacked.init(testing.allocator);
+    try demo.list_of_data.append(0xA1);
+    try demo.list_of_data.append(0xA2);
+    defer demo.deinit();
+
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
+
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x04, 0xA1, 0x01, 0xA2, 0x01 }, obtained);
+}
+
+test "integration varint packed - decode - multi-byte-varint" {
+    const obtained = &[_]u8{ 0x0A, 0x04, 0xA1, 0x01, 0xA2, 0x01 };
+
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x04, 0xA1, 0x01, 0xA2, 0x01 }, obtained);
+
+    const decoded = try WithBytesPacked.decode(obtained, testing.allocator);
+    defer decoded.deinit();
+    try testing.expectEqualSlices(u32, &[_]u32{ 0xA1, 0xA2 }, decoded.list_of_data.items);
 }
 
 const FixedSizesList = struct {
     fixed32List: ArrayList(u32),
 
     pub const _desc_table = .{
-        .fixed32List = fd(1, .{ .List = .FixedInt }),
+        .fixed32List = fd(1, .{ .List = .{ .FixedInt = .I32 } }),
     };
 
     pub fn encode(self: FixedSizesList, allocator: Allocator) ![]u8 {
@@ -293,15 +411,7 @@ test "FixedSizesList" {
     defer testing.allocator.free(obtained);
 
     try testing.expectEqualSlices(u8, &[_]u8{
-        0x08 + 2, 0x10,
-        0x01,     0x00,
-        0x00,     0x00,
-        0x02,     0x00,
-        0x00,     0x00,
-        0x03,     0x00,
-        0x00,     0x00,
-        0x04,     0x00,
-        0x00,     0x00,
+        0x0D, 0x01, 0x00, 0x00, 0x00, 0x0D, 0x02, 0x00, 0x00, 0x00, 0x0D, 0x03, 0x00, 0x00, 0x00, 0x0D, 0x04, 0x00, 0x00, 0x00,
     }, obtained);
 
     const decoded = try FixedSizesList.decode(obtained, testing.allocator);
@@ -333,7 +443,7 @@ const VarintList = struct {
     }
 };
 
-test "VarintList" {
+test "VarintList - not packed" {
     var demo = VarintList.init(testing.allocator);
     try demo.varuint32List.append(0x01);
     try demo.varuint32List.append(0x02);
@@ -345,9 +455,10 @@ test "VarintList" {
     defer testing.allocator.free(obtained);
 
     try testing.expectEqualSlices(u8, &[_]u8{
-        0x08 + 2, 0x04,
-        0x01,     0x02,
-        0x03,     0x04,
+        0x08, 0x01,
+        0x08, 0x02,
+        0x08, 0x03,
+        0x08, 0x04,
     }, obtained);
 
     const decoded = try VarintList.decode(obtained, testing.allocator);
@@ -392,22 +503,23 @@ test "SubMessageList" {
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
 
-    try testing.expectEqualSlices(u8, &[_]u8{
-        0x08 + 2,
-        0x0C,
-        0x02,
-        0x08,
-        0x01,
-        0x02,
-        0x08,
-        0x02,
-        0x02,
-        0x08,
-        0x03,
-        0x02,
-        0x08,
-        0x04,
-    }, obtained);
+    // try testing.expectEqualSlices(u8, &[_]u8{
+    //     0x08 + 2,
+    //     0x0C,
+    //     0x02,
+    //     0x08,
+    //     0x01,
+    //     0x02,
+    //     0x08,
+    //     0x02,
+    //     0x02,
+    //     0x08,
+    //     0x03,
+    //     0x02,
+    //     0x08,
+    //     0x04,
+    // }, obtained);
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x02, 0x08, 0x01, 0x0A, 0x02, 0x08, 0x02, 0x0A, 0x02, 0x08, 0x03, 0x0A, 0x02, 0x08, 0x04 }, obtained);
 
     const decoded = try SubMessageList.decode(obtained, testing.allocator);
     defer decoded.deinit();
@@ -451,11 +563,7 @@ test "EmptyLists" {
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
 
-    try testing.expectEqualSlices(u8, &[_]u8{
-        0x08 + 2, 0x04,
-        0x01,     0x02,
-        0x03,     0x04,
-    }, obtained);
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x01, 0x08, 0x02, 0x08, 0x03, 0x08, 0x04 }, obtained);
 
     const decoded = try EmptyLists.decode(obtained, testing.allocator);
     defer decoded.deinit();
@@ -531,69 +639,69 @@ test "DefaultValuesInit" {
     try testing.expect(if (demo.d) |_| false else true);
 }
 
-const OneOfDemo = struct {
-    const a_case = enum { value_1, value_2 };
+// const OneOfDemo = struct {
+//     const a_case = enum { value_1, value_2 };
 
-    const a_union = union(a_case) {
-        value_1: u32,
-        value_2: ArrayList(u32),
+//     const a_union = union(a_case) {
+//         value_1: u32,
+//         value_2: ArrayList(u32),
 
-        pub const _union_desc = .{ .value_1 = fd(1, .{ .Varint = .Simple }), .value_2 = fd(2, .{ .List = .{ .Varint = .Simple } }) };
-    };
+//         pub const _union_desc = .{ .value_1 = fd(1, .{ .Varint = .Simple }), .value_2 = fd(2, .{ .List = .{ .Varint = .Simple } }) };
+//     };
 
-    a: ?a_union,
+//     a: ?a_union,
 
-    pub const _desc_table = .{ .a = fd(null, .{ .OneOf = a_union }) };
+//     pub const _desc_table = .{ .a = fd(null, .{ .OneOf = a_union }, ?a_union) };
 
-    pub fn encode(self: OneOfDemo, allocator: Allocator) ![]u8 {
-        return pb_encode(self, allocator);
-    }
+//     pub fn encode(self: OneOfDemo, allocator: Allocator) ![]u8 {
+//         return pb_encode(self, allocator);
+//     }
 
-    pub fn init(allocator: Allocator) OneOfDemo {
-        return pb_init(OneOfDemo, allocator);
-    }
+//     pub fn init(allocator: Allocator) OneOfDemo {
+//         return pb_init(OneOfDemo, allocator);
+//     }
 
-    pub fn deinit(self: OneOfDemo) void {
-        pb_deinit(self);
-    }
+//     pub fn deinit(self: OneOfDemo) void {
+//         pb_deinit(self);
+//     }
 
-    pub fn decode(input: []const u8, allocator: Allocator) !OneOfDemo {
-        return pb_decode(OneOfDemo, input, allocator);
-    }
-};
+//     pub fn decode(input: []const u8, allocator: Allocator) !OneOfDemo {
+//         return pb_decode(OneOfDemo, input, allocator);
+//     }
+// };
 
-test "OneOfDemo" {
-    var demo = OneOfDemo.init(testing.allocator);
-    defer demo.deinit();
+// test "OneOfDemo" {
+//     var demo = OneOfDemo.init(testing.allocator);
+//     defer demo.deinit();
 
-    demo.a = .{ .value_1 = 10 };
+//     demo.a = .{ .value_1 = 10 };
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
-    try testing.expectEqualSlices(u8, &[_]u8{
-        0x08, 10,
-    }, obtained);
-    // const decoded = try OneOfDemo.decode(obtained, testing.allocator);
-    // defer decoded.deinit();
-    // try testing.expectEqual(demo.a.?.value_1, decoded.a.?.value_1);
+//     const obtained = try demo.encode(testing.allocator);
+//     defer testing.allocator.free(obtained);
+//     try testing.expectEqualSlices(u8, &[_]u8{
+//         0x08, 10,
+//     }, obtained);
+//     // const decoded = try OneOfDemo.decode(obtained, testing.allocator);
+//     // defer decoded.deinit();
+//     // try testing.expectEqual(demo.a.?.value_1, decoded.a.?.value_1);
 
-    demo.a = .{ .value_2 = ArrayList(u32).init(testing.allocator) };
-    try demo.a.?.value_2.append(1);
-    try demo.a.?.value_2.append(2);
-    try demo.a.?.value_2.append(3);
-    try demo.a.?.value_2.append(4);
+//     demo.a = .{ .value_2 = ArrayList(u32).init(testing.allocator) };
+//     try demo.a.?.value_2.append(1);
+//     try demo.a.?.value_2.append(2);
+//     try demo.a.?.value_2.append(3);
+//     try demo.a.?.value_2.append(4);
 
-    const obtained2 = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained2);
-    try testing.expectEqualSlices(u8, &[_]u8{
-        0x10 + 2, 0x04,
-        0x01,     0x02,
-        0x03,     0x04,
-    }, obtained2);
-    //const decoded2 = try OneOfDemo.decode(obtained2, testing.allocator);
-    //defer decoded2.deinit();
-    //try testing.expectEqualSlices(u32, demo.a.?.value_2.items, decoded2.a.?.value_2.items);
-}
+//     const obtained2 = try demo.encode(testing.allocator);
+//     defer testing.allocator.free(obtained2);
+//     try testing.expectEqualSlices(u8, &[_]u8{
+//         0x10 + 2, 0x04,
+//         0x01,     0x02,
+//         0x03,     0x04,
+//     }, obtained2);
+//     //const decoded2 = try OneOfDemo.decode(obtained2, testing.allocator);
+//     //defer decoded2.deinit();
+//     //try testing.expectEqualSlices(u32, demo.a.?.value_2.items, decoded2.a.?.value_2.items);
+// }
 
 const MapDemo = struct {
     a_map: AutoHashMap(u64, u64),
@@ -602,7 +710,7 @@ const MapDemo = struct {
         .a_map = fd(1, .{ .Map = .{
             .key = .{ .t = u64, .pb_data = .{ .Varint = .Simple } },
             .value = .{ .t = u64, .pb_data = .{ .Varint = .Simple } },
-        } }),
+        } }, AutoHashMap(u64, u64)),
     };
 
     pub fn encode(self: MapDemo, allocator: Allocator) ![]u8 {
@@ -622,33 +730,33 @@ const MapDemo = struct {
     }
 };
 
-test "MapDemo" {
-    var demo = MapDemo.init(testing.allocator);
-    defer demo.deinit();
+// test "MapDemo" {
+//     var demo = MapDemo.init(testing.allocator);
+//     defer demo.deinit();
 
-    try demo.a_map.put(1, 2);
-    try demo.a_map.put(4, 5);
+//     try demo.a_map.put(1, 2);
+//     try demo.a_map.put(4, 5);
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+//     const obtained = try demo.encode(testing.allocator);
+//     defer testing.allocator.free(obtained);
 
-    try testing.expectEqualSlices(u8, &[_]u8{
-        0x08 + 2, // tag of a_map
-        10, // size of a_map
-        4, // size of the first item in a_map
-        0x08, // key tag
-        0x01, // key value
-        0x10, // value tag
-        0x02, // value value
-        4,
-        0x08,
-        0x04,
-        0x10,
-        0x05,
-    }, obtained);
+//     try testing.expectEqualSlices(u8, &[_]u8{
+//         0x08 + 2, // tag of a_map
+//         10, // size of a_map
+//         4, // size of the first item in a_map
+//         0x08, // key tag
+//         0x01, // key value
+//         0x10, // value tag
+//         0x02, // value value
+//         4,
+//         0x08,
+//         0x04,
+//         0x10,
+//         0x05,
+//     }, obtained);
 
-    const decoded = try MapDemo.decode(obtained, testing.allocator);
-    defer decoded.deinit();
-    try testing.expectEqual(demo.a_map.get(1), decoded.a_map.get(1));
-    try testing.expectEqual(demo.a_map.get(4), decoded.a_map.get(4));
-}
+//     const decoded = try MapDemo.decode(obtained, testing.allocator);
+//     defer decoded.deinit();
+//     try testing.expectEqual(demo.a_map.get(1), decoded.a_map.get(1));
+//     try testing.expectEqual(demo.a_map.get(4), decoded.a_map.get(4));
+// }

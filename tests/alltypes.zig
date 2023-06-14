@@ -1,105 +1,98 @@
 const std = @import("std");
+const testing = std.testing;
+
 const protobuf = @import("protobuf");
-const ArrayList = std.ArrayList;
-const FieldDescriptor = protobuf.FieldDescriptor;
-const mem = std.mem;
-const pb_decode = protobuf.pb_decode;
-const pb_encode = protobuf.pb_encode;
-const pb_deinit = protobuf.pb_deinit;
-const pb_init = protobuf.pb_init;
-const fd = protobuf.fd;
+const tests = @import("./generated/tests.pb.zig");
+const proto3 = @import("./generated/protobuf_test_messages/proto3.pb.zig");
+const longName = @import("./generated/some/really/long/name/which/does/not/really/make/any/sense/but/sometimes/we/still/see/stuff/like/this.pb.zig");
 
-const expected = @embedFile("encode_alltypes.output");
-
-const SubMessage = struct {
-    substuff1: ArrayList(u8),
-    substuff2: ?i32,
-    substuff3: ?i32,
-
-    pub const _desc_table = [_]FieldDescriptor{
-        fd(1, "substuff1", .{ .List = .FixedInt }),
-        fd(2, "substuff2", .{ .Varint = .Simple }),
-        fd(3, "substuff3", .FixedInt),
-    };
-
-    pub fn encode(self: SubMessage, allocator: *mem.Allocator) ![]u8 {
-        return pb_encode(self, allocator);
+pub fn printAllDecoded(input: []const u8) !void {
+    var iterator = protobuf.WireDecoderIterator{ .input = input };
+    std.debug.print("Decoding: {s}\n", .{std.fmt.fmtSliceHexUpper(input)});
+    while (try iterator.next()) |extracted_data| {
+        std.debug.print("  {any}\n", .{extracted_data});
     }
+}
 
-    pub fn deinit(self: SubMessage) void {
-        pb_deinit(self);
-    }
+test "long name" {
+    // - this test allocates an object only. used to instruct zig to try to compile the file
+    // - it also ensures that SubMessage deinit() works
+    var demo = longName.WouldYouParseThisForMePlease.init(testing.allocator);
+    demo.field = .{ .field = "asd" };
+    defer demo.deinit();
 
-    pub fn init(allocator: *mem.Allocator) SubMessage {
-        return pb_init(SubMessage, allocator);
-    }
-};
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
+}
 
-const EmptyMessage = struct {
-    pub const _desc_table = [_]FieldDescriptor{};
+test "packed int32_list encoding" {
+    var demo = tests.Packed.init(testing.allocator);
+    try demo.int32_list.append(0x01);
+    try demo.int32_list.append(0x02);
+    try demo.int32_list.append(0x03);
+    try demo.int32_list.append(0x04);
+    defer demo.deinit();
 
-    pub fn encode(self: EmptyMessage, allocator: *mem.Allocator) ![]u8 {
-        return pb_encode(self, allocator);
-    }
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
 
-    pub fn deinit(self: EmptyMessage) void {
-        pb_deinit(self);
-    }
+    try testing.expectEqualSlices(u8, &[_]u8{
+        // fieldNumber=1<<3 packetType=2 (LEN)
+        (1 << 3) + 2,
+        // 4 bytes
+        0x04,
+        // payload
+        0x01,
+        0x02,
+        0x03,
+        0x04,
+    }, obtained);
 
-    pub fn init(allocator: *mem.Allocator) EmptyMessage {
-        return pb_init(EmptyMessage, allocator);
-    }
-};
+    const decoded = try tests.Packed.decode(obtained, testing.allocator);
+    defer decoded.deinit();
+    try testing.expectEqualSlices(i32, demo.int32_list.items, decoded.int32_list.items);
 
-const HugeEnum = enum(i32) { HE_Zero = 0, Negative = -2147483647, Positive = 2147483647 };
+    // TODO: cross test against Packed type
+}
 
-const Limits = struct {
-    int32_min: ?i32,
-    int32_max: ?i32,
-    uint32_min: ?u32,
-    uint32_max: ?u32,
-    int64_min: ?i64,
-    int64_max: ?i64,
-    uint64_min: ?u64,
-    uint64_max: ?u64,
-    enum_min: ?HugeEnum,
-    enum_max: ?HugeEnum,
+test "unpacked int32_list" {
+    var demo = tests.UnPacked.init(testing.allocator);
+    try demo.int32_list.append(0x01);
+    try demo.int32_list.append(0x02);
+    try demo.int32_list.append(0x03);
+    try demo.int32_list.append(0x04);
+    defer demo.deinit();
 
-    pub const _desc_table = [_]FieldDescriptor{
-        fd(1, "int32_min", .{ .Varint = .ZigZagOptimized }),
-        fd(2, "int32_max", .{ .Varint = .ZigZagOptimized }),
-        fd(3, "uint32_min", .{ .Varint = .Simple }),
-        fd(4, "uint32_max", .{ .Varint = .Simple }),
-        fd(5, "int64_min", .{ .Varint = .ZigZagOptimized }),
-        fd(6, "int64_max", .{ .Varint = .ZigZagOptimized }),
-        fd(7, "uint64_min", .{ .Varint = .Simple }),
-        fd(8, "uint64_max", .{ .Varint = .Simple }),
-        fd(9, "enum_min", .{ .Varint = .ZigZagOptimized }),
-        fd(10, "enum_max", .{ .Varint = .ZigZagOptimized }),
-    };
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
 
-    pub fn encode(self: Limits, allocator: *mem.Allocator) ![]u8 {
-        return pb_encode(self, allocator);
-    }
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x01, 0x08, 0x02, 0x08, 0x03, 0x08, 0x04 }, obtained);
 
-    pub fn deinit(self: Limits) void {
-        pb_deinit(self);
-    }
+    const decoded = try tests.UnPacked.decode(obtained, testing.allocator);
+    defer decoded.deinit();
+    try testing.expectEqualSlices(i32, demo.int32_list.items, decoded.int32_list.items);
 
-    pub fn init(allocator: *mem.Allocator) Limits {
-        return pb_init(Limits, allocator);
-    }
-};
+    // TODO: cross test against Packed type
+}
 
-const MyEnum = enum(type) {
-    Zero = 0,
-    First = 1,
-    Second = 2,
-    Truth = 42,
-};
+test "Required.Proto3.ProtobufInput.ValidDataRepeated.BOOL.PackedInput.ProtobufOutput" {
+    const bytes = "\xda\x02\x28\x00\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01\xce\xc2\xf1\x05\x80\x80\x80\x80\x20\xff\xff\xff\xff\xff\xff\xff\xff\x7f\x80\x80\x80\x80\x80\x80\x80\x80\x80\x01";
+    const m = try proto3.TestAllTypesProto3.decode(bytes, testing.allocator);
+    defer m.deinit();
 
-const AllTypes = struct {};
+    // TODO: try testing.expectEqualSlices(bool, &[_]bool{ false, true, true, true, false, true, false }, m.repeated_bool.items);
+}
 
-test "alltypes " {
-    //todo!
+test "packed example from protobuf documentation" {
+    const bytes = "\x32\x06\x03\x8e\x02\x9e\xa7\x05";
+    const m = try tests.TestPacked.decode(bytes, testing.allocator);
+    defer m.deinit();
+    try testing.expectEqualSlices(i32, &[_]i32{ 3, 270, 86942 }, m.f.items);
+}
+
+test "packed example from protobuf documentation repeated" {
+    const bytes = "\x32\x06\x03\x8e\x02\x9e\xa7\x05\x32\x06\x03\x8e\x02\x9e\xa7\x05";
+    const m = try tests.TestPacked.decode(bytes, testing.allocator);
+    defer m.deinit();
+    try testing.expectEqualSlices(i32, &[_]i32{ 3, 270, 86942, 3, 270, 86942 }, m.f.items);
 }

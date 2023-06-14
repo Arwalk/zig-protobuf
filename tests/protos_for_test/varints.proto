@@ -1,5 +1,5 @@
 syntax = "proto3";
-option go_package = "./";
+package tests;
 
 message Varints {
     sint32 sint32 = 1;
@@ -7,4 +7,13 @@ message Varints {
     uint32 uint32 = 3;
     uint64 uint64 = 4;
     bool   a_bool = 5;
+}
+
+message TestPacked {
+  repeated int32 f = 6 [packed=true];
+}
+
+message TestOptional {
+  optional string d = 4;
+  repeated int32 e = 5;
 }
