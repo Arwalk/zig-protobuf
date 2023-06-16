@@ -16,7 +16,7 @@ const DecodingError = error{ NotEnoughData, InvalidInput };
 const UnionDecodingError = DecodingError || Allocator.Error;
 
 /// Enum describing the different field types available.
-pub const FieldTypeTag = enum { Varint, FixedInt, SubMessage, List, PackedList, String, OneOf, Map };
+pub const FieldTypeTag = enum { Varint, FixedInt, SubMessage, List, PackedList, String, OneOf };
 
 pub const TagNumber = enum(u32) { VARINT = 0, I64 = 1, LEN = 2, SGROUP = 3, EGROUP = 4, I32 = 5 };
 
@@ -44,33 +44,6 @@ pub const KeyValueTypeTag = enum {
     List,
 };
 
-/// Tagged union giving the details of underlying types in a map field
-pub const KeyValueType = union(KeyValueTypeTag) {
-    Varint: VarintType,
-    FixedInt,
-    SubMessage,
-    List: ListType,
-
-    pub fn toFieldType(comptime self: KeyValueType) FieldType {
-        return comptime switch (self) {
-            .Varint => |varint_type| .{ .Varint = varint_type },
-            .FixedInt => .{.FixedInt},
-            .SubMessage => .{.SubMessage},
-            .List => |list_type| .{ .List = list_type },
-            .PackedList => |list_type| .{ .PackedList = list_type },
-        };
-    }
-};
-
-/// Struct for key and values of a map type
-pub const KeyValueTypeData = struct {
-    t: type,
-    pb_data: KeyValueType,
-};
-
-/// Struct describing keys and values of a map
-pub const MapData = struct { key: KeyValueTypeData, value: KeyValueTypeData };
-
 /// Main tagged union holding the details of any field type.
 pub const FieldType = union(FieldTypeTag) {
     Varint: VarintType,
@@ -80,7 +53,6 @@ pub const FieldType = union(FieldTypeTag) {
     List: ListType,
     PackedList: ListType,
     OneOf: type,
-    Map: MapData,
 
     /// returns the wire type of a field. see https://developers.google.com/protocol-buffers/docs/encoding#structure
     pub fn get_wirevalue(comptime ftype: FieldType) u3 {
@@ -97,7 +69,7 @@ pub const FieldType = union(FieldTypeTag) {
                 .I64 => 1,
                 else => @compileError("Type " ++ @typeName(ftype) ++ "not compatible with fixed int"),
             },
-            .String, .SubMessage, .PackedList, .Map => 2,
+            .String, .SubMessage, .PackedList => 2,
             .List => |inner| switch (inner) {
                 .Varint => 0,
                 .FixedInt => |size| switch (size) {
@@ -295,56 +267,6 @@ fn append_tag(pb: *ArrayList(u8), comptime field: FieldDescriptor) !void {
     }
 }
 
-fn MapSubmessage(comptime key_data: KeyValueTypeData, comptime value_data: KeyValueTypeData) type {
-    return struct {
-        const Self = @This();
-
-        key: ?key_data.t,
-        value: ?value_data.t,
-
-        pub const _desc_table = .{ .key = fd(1, key_data.pb_data.toFieldType()), .value = fd(2, value_data.pb_data.toFieldType()) };
-
-        pub fn encode(self: Self, allocator: Allocator) ![]u8 {
-            return pb_encode(self, allocator);
-        }
-
-        pub fn decode(input: []const u8, allocator: Allocator) !Self {
-            return pb_decode(Self, input, allocator);
-        }
-
-        pub fn init(allocator: Allocator) Self {
-            return pb_init(Self, allocator);
-        }
-
-        pub fn deinit(self: Self) void {
-            pb_deinit(self);
-        }
-    };
-}
-
-fn get_map_submessage_type(comptime map_data: MapData) type {
-    return MapSubmessage(map_data.key, map_data.value);
-}
-
-/// Appends the content of a Map field to the pb buffer.
-/// Relies on a property of maps being basically a list of submessage with key index = 1 and value index = 2
-/// By relying on this property, encoding maps is as easy as building an internal
-/// Struct type with this data, and encoding using all the rest of the tool already
-/// at hand.
-/// See this note for details https://developers.google.com/protocol-buffers/docs/proto3#backwards_compatibility
-fn append_map(pb: *ArrayList(u8), comptime field: FieldDescriptor, map: anytype) !void {
-    const len_index = pb.items.len;
-    var iterator: @TypeOf(map).Iterator = map.iterator();
-
-    const Submessage = get_map_submessage_type(field.ftype.Map);
-    while (iterator.next()) |data| {
-        try append_submessage(pb, Submessage{ .key = data.key_ptr.*, .value = data.value_ptr.* });
-    }
-
-    const size_encoded = pb.items.len - len_index;
-    try insert_raw_varint(pb, size_encoded, len_index);
-}
-
 /// Appends a value to the pb buffer. Starts by appending the tag, then a comptime switch
 /// routes the code to the correct type of data to append.
 fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype) !void {
@@ -415,9 +337,6 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype) !
                 }
             }
         },
-        .Map => {
-            try append_map(pb, field, value);
-        },
     }
 }
 
@@ -435,9 +354,6 @@ fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) !void {
         } else {
             switch (@field(data_type._desc_table, field.name).ftype) {
                 .List, .PackedList => if (@field(data, field.name).items.len != 0) {
-                    try append(pb, @field(data_type._desc_table, field.name), @field(data, field.name));
-                },
-                .Map => if (@field(data, field.name).count() != 0) {
                     try append(pb, @field(data_type._desc_table, field.name), @field(data, field.name));
                 },
                 .Varint, .FixedInt => if (@as(u64, @field(data, field.name)) != 0) {
@@ -479,7 +395,7 @@ pub fn pb_init(comptime T: type, allocator: Allocator) T {
             .String => {
                 @field(value, field.name) = null;
             },
-            .List, .Map, .PackedList => {
+            .List, .PackedList => {
                 @field(value, field.name) = @TypeOf(@field(value, field.name)).init(allocator);
             },
             .OneOf => {
@@ -532,11 +448,6 @@ fn deinit_field(field: anytype, comptime field_name: []const u8, comptime ftype:
                     }
                 }
             }
-        },
-        .Map => |_| {
-            // for unknown reason i have to specifically made it var here. Otherwise it's a const field.
-            var temp = @field(field, field_name); // key/values requiring dealloc aren't managed yet!
-            temp.deinit();
         },
     }
 }
@@ -878,15 +789,6 @@ fn decode_data(comptime T: type, comptime field_desc: FieldDescriptor, comptime 
                 }
             }
         },
-        .Map => |map_data| {
-            const map_type = get_map_submessage_type(map_data);
-            // TODO: test extracted_data=RawValue
-            var submessage_iterator = LengthDelimitedDecoderIterator{ .input = extracted_data.data.Slice };
-            while (try submessage_iterator.next()) |slice| {
-                var value = map_type.decode(slice, allocator);
-                try @field(result, field.name).put(value.key.?, value.value.?);
-            }
-        },
         .OneOf => |_| {
             @compileError("Can not decode OneOf fields yet");
         },
@@ -921,6 +823,23 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) !T {
     }
 
     return result;
+}
+
+pub fn MessageMixins(comptime Self: type) type {
+    return struct {
+        pub fn encode(self: Self, allocator: Allocator) ![]u8 {
+            return pb_encode(self, allocator);
+        }
+        pub fn decode(input: []const u8, allocator: Allocator) !Self {
+            return pb_decode(Self, input, allocator);
+        }
+        pub fn init(allocator: Allocator) Self {
+            return pb_init(Self, allocator);
+        }
+        pub fn deinit(self: Self) void {
+            return pb_deinit(self);
+        }
+    };
 }
 
 const testing = std.testing;

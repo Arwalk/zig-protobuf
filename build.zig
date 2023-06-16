@@ -56,7 +56,7 @@ pub fn build(b: *std.build.Builder) void {
         }),
         b.addTest(.{
             .name = "tests",
-            .root_source_file = .{ .path = "src/tests.zig" },
+            .root_source_file = .{ .path = "tests/tests.zig" },
             .target = target,
             .optimize = optimize,
         }),
@@ -67,14 +67,8 @@ pub fn build(b: *std.build.Builder) void {
             .optimize = optimize,
         }),
         b.addTest(.{
-            .name = "mapbox",
-            .root_source_file = .{ .path = "tests/mapbox.zig" },
-            .target = target,
-            .optimize = optimize,
-        }),
-        b.addTest(.{
-            .name = "unittest",
-            .root_source_file = .{ .path = "tests/unittest.zig" },
+            .name = "integration",
+            .root_source_file = .{ .path = "tests/integration.zig" },
             .target = target,
             .optimize = optimize,
         }),

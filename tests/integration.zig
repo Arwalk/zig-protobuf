@@ -1,9 +1,10 @@
 const std = @import("std");
 const testing = std.testing;
 
-const protobuf = @import("protobuf");
-const unittest = @import("./generated/unittest.pb.zig");
-// const binary_file = @embedFile("./generated/unittest.pb.zig");
+test {
+    _ = @import("./mapbox.zig");
+    _ = @import("./graphics.zig");
+}
 
 // test "unittest.proto parse and re-encode" {
 //     const binary_file =

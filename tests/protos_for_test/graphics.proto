@@ -1,0 +1,189 @@
+// This file contains all the protocol definitions to store static files and
+// database index for the game. These definitions can also be used over-the-wire
+// talking with the server i.e. a server could send an entire body definition or
+// texture to the client on-the-fly
+
+syntax = "proto3";
+package graphics;
+
+option optimize_for = SPEED;
+message InventoryItem {
+  int32 slot = 1;
+  string name = 2;
+  int32 image = 3;
+  int32 quantity = 4;
+  string description = 5;
+  int32 id = 6;
+}
+
+message Character {
+  string id = 1;
+  int32 class = 2;
+  int32 gender = 3;
+  int32 race = 4;
+  int32 head = 5;
+  int32 body = 6;
+  int32 helmet = 7;
+  int32 right_hand = 8;
+  string nick = 9;
+  int32 left_hand = 10;
+  string color = 11;
+  string clan = 12;
+  bool enabled = 13;
+}
+
+message Alignment {
+  string id = 1;
+  string name = 2;
+  string color = 3;
+}
+
+message Index {
+  int32 id = 1;
+  repeated int32 grh = 2;
+  int32 offset_x = 3;
+  int32 offset_y = 4;
+  map<string, int32> animations = 5;
+  string name = 6;
+}
+
+message StoredChunk {
+  int32 chunk_id = 1;
+  repeated MapEntity entities = 2;
+}
+
+message MapEntity {
+  int32 x = 1;
+  int32 y = 2;
+  Light light = 3;
+  Shape collider = 4;
+  int32 graphic_id = 5;
+  string entity_id = 6;
+  bool vertical_graphic = 7;
+}
+
+message Light {
+  float hue = 1;
+  float height = 2;
+  float radius = 3;
+  float saturation = 4;
+  float fall_off = 5;
+}
+
+message Point {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+message Shape {
+  repeated Point points = 1;
+}
+
+message Npc {
+  int32 x = 1;
+  int32 y = 2;
+  repeated InventoryItem items = 3;
+  string name = 4;
+  string alignment = 5;
+  string ai = 6;
+
+  int32 min_hp = 7;
+  int32 max_hp = 8;
+  int32 min_mana = 9;
+  int32 max_mana = 10;
+  int32 min_strenght = 11;
+  int32 max_strenght = 12;
+
+  map<int32, int32> skills = 13;
+  map<int32, int32> abilities = 14;
+  Character visual = 15;
+}
+
+message Tile {
+  int32 x = 1;
+  int32 y = 2;
+  int32 tileset_grh = 3;
+  int32 tileset = 4;
+  int32 flags = 5;
+  int32 blocked = 6;
+  int32 layer2 = 7;
+  int32 layer3 = 8;
+  int32 layer4 = 9;
+}
+
+message MapItem {
+  int32 x = 1;
+  int32 y = 2;
+  int32 item = 3;
+  int32 amount = 4;
+}
+
+message GraphicsDB {
+  repeated Texture textures = 1;
+  repeated Graphic graphics = 2;
+  // repeated Tileset tilesets = 3;
+  repeated Index bodies = 4;
+  repeated Index fxs = 5;
+  repeated Index heads = 6;
+  repeated Index helmets = 7;
+  repeated Index shields = 8;
+  repeated Index weapons = 9;
+  repeated Script scripts = 10;
+  repeated Spine spine = 11;
+}
+
+message Script {
+  string path = 1;
+  string code = 2;
+}
+
+
+message SubTexture {
+  string diffuse = 1;
+  string normal = 2;
+  string emmisive = 3;
+  int32 width = 4;
+  int32 height = 5;
+}
+
+message Texture {
+  string diffuse = 1;
+  string normal = 2;
+  string emmisive = 3;
+  int32 width = 4;
+  int32 height = 5;
+
+  SubTexture dxt1 = 6;
+  SubTexture dxt3 = 7;
+  SubTexture dxt5 = 8;
+}
+
+message Graphic {
+  int32 id = 1;
+  oneof type {
+    Sprite sprite = 2;
+    Animation animation = 3;
+  }
+  string name = 4;
+}
+
+message Sprite {
+  int32 texture = 1;
+  int32 x = 2;
+  int32 y = 3;
+  int32 w = 4;
+  int32 h = 5;
+  int32 pivot_x = 6;
+  int32 pivot_y = 7;
+}
+
+message Animation {
+  repeated int32 frames = 1;
+  float speed = 2;
+}
+
+message Spine {
+  string name = 1;
+  string json = 2;
+  string atlas = 3;
+}
