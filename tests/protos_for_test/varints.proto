@@ -79,3 +79,11 @@ message EmptyMessage {
 message FixedSizesList {
   repeated fixed32 fixed32List = 1 [packed=false];
 }
+
+message VarintListNotPacked {
+  repeated uint32 varuint32List = 1 [packed=false];
+}
+
+message VarintListPacked {
+  repeated uint32 varuint32List = 1 [packed=true];
+}

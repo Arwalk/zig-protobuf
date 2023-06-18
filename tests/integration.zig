@@ -2,6 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 
 test {
+    _ = @import("./oneof.zig");
     _ = @import("./mapbox.zig");
     _ = @import("./graphics.zig");
 }

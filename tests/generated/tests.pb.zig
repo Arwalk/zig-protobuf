@@ -6,12 +6,14 @@ const ArrayList = std.ArrayList;
 
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
+/// import package tests.oneof
+const tests_oneof = @import("tests/oneof.pb.zig");
+/// import package graphics
+const graphics = @import("graphics.pb.zig");
 /// import package protobuf_test_messages.proto3
 const protobuf_test_messages_proto3 = @import("protobuf_test_messages/proto3.pb.zig");
 /// import package unittest
 const unittest = @import("unittest.pb.zig");
-/// import package graphics
-const graphics = @import("graphics.pb.zig");
 /// import package jspb.test
 const jspb_test = @import("jspb/test.pb.zig");
 /// import package vector_tile
@@ -71,7 +73,7 @@ pub const TestOptional = struct {
 
     pub const _desc_table = .{
         .d = fd(4, .String),
-        .e = fd(5, .{ .List = .{ .Varint = .Simple } }),
+        .e = fd(5, .{ .PackedList = .{ .Varint = .Simple } }),
     };
 
     pub usingnamespace protobuf.MessageMixins(@This());
@@ -216,6 +218,26 @@ pub const FixedSizesList = struct {
     pub usingnamespace protobuf.MessageMixins(@This());
 };
 
+pub const VarintListNotPacked = struct {
+    varuint32List: ArrayList(u32),
+
+    pub const _desc_table = .{
+        .varuint32List = fd(1, .{ .List = .{ .Varint = .Simple } }),
+    };
+
+    pub usingnamespace protobuf.MessageMixins(@This());
+};
+
+pub const VarintListPacked = struct {
+    varuint32List: ArrayList(u32),
+
+    pub const _desc_table = .{
+        .varuint32List = fd(1, .{ .PackedList = .{ .Varint = .Simple } }),
+    };
+
+    pub usingnamespace protobuf.MessageMixins(@This());
+};
+
 pub const TopLevelEnum = enum(i32) {
     SE_ZERO = 0,
     SE2_ZERO = 3,
@@ -348,7 +370,7 @@ pub const WithRepeatedStrings = struct {
     name: ArrayList([]const u8),
 
     pub const _desc_table = .{
-        .name = fd(1, .{ .List = .String }),
+        .name = fd(1, .{ .PackedList = .String }),
     };
 
     pub usingnamespace protobuf.MessageMixins(@This());

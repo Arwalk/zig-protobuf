@@ -9,3 +9,4 @@ zig-out
 generator/protoc-gen-main
 dcl
 protocol
+debug

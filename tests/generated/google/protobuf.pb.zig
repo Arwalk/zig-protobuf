@@ -634,7 +634,7 @@ pub const FieldMask = struct {
     paths: ArrayList([]const u8),
 
     pub const _desc_table = .{
-        .paths = fd(1, .{ .List = .String }),
+        .paths = fd(1, .{ .PackedList = .String }),
     };
 
     pub usingnamespace protobuf.MessageMixins(@This());

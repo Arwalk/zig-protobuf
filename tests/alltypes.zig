@@ -51,8 +51,6 @@ test "packed int32_list encoding" {
     const decoded = try tests.Packed.decode(obtained, testing.allocator);
     defer decoded.deinit();
     try testing.expectEqualSlices(i32, demo.int32_list.items, decoded.int32_list.items);
-
-    // TODO: cross test against Packed type
 }
 
 test "unpacked int32_list" {
@@ -71,8 +69,6 @@ test "unpacked int32_list" {
     const decoded = try tests.UnPacked.decode(obtained, testing.allocator);
     defer decoded.deinit();
     try testing.expectEqualSlices(i32, demo.int32_list.items, decoded.int32_list.items);
-
-    // TODO: cross test against Packed type
 }
 
 test "Required.Proto3.ProtobufInput.ValidDataRepeated.BOOL.PackedInput.ProtobufOutput" {

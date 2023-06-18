@@ -10,7 +10,6 @@ protoc --plugin=zig-out/bin/protoc-gen-zig \
   /usr/local/lib/protobuf/include/google/protobuf/compiler/plugin.proto \
   /usr/local/lib/protobuf/include/google/protobuf/descriptor.proto
 
-zig fmt bootstrapped-generator/google/protobuf/compiler.pb.zig
-zig fmt bootstrapped-generator/google/protobuf.pb.zig
+zig fmt bootstrapped-generator
 
 echo 'generation finished'

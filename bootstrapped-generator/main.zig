@@ -22,7 +22,11 @@ pub fn main() !void {
 
     var ctx: GenerationContext = GenerationContext{ .req = request };
 
-    try ctx.writeToStdOut();
+    try ctx.processRequest();
+
+    const stdout = &std.io.getStdOut();
+    const r = try ctx.res.encode(allocator);
+    _ = try stdout.write(r);
 }
 
 const GenerationContext = struct {
@@ -37,9 +41,7 @@ const GenerationContext = struct {
 
     const Self = @This();
 
-    pub fn writeToStdOut(self: *Self) !void {
-        const stdout = &std.io.getStdOut();
-
+    pub fn processRequest(self: *Self) !void {
         for (self.req.proto_file.items) |file| {
             const t: descriptor.FileDescriptorProto = file;
 
@@ -47,7 +49,7 @@ const GenerationContext = struct {
                 try self.known_packages.put(package, FullName{ .buf = package });
             } else {
                 self.res.@"error" = try std.fmt.allocPrint(allocator, "ERROR Package directive missing in {?s}\n", .{file.name});
-                break;
+                return;
             }
         }
 
@@ -70,9 +72,6 @@ const GenerationContext = struct {
         }
 
         self.res.supported_features = @enumToInt(plugin.CodeGeneratorResponse.Feature.FEATURE_PROTO3_OPTIONAL);
-
-        const r = try self.res.encode(allocator);
-        _ = try stdout.write(r);
     }
 
     fn fileNameFromPackage(self: *Self, package: string) !string {
@@ -182,10 +181,14 @@ const GenerationContext = struct {
     }
 
     fn getFieldName(_: *Self, field: descriptor.FieldDescriptorProto) !string {
-        if (std.zig.Token.keywords.get(field.name.?) != null)
-            return try std.fmt.allocPrint(allocator, "@\"{?s}\"", .{field.name})
+        return escapeName(field.name.?);
+    }
+
+    fn escapeName(name: string) !string {
+        if (std.zig.Token.keywords.get(name) != null)
+            return try std.fmt.allocPrint(allocator, "@\"{?s}\"", .{name})
         else
-            return field.name.?;
+            return name;
     }
 
     fn fieldTypeFqn(ctx: *Self, parentFqn: FullName, file: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto) !string {
@@ -261,18 +264,20 @@ const GenerationContext = struct {
     }
 
     fn isPacked(_: *Self, file: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto) bool {
+        const default = if (file.syntax != null and std.mem.eql(u8, file.syntax.?, "proto3"))
+            if (field.type) |t|
+                isScalar(t)
+            else
+                false
+        else
+            false;
+
         if (field.options) |o| {
             if (o.@"packed") |p| {
                 return p;
-            } else if (file.syntax != null and std.mem.eql(u8, file.syntax.?, "proto3")) {
-                if (field.type) |t| {
-                    return isScalar(t);
-                } else {
-                    return false;
-                }
             }
         }
-        return false;
+        return default;
     }
 
     fn isOptional(_: *Self, field: descriptor.FieldDescriptorProto) bool {
@@ -285,19 +290,21 @@ const GenerationContext = struct {
         }
     }
 
-    fn getFieldType(ctx: *Self, fqn: FullName, currentFile: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto) !string {
+    fn getFieldType(ctx: *Self, fqn: FullName, currentFile: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto, is_union: bool) !string {
         var prefix: string = "";
         var postfix: string = "";
-        const repated = ctx.isRepeated(field);
+        const repeated = ctx.isRepeated(field);
         const t = field.type.?;
 
-        if (!repated) {
-            // look for optional types
-            switch (t) {
-                .TYPE_MESSAGE, .TYPE_STRING, .TYPE_BYTES => prefix = "?",
-                else => if (ctx.isOptional(field)) {
-                    prefix = "?";
-                },
+        if (!repeated) {
+            if (!is_union) {
+                // look for optional types
+                switch (t) {
+                    .TYPE_MESSAGE, .TYPE_STRING, .TYPE_BYTES => prefix = "?",
+                    else => if (ctx.isOptional(field)) {
+                        prefix = "?";
+                    },
+                }
             }
         } else {
             prefix = "ArrayList(";
@@ -323,7 +330,8 @@ const GenerationContext = struct {
         return try std.mem.concat(allocator, u8, &.{ prefix, infix, postfix });
     }
 
-    fn getFieldTypeDescriptor(ctx: *Self, _: FullName, file: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto) !string {
+    fn getFieldTypeDescriptor(ctx: *Self, _: FullName, file: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto, is_union: bool) !string {
+        _ = is_union;
         var prefix: string = "";
 
         var postfix: string = "";
@@ -353,18 +361,36 @@ const GenerationContext = struct {
         return try std.mem.concat(allocator, u8, &.{ prefix, infix, postfix });
     }
 
-    fn generateFieldDescriptor(ctx: *Self, list: *std.ArrayList(string), fqn: FullName, file: descriptor.FileDescriptorProto, message: descriptor.DescriptorProto, field: descriptor.FieldDescriptorProto) !void {
+    fn generateFieldDescriptor(ctx: *Self, list: *std.ArrayList(string), fqn: FullName, file: descriptor.FileDescriptorProto, message: descriptor.DescriptorProto, field: descriptor.FieldDescriptorProto, is_union: bool) !void {
         _ = message;
         var name = try ctx.getFieldName(field);
-        var descStr = try ctx.getFieldTypeDescriptor(fqn, file, field);
+        var descStr = try ctx.getFieldTypeDescriptor(fqn, file, field, is_union);
         const format = "        .{s} = fd({?d}, {s}),\n";
         try list.append(try std.fmt.allocPrint(allocator, format, .{ name, field.number, descStr }));
     }
 
-    fn generateFieldDeclaration(ctx: *Self, list: *std.ArrayList(string), fqn: FullName, file: descriptor.FileDescriptorProto, message: descriptor.DescriptorProto, field: descriptor.FieldDescriptorProto) !void {
+    fn generateFieldDeclaration(ctx: *Self, list: *std.ArrayList(string), fqn: FullName, file: descriptor.FileDescriptorProto, message: descriptor.DescriptorProto, field: descriptor.FieldDescriptorProto, is_union: bool) !void {
         _ = message;
-        var typeStr = try ctx.getFieldType(fqn, file, field);
+
+        var typeStr = try ctx.getFieldType(fqn, file, field, is_union);
         try list.append(try std.fmt.allocPrint(allocator, "    {s}: {s},\n", .{ try ctx.getFieldName(field), typeStr }));
+    }
+
+    /// this function returns the amount of options available for a given "oneof" declaration
+    ///
+    /// since protobuf 3.14, optional values in proto3 are wrapped in a single-element
+    /// oneof to enable optional behavior in most languages. since we have optional types
+    /// in zig, we can not use it for a better end-user experience and for readability
+    fn amountOfElementsInOneofUnion(_: *Self, message: descriptor.DescriptorProto, oneof_index: ?i32) u32 {
+        if (oneof_index == null) return 0;
+
+        var count: u32 = 0;
+        for (message.field.items) |f| {
+            if (oneof_index == f.oneof_index)
+                count += 1;
+        }
+
+        return count;
     }
 
     fn generateMessages(ctx: *Self, list: *std.ArrayList(string), fqn: FullName, file: descriptor.FileDescriptorProto, messages: std.ArrayList(descriptor.DescriptorProto)) !void {
@@ -374,8 +400,76 @@ const GenerationContext = struct {
 
             try list.append(try std.fmt.allocPrint(allocator, "\npub const {?s} = struct {{\n", .{m.name}));
 
+            // append all fields that are not part of a oneof
             for (m.field.items) |f| {
-                try ctx.generateFieldDeclaration(list, messageFqn, file, m, f);
+                if (f.oneof_index == null or ctx.amountOfElementsInOneofUnion(m, f.oneof_index) == 1) {
+                    try ctx.generateFieldDeclaration(list, messageFqn, file, m, f, false);
+                }
+            }
+
+            // print all oneof fields
+            for (m.oneof_decl.items, 0..) |oneof, i| {
+                const union_element_count = ctx.amountOfElementsInOneofUnion(m, @intCast(i32, i));
+                if (union_element_count > 1) {
+                    const oneof_name = oneof.name.?;
+                    try list.append(try std.fmt.allocPrint(allocator, "    {s}: ?{s}_union,\n", .{ try escapeName(oneof_name), oneof_name }));
+                }
+            }
+
+            // then print the oneof declarations
+            for (m.oneof_decl.items, 0..) |oneof, i| {
+                // only emit unions that have more than one element
+                const union_element_count = ctx.amountOfElementsInOneofUnion(m, @intCast(i32, i));
+                if (union_element_count > 1) {
+                    const oneof_name = oneof.name.?;
+
+                    try list.append(try std.fmt.allocPrint(allocator,
+                        \\
+                        \\    pub const _{s}_case = enum {{
+                        \\
+                    , .{oneof_name}));
+
+                    for (m.field.items) |field| {
+                        const f: descriptor.FieldDescriptorProto = field;
+                        if (f.oneof_index orelse -1 == @intCast(i32, i)) {
+                            var name = try ctx.getFieldName(f);
+                            try list.append(try std.fmt.allocPrint(allocator, "      {?s},\n", .{name}));
+                        }
+                    }
+
+                    try list.append(try std.fmt.allocPrint(allocator,
+                        \\    }};
+                        \\    pub const {s}_union = union(_{s}_case) {{
+                        \\
+                    , .{ oneof_name, oneof_name }));
+
+                    for (m.field.items) |field| {
+                        const f: descriptor.FieldDescriptorProto = field;
+                        if (f.oneof_index orelse -1 == @intCast(i32, i)) {
+                            var name = try ctx.getFieldName(f);
+                            var typeStr = try ctx.getFieldType(messageFqn, file, f, true);
+                            try list.append(try std.fmt.allocPrint(allocator, "      {?s}: {?s},\n", .{ name, typeStr }));
+                        }
+                    }
+
+                    try list.append(
+                        \\    pub const _union_desc = .{
+                        \\
+                    );
+
+                    for (m.field.items) |field| {
+                        const f: descriptor.FieldDescriptorProto = field;
+                        if (f.oneof_index orelse -1 == @intCast(i32, i)) {
+                            try ctx.generateFieldDescriptor(list, messageFqn, file, m, f, true);
+                        }
+                    }
+
+                    try list.append(
+                        \\      };
+                        \\    };
+                        \\
+                    );
+                }
             }
 
             // field descriptors
@@ -385,8 +479,21 @@ const GenerationContext = struct {
                 \\
             );
 
+            // first print fields
             for (m.field.items) |f| {
-                try ctx.generateFieldDescriptor(list, messageFqn, file, m, f);
+                if (f.oneof_index == null or ctx.amountOfElementsInOneofUnion(m, f.oneof_index) == 1) {
+                    try ctx.generateFieldDescriptor(list, messageFqn, file, m, f, false);
+                }
+            }
+
+            // print all oneof fields
+            for (m.oneof_decl.items, 0..) |oneof, i| {
+                // only emit unions that have more than one element
+                const union_element_count = ctx.amountOfElementsInOneofUnion(m, @intCast(i32, i));
+                if (union_element_count > 1) {
+                    const oneof_name = oneof.name.?;
+                    try list.append(try std.fmt.allocPrint(allocator, "    .{s} = fd(null, .{{ .OneOf = {s}_union }}),\n", .{ oneof_name, oneof_name }));
+                }
             }
 
             try list.append(

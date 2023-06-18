@@ -26,6 +26,16 @@ test "GraphicsDB" {
     const decoded2 = try graphics.GraphicsDB.decode(encoded, testing.allocator);
     defer decoded2.deinit();
 
-    // finally assert
+    // finally assert equal objects
     try testing.expectEqualDeep(decoded, decoded2);
+
+    // and equal encodings
+    const encoded2 = try decoded2.encode(testing.allocator);
+    defer testing.allocator.free(encoded2);
+    try testing.expectEqualSlices(u8, encoded, encoded2);
+
+    // var file = try std.fs.cwd().openFile("debug/graphics-out.bin", .{ .mode = .write_only });
+    // defer file.close();
+
+    // _ = try file.write(encoded);
 }

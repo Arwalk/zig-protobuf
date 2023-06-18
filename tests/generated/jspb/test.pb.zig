@@ -275,28 +275,72 @@ pub const TestReservedNamesExtension = struct {
 };
 
 pub const TestMessageWithOneof = struct {
-    pone: ?[]const u8,
-    pthree: ?[]const u8,
-    rone: ?TestMessageWithOneof,
-    rtwo: ?[]const u8,
     normal_field: ?bool,
     repeated_field: ArrayList([]const u8),
-    aone: ?i32,
-    atwo: ?i32,
-    bone: ?i32,
-    btwo: ?i32,
+    partial_oneof: ?partial_oneof_union,
+    recursive_oneof: ?recursive_oneof_union,
+    default_oneof_a: ?default_oneof_a_union,
+    default_oneof_b: ?default_oneof_b_union,
+
+    pub const _partial_oneof_case = enum {
+        pone,
+        pthree,
+    };
+    pub const partial_oneof_union = union(_partial_oneof_case) {
+        pone: []const u8,
+        pthree: []const u8,
+        pub const _union_desc = .{
+            .pone = fd(3, .String),
+            .pthree = fd(5, .String),
+        };
+    };
+
+    pub const _recursive_oneof_case = enum {
+        rone,
+        rtwo,
+    };
+    pub const recursive_oneof_union = union(_recursive_oneof_case) {
+        rone: TestMessageWithOneof,
+        rtwo: []const u8,
+        pub const _union_desc = .{
+            .rone = fd(6, .{ .SubMessage = {} }),
+            .rtwo = fd(7, .String),
+        };
+    };
+
+    pub const _default_oneof_a_case = enum {
+        aone,
+        atwo,
+    };
+    pub const default_oneof_a_union = union(_default_oneof_a_case) {
+        aone: i32,
+        atwo: i32,
+        pub const _union_desc = .{
+            .aone = fd(10, .{ .Varint = .Simple }),
+            .atwo = fd(11, .{ .Varint = .Simple }),
+        };
+    };
+
+    pub const _default_oneof_b_case = enum {
+        bone,
+        btwo,
+    };
+    pub const default_oneof_b_union = union(_default_oneof_b_case) {
+        bone: i32,
+        btwo: i32,
+        pub const _union_desc = .{
+            .bone = fd(12, .{ .Varint = .Simple }),
+            .btwo = fd(13, .{ .Varint = .Simple }),
+        };
+    };
 
     pub const _desc_table = .{
-        .pone = fd(3, .String),
-        .pthree = fd(5, .String),
-        .rone = fd(6, .{ .SubMessage = {} }),
-        .rtwo = fd(7, .String),
         .normal_field = fd(8, .{ .Varint = .Simple }),
         .repeated_field = fd(9, .{ .List = .String }),
-        .aone = fd(10, .{ .Varint = .Simple }),
-        .atwo = fd(11, .{ .Varint = .Simple }),
-        .bone = fd(12, .{ .Varint = .Simple }),
-        .btwo = fd(13, .{ .Varint = .Simple }),
+        .partial_oneof = fd(null, .{ .OneOf = partial_oneof_union }),
+        .recursive_oneof = fd(null, .{ .OneOf = recursive_oneof_union }),
+        .default_oneof_a = fd(null, .{ .OneOf = default_oneof_a_union }),
+        .default_oneof_b = fd(null, .{ .OneOf = default_oneof_b_union }),
     };
 
     pub usingnamespace protobuf.MessageMixins(@This());
