@@ -150,18 +150,6 @@ const GenerationContext = struct {
         try self.generateMessages(list, fqn, file, file.message_type);
     }
 
-    /// this function finds the parent file of a type fully-qualified name
-    fn findSourceFile(_: Self, currentFile: descriptor.FileDescriptorProto, fullyQualifiedName: ?string) ?descriptor.FileDescriptorProto {
-        _ = currentFile;
-        _ = fullyQualifiedName;
-        return null;
-    }
-
-    fn getFileName(_: *Self, filename: string) string {
-        // removes the tailing .proto
-        return filename[0 .. filename.len - ".proto".len];
-    }
-
     fn generateEnums(ctx: *Self, list: *std.ArrayList(string), fqn: FullName, file: descriptor.FileDescriptorProto, enums: std.ArrayList(descriptor.EnumDescriptorProto)) !void {
         _ = ctx;
         _ = file;

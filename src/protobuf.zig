@@ -19,7 +19,8 @@ const UnionDecodingError = DecodingError || Allocator.Error;
 /// Enum describing the different field types available.
 pub const FieldTypeTag = enum { Varint, FixedInt, SubMessage, List, PackedList, String, OneOf };
 
-pub const TagNumber = enum(u32) { VARINT = 0, I64 = 1, LEN = 2, SGROUP = 3, EGROUP = 4, I32 = 5 };
+/// Enum describing how much bits a FixedInt will use.
+pub const FixedSize = enum(u3) { I64 = 1, I32 = 5 };
 
 /// Enum describing the content type of a repeated field.
 pub const ListTypeTag = enum {
@@ -33,7 +34,7 @@ pub const ListTypeTag = enum {
 pub const ListType = union(ListTypeTag) {
     Varint: VarintType,
     String,
-    FixedInt: TagNumber,
+    FixedInt: FixedSize,
     SubMessage,
 };
 
@@ -48,7 +49,7 @@ pub const KeyValueTypeTag = enum {
 /// Main tagged union holding the details of any field type.
 pub const FieldType = union(FieldTypeTag) {
     Varint: VarintType,
-    FixedInt: TagNumber,
+    FixedInt: FixedSize,
     SubMessage,
     String,
     List: ListType,
@@ -57,30 +58,16 @@ pub const FieldType = union(FieldTypeTag) {
 
     /// returns the wire type of a field. see https://developers.google.com/protocol-buffers/docs/encoding#structure
     pub fn get_wirevalue(comptime ftype: FieldType) u3 {
-        comptime {
-            switch (ftype) {
-                .OneOf => @compileError("Shouldn't pass a .OneOf field to this function here."),
-                else => {},
-            }
-        }
         return switch (ftype) {
             .Varint => 0,
-            .FixedInt => |size| switch (size) {
-                .I32 => 5,
-                .I64 => 1,
-                else => @compileError("Type " ++ @typeName(ftype) ++ "not compatible with fixed int"),
-            },
+            .FixedInt => |size| @enumToInt(size),
             .String, .SubMessage, .PackedList => 2,
             .List => |inner| switch (inner) {
                 .Varint => 0,
-                .FixedInt => |size| switch (size) {
-                    .I32 => 5,
-                    .I64 => 1,
-                    else => @compileError("Type " ++ @typeName(ftype) ++ "not compatible with fixed int"),
-                },
+                .FixedInt => |size| @enumToInt(size),
                 .String, .SubMessage => 2,
             },
-            .OneOf => unreachable,
+            .OneOf => @compileError("Shouldn't pass a .OneOf field to this function here."),
         };
     }
 };
@@ -165,19 +152,12 @@ fn append_varint(pb: *ArrayList(u8), value: anytype, comptime varint_type: Varin
 /// Appends a fixed size int to the pb buffer.
 /// Takes care of casting any signed/float value to an appropriate unsigned type
 fn append_fixed(pb: *ArrayList(u8), value: anytype) !void {
-    comptime {
-        switch (@TypeOf(value)) {
-            f32, f64, i32, i64, u32, u64, u8 => {},
-            else => @compileError("Invalid type for append_fixed"),
-        }
-    }
-
     const bitsize = @bitSizeOf(@TypeOf(value));
 
     var as_unsigned_int = switch (@TypeOf(value)) {
         f32, f64, i32, i64 => @bitCast(std.meta.Int(.unsigned, bitsize), value),
         u32, u64, u8 => @as(u64, value),
-        else => unreachable,
+        else => @compileError("Invalid type for append_fixed"),
     };
 
     var index: usize = 0;
@@ -195,12 +175,6 @@ fn append_submessage(pb: *ArrayList(u8), value: anytype) !void {
     try internal_pb_encode(pb, value);
     const size_encoded = pb.items.len - len_index;
     try insert_raw_varint(pb, size_encoded, len_index);
-}
-
-/// Simple appending of a list of bytes.
-fn append_bytes(pb: *ArrayList(u8), value: *const ArrayList(u8)) !void {
-    try append_as_varint(pb, value.len, .Simple);
-    try pb.appendSlice(value.items);
 }
 
 /// Simple appending of a list of bytes.
@@ -291,12 +265,10 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype) !
                     try append_packed_list_of_varint(pb, value, field, varint_type);
                 },
                 .String => |varint_type| {
+                    // TODO: find examples about how to encode and decode packed strings. the documentation is ambiguous
                     try append_packed_list_of_strings(pb, value, varint_type);
                 },
-                .SubMessage => {
-                    // submessages are not suitable for PackedLists
-                    return error.InvalidInput;
-                },
+                .SubMessage => @compileError("submessages are not suitable for PackedLists."),
             }
         },
         .List => |list_type| {
@@ -325,9 +297,10 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype) !
             }
         },
         .OneOf => |union_type| {
-            const active = @tagName(value);
+            // iterate over union tags until one matches `active_union_tag` and then use the comptime information to append the value
+            const active_union_tag = @tagName(value);
             inline for (@typeInfo(@TypeOf(union_type._union_desc)).Struct.fields) |union_field| {
-                if (std.mem.eql(u8, union_field.name, active)) {
+                if (std.mem.eql(u8, union_field.name, active_union_tag)) {
                     try append(pb, @field(union_type._union_desc, union_field.name), @field(value, union_field.name));
                 }
             }
@@ -357,7 +330,7 @@ fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) !void {
                 .String => if (@field(data, field.name).len != 0) {
                     try append(pb, @field(data_type._desc_table, field.name), @field(data, field.name));
                 },
-                else => @compileLog(@typeName(field.type)),
+                else => @compileError("Unknown field type " ++ @typeName(field.type)),
             }
         }
     }
