@@ -640,6 +640,78 @@ pub const FieldMask = struct {
     pub usingnamespace protobuf.MessageMixins(@This());
 };
 
+pub const NullValue = enum(i32) {
+    NULL_VALUE = 0,
+    _,
+};
+
+pub const Struct = struct {
+    fields: ArrayList(FieldsEntry),
+
+    pub const _desc_table = .{
+        .fields = fd(1, .{ .List = .{ .SubMessage = {} } }),
+    };
+
+    pub const FieldsEntry = struct {
+        key: ?[]const u8,
+        value: ?Value,
+
+        pub const _desc_table = .{
+            .key = fd(1, .String),
+            .value = fd(2, .{ .SubMessage = {} }),
+        };
+
+        pub usingnamespace protobuf.MessageMixins(@This());
+    };
+
+    pub usingnamespace protobuf.MessageMixins(@This());
+};
+
+pub const Value = struct {
+    kind: ?kind_union,
+
+    pub const _kind_case = enum {
+        null_value,
+        number_value,
+        string_value,
+        bool_value,
+        struct_value,
+        list_value,
+    };
+    pub const kind_union = union(_kind_case) {
+        null_value: NullValue,
+        number_value: f64,
+        string_value: []const u8,
+        bool_value: bool,
+        struct_value: Struct,
+        list_value: ListValue,
+        pub const _union_desc = .{
+            .null_value = fd(1, .{ .Varint = .Simple }),
+            .number_value = fd(2, .{ .FixedInt = .I64 }),
+            .string_value = fd(3, .String),
+            .bool_value = fd(4, .{ .Varint = .Simple }),
+            .struct_value = fd(5, .{ .SubMessage = {} }),
+            .list_value = fd(6, .{ .SubMessage = {} }),
+        };
+    };
+
+    pub const _desc_table = .{
+        .kind = fd(null, .{ .OneOf = kind_union }),
+    };
+
+    pub usingnamespace protobuf.MessageMixins(@This());
+};
+
+pub const ListValue = struct {
+    values: ArrayList(Value),
+
+    pub const _desc_table = .{
+        .values = fd(1, .{ .List = .{ .SubMessage = {} } }),
+    };
+
+    pub usingnamespace protobuf.MessageMixins(@This());
+};
+
 pub const Timestamp = struct {
     seconds: ?i64,
     nanos: ?i32,

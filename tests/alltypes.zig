@@ -76,7 +76,7 @@ test "Required.Proto3.ProtobufInput.ValidDataRepeated.BOOL.PackedInput.ProtobufO
     const m = try proto3.TestAllTypesProto3.decode(bytes, testing.allocator);
     defer m.deinit();
 
-    // TODO: try testing.expectEqualSlices(bool, &[_]bool{ false, true, true, true, false, true, false }, m.repeated_bool.items);
+    // TODO: try testing.expectEqualSlices(bool, &[_]bool{ false, false, false, false, true, false, false }, m.repeated_bool.items);
 }
 
 test "packed example from protobuf documentation" {

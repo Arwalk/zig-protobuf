@@ -26,7 +26,7 @@ check_packages() {
 }
 
 # make sure we have curl and jq
-check_packages ca-certificates curl xz-utils jq libgl1-mesa-dev
+check_packages ca-certificates curl xz-utils jq binutils-dev libssl-dev libcurl4-openssl-dev zlib1g-dev libdw-dev libiberty-dev
 
 # remove existing instalations
 rm -rf /usr/local/lib/zig

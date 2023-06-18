@@ -48,8 +48,7 @@ option optimize_for = SPEED;
 import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/field_mask.proto";
-// FIXME
-// import "google/protobuf/struct.proto";
+import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 
@@ -206,8 +205,7 @@ message TestAllTypesProto3 {
     float oneof_float = 117;
     double oneof_double = 118;
     NestedEnum oneof_enum = 119;
-    // FIXME
-    // google.protobuf.NullValue oneof_null_value = 120;
+    google.protobuf.NullValue oneof_null_value = 120;
   }
 
   // Well-known types
@@ -234,24 +232,18 @@ message TestAllTypesProto3 {
   google.protobuf.Duration optional_duration = 301;
   google.protobuf.Timestamp optional_timestamp = 302;
   google.protobuf.FieldMask optional_field_mask = 303;
-  // FIXME
-  // google.protobuf.Struct optional_struct = 304;
+  google.protobuf.Struct optional_struct = 304;
   google.protobuf.Any optional_any = 305;
-  // FIXME
-  // google.protobuf.Value optional_value = 306;
-  // FIXME
-  // google.protobuf.NullValue optional_null_value = 307;
+  google.protobuf.Value optional_value = 306;
+  google.protobuf.NullValue optional_null_value = 307;
 
   repeated google.protobuf.Duration repeated_duration = 311;
   repeated google.protobuf.Timestamp repeated_timestamp = 312;
   repeated google.protobuf.FieldMask repeated_fieldmask = 313;
-  // FIXME
-  // repeated google.protobuf.Struct repeated_struct = 324;
+  repeated google.protobuf.Struct repeated_struct = 324;
   repeated google.protobuf.Any repeated_any = 315;
-  // FIXME
-  // repeated google.protobuf.Value repeated_value = 316;
-  // FIXME
-  // repeated google.protobuf.ListValue repeated_list_value = 317;
+  repeated google.protobuf.Value repeated_value = 316;
+  repeated google.protobuf.ListValue repeated_list_value = 317;
 
   // Test field-name-to-JSON-name convention.
   // (protobuf says names can be any valid C/C++ identifier.)
