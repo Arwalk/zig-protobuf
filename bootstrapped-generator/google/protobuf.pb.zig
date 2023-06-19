@@ -108,7 +108,7 @@ pub const DescriptorProto = struct {
 pub const ExtensionRangeOptions = struct {
     uninterpreted_option: ArrayList(UninterpretedOption),
     declaration: ArrayList(Declaration),
-    verification: ?VerificationState,
+    verification: ?VerificationState = .UNVERIFIED,
 
     pub const _desc_table = .{
         .uninterpreted_option = fd(999, .{ .List = .{ .SubMessage = {} } }),
@@ -279,8 +279,8 @@ pub const MethodDescriptorProto = struct {
     input_type: ?[]const u8,
     output_type: ?[]const u8,
     options: ?MethodOptions,
-    client_streaming: ?bool,
-    server_streaming: ?bool,
+    client_streaming: ?bool = false,
+    server_streaming: ?bool = false,
 
     pub const _desc_table = .{
         .name = fd(1, .String),
@@ -297,17 +297,17 @@ pub const MethodDescriptorProto = struct {
 pub const FileOptions = struct {
     java_package: ?[]const u8,
     java_outer_classname: ?[]const u8,
-    java_multiple_files: ?bool,
+    java_multiple_files: ?bool = false,
     java_generate_equals_and_hash: ?bool,
-    java_string_check_utf8: ?bool,
-    optimize_for: ?OptimizeMode,
+    java_string_check_utf8: ?bool = false,
+    optimize_for: ?OptimizeMode = .SPEED,
     go_package: ?[]const u8,
-    cc_generic_services: ?bool,
-    java_generic_services: ?bool,
-    py_generic_services: ?bool,
-    php_generic_services: ?bool,
-    deprecated: ?bool,
-    cc_enable_arenas: ?bool,
+    cc_generic_services: ?bool = false,
+    java_generic_services: ?bool = false,
+    py_generic_services: ?bool = false,
+    php_generic_services: ?bool = false,
+    deprecated: ?bool = false,
+    cc_enable_arenas: ?bool = true,
     objc_class_prefix: ?[]const u8,
     csharp_namespace: ?[]const u8,
     swift_prefix: ?[]const u8,
@@ -352,9 +352,9 @@ pub const FileOptions = struct {
 };
 
 pub const MessageOptions = struct {
-    message_set_wire_format: ?bool,
-    no_standard_descriptor_accessor: ?bool,
-    deprecated: ?bool,
+    message_set_wire_format: ?bool = false,
+    no_standard_descriptor_accessor: ?bool = false,
+    deprecated: ?bool = false,
     map_entry: ?bool,
     deprecated_legacy_json_field_conflicts: ?bool,
     uninterpreted_option: ArrayList(UninterpretedOption),
@@ -372,14 +372,14 @@ pub const MessageOptions = struct {
 };
 
 pub const FieldOptions = struct {
-    ctype: ?CType,
+    ctype: ?CType = .STRING,
     @"packed": ?bool,
-    jstype: ?JSType,
-    lazy: ?bool,
-    unverified_lazy: ?bool,
-    deprecated: ?bool,
-    weak: ?bool,
-    debug_redact: ?bool,
+    jstype: ?JSType = .JS_NORMAL,
+    lazy: ?bool = false,
+    unverified_lazy: ?bool = false,
+    deprecated: ?bool = false,
+    weak: ?bool = false,
+    debug_redact: ?bool = false,
     retention: ?OptionRetention,
     target: ?OptionTargetType,
     targets: ArrayList(OptionTargetType),
@@ -450,7 +450,7 @@ pub const OneofOptions = struct {
 
 pub const EnumOptions = struct {
     allow_alias: ?bool,
-    deprecated: ?bool,
+    deprecated: ?bool = false,
     deprecated_legacy_json_field_conflicts: ?bool,
     uninterpreted_option: ArrayList(UninterpretedOption),
 
@@ -465,7 +465,7 @@ pub const EnumOptions = struct {
 };
 
 pub const EnumValueOptions = struct {
-    deprecated: ?bool,
+    deprecated: ?bool = false,
     uninterpreted_option: ArrayList(UninterpretedOption),
 
     pub const _desc_table = .{
@@ -477,7 +477,7 @@ pub const EnumValueOptions = struct {
 };
 
 pub const ServiceOptions = struct {
-    deprecated: ?bool,
+    deprecated: ?bool = false,
     uninterpreted_option: ArrayList(UninterpretedOption),
 
     pub const _desc_table = .{
@@ -489,8 +489,8 @@ pub const ServiceOptions = struct {
 };
 
 pub const MethodOptions = struct {
-    deprecated: ?bool,
-    idempotency_level: ?IdempotencyLevel,
+    deprecated: ?bool = false,
+    idempotency_level: ?IdempotencyLevel = .IDEMPOTENCY_UNKNOWN,
     uninterpreted_option: ArrayList(UninterpretedOption),
 
     pub const _desc_table = .{
@@ -529,7 +529,7 @@ pub const UninterpretedOption = struct {
     };
 
     pub const NamePart = struct {
-        name_part: ?[]const u8,
+        name_part: []const u8,
         is_extension: bool,
 
         pub const _desc_table = .{

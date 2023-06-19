@@ -13,6 +13,7 @@ const ArrayList = std.ArrayList;
 const AutoHashMap = std.AutoHashMap;
 const FieldType = protobuf.FieldType;
 const tests = @import("./generated/tests.pb.zig");
+const DefaultValues = @import("./generated/jspb/test.pb.zig").DefaultValues;
 const tests_oneof = @import("./generated/tests/oneof.pb.zig");
 
 pub fn printAllDecoded(input: []const u8) !void {
@@ -34,7 +35,7 @@ test "basic encoding" {
     const obtained2 = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained2);
     // 0x08 , 0x96, 0x01
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x00 }, obtained2);
+    try testing.expectEqualSlices(u8, &[_]u8{}, obtained2);
 }
 
 test "basic decoding" {
@@ -49,7 +50,7 @@ test "basic decoding" {
 }
 
 test "basic encoding with optionals" {
-    const demo = tests.Demo2{ .a = 150, .b = null };
+    const demo = tests.Demo2{ .a = 150, .b = 0 };
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
     // 0x08 , 0x96, 0x01
@@ -369,26 +370,24 @@ test "EmptyMessage" {
     try testing.expectEqual(demo, decoded);
 }
 
-const DefaultValuesInit = struct {
-    a: ?u32 = 5,
-    b: ?u32,
-    c: ?u32 = 3,
-    d: ?u32,
-
-    pub const _desc_table = .{
-        .a = fd(1, .{ .Varint = .Simple }),
-        .b = fd(2, .{ .Varint = .Simple }),
-        .c = fd(3, .{ .Varint = .Simple }),
-        .d = fd(4, .{ .Varint = .Simple }),
-    };
-
-    pub usingnamespace protobuf.MessageMixins(@This());
-};
-
 test "DefaultValuesInit" {
-    var demo = DefaultValuesInit.init(testing.allocator);
-    try testing.expectEqual(@as(u32, 5), demo.a.?);
-    try testing.expectEqual(@as(u32, 3), demo.c.?);
-    try testing.expect(if (demo.b) |_| false else true);
-    try testing.expect(if (demo.d) |_| false else true);
+    var demo = DefaultValues.init(testing.allocator);
+
+    try testing.expectEqualSlices(u8, "default<>'\"abc", demo.string_field.?);
+    try testing.expectEqual(true, demo.bool_field.?);
+    try testing.expectEqual(demo.int_field, 11);
+    try testing.expectEqual(demo.enum_field.?, .E1);
+    try testing.expectEqualSlices(u8, "", demo.empty_field.?);
+    try testing.expectEqualSlices(u8, "moo", demo.bytes_field.?);
+}
+
+test "DefaultValuesDecode" {
+    var demo = try DefaultValues.decode("", testing.allocator);
+
+    try testing.expectEqualSlices(u8, "default<>'\"abc", demo.string_field.?);
+    try testing.expectEqual(true, demo.bool_field.?);
+    try testing.expectEqual(demo.int_field, 11);
+    try testing.expectEqual(demo.enum_field.?, .E1);
+    try testing.expectEqualSlices(u8, "", demo.empty_field.?);
+    try testing.expectEqualSlices(u8, "moo", demo.bytes_field.?);
 }

@@ -18,7 +18,7 @@ pub const WouldYouParseThisForMePlease = struct {
 };
 
 pub const Test = struct {
-    field: ?[]const u8,
+    field: []const u8,
 
     pub const _desc_table = .{
         .field = fd(1, .String),

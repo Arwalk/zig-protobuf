@@ -9,8 +9,8 @@ test "decode empty oneof must be null" {
     const decoded = try tests_oneof.OneofContainer.decode("", testing.allocator);
     defer decoded.deinit();
 
-    try testing.expectEqual(decoded.regular_field, null);
-    try testing.expectEqual(decoded.enum_field, null);
+    try testing.expectEqualSlices(u8, decoded.regular_field, "");
+    try testing.expectEqual(decoded.enum_field, .UNSPECIFIED);
     try testing.expectEqual(decoded.some_oneof, null);
 }
 
@@ -87,7 +87,7 @@ test "oneof encode/decode submessage" {
     const decoded = try tests_oneof.OneofContainer.decode(obtained, testing.allocator);
     defer decoded.deinit();
 
-    try testing.expectEqualSlices(u8, demo.some_oneof.?.message_in_oneof.str.?, decoded.some_oneof.?.message_in_oneof.str.?);
+    try testing.expectEqualSlices(u8, demo.some_oneof.?.message_in_oneof.str, decoded.some_oneof.?.message_in_oneof.str);
 }
 
 test "decoding multiple messages keeps the last value 123" {
@@ -109,7 +109,7 @@ test "decoding multiple messages keeps the last value 123" {
     const decoded = try tests_oneof.OneofContainer.decode(payload, testing.allocator);
     defer decoded.deinit();
 
-    try testing.expectEqualSlices(u8, "123", decoded.some_oneof.?.message_in_oneof.str.?);
+    try testing.expectEqualSlices(u8, "123", decoded.some_oneof.?.message_in_oneof.str);
 }
 
 test "decoding multiple messages keeps the last value 132" {

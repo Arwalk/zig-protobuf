@@ -39,7 +39,7 @@ pub const EnumContainer = struct {
 };
 
 pub const Simple1 = struct {
-    a_string: ?[]const u8,
+    a_string: []const u8,
     a_repeated_string: ArrayList([]const u8),
     a_boolean: ?bool,
 
@@ -53,7 +53,7 @@ pub const Simple1 = struct {
 };
 
 pub const Simple2 = struct {
-    a_string: ?[]const u8,
+    a_string: []const u8,
     a_repeated_string: ArrayList([]const u8),
 
     pub const _desc_table = .{
@@ -65,10 +65,10 @@ pub const Simple2 = struct {
 };
 
 pub const SpecialCases = struct {
-    normal: ?[]const u8,
-    default: ?[]const u8,
-    function: ?[]const u8,
-    @"var": ?[]const u8,
+    normal: []const u8,
+    default: []const u8,
+    function: []const u8,
+    @"var": []const u8,
 
     pub const _desc_table = .{
         .normal = fd(1, .String),
@@ -123,7 +123,7 @@ pub const HasExtensions = struct {
 };
 
 pub const Complex = struct {
-    a_string: ?[]const u8,
+    a_string: []const u8,
     an_out_of_order_bool: bool,
     a_nested_message: ?Nested,
     a_repeated_message: ArrayList(Nested),
@@ -167,12 +167,12 @@ pub const IndirectExtension = struct {
 };
 
 pub const DefaultValues = struct {
-    string_field: ?[]const u8,
-    bool_field: ?bool,
-    int_field: ?i64,
-    enum_field: ?Enum,
-    empty_field: ?[]const u8,
-    bytes_field: ?[]const u8,
+    string_field: ?[]const u8 = "default<>'\"abc",
+    bool_field: ?bool = true,
+    int_field: ?i64 = 11,
+    enum_field: ?Enum = .E1,
+    empty_field: ?[]const u8 = "",
+    bytes_field: ?[]const u8 = "moo",
 
     pub const _desc_table = .{
         .string_field = fd(1, .String),
@@ -196,11 +196,11 @@ pub const FloatingPointFields = struct {
     optional_float_field: ?f32,
     required_float_field: f32,
     repeated_float_field: ArrayList(f32),
-    default_float_field: ?f32,
+    default_float_field: ?f32 = 2,
     optional_double_field: ?f64,
     required_double_field: f64,
     repeated_double_field: ArrayList(f64),
-    default_double_field: ?f64,
+    default_double_field: ?f64 = 2,
 
     pub const _desc_table = .{
         .optional_float_field = fd(1, .{ .FixedInt = .I32 }),

@@ -184,30 +184,34 @@ fn append_const_bytes(pb: *ArrayList(u8), value: []const u8) !void {
 }
 
 /// simple appending of a list of fixed-size data.
-fn append_packed_list_of_fixed(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype) !void {
-    // first append the tag for the field descriptor
-    try append_tag(pb, field);
+fn append_packed_list_of_fixed(pb: *ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) !void {
+    if (value_list.items.len > 0) {
+        // first append the tag for the field descriptor
+        try append_tag(pb, field);
 
-    // then write elements
-    const len_index = pb.items.len;
-    for (value.items) |item| {
-        try append_fixed(pb, item);
+        // then write elements
+        const len_index = pb.items.len;
+        for (value_list.items) |item| {
+            try append_fixed(pb, item);
+        }
+
+        // and finally prepend the LEN size in the len_index position
+        const size_encoded = pb.items.len - len_index;
+        try insert_raw_varint(pb, size_encoded, len_index);
     }
-
-    // and finally prepend the LEN size in the len_index position
-    const size_encoded = pb.items.len - len_index;
-    try insert_raw_varint(pb, size_encoded, len_index);
 }
 
 /// Appends a list of varint to the pb buffer.
 fn append_packed_list_of_varint(pb: *ArrayList(u8), value_list: anytype, comptime field: FieldDescriptor, comptime varint_type: VarintType) !void {
-    try append_tag(pb, field);
-    const len_index = pb.items.len;
-    for (value_list.items) |item| {
-        try append_varint(pb, item, varint_type);
+    if (value_list.items.len > 0) {
+        try append_tag(pb, field);
+        const len_index = pb.items.len;
+        for (value_list.items) |item| {
+            try append_varint(pb, item, varint_type);
+        }
+        const size_encoded = pb.items.len - len_index;
+        try insert_raw_varint(pb, size_encoded, len_index);
     }
-    const size_encoded = pb.items.len - len_index;
-    try insert_raw_varint(pb, size_encoded, len_index);
 }
 
 /// Appends a list of submessages to the pb_buffer. Sequentially, prepending the tag of each message.
@@ -220,14 +224,16 @@ fn append_list_of_submessages(pb: *ArrayList(u8), comptime field: FieldDescripto
 
 /// Appends a packed list of string to the pb_buffer.
 fn append_packed_list_of_strings(pb: *ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) !void {
-    try append_tag(pb, field);
+    if (value_list.items.len > 0) {
+        try append_tag(pb, field);
 
-    const len_index = pb.items.len;
-    for (value_list.items) |item| {
-        try append_const_bytes(pb, item);
+        const len_index = pb.items.len;
+        for (value_list.items) |item| {
+            try append_const_bytes(pb, item);
+        }
+        const size_encoded = pb.items.len - len_index;
+        try insert_raw_varint(pb, size_encoded, len_index);
     }
-    const size_encoded = pb.items.len - len_index;
-    try insert_raw_varint(pb, size_encoded, len_index);
 }
 
 /// Appends the full tag of the field in the pb buffer, if there is any.
@@ -238,23 +244,49 @@ fn append_tag(pb: *ArrayList(u8), comptime field: FieldDescriptor) !void {
 
 /// Appends a value to the pb buffer. Starts by appending the tag, then a comptime switch
 /// routes the code to the correct type of data to append.
-fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype) !void {
+///
+/// force_append is set to true if the field needs to be appended regardless of having the default value.
+///   it is used when an optional int/bool with value zero need to be encoded. usually value==0 are not written, but optionals
+///   require its presence to differentiate 0 from "null"
+fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, comptime force_append: bool) !void {
+
+    // TODO: review semantics of default-value in regards to wire protocol
+    const is_default_value = switch (@typeInfo(@TypeOf(value))) {
+        .Optional => value == null,
+        // as per protobuf spec, the first element of the enums must be 0 and it is the default value
+        .Enum => @enumToInt(value) == 0,
+        else => switch (@TypeOf(value)) {
+            bool => value == false,
+            i32, u32, i64, u64, f32, f64 => value == 0,
+            []const u8 => value.len == 0,
+            else => false,
+        },
+    };
+
     switch (field.ftype) {
         .Varint => |varint_type| {
-            try append_tag(pb, field);
-            try append_varint(pb, value, varint_type);
+            if (!is_default_value or force_append) {
+                try append_tag(pb, field);
+                try append_varint(pb, value, varint_type);
+            }
         },
         .FixedInt => {
-            try append_tag(pb, field);
-            try append_fixed(pb, value);
+            if (!is_default_value or force_append) {
+                try append_tag(pb, field);
+                try append_fixed(pb, value);
+            }
         },
         .SubMessage => {
-            try append_tag(pb, field);
-            try append_submessage(pb, value);
+            if (!is_default_value or force_append) {
+                try append_tag(pb, field);
+                try append_submessage(pb, value);
+            }
         },
         .String => {
-            try append_tag(pb, field);
-            try append_const_bytes(pb, value);
+            if (!is_default_value or force_append) {
+                try append_tag(pb, field);
+                try append_const_bytes(pb, value);
+            }
         },
         .PackedList => |list_type| {
             switch (list_type) {
@@ -301,7 +333,7 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype) !
             const active_union_tag = @tagName(value);
             inline for (@typeInfo(@TypeOf(union_type._union_desc)).Struct.fields) |union_field| {
                 if (std.mem.eql(u8, union_field.name, active_union_tag)) {
-                    try append(pb, @field(union_type._union_desc, union_field.name), @field(value, union_field.name));
+                    try append(pb, @field(union_type._union_desc, union_field.name), @field(value, union_field.name), force_append);
                 }
             }
         },
@@ -317,21 +349,10 @@ fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) !void {
     inline for (field_list) |field| {
         if (@typeInfo(field.type) == .Optional) {
             if (@field(data, field.name)) |value| {
-                try append(pb, @field(data_type._desc_table, field.name), value);
+                try append(pb, @field(data_type._desc_table, field.name), value, true);
             }
         } else {
-            switch (@field(data_type._desc_table, field.name).ftype) {
-                .List, .PackedList => if (@field(data, field.name).items.len != 0) {
-                    try append(pb, @field(data_type._desc_table, field.name), @field(data, field.name));
-                },
-                .Varint, .FixedInt => if (@as(u64, @field(data, field.name)) != 0) {
-                    try append(pb, @field(data_type._desc_table, field.name), @field(data, field.name));
-                },
-                .String => if (@field(data, field.name).len != 0) {
-                    try append(pb, @field(data_type._desc_table, field.name), @field(data, field.name));
-                },
-                else => @compileError("Unknown field type " ++ @typeName(field.type)),
-            }
+            try append(pb, @field(data_type._desc_table, field.name), @field(data, field.name), false);
         }
     }
 }
@@ -346,24 +367,36 @@ pub fn pb_encode(data: anytype, allocator: Allocator) ![]u8 {
     return pb.toOwnedSlice();
 }
 
+fn get_field_default_value(comptime for_type: anytype) for_type {
+    return switch (@typeInfo(for_type)) {
+        .Optional => null, // |optional| get_field_default_value(optional.child),
+        // as per protobuf spec, the first element of the enums must be 0 and it is the default value
+        .Enum => @intToEnum(for_type, 0),
+        else => switch (for_type) {
+            bool => false,
+            i32, i64, i8, i16, u8, u32, u64, f32, f64 => 0,
+            []const u8 => "",
+            else => undefined,
+        },
+    };
+}
+
 /// Generic init function. Properly initialise any field required. Meant to be embedded in generated structs.
 pub fn pb_init(comptime T: type, allocator: Allocator) T {
     var value: T = undefined;
     inline for (@typeInfo(T).Struct.fields) |field| {
         switch (@field(T._desc_table, field.name).ftype) {
-            .Varint, .FixedInt, .SubMessage => {
-                @field(value, field.name) = if (field.default_value) |val|
-                    @ptrCast(*align(1) const field.type, val).*
-                else switch (@typeInfo(field.type)) {
-                    .Optional => null,
-                    else => switch (field.type) {
-                        bool => false,
-                        i32, i64, i8, i16, u8, u32, u64 => 0,
-                        else => null,
-                    },
-                };
+            .String, .Varint, .FixedInt => {
+                if (field.default_value) |val| {
+                    @field(value, field.name) = @ptrCast(*align(1) const field.type, val).*;
+                } else {
+                    @field(value, field.name) = get_field_default_value(field.type);
+                }
             },
-            .String, .OneOf => {
+            .SubMessage => {
+                @field(value, field.name) = null;
+            },
+            .OneOf => {
                 @field(value, field.name) = null;
             },
             .List, .PackedList => {
@@ -607,7 +640,10 @@ pub const WireDecoderIterator = struct {
 fn decode_varint_value(comptime T: type, comptime varint_type: VarintType, raw: u64) T {
     return switch (varint_type) {
         .ZigZagOptimized => switch (@typeInfo(T)) {
-            .Int => @intCast(T, (@intCast(T, raw) >> 1) ^ (-(@intCast(T, raw) & 1))),
+            .Int => {
+                const t = @bitCast(T, @truncate(std.meta.Int(.unsigned, @bitSizeOf(T)), raw));
+                return @intCast(T, (t >> 1) ^ (-(t & 1)));
+            },
             .Enum => @intToEnum(T, @intCast(i32, (@intCast(i64, raw) >> 1) ^ (-(@intCast(i64, raw) & 1)))),
             else => @compileError("Invalid type passed"),
         },
@@ -859,6 +895,24 @@ test "VarintDecoderIterator" {
     try testing.expectEqual(demo.next(), null);
 }
 
+// TODO: the following two tests should work
+// test "VarintDecoderIterator i32" {
+//     var demo = VarintDecoderIterator(i32, .ZigZagOptimized){ .input = &[_]u8{ 133, 255, 255, 255, 255, 255, 255, 255, 255, 1 } };
+//     try testing.expectEqual(demo.next(), -123);
+//     try testing.expectEqual(demo.next(), null);
+// }
+// test "VarintDecoderIterator i64" {
+//     var demo = VarintDecoderIterator(i64, .ZigZagOptimized){ .input = &[_]u8{ 133, 255, 255, 255, 255, 255, 255, 255, 255, 1 } };
+//     try testing.expectEqual(demo.next(), -123);
+//     try testing.expectEqual(demo.next(), null);
+// }
+
+test "FixedDecoderIterator" {
+    var demo = FixedDecoderIterator(i64){ .input = &[_]u8{ 133, 255, 255, 255, 255, 255, 255, 255 } };
+    try testing.expectEqual(demo.next(), -123);
+    try testing.expectEqual(demo.next(), null);
+}
+
 // length delimited message including a list of varints
 test "unit varint packed - decode - multi-byte-varint" {
     const bytes = &[_]u8{ 0x03, 0x8e, 0x02, 0x9e, 0xa7, 0x05 };
@@ -912,6 +966,7 @@ test "zigzag i32/i64 - decode" {
     try testing.expectEqual(@as(i32, 1), decode_varint_value(i32, .ZigZagOptimized, 2));
     try testing.expectEqual(@as(i32, -2), decode_varint_value(i32, .ZigZagOptimized, 3));
     try testing.expectEqual(@as(i32, -500), decode_varint_value(i32, .ZigZagOptimized, 999));
+    try testing.expectEqual(@as(i64, -500), decode_varint_value(i64, .ZigZagOptimized, 999));
     try testing.expectEqual(@as(i64, -500), decode_varint_value(i64, .ZigZagOptimized, 999));
     try testing.expectEqual(@as(i64, -0x80000000), decode_varint_value(i64, .ZigZagOptimized, 0xffffffff));
 }

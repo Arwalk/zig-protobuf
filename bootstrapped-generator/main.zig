@@ -244,9 +244,9 @@ const GenerationContext = struct {
         }
     }
 
-    fn isScalar(t: descriptor.FieldDescriptorProto.Type) bool {
+    fn isScalarNumeric(t: descriptor.FieldDescriptorProto.Type) bool {
         return switch (t) {
-            .TYPE_DOUBLE, .TYPE_FLOAT, .TYPE_INT32, .TYPE_INT64, .TYPE_UINT32, .TYPE_UINT64, .TYPE_SINT32, .TYPE_SINT64, .TYPE_FIXED32, .TYPE_FIXED64, .TYPE_SFIXED32, .TYPE_SFIXED64, .TYPE_BOOL, .TYPE_STRING, .TYPE_BYTES => true,
+            .TYPE_DOUBLE, .TYPE_FLOAT, .TYPE_INT32, .TYPE_INT64, .TYPE_UINT32, .TYPE_UINT64, .TYPE_SINT32, .TYPE_SINT64, .TYPE_FIXED32, .TYPE_FIXED64, .TYPE_SFIXED32, .TYPE_SFIXED64, .TYPE_BOOL => true,
             else => false,
         };
     }
@@ -254,7 +254,7 @@ const GenerationContext = struct {
     fn isPacked(_: *Self, file: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto) bool {
         const default = if (file.syntax != null and std.mem.eql(u8, file.syntax.?, "proto3"))
             if (field.type) |t|
-                isScalar(t)
+                isScalarNumeric(t)
             else
                 false
         else
@@ -268,17 +268,19 @@ const GenerationContext = struct {
         return default;
     }
 
-    fn isOptional(_: *Self, field: descriptor.FieldDescriptorProto) bool {
-        if (field.proto3_optional == true) {
-            return true;
-        } else if (field.label) |l| {
+    fn isOptional(_: *Self, file: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto) bool {
+        if (file.syntax != null and std.mem.eql(u8, file.syntax.?, "proto3")) {
+            return field.proto3_optional == true;
+        }
+
+        if (field.label) |l| {
             return l == .LABEL_OPTIONAL;
         } else {
             return false;
         }
     }
 
-    fn getFieldType(ctx: *Self, fqn: FullName, currentFile: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto, is_union: bool) !string {
+    fn getFieldType(ctx: *Self, fqn: FullName, file: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto, is_union: bool) !string {
         var prefix: string = "";
         var postfix: string = "";
         const repeated = ctx.isRepeated(field);
@@ -288,8 +290,8 @@ const GenerationContext = struct {
             if (!is_union) {
                 // look for optional types
                 switch (t) {
-                    .TYPE_MESSAGE, .TYPE_STRING, .TYPE_BYTES => prefix = "?",
-                    else => if (ctx.isOptional(field)) {
+                    .TYPE_MESSAGE => prefix = "?",
+                    else => if (ctx.isOptional(file, field)) {
                         prefix = "?";
                     },
                 }
@@ -308,7 +310,7 @@ const GenerationContext = struct {
             .TYPE_DOUBLE => "f64",
             .TYPE_FLOAT => "f32",
             .TYPE_STRING, .TYPE_BYTES => "[]const u8",
-            .TYPE_ENUM, .TYPE_MESSAGE => try ctx.fieldTypeFqn(fqn, currentFile, field),
+            .TYPE_ENUM, .TYPE_MESSAGE => try ctx.fieldTypeFqn(fqn, file, field),
             else => {
                 std.debug.print("Unrecognized type {}\n", .{t});
                 @panic("Unrecognized type");
@@ -316,6 +318,19 @@ const GenerationContext = struct {
         };
 
         return try std.mem.concat(allocator, u8, &.{ prefix, infix, postfix });
+    }
+
+    fn getFieldDefault(_: *Self, field: descriptor.FieldDescriptorProto) !?string {
+        if (field.default_value == null) return null;
+        return switch (field.type.?) {
+            .TYPE_SINT32, .TYPE_SFIXED32, .TYPE_INT32, .TYPE_UINT32, .TYPE_FIXED32, .TYPE_INT64, .TYPE_SINT64, .TYPE_SFIXED64, .TYPE_UINT64, .TYPE_FIXED64, .TYPE_BOOL => field.default_value,
+            .TYPE_FLOAT => if (std.mem.eql(u8, field.default_value.?, "inf")) "std.math.inf(f32)" else if (std.mem.eql(u8, field.default_value.?, "-inf")) "-std.math.inf(f32)" else if (std.mem.eql(u8, field.default_value.?, "nan")) "std.math.nan(f32)" else field.default_value.?,
+            .TYPE_DOUBLE => if (std.mem.eql(u8, field.default_value.?, "inf")) "std.math.inf(f64)" else if (std.mem.eql(u8, field.default_value.?, "-inf")) "-std.math.inf(f64)" else if (std.mem.eql(u8, field.default_value.?, "nan")) "std.math.nan(f64)" else field.default_value.?,
+            .TYPE_STRING, .TYPE_BYTES => try formatSliceEscapeImpl(field.default_value.?),
+            .TYPE_MESSAGE => null, // SubMessages have no default values
+            .TYPE_ENUM => try std.mem.concat(allocator, u8, &.{ ".", field.default_value.? }),
+            else => null,
+        };
     }
 
     fn getFieldTypeDescriptor(ctx: *Self, _: FullName, file: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto, is_union: bool) !string {
@@ -360,8 +375,14 @@ const GenerationContext = struct {
     fn generateFieldDeclaration(ctx: *Self, list: *std.ArrayList(string), fqn: FullName, file: descriptor.FileDescriptorProto, message: descriptor.DescriptorProto, field: descriptor.FieldDescriptorProto, is_union: bool) !void {
         _ = message;
 
-        var typeStr = try ctx.getFieldType(fqn, file, field, is_union);
-        try list.append(try std.fmt.allocPrint(allocator, "    {s}: {s},\n", .{ try ctx.getFieldName(field), typeStr }));
+        var type_str = try ctx.getFieldType(fqn, file, field, is_union);
+        var field_name = try ctx.getFieldName(field);
+
+        if (try ctx.getFieldDefault(field)) |default_value| {
+            try list.append(try std.fmt.allocPrint(allocator, "    {s}: {s} = {s},\n", .{ field_name, type_str, default_value }));
+        } else {
+            try list.append(try std.fmt.allocPrint(allocator, "    {s}: {s},\n", .{ field_name, type_str }));
+        }
     }
 
     /// this function returns the amount of options available for a given "oneof" declaration
@@ -501,3 +522,37 @@ const GenerationContext = struct {
         }
     }
 };
+
+pub fn formatSliceEscapeImpl(
+    str: string,
+) !string {
+    const charset = "0123456789ABCDEF";
+    var buf: [4]u8 = undefined;
+
+    var out = std.ArrayList(u8).init(allocator);
+    defer out.deinit();
+    var writer = out.writer();
+
+    try writer.writeByte('"');
+
+    buf[0] = '\\';
+    buf[1] = 'x';
+
+    for (str) |c| {
+        if (c == '"') {
+            try writer.writeByte('\\');
+            try writer.writeByte('"');
+        } else if (c == '\\') {
+            try writer.writeByte('\\');
+            try writer.writeByte('\\');
+        } else if (std.ascii.isPrint(c)) {
+            try writer.writeByte(c);
+        } else {
+            buf[2] = charset[c >> 4];
+            buf[3] = charset[c & 15];
+            try writer.writeAll(&buf);
+        }
+    }
+    try writer.writeByte('"');
+    return out.toOwnedSlice();
+}

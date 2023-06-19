@@ -45,9 +45,9 @@ pub const Tile = struct {
     };
 
     pub const Feature = struct {
-        id: ?u64,
+        id: ?u64 = 0,
         tags: ArrayList(u32),
-        type: ?Tile.GeomType,
+        type: ?Tile.GeomType = .UNKNOWN,
         geometry: ArrayList(u32),
 
         pub const _desc_table = .{
@@ -61,12 +61,12 @@ pub const Tile = struct {
     };
 
     pub const Layer = struct {
-        version: u32,
-        name: ?[]const u8,
+        version: u32 = 1,
+        name: []const u8,
         features: ArrayList(Tile.Feature),
         keys: ArrayList([]const u8),
         values: ArrayList(Tile.Value),
-        extent: ?u32,
+        extent: ?u32 = 4096,
 
         pub const _desc_table = .{
             .version = fd(15, .{ .Varint = .Simple }),

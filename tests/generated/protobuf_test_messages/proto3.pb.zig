@@ -17,28 +17,28 @@ pub const ForeignEnum = enum(i32) {
 };
 
 pub const TestAllTypesProto3 = struct {
-    optional_int32: ?i32,
-    optional_int64: ?i64,
-    optional_uint32: ?u32,
-    optional_uint64: ?u64,
-    optional_sint32: ?i32,
-    optional_sint64: ?i64,
-    optional_fixed32: ?u32,
-    optional_fixed64: ?u64,
-    optional_sfixed32: ?i32,
-    optional_sfixed64: ?i64,
-    optional_float: ?f32,
-    optional_double: ?f64,
-    optional_bool: ?bool,
-    optional_string: ?[]const u8,
-    optional_bytes: ?[]const u8,
+    optional_int32: i32,
+    optional_int64: i64,
+    optional_uint32: u32,
+    optional_uint64: u64,
+    optional_sint32: i32,
+    optional_sint64: i64,
+    optional_fixed32: u32,
+    optional_fixed64: u64,
+    optional_sfixed32: i32,
+    optional_sfixed64: i64,
+    optional_float: f32,
+    optional_double: f64,
+    optional_bool: bool,
+    optional_string: []const u8,
+    optional_bytes: []const u8,
     optional_nested_message: ?NestedMessage,
     optional_foreign_message: ?ForeignMessage,
-    optional_nested_enum: ?NestedEnum,
-    optional_foreign_enum: ?ForeignEnum,
-    optional_aliased_enum: ?AliasedEnum,
-    optional_string_piece: ?[]const u8,
-    optional_cord: ?[]const u8,
+    optional_nested_enum: NestedEnum,
+    optional_foreign_enum: ForeignEnum,
+    optional_aliased_enum: AliasedEnum,
+    optional_string_piece: []const u8,
+    optional_cord: []const u8,
     repeated_int32: ArrayList(i32),
     repeated_int64: ArrayList(i64),
     repeated_uint32: ArrayList(u32),
@@ -131,7 +131,7 @@ pub const TestAllTypesProto3 = struct {
     optional_struct: ?google_protobuf.Struct,
     optional_any: ?google_protobuf.Any,
     optional_value: ?google_protobuf.Value,
-    optional_null_value: ?google_protobuf.NullValue,
+    optional_null_value: google_protobuf.NullValue,
     repeated_duration: ArrayList(google_protobuf.Duration),
     repeated_timestamp: ArrayList(google_protobuf.Timestamp),
     repeated_fieldmask: ArrayList(google_protobuf.FieldMask),
@@ -139,24 +139,24 @@ pub const TestAllTypesProto3 = struct {
     repeated_any: ArrayList(google_protobuf.Any),
     repeated_value: ArrayList(google_protobuf.Value),
     repeated_list_value: ArrayList(google_protobuf.ListValue),
-    fieldname1: ?i32,
-    field_name2: ?i32,
-    _field_name3: ?i32,
-    field__name4_: ?i32,
-    field0name5: ?i32,
-    field_0_name6: ?i32,
-    fieldName7: ?i32,
-    FieldName8: ?i32,
-    field_Name9: ?i32,
-    Field_Name10: ?i32,
-    FIELD_NAME11: ?i32,
-    FIELD_name12: ?i32,
-    __field_name13: ?i32,
-    __Field_name14: ?i32,
-    field__name15: ?i32,
-    field__Name16: ?i32,
-    field_name17__: ?i32,
-    Field_name18__: ?i32,
+    fieldname1: i32,
+    field_name2: i32,
+    _field_name3: i32,
+    field__name4_: i32,
+    field0name5: i32,
+    field_0_name6: i32,
+    fieldName7: i32,
+    FieldName8: i32,
+    field_Name9: i32,
+    Field_Name10: i32,
+    FIELD_NAME11: i32,
+    FIELD_name12: i32,
+    __field_name13: i32,
+    __Field_name14: i32,
+    field__name15: i32,
+    field__Name16: i32,
+    field_name17__: i32,
+    Field_name18__: i32,
     oneof_field: ?oneof_field_union,
 
     pub const _oneof_field_case = enum {
@@ -232,14 +232,14 @@ pub const TestAllTypesProto3 = struct {
         .repeated_float = fd(41, .{ .PackedList = .{ .FixedInt = .I32 } }),
         .repeated_double = fd(42, .{ .PackedList = .{ .FixedInt = .I64 } }),
         .repeated_bool = fd(43, .{ .PackedList = .{ .Varint = .Simple } }),
-        .repeated_string = fd(44, .{ .PackedList = .String }),
-        .repeated_bytes = fd(45, .{ .PackedList = .String }),
+        .repeated_string = fd(44, .{ .List = .String }),
+        .repeated_bytes = fd(45, .{ .List = .String }),
         .repeated_nested_message = fd(48, .{ .List = .{ .SubMessage = {} } }),
         .repeated_foreign_message = fd(49, .{ .List = .{ .SubMessage = {} } }),
         .repeated_nested_enum = fd(51, .{ .List = .{ .Varint = .Simple } }),
         .repeated_foreign_enum = fd(52, .{ .List = .{ .Varint = .Simple } }),
-        .repeated_string_piece = fd(54, .{ .PackedList = .String }),
-        .repeated_cord = fd(55, .{ .PackedList = .String }),
+        .repeated_string_piece = fd(54, .{ .List = .String }),
+        .repeated_cord = fd(55, .{ .List = .String }),
         .packed_int32 = fd(75, .{ .PackedList = .{ .Varint = .Simple } }),
         .packed_int64 = fd(76, .{ .PackedList = .{ .Varint = .Simple } }),
         .packed_uint32 = fd(77, .{ .PackedList = .{ .Varint = .Simple } }),
@@ -356,7 +356,7 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const NestedMessage = struct {
-        a: ?i32,
+        a: i32,
 
         pub const _desc_table = .{
             .a = fd(1, .{ .Varint = .Simple }),
@@ -366,8 +366,8 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapInt32Int32Entry = struct {
-        key: ?i32,
-        value: ?i32,
+        key: i32,
+        value: i32,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .Varint = .Simple }),
@@ -378,8 +378,8 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapInt64Int64Entry = struct {
-        key: ?i64,
-        value: ?i64,
+        key: i64,
+        value: i64,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .Varint = .Simple }),
@@ -390,8 +390,8 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapUint32Uint32Entry = struct {
-        key: ?u32,
-        value: ?u32,
+        key: u32,
+        value: u32,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .Varint = .Simple }),
@@ -402,8 +402,8 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapUint64Uint64Entry = struct {
-        key: ?u64,
-        value: ?u64,
+        key: u64,
+        value: u64,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .Varint = .Simple }),
@@ -414,8 +414,8 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapSint32Sint32Entry = struct {
-        key: ?i32,
-        value: ?i32,
+        key: i32,
+        value: i32,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .Varint = .ZigZagOptimized }),
@@ -426,8 +426,8 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapSint64Sint64Entry = struct {
-        key: ?i64,
-        value: ?i64,
+        key: i64,
+        value: i64,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .Varint = .ZigZagOptimized }),
@@ -438,8 +438,8 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapFixed32Fixed32Entry = struct {
-        key: ?u32,
-        value: ?u32,
+        key: u32,
+        value: u32,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .FixedInt = .I32 }),
@@ -450,8 +450,8 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapFixed64Fixed64Entry = struct {
-        key: ?u64,
-        value: ?u64,
+        key: u64,
+        value: u64,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .FixedInt = .I64 }),
@@ -462,8 +462,8 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapSfixed32Sfixed32Entry = struct {
-        key: ?i32,
-        value: ?i32,
+        key: i32,
+        value: i32,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .FixedInt = .I32 }),
@@ -474,8 +474,8 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapSfixed64Sfixed64Entry = struct {
-        key: ?i64,
-        value: ?i64,
+        key: i64,
+        value: i64,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .FixedInt = .I64 }),
@@ -486,8 +486,8 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapInt32FloatEntry = struct {
-        key: ?i32,
-        value: ?f32,
+        key: i32,
+        value: f32,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .Varint = .Simple }),
@@ -498,8 +498,8 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapInt32DoubleEntry = struct {
-        key: ?i32,
-        value: ?f64,
+        key: i32,
+        value: f64,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .Varint = .Simple }),
@@ -510,8 +510,8 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapBoolBoolEntry = struct {
-        key: ?bool,
-        value: ?bool,
+        key: bool,
+        value: bool,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .Varint = .Simple }),
@@ -522,8 +522,8 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapStringStringEntry = struct {
-        key: ?[]const u8,
-        value: ?[]const u8,
+        key: []const u8,
+        value: []const u8,
 
         pub const _desc_table = .{
             .key = fd(1, .String),
@@ -534,8 +534,8 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapStringBytesEntry = struct {
-        key: ?[]const u8,
-        value: ?[]const u8,
+        key: []const u8,
+        value: []const u8,
 
         pub const _desc_table = .{
             .key = fd(1, .String),
@@ -546,7 +546,7 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapStringNestedMessageEntry = struct {
-        key: ?[]const u8,
+        key: []const u8,
         value: ?TestAllTypesProto3.NestedMessage,
 
         pub const _desc_table = .{
@@ -558,7 +558,7 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapStringForeignMessageEntry = struct {
-        key: ?[]const u8,
+        key: []const u8,
         value: ?ForeignMessage,
 
         pub const _desc_table = .{
@@ -570,8 +570,8 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapStringNestedEnumEntry = struct {
-        key: ?[]const u8,
-        value: ?TestAllTypesProto3.NestedEnum,
+        key: []const u8,
+        value: TestAllTypesProto3.NestedEnum,
 
         pub const _desc_table = .{
             .key = fd(1, .String),
@@ -582,8 +582,8 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapStringForeignEnumEntry = struct {
-        key: ?[]const u8,
-        value: ?ForeignEnum,
+        key: []const u8,
+        value: ForeignEnum,
 
         pub const _desc_table = .{
             .key = fd(1, .String),
@@ -597,7 +597,7 @@ pub const TestAllTypesProto3 = struct {
 };
 
 pub const ForeignMessage = struct {
-    c: ?i32,
+    c: i32,
 
     pub const _desc_table = .{
         .c = fd(1, .{ .Varint = .Simple }),
