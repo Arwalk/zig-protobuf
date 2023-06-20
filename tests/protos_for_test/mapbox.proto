@@ -1,0 +1,76 @@
+// Copyright (c) 2016, Mapbox
+// All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+// 
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// 
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// 
+// * Neither the name of pbf nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+// 
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+syntax = "proto2";
+
+package vector_tile;
+
+message Tile {
+
+    enum GeomType {
+        UNKNOWN = 0;
+        POINT = 1;
+        LINESTRING = 2;
+        POLYGON = 3;
+    }
+
+    message Value {
+
+        optional string string_value = 1;
+        optional float float_value = 2;
+        optional double double_value = 3;
+        optional int64 int_value = 4;
+        optional uint64 uint_value = 5;
+        optional sint64 sint_value = 6;
+        optional bool bool_value = 7;
+        extensions 8 to max;
+    }
+
+    message Feature {
+
+        optional uint64 id = 1 [ default = 0 ];
+        repeated uint32 tags = 2 [ packed = true ];
+        optional GeomType type = 3 [ default = UNKNOWN ];
+        repeated uint32 geometry = 4 [ packed = true ];
+    }
+
+    message Layer {
+
+        required uint32 version = 15 [ default = 1 ];
+        required string name = 1;
+        repeated Feature features = 2;
+        repeated string keys = 3;
+        repeated Value values = 4;
+        optional uint32 extent = 5 [ default = 4096 ];
+        extensions 16 to max;
+    }
+
+    repeated Layer layers = 3;
+
+    extensions 16 to 8191;
+}

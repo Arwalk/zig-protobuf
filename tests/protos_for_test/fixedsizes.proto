@@ -1,5 +1,5 @@
 syntax = "proto3";
-option go_package = "./";
+package tests;
 
 message FixedSizes {
   sfixed64  sfixed64 = 1;

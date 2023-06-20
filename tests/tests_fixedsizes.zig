@@ -1,5 +1,4 @@
-const pb_fixedsizes = @import("fixedsizes.pb.zig");
-const FixedSizes = pb_fixedsizes.FixedSizes;
+const FixedSizes = @import("./generated/tests.pb.zig").FixedSizes;
 
 const std = @import("std");
 const testing = std.testing;
@@ -25,4 +24,23 @@ test "FixedSizes" {
     const decoded = try FixedSizes.decode(&expected, testing.allocator);
     defer decoded.deinit();
     try testing.expectEqual(demo, decoded);
+}
+
+test "FixedSizes - encode/decode" {
+    var demo = FixedSizes.init(testing.allocator);
+    defer demo.deinit();
+    demo.sfixed64 = -1123123141;
+    demo.sfixed32 = -2131312;
+    demo.fixed32 = 1;
+    demo.fixed64 = 2;
+    demo.double = 5.0;
+    demo.float = 5.0;
+
+    const obtained = try demo.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
+
+    // decoding
+    const decoded = try FixedSizes.decode(obtained, testing.allocator);
+    defer decoded.deinit();
+    try testing.expectEqualDeep(demo, decoded);
 }

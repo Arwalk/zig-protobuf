@@ -26,7 +26,7 @@ check_packages() {
 }
 
 # make sure we have curl and jq
-check_packages ca-certificates curl xz-utils jq libgl1-mesa-dev
+check_packages ca-certificates curl xz-utils jq binutils-dev libssl-dev libcurl4-openssl-dev zlib1g-dev libdw-dev libiberty-dev
 
 # remove existing instalations
 rm -rf /usr/local/lib/zig
@@ -54,10 +54,5 @@ ln -s /usr/local/lib/zig/zig /usr/local/bin/zig
 
 # Clean up
 rm -rf /var/lib/apt/lists/*
-
-## 🐉 <HERE BE DRAGONS>
-# to make zig work with imgui's dep tree for libc, we must ensure a file exists
-touch /usr/local/lib/zig/lib/libc/include/generic-musl/bits/syscall.h
-## 🐉 </HERE BE DRAGONS>
 
 echo "Done!"

@@ -1,0 +1,84 @@
+syntax = "proto3";
+package tests;
+
+import public "fixedsizes.proto";
+import public "varints.proto";
+import public "mapbox.proto";
+import public "jspb.proto";
+import public "test_messages_proto3.proto";
+import public "unittest.proto";
+import public "graphics.proto";
+import public "oneof.proto";
+import public "msg-long.proto";
+
+enum TopLevelEnum {
+  SE_ZERO = 0;
+  SE2_ZERO = 3;
+  SE2_ONE = 4;
+}
+
+
+message WithEnum {
+  enum SomeEnum {
+    SE_ZERO = 0;
+    SE_ONE = 1;
+    A = 3;
+    B = 4;
+  }
+  SomeEnum value = 1;
+}
+
+// tests shadowing names
+message WithEnumShadow {
+  enum SomeEnum {
+    SE_ZERO = 0;
+    SE2_ZERO = 3;
+    SE2_ONE = 4;
+  }
+  SomeEnum value = 1;
+}
+
+message RepeatedEnum {
+  // TODO: codegen doesn't get this reference which is valid
+  // repeated WithEnum.SomeEnum value = 1;
+
+  repeated TopLevelEnum value = 1;
+}
+
+message Packed {
+  repeated int32  int32_list = 1 [packed=true];
+  repeated uint32 uint32_list = 2 [packed=true];
+  repeated sint32 sint32_list = 3 [packed=true];
+  repeated float  float_list = 4 [packed=true];
+  repeated double double_list = 5 [packed=true];
+  repeated int64  int64_list = 6 [packed=true];
+  repeated sint64 sint64_list = 7 [packed=true];
+  repeated uint64 uint64_list = 8 [packed=true];
+  repeated bool   bool_list = 9 [packed=true];
+  repeated TopLevelEnum enum_list = 10 [packed=true];
+}
+
+message UnPacked {
+  repeated int32  int32_list = 1 [packed=false];
+  repeated uint32 uint32_list = 2 [packed=false];
+  repeated sint32 sint32_list = 3 [packed=false];
+  repeated float  float_list = 4 [packed=false];
+  repeated double double_list = 5 [packed=false];
+  repeated int64  int64_list = 6 [packed=false];
+  repeated sint64 sint64_list = 7 [packed=false];
+  repeated uint64 uint64_list = 8 [packed=false];
+  repeated bool   bool_list = 9 [packed=false];
+  repeated TopLevelEnum enum_list = 10 [packed=false];
+}
+
+message WithSubmessages {
+  WithEnum with_enum = 1;
+}
+
+message WithStrings {
+  string name = 1;
+}
+
+message WithRepeatedStrings {
+  repeated string name = 1;
+}

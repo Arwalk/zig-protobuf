@@ -1,0 +1,89 @@
+syntax = "proto3";
+package tests;
+
+message Varints {
+    sint32 sint32 = 1;
+    sint64 sint64 = 2;
+    uint32 uint32 = 3;
+    uint64 uint64 = 4;
+    bool   a_bool = 5;
+}
+
+message TestPacked {
+  repeated int32 f = 6 [packed=true];
+}
+
+message TestOptional {
+  optional string d = 4;
+  repeated int32 e = 5;
+}
+
+message Demo1 {
+  uint32 a = 1;
+}
+
+message Demo2 {
+  uint32 a = 1;
+  uint32 b = 2;
+}
+
+message WithNegativeIntegers {
+  sint32 a = 1;
+  int32 b = 2;
+}
+
+message DemoWithAllVarint {
+    enum DemoEnum {
+      SomeValue = 0;
+      SomeOther = 1;
+      AndAnother = 2;
+    };
+
+    sint32 sint32 = 1;
+    sint64 sint64 = 2;
+    uint32 uint32 = 3;
+    uint64 uint64 = 4;
+    bool a_bool = 5;
+    DemoEnum a_enum = 6;
+    int32 pos_int32 = 7;
+    int64 pos_int64 = 8;
+    int32 neg_int32 = 9;
+    int64 neg_int64 = 10;
+}
+
+message WithSubmessages2 {
+    Demo1 sub_demo1 = 1;
+    Demo2 sub_demo2 = 2;
+}
+
+message WithIntsNotPacked {
+    repeated uint32 list_of_data = 1 [packed=false];
+}
+
+message WithIntsPacked {
+    repeated uint32 list_of_data = 1 [packed=true];
+}
+
+message SubMessageList {
+    repeated Demo1 subMessageList = 1;
+}
+
+message EmptyLists {
+    repeated uint32 varuint32List = 1 [packed=false];
+    repeated uint32 varuint32Empty = 2 [packed=false];
+}
+
+message EmptyMessage {
+}
+
+message FixedSizesList {
+  repeated fixed32 fixed32List = 1 [packed=false];
+}
+
+message VarintListNotPacked {
+  repeated uint32 varuint32List = 1 [packed=false];
+}
+
+message VarintListPacked {
+  repeated uint32 varuint32List = 1 [packed=true];
+}

@@ -26,6 +26,27 @@ pub fn build(b: *std.build.Builder) void {
     // running `zig build`).
     b.installArtifact(lib);
 
+    const protobuf = b.createModule(.{ .source_file = .{ .path = "src/protobuf.zig" } });
+
+    const exe = b.addExecutable(.{
+        .name = "protoc-gen-zig",
+        // In this case the main source file is merely a path, however, in more
+        // complicated build scripts, this could be a generated file.
+        .root_source_file = .{ .path = "bootstrapped-generator/main.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+
+    exe.step.dependOn(&lib.step);
+    exe.addModule("protobuf", protobuf);
+
+    // This declares intent for the executable to be installed into the
+    // standard location when the user invokes the "install" step (the default
+    // step when running `zig build`).
+    b.installArtifact(exe);
+
+    const test_step = b.step("test", "Run library tests");
+
     var tests = [_]*std.build.LibExeObjStep{
         b.addTest(.{
             .name = "protobuf",
@@ -35,13 +56,19 @@ pub fn build(b: *std.build.Builder) void {
         }),
         b.addTest(.{
             .name = "tests",
-            .root_source_file = .{ .path = "src/tests.zig" },
+            .root_source_file = .{ .path = "tests/tests.zig" },
             .target = target,
             .optimize = optimize,
         }),
         b.addTest(.{
             .name = "alltypes",
             .root_source_file = .{ .path = "tests/alltypes.zig" },
+            .target = target,
+            .optimize = optimize,
+        }),
+        b.addTest(.{
+            .name = "integration",
+            .root_source_file = .{ .path = "tests/integration.zig" },
             .target = target,
             .optimize = optimize,
         }),
@@ -57,11 +84,13 @@ pub fn build(b: *std.build.Builder) void {
             .target = target,
             .optimize = optimize,
         }),
+        b.addTest(.{
+            .name = "FullName",
+            .root_source_file = .{ .path = "bootstrapped-generator/FullName.zig" },
+            .target = target,
+            .optimize = optimize,
+        }),
     };
-
-    const test_step = b.step("test", "Run library tests");
-
-    const protobuf = b.createModule(.{ .source_file = .{ .path = "src/protobuf.zig" } });
 
     for (tests) |test_item| {
         test_item.addModule("protobuf", protobuf);
