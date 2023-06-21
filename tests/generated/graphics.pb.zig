@@ -5,14 +5,15 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 const protobuf = @import("protobuf");
+const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
 
 pub const InventoryItem = struct {
     slot: i32,
-    name: []const u8,
+    name: ManagedString,
     image: i32,
     quantity: i32,
-    description: []const u8,
+    description: ManagedString,
     id: i32,
 
     pub const _desc_table = .{
@@ -28,7 +29,7 @@ pub const InventoryItem = struct {
 };
 
 pub const Character = struct {
-    id: []const u8,
+    id: ManagedString,
     class: i32,
     gender: i32,
     race: i32,
@@ -36,10 +37,10 @@ pub const Character = struct {
     body: i32,
     helmet: i32,
     right_hand: i32,
-    nick: []const u8,
+    nick: ManagedString,
     left_hand: i32,
-    color: []const u8,
-    clan: []const u8,
+    color: ManagedString,
+    clan: ManagedString,
     enabled: bool,
 
     pub const _desc_table = .{
@@ -62,9 +63,9 @@ pub const Character = struct {
 };
 
 pub const Alignment = struct {
-    id: []const u8,
-    name: []const u8,
-    color: []const u8,
+    id: ManagedString,
+    name: ManagedString,
+    color: ManagedString,
 
     pub const _desc_table = .{
         .id = fd(1, .String),
@@ -81,7 +82,7 @@ pub const Index = struct {
     offset_x: i32,
     offset_y: i32,
     animations: ArrayList(AnimationsEntry),
-    name: []const u8,
+    name: ManagedString,
 
     pub const _desc_table = .{
         .id = fd(1, .{ .Varint = .Simple }),
@@ -93,7 +94,7 @@ pub const Index = struct {
     };
 
     pub const AnimationsEntry = struct {
-        key: []const u8,
+        key: ManagedString,
         value: i32,
 
         pub const _desc_table = .{
@@ -125,7 +126,7 @@ pub const MapEntity = struct {
     light: ?Light,
     collider: ?Shape,
     graphic_id: i32,
-    entity_id: []const u8,
+    entity_id: ManagedString,
     vertical_graphic: bool,
 
     pub const _desc_table = .{
@@ -185,9 +186,9 @@ pub const Npc = struct {
     x: i32,
     y: i32,
     items: ArrayList(InventoryItem),
-    name: []const u8,
-    alignment: []const u8,
-    ai: []const u8,
+    name: ManagedString,
+    alignment: ManagedString,
+    ai: ManagedString,
     min_hp: i32,
     max_hp: i32,
     min_mana: i32,
@@ -314,8 +315,8 @@ pub const GraphicsDB = struct {
 };
 
 pub const Script = struct {
-    path: []const u8,
-    code: []const u8,
+    path: ManagedString,
+    code: ManagedString,
 
     pub const _desc_table = .{
         .path = fd(1, .String),
@@ -326,9 +327,9 @@ pub const Script = struct {
 };
 
 pub const SubTexture = struct {
-    diffuse: []const u8,
-    normal: []const u8,
-    emmisive: []const u8,
+    diffuse: ManagedString,
+    normal: ManagedString,
+    emmisive: ManagedString,
     width: i32,
     height: i32,
 
@@ -344,9 +345,9 @@ pub const SubTexture = struct {
 };
 
 pub const Texture = struct {
-    diffuse: []const u8,
-    normal: []const u8,
-    emmisive: []const u8,
+    diffuse: ManagedString,
+    normal: ManagedString,
+    emmisive: ManagedString,
     width: i32,
     height: i32,
     dxt1: ?SubTexture,
@@ -369,7 +370,7 @@ pub const Texture = struct {
 
 pub const Graphic = struct {
     id: i32,
-    name: []const u8,
+    name: ManagedString,
     type: ?type_union,
 
     pub const _type_case = enum {
@@ -429,9 +430,9 @@ pub const Animation = struct {
 };
 
 pub const Spine = struct {
-    name: []const u8,
-    json: []const u8,
-    atlas: []const u8,
+    name: ManagedString,
+    json: ManagedString,
+    atlas: ManagedString,
 
     pub const _desc_table = .{
         .name = fd(1, .String),

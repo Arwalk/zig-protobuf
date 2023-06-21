@@ -5,6 +5,7 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 const protobuf = @import("protobuf");
+const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
 /// import package tests.oneof
 const tests_oneof = @import("tests/oneof.pb.zig");
@@ -70,7 +71,7 @@ pub const TestPacked = struct {
 };
 
 pub const TestOptional = struct {
-    d: ?[]const u8,
+    d: ?ManagedString,
     e: ArrayList(i32),
 
     pub const _desc_table = .{
@@ -359,7 +360,7 @@ pub const WithSubmessages = struct {
 };
 
 pub const WithStrings = struct {
-    name: []const u8,
+    name: ManagedString,
 
     pub const _desc_table = .{
         .name = fd(1, .String),
@@ -369,7 +370,7 @@ pub const WithStrings = struct {
 };
 
 pub const WithRepeatedStrings = struct {
-    name: ArrayList([]const u8),
+    name: ArrayList(ManagedString),
 
     pub const _desc_table = .{
         .name = fd(1, .{ .List = .String }),

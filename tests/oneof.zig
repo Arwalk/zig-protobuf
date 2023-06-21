@@ -9,7 +9,7 @@ test "decode empty oneof must be null" {
     const decoded = try tests_oneof.OneofContainer.decode("", testing.allocator);
     defer decoded.deinit();
 
-    try testing.expectEqualSlices(u8, decoded.regular_field, "");
+    try testing.expect(decoded.regular_field.isEmpty());
     try testing.expectEqual(decoded.enum_field, .UNSPECIFIED);
     try testing.expectEqual(decoded.some_oneof, null);
 }
@@ -56,7 +56,7 @@ test "oneof encode/decode string" {
     var demo = tests_oneof.OneofContainer.init(testing.allocator);
     defer demo.deinit();
 
-    demo.some_oneof = .{ .string_in_oneof = "123" };
+    demo.some_oneof = .{ .string_in_oneof = protobuf.ManagedString.static("123") };
 
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
@@ -68,14 +68,14 @@ test "oneof encode/decode string" {
     const decoded = try tests_oneof.OneofContainer.decode(obtained, testing.allocator);
     defer decoded.deinit();
 
-    try testing.expectEqualSlices(u8, demo.some_oneof.?.string_in_oneof, decoded.some_oneof.?.string_in_oneof);
+    try testing.expectEqualSlices(u8, demo.some_oneof.?.string_in_oneof.getSlice(), decoded.some_oneof.?.string_in_oneof.getSlice());
 }
 
 test "oneof encode/decode submessage" {
     var demo = tests_oneof.OneofContainer.init(testing.allocator);
     defer demo.deinit();
 
-    demo.some_oneof = .{ .message_in_oneof = .{ .value = 1, .str = "123" } };
+    demo.some_oneof = .{ .message_in_oneof = .{ .value = 1, .str = protobuf.ManagedString.static("123") } };
 
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
@@ -87,7 +87,7 @@ test "oneof encode/decode submessage" {
     const decoded = try tests_oneof.OneofContainer.decode(obtained, testing.allocator);
     defer decoded.deinit();
 
-    try testing.expectEqualSlices(u8, demo.some_oneof.?.message_in_oneof.str, decoded.some_oneof.?.message_in_oneof.str);
+    try testing.expectEqualSlices(u8, demo.some_oneof.?.message_in_oneof.str.getSlice(), decoded.some_oneof.?.message_in_oneof.str.getSlice());
 }
 
 test "decoding multiple messages keeps the last value 123" {
@@ -109,10 +109,13 @@ test "decoding multiple messages keeps the last value 123" {
     const decoded = try tests_oneof.OneofContainer.decode(payload, testing.allocator);
     defer decoded.deinit();
 
-    try testing.expectEqualSlices(u8, "123", decoded.some_oneof.?.message_in_oneof.str);
+    try testing.expectEqualSlices(u8, "123", decoded.some_oneof.?.message_in_oneof.str.getSlice());
 }
 
 test "decoding multiple messages keeps the last value 132" {
+    // this test also ensures that if multiple values are read during decode, previous values are successfuly
+    // freed from memory preventing leaks
+
     const payload = &[_]u8{
         // 1 some_oneof.?.enum_value
         0x30, 0x02,
@@ -133,5 +136,5 @@ test "decoding multiple messages keeps the last value 132" {
     const decoded = try tests_oneof.OneofContainer.decode(payload, testing.allocator);
     defer decoded.deinit();
 
-    try testing.expectEqualSlices(u8, "123", decoded.some_oneof.?.string_in_oneof);
+    try testing.expectEqualSlices(u8, "123", decoded.some_oneof.?.string_in_oneof.getSlice());
 }

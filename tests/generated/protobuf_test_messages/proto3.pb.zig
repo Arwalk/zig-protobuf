@@ -5,6 +5,7 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 const protobuf = @import("protobuf");
+const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
 /// import package google.protobuf
 const google_protobuf = @import("../google/protobuf.pb.zig");
@@ -30,15 +31,15 @@ pub const TestAllTypesProto3 = struct {
     optional_float: f32,
     optional_double: f64,
     optional_bool: bool,
-    optional_string: []const u8,
-    optional_bytes: []const u8,
+    optional_string: ManagedString,
+    optional_bytes: ManagedString,
     optional_nested_message: ?NestedMessage,
     optional_foreign_message: ?ForeignMessage,
     optional_nested_enum: NestedEnum,
     optional_foreign_enum: ForeignEnum,
     optional_aliased_enum: AliasedEnum,
-    optional_string_piece: []const u8,
-    optional_cord: []const u8,
+    optional_string_piece: ManagedString,
+    optional_cord: ManagedString,
     repeated_int32: ArrayList(i32),
     repeated_int64: ArrayList(i64),
     repeated_uint32: ArrayList(u32),
@@ -52,14 +53,14 @@ pub const TestAllTypesProto3 = struct {
     repeated_float: ArrayList(f32),
     repeated_double: ArrayList(f64),
     repeated_bool: ArrayList(bool),
-    repeated_string: ArrayList([]const u8),
-    repeated_bytes: ArrayList([]const u8),
+    repeated_string: ArrayList(ManagedString),
+    repeated_bytes: ArrayList(ManagedString),
     repeated_nested_message: ArrayList(NestedMessage),
     repeated_foreign_message: ArrayList(ForeignMessage),
     repeated_nested_enum: ArrayList(NestedEnum),
     repeated_foreign_enum: ArrayList(ForeignEnum),
-    repeated_string_piece: ArrayList([]const u8),
-    repeated_cord: ArrayList([]const u8),
+    repeated_string_piece: ArrayList(ManagedString),
+    repeated_cord: ArrayList(ManagedString),
     packed_int32: ArrayList(i32),
     packed_int64: ArrayList(i64),
     packed_uint32: ArrayList(u32),
@@ -174,8 +175,8 @@ pub const TestAllTypesProto3 = struct {
     pub const oneof_field_union = union(_oneof_field_case) {
         oneof_uint32: u32,
         oneof_nested_message: NestedMessage,
-        oneof_string: []const u8,
-        oneof_bytes: []const u8,
+        oneof_string: ManagedString,
+        oneof_bytes: ManagedString,
         oneof_bool: bool,
         oneof_uint64: u64,
         oneof_float: f32,
@@ -522,8 +523,8 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapStringStringEntry = struct {
-        key: []const u8,
-        value: []const u8,
+        key: ManagedString,
+        value: ManagedString,
 
         pub const _desc_table = .{
             .key = fd(1, .String),
@@ -534,8 +535,8 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapStringBytesEntry = struct {
-        key: []const u8,
-        value: []const u8,
+        key: ManagedString,
+        value: ManagedString,
 
         pub const _desc_table = .{
             .key = fd(1, .String),
@@ -546,7 +547,7 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapStringNestedMessageEntry = struct {
-        key: []const u8,
+        key: ManagedString,
         value: ?TestAllTypesProto3.NestedMessage,
 
         pub const _desc_table = .{
@@ -558,7 +559,7 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapStringForeignMessageEntry = struct {
-        key: []const u8,
+        key: ManagedString,
         value: ?ForeignMessage,
 
         pub const _desc_table = .{
@@ -570,7 +571,7 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapStringNestedEnumEntry = struct {
-        key: []const u8,
+        key: ManagedString,
         value: TestAllTypesProto3.NestedEnum,
 
         pub const _desc_table = .{
@@ -582,7 +583,7 @@ pub const TestAllTypesProto3 = struct {
     };
 
     pub const MapStringForeignEnumEntry = struct {
-        key: []const u8,
+        key: ManagedString,
         value: ForeignEnum,
 
         pub const _desc_table = .{

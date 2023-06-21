@@ -5,6 +5,7 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 const protobuf = @import("protobuf");
+const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
 
 pub const Enum = enum(i32) {
@@ -16,7 +17,7 @@ pub const Enum = enum(i32) {
 
 pub const Message = struct {
     value: i32,
-    str: []const u8,
+    str: ManagedString,
 
     pub const _desc_table = .{
         .value = fd(1, .{ .Varint = .Simple }),
@@ -27,7 +28,7 @@ pub const Message = struct {
 };
 
 pub const OneofContainer = struct {
-    regular_field: []const u8,
+    regular_field: ManagedString,
     enum_field: Enum,
     some_oneof: ?some_oneof_union,
 
@@ -38,7 +39,7 @@ pub const OneofContainer = struct {
         enum_value,
     };
     pub const some_oneof_union = union(_some_oneof_case) {
-        string_in_oneof: []const u8,
+        string_in_oneof: ManagedString,
         message_in_oneof: Message,
         a_number: i32,
         enum_value: Enum,

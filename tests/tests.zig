@@ -28,13 +28,11 @@ test "basic encoding" {
     var demo = tests.Demo1{ .a = 150 };
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
-    // 0x08 , 0x96, 0x01
     try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x96, 0x01 }, obtained);
 
     demo.a = 0;
     const obtained2 = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained2);
-    // 0x08 , 0x96, 0x01
     try testing.expectEqualSlices(u8, &[_]u8{}, obtained2);
 }
 
@@ -198,10 +196,6 @@ test "integration varint packed - decode - multi-byte-varint" {
     const decoded = try tests.WithIntsPacked.decode(obtained, testing.allocator);
     defer decoded.deinit();
     try testing.expectEqualSlices(u32, &[_]u32{ 0xA1, 0xA2 }, decoded.list_of_data.items);
-}
-
-fn log_slice(slice: []const u8) void {
-    std.log.warn("{}", .{std.fmt.fmtSliceHexUpper(slice)});
 }
 
 test "FixedSizesList" {
@@ -373,21 +367,21 @@ test "EmptyMessage" {
 test "DefaultValuesInit" {
     var demo = DefaultValues.init(testing.allocator);
 
-    try testing.expectEqualSlices(u8, "default<>'\"abc", demo.string_field.?);
+    try testing.expectEqualSlices(u8, "default<>'\"abc", demo.string_field.?.getSlice());
     try testing.expectEqual(true, demo.bool_field.?);
     try testing.expectEqual(demo.int_field, 11);
     try testing.expectEqual(demo.enum_field.?, .E1);
-    try testing.expectEqualSlices(u8, "", demo.empty_field.?);
-    try testing.expectEqualSlices(u8, "moo", demo.bytes_field.?);
+    try testing.expectEqualSlices(u8, "", demo.empty_field.?.getSlice());
+    try testing.expectEqualSlices(u8, "moo", demo.bytes_field.?.getSlice());
 }
 
 test "DefaultValuesDecode" {
     var demo = try DefaultValues.decode("", testing.allocator);
 
-    try testing.expectEqualSlices(u8, "default<>'\"abc", demo.string_field.?);
+    try testing.expectEqualSlices(u8, "default<>'\"abc", demo.string_field.?.getSlice());
     try testing.expectEqual(true, demo.bool_field.?);
     try testing.expectEqual(demo.int_field, 11);
     try testing.expectEqual(demo.enum_field.?, .E1);
-    try testing.expectEqualSlices(u8, "", demo.empty_field.?);
-    try testing.expectEqualSlices(u8, "moo", demo.bytes_field.?);
+    try testing.expectEqualSlices(u8, "", demo.empty_field.?.getSlice());
+    try testing.expectEqualSlices(u8, "moo", demo.bytes_field.?.getSlice());
 }

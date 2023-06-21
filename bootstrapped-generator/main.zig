@@ -1,5 +1,6 @@
 const warn = @import("std").debug.warn;
 const std = @import("std");
+const pb = @import("protobuf");
 const plugin = @import("google/protobuf/compiler.pb.zig");
 const descriptor = @import("google/protobuf.pb.zig");
 const mem = std.mem;
@@ -46,9 +47,9 @@ const GenerationContext = struct {
             const t: descriptor.FileDescriptorProto = file;
 
             if (t.package) |package| {
-                try self.known_packages.put(package, FullName{ .buf = package });
+                try self.known_packages.put(package.getSlice(), FullName{ .buf = package.getSlice() });
             } else {
-                self.res.@"error" = try std.fmt.allocPrint(allocator, "ERROR Package directive missing in {?s}\n", .{file.name});
+                self.res.@"error" = pb.ManagedString{ .Owned = .{ .str = try std.fmt.allocPrint(allocator, "ERROR Package directive missing in {?s}\n", .{file.name.?.getSlice()}), .allocator = allocator } };
                 return;
             }
         }
@@ -56,7 +57,7 @@ const GenerationContext = struct {
         for (self.req.proto_file.items) |file| {
             const t: descriptor.FileDescriptorProto = file;
 
-            const name = FullName{ .buf = t.package.? };
+            const name = FullName{ .buf = t.package.?.getSlice() };
 
             try self.printFileDeclarations(name, file);
         }
@@ -65,8 +66,8 @@ const GenerationContext = struct {
         while (it.next()) |entry| {
             var ret = plugin.CodeGeneratorResponse.File.init(allocator);
 
-            ret.name = try self.fileNameFromPackage(entry.key_ptr.*);
-            ret.content = try std.mem.concat(allocator, u8, entry.value_ptr.*.items);
+            ret.name = pb.ManagedString.move(try self.fileNameFromPackage(entry.key_ptr.*), allocator);
+            ret.content = pb.ManagedString.move(try std.mem.concat(allocator, u8, entry.value_ptr.*.items), allocator);
 
             try self.res.file.append(ret);
         }
@@ -103,6 +104,7 @@ const GenerationContext = struct {
                 \\const ArrayList = std.ArrayList;
                 \\
                 \\const protobuf = @import("protobuf");
+                \\const ManagedString = protobuf.ManagedString;
                 \\const fd = protobuf.fd;
                 \\
             , .{name.buf}));
@@ -111,11 +113,11 @@ const GenerationContext = struct {
             var importedPackages = std.StringHashMap(bool).init(allocator);
 
             for (self.req.proto_file.items) |file| {
-                if (name.eqlString(file.package.?)) {
+                if (name.eqlString(file.package.?.getSlice())) {
                     for (file.dependency.items) |dep| {
                         for (self.req.proto_file.items) |item| {
-                            if (std.mem.eql(u8, dep, item.name.?)) {
-                                try importedPackages.put(item.package.?, true);
+                            if (std.mem.eql(u8, dep.getSlice(), item.name.?.getSlice())) {
+                                try importedPackages.put(item.package.?.getSlice(), true);
                             }
                         }
                     }
@@ -158,10 +160,10 @@ const GenerationContext = struct {
         for (enums.items) |theEnum| {
             const e: descriptor.EnumDescriptorProto = theEnum;
 
-            try list.append(try std.fmt.allocPrint(allocator, "\npub const {?s} = enum(i32) {{\n", .{e.name}));
+            try list.append(try std.fmt.allocPrint(allocator, "\npub const {?s} = enum(i32) {{\n", .{e.name.?.getSlice()}));
 
             for (e.value.items) |elem| {
-                try list.append(try std.fmt.allocPrint(allocator, "   {?s} = {},\n", .{ elem.name, elem.number orelse 0 }));
+                try list.append(try std.fmt.allocPrint(allocator, "   {?s} = {},\n", .{ elem.name.?.getSlice(), elem.number orelse 0 }));
             }
 
             try list.append("    _,\n};\n\n");
@@ -169,7 +171,7 @@ const GenerationContext = struct {
     }
 
     fn getFieldName(_: *Self, field: descriptor.FieldDescriptorProto) !string {
-        return escapeName(field.name.?);
+        return escapeName(field.name.?.getSlice());
     }
 
     fn escapeName(name: string) !string {
@@ -181,19 +183,19 @@ const GenerationContext = struct {
 
     fn fieldTypeFqn(ctx: *Self, parentFqn: FullName, file: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto) !string {
         if (field.type_name) |typeName| {
-            const fullTypeName = FullName{ .buf = typeName[1..] };
+            const fullTypeName = FullName{ .buf = typeName.getSlice()[1..] };
 
             if (fullTypeName.parent()) |parent| {
                 if (parent.eql(parentFqn)) {
                     return fullTypeName.name().buf;
                 }
-                if (parent.eql(FullName{ .buf = file.package.? })) {
+                if (parent.eql(FullName{ .buf = file.package.?.getSlice() })) {
                     return fullTypeName.name().buf;
                 }
             }
 
             var parent: ?FullName = fullTypeName.parent();
-            const filePackage = FullName{ .buf = file.package.? };
+            const filePackage = FullName{ .buf = file.package.?.getSlice() };
 
             // iterate parents until we find a parent that matches the known_packages
             while (parent != null) {
@@ -218,9 +220,9 @@ const GenerationContext = struct {
                 parent = parent.?.parent();
             }
 
-            std.debug.print("Unknown type: {s} from {s} in {?s}\n", .{ fullTypeName.buf, parentFqn.buf, file.package });
+            std.debug.print("Unknown type: {s} from {s} in {?s}\n", .{ fullTypeName.buf, parentFqn.buf, file.package.?.getSlice() });
 
-            return try ctx.escapeFqn(field.type_name.?);
+            return try ctx.escapeFqn(field.type_name.?.getSlice());
         }
         @panic("field has no type");
     }
@@ -252,7 +254,7 @@ const GenerationContext = struct {
     }
 
     fn isPacked(_: *Self, file: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto) bool {
-        const default = if (file.syntax != null and std.mem.eql(u8, file.syntax.?, "proto3"))
+        const default = if (file.syntax != null and std.mem.eql(u8, file.syntax.?.getSlice(), "proto3"))
             if (field.type) |t|
                 isScalarNumeric(t)
             else
@@ -269,7 +271,7 @@ const GenerationContext = struct {
     }
 
     fn isOptional(_: *Self, file: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto) bool {
-        if (file.syntax != null and std.mem.eql(u8, file.syntax.?, "proto3")) {
+        if (file.syntax != null and std.mem.eql(u8, file.syntax.?.getSlice(), "proto3")) {
             return field.proto3_optional == true;
         }
 
@@ -309,7 +311,7 @@ const GenerationContext = struct {
             .TYPE_BOOL => "bool",
             .TYPE_DOUBLE => "f64",
             .TYPE_FLOAT => "f32",
-            .TYPE_STRING, .TYPE_BYTES => "[]const u8",
+            .TYPE_STRING, .TYPE_BYTES => "ManagedString",
             .TYPE_ENUM, .TYPE_MESSAGE => try ctx.fieldTypeFqn(fqn, file, field),
             else => {
                 std.debug.print("Unrecognized type {}\n", .{t});
@@ -323,12 +325,12 @@ const GenerationContext = struct {
     fn getFieldDefault(_: *Self, field: descriptor.FieldDescriptorProto) !?string {
         if (field.default_value == null) return null;
         return switch (field.type.?) {
-            .TYPE_SINT32, .TYPE_SFIXED32, .TYPE_INT32, .TYPE_UINT32, .TYPE_FIXED32, .TYPE_INT64, .TYPE_SINT64, .TYPE_SFIXED64, .TYPE_UINT64, .TYPE_FIXED64, .TYPE_BOOL => field.default_value,
-            .TYPE_FLOAT => if (std.mem.eql(u8, field.default_value.?, "inf")) "std.math.inf(f32)" else if (std.mem.eql(u8, field.default_value.?, "-inf")) "-std.math.inf(f32)" else if (std.mem.eql(u8, field.default_value.?, "nan")) "std.math.nan(f32)" else field.default_value.?,
-            .TYPE_DOUBLE => if (std.mem.eql(u8, field.default_value.?, "inf")) "std.math.inf(f64)" else if (std.mem.eql(u8, field.default_value.?, "-inf")) "-std.math.inf(f64)" else if (std.mem.eql(u8, field.default_value.?, "nan")) "std.math.nan(f64)" else field.default_value.?,
-            .TYPE_STRING, .TYPE_BYTES => try formatSliceEscapeImpl(field.default_value.?),
+            .TYPE_SINT32, .TYPE_SFIXED32, .TYPE_INT32, .TYPE_UINT32, .TYPE_FIXED32, .TYPE_INT64, .TYPE_SINT64, .TYPE_SFIXED64, .TYPE_UINT64, .TYPE_FIXED64, .TYPE_BOOL => field.default_value.?.getSlice(),
+            .TYPE_FLOAT => if (std.mem.eql(u8, field.default_value.?.getSlice(), "inf")) "std.math.inf(f32)" else if (std.mem.eql(u8, field.default_value.?.getSlice(), "-inf")) "-std.math.inf(f32)" else if (std.mem.eql(u8, field.default_value.?.getSlice(), "nan")) "std.math.nan(f32)" else field.default_value.?.getSlice(),
+            .TYPE_DOUBLE => if (std.mem.eql(u8, field.default_value.?.getSlice(), "inf")) "std.math.inf(f64)" else if (std.mem.eql(u8, field.default_value.?.getSlice(), "-inf")) "-std.math.inf(f64)" else if (std.mem.eql(u8, field.default_value.?.getSlice(), "nan")) "std.math.nan(f64)" else field.default_value.?.getSlice(),
+            .TYPE_STRING, .TYPE_BYTES => try std.mem.concat(allocator, u8, &.{ "ManagedString.static(", try formatSliceEscapeImpl(field.default_value.?.getSlice()), ")" }),
             .TYPE_MESSAGE => null, // SubMessages have no default values
-            .TYPE_ENUM => try std.mem.concat(allocator, u8, &.{ ".", field.default_value.? }),
+            .TYPE_ENUM => try std.mem.concat(allocator, u8, &.{ ".", field.default_value.?.getSlice() }),
             else => null,
         };
     }
@@ -405,9 +407,9 @@ const GenerationContext = struct {
     fn generateMessages(ctx: *Self, list: *std.ArrayList(string), fqn: FullName, file: descriptor.FileDescriptorProto, messages: std.ArrayList(descriptor.DescriptorProto)) !void {
         for (messages.items) |message| {
             const m: descriptor.DescriptorProto = message;
-            const messageFqn = try fqn.append(allocator, m.name.?);
+            const messageFqn = try fqn.append(allocator, m.name.?.getSlice());
 
-            try list.append(try std.fmt.allocPrint(allocator, "\npub const {?s} = struct {{\n", .{m.name}));
+            try list.append(try std.fmt.allocPrint(allocator, "\npub const {?s} = struct {{\n", .{m.name.?.getSlice()}));
 
             // append all fields that are not part of a oneof
             for (m.field.items) |f| {
@@ -420,7 +422,7 @@ const GenerationContext = struct {
             for (m.oneof_decl.items, 0..) |oneof, i| {
                 const union_element_count = ctx.amountOfElementsInOneofUnion(m, @intCast(i32, i));
                 if (union_element_count > 1) {
-                    const oneof_name = oneof.name.?;
+                    const oneof_name = oneof.name.?.getSlice();
                     try list.append(try std.fmt.allocPrint(allocator, "    {s}: ?{s}_union,\n", .{ try escapeName(oneof_name), oneof_name }));
                 }
             }
@@ -430,7 +432,7 @@ const GenerationContext = struct {
                 // only emit unions that have more than one element
                 const union_element_count = ctx.amountOfElementsInOneofUnion(m, @intCast(i32, i));
                 if (union_element_count > 1) {
-                    const oneof_name = oneof.name.?;
+                    const oneof_name = oneof.name.?.getSlice();
 
                     try list.append(try std.fmt.allocPrint(allocator,
                         \\
@@ -500,7 +502,7 @@ const GenerationContext = struct {
                 // only emit unions that have more than one element
                 const union_element_count = ctx.amountOfElementsInOneofUnion(m, @intCast(i32, i));
                 if (union_element_count > 1) {
-                    const oneof_name = oneof.name.?;
+                    const oneof_name = oneof.name.?.getSlice();
                     try list.append(try std.fmt.allocPrint(allocator, "    .{s} = fd(null, .{{ .OneOf = {s}_union }}),\n", .{ oneof_name, oneof_name }));
                 }
             }

@@ -5,6 +5,7 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 const protobuf = @import("protobuf");
+const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
 
 pub const FileDescriptorSet = struct {
@@ -18,9 +19,9 @@ pub const FileDescriptorSet = struct {
 };
 
 pub const FileDescriptorProto = struct {
-    name: ?[]const u8,
-    package: ?[]const u8,
-    dependency: ArrayList([]const u8),
+    name: ?ManagedString,
+    package: ?ManagedString,
+    dependency: ArrayList(ManagedString),
     public_dependency: ArrayList(i32),
     weak_dependency: ArrayList(i32),
     message_type: ArrayList(DescriptorProto),
@@ -29,8 +30,8 @@ pub const FileDescriptorProto = struct {
     extension: ArrayList(FieldDescriptorProto),
     options: ?FileOptions,
     source_code_info: ?SourceCodeInfo,
-    syntax: ?[]const u8,
-    edition: ?[]const u8,
+    syntax: ?ManagedString,
+    edition: ?ManagedString,
 
     pub const _desc_table = .{
         .name = fd(1, .String),
@@ -52,7 +53,7 @@ pub const FileDescriptorProto = struct {
 };
 
 pub const DescriptorProto = struct {
-    name: ?[]const u8,
+    name: ?ManagedString,
     field: ArrayList(FieldDescriptorProto),
     extension: ArrayList(FieldDescriptorProto),
     nested_type: ArrayList(DescriptorProto),
@@ -61,7 +62,7 @@ pub const DescriptorProto = struct {
     oneof_decl: ArrayList(OneofDescriptorProto),
     options: ?MessageOptions,
     reserved_range: ArrayList(ReservedRange),
-    reserved_name: ArrayList([]const u8),
+    reserved_name: ArrayList(ManagedString),
 
     pub const _desc_table = .{
         .name = fd(1, .String),
@@ -124,8 +125,8 @@ pub const ExtensionRangeOptions = struct {
 
     pub const Declaration = struct {
         number: ?i32,
-        full_name: ?[]const u8,
-        type: ?[]const u8,
+        full_name: ?ManagedString,
+        type: ?ManagedString,
         is_repeated: ?bool,
         reserved: ?bool,
         repeated: ?bool,
@@ -146,15 +147,15 @@ pub const ExtensionRangeOptions = struct {
 };
 
 pub const FieldDescriptorProto = struct {
-    name: ?[]const u8,
+    name: ?ManagedString,
     number: ?i32,
     label: ?Label,
     type: ?Type,
-    type_name: ?[]const u8,
-    extendee: ?[]const u8,
-    default_value: ?[]const u8,
+    type_name: ?ManagedString,
+    extendee: ?ManagedString,
+    default_value: ?ManagedString,
     oneof_index: ?i32,
-    json_name: ?[]const u8,
+    json_name: ?ManagedString,
     options: ?FieldOptions,
     proto3_optional: ?bool,
 
@@ -205,7 +206,7 @@ pub const FieldDescriptorProto = struct {
 };
 
 pub const OneofDescriptorProto = struct {
-    name: ?[]const u8,
+    name: ?ManagedString,
     options: ?OneofOptions,
 
     pub const _desc_table = .{
@@ -217,11 +218,11 @@ pub const OneofDescriptorProto = struct {
 };
 
 pub const EnumDescriptorProto = struct {
-    name: ?[]const u8,
+    name: ?ManagedString,
     value: ArrayList(EnumValueDescriptorProto),
     options: ?EnumOptions,
     reserved_range: ArrayList(EnumReservedRange),
-    reserved_name: ArrayList([]const u8),
+    reserved_name: ArrayList(ManagedString),
 
     pub const _desc_table = .{
         .name = fd(1, .String),
@@ -247,7 +248,7 @@ pub const EnumDescriptorProto = struct {
 };
 
 pub const EnumValueDescriptorProto = struct {
-    name: ?[]const u8,
+    name: ?ManagedString,
     number: ?i32,
     options: ?EnumValueOptions,
 
@@ -261,7 +262,7 @@ pub const EnumValueDescriptorProto = struct {
 };
 
 pub const ServiceDescriptorProto = struct {
-    name: ?[]const u8,
+    name: ?ManagedString,
     method: ArrayList(MethodDescriptorProto),
     options: ?ServiceOptions,
 
@@ -275,9 +276,9 @@ pub const ServiceDescriptorProto = struct {
 };
 
 pub const MethodDescriptorProto = struct {
-    name: ?[]const u8,
-    input_type: ?[]const u8,
-    output_type: ?[]const u8,
+    name: ?ManagedString,
+    input_type: ?ManagedString,
+    output_type: ?ManagedString,
     options: ?MethodOptions,
     client_streaming: ?bool = false,
     server_streaming: ?bool = false,
@@ -295,26 +296,26 @@ pub const MethodDescriptorProto = struct {
 };
 
 pub const FileOptions = struct {
-    java_package: ?[]const u8,
-    java_outer_classname: ?[]const u8,
+    java_package: ?ManagedString,
+    java_outer_classname: ?ManagedString,
     java_multiple_files: ?bool = false,
     java_generate_equals_and_hash: ?bool,
     java_string_check_utf8: ?bool = false,
     optimize_for: ?OptimizeMode = .SPEED,
-    go_package: ?[]const u8,
+    go_package: ?ManagedString,
     cc_generic_services: ?bool = false,
     java_generic_services: ?bool = false,
     py_generic_services: ?bool = false,
     php_generic_services: ?bool = false,
     deprecated: ?bool = false,
     cc_enable_arenas: ?bool = true,
-    objc_class_prefix: ?[]const u8,
-    csharp_namespace: ?[]const u8,
-    swift_prefix: ?[]const u8,
-    php_class_prefix: ?[]const u8,
-    php_namespace: ?[]const u8,
-    php_metadata_namespace: ?[]const u8,
-    ruby_package: ?[]const u8,
+    objc_class_prefix: ?ManagedString,
+    csharp_namespace: ?ManagedString,
+    swift_prefix: ?ManagedString,
+    php_class_prefix: ?ManagedString,
+    php_namespace: ?ManagedString,
+    php_metadata_namespace: ?ManagedString,
+    ruby_package: ?ManagedString,
     uninterpreted_option: ArrayList(UninterpretedOption),
 
     pub const _desc_table = .{
@@ -511,12 +512,12 @@ pub const MethodOptions = struct {
 
 pub const UninterpretedOption = struct {
     name: ArrayList(NamePart),
-    identifier_value: ?[]const u8,
+    identifier_value: ?ManagedString,
     positive_int_value: ?u64,
     negative_int_value: ?i64,
     double_value: ?f64,
-    string_value: ?[]const u8,
-    aggregate_value: ?[]const u8,
+    string_value: ?ManagedString,
+    aggregate_value: ?ManagedString,
 
     pub const _desc_table = .{
         .name = fd(2, .{ .List = .{ .SubMessage = {} } }),
@@ -529,7 +530,7 @@ pub const UninterpretedOption = struct {
     };
 
     pub const NamePart = struct {
-        name_part: []const u8,
+        name_part: ManagedString,
         is_extension: bool,
 
         pub const _desc_table = .{
@@ -553,9 +554,9 @@ pub const SourceCodeInfo = struct {
     pub const Location = struct {
         path: ArrayList(i32),
         span: ArrayList(i32),
-        leading_comments: ?[]const u8,
-        trailing_comments: ?[]const u8,
-        leading_detached_comments: ArrayList([]const u8),
+        leading_comments: ?ManagedString,
+        trailing_comments: ?ManagedString,
+        leading_detached_comments: ArrayList(ManagedString),
 
         pub const _desc_table = .{
             .path = fd(1, .{ .PackedList = .{ .Varint = .Simple } }),
@@ -580,7 +581,7 @@ pub const GeneratedCodeInfo = struct {
 
     pub const Annotation = struct {
         path: ArrayList(i32),
-        source_file: ?[]const u8,
+        source_file: ?ManagedString,
         begin: ?i32,
         end: ?i32,
         semantic: ?Semantic,
@@ -607,8 +608,8 @@ pub const GeneratedCodeInfo = struct {
 };
 
 pub const Any = struct {
-    type_url: []const u8,
-    value: []const u8,
+    type_url: ManagedString,
+    value: ManagedString,
 
     pub const _desc_table = .{
         .type_url = fd(1, .String),
@@ -631,7 +632,7 @@ pub const Duration = struct {
 };
 
 pub const FieldMask = struct {
-    paths: ArrayList([]const u8),
+    paths: ArrayList(ManagedString),
 
     pub const _desc_table = .{
         .paths = fd(1, .{ .List = .String }),
@@ -653,7 +654,7 @@ pub const Struct = struct {
     };
 
     pub const FieldsEntry = struct {
-        key: []const u8,
+        key: ManagedString,
         value: ?Value,
 
         pub const _desc_table = .{
@@ -681,7 +682,7 @@ pub const Value = struct {
     pub const kind_union = union(_kind_case) {
         null_value: NullValue,
         number_value: f64,
-        string_value: []const u8,
+        string_value: ManagedString,
         bool_value: bool,
         struct_value: Struct,
         list_value: ListValue,
@@ -795,7 +796,7 @@ pub const BoolValue = struct {
 };
 
 pub const StringValue = struct {
-    value: []const u8,
+    value: ManagedString,
 
     pub const _desc_table = .{
         .value = fd(1, .String),
@@ -805,7 +806,7 @@ pub const StringValue = struct {
 };
 
 pub const BytesValue = struct {
-    value: []const u8,
+    value: ManagedString,
 
     pub const _desc_table = .{
         .value = fd(1, .String),
