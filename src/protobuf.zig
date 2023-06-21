@@ -96,11 +96,11 @@ pub const FieldType = union(FieldTypeTag) {
     pub fn get_wirevalue(comptime ftype: FieldType) u3 {
         return switch (ftype) {
             .Varint => 0,
-            .FixedInt => |size| @enumToInt(size),
+            .FixedInt => |size| @intFromEnum(size),
             .String, .SubMessage, .PackedList => 2,
             .List => |inner| switch (inner) {
                 .Varint => 0,
-                .FixedInt => |size| @enumToInt(size),
+                .FixedInt => |size| @intFromEnum(size),
                 .String, .SubMessage => 2,
             },
             .OneOf => @compileError("Shouldn't pass a .OneOf field to this function here."),
@@ -179,7 +179,7 @@ fn append_as_varint(pb: *ArrayList(u8), int: anytype, comptime varint_type: Vari
 /// Only serves as an indirection to manage Enum and Booleans properly.
 fn append_varint(pb: *ArrayList(u8), value: anytype, comptime varint_type: VarintType) !void {
     switch (@typeInfo(@TypeOf(value))) {
-        .Enum => try append_as_varint(pb, @as(i32, @enumToInt(value)), varint_type),
+        .Enum => try append_as_varint(pb, @as(i32, @intFromEnum(value)), varint_type),
         .Bool => try append_as_varint(pb, @as(u8, if (value) 1 else 0), varint_type),
         else => try append_as_varint(pb, value, varint_type),
     }
@@ -291,7 +291,7 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, c
     const is_default_value = switch (@typeInfo(@TypeOf(value))) {
         .Optional => value == null,
         // as per protobuf spec, the first element of the enums must be 0 and it is the default value
-        .Enum => @enumToInt(value) == 0,
+        .Enum => @intFromEnum(value) == 0,
         else => switch (@TypeOf(value)) {
             bool => value == false,
             i32, u32, i64, u64, f32, f64 => value == 0,
@@ -408,7 +408,7 @@ fn get_field_default_value(comptime for_type: anytype) for_type {
     return switch (@typeInfo(for_type)) {
         .Optional => null,
         // as per protobuf spec, the first element of the enums must be 0 and it is the default value
-        .Enum => @intToEnum(for_type, 0),
+        .Enum => @enumFromInt(for_type, 0),
         else => switch (for_type) {
             bool => false,
             i32, i64, i8, i16, u8, u32, u64, f32, f64 => 0,
@@ -691,7 +691,7 @@ fn decode_varint_value(comptime T: type, comptime varint_type: VarintType, raw: 
                 const t = @bitCast(T, @truncate(std.meta.Int(.unsigned, @bitSizeOf(T)), raw));
                 return @intCast(T, (t >> 1) ^ (-(t & 1)));
             },
-            .Enum => @intToEnum(T, @intCast(i32, (@intCast(i64, raw) >> 1) ^ (-(@intCast(i64, raw) & 1)))),
+            .Enum => @enumFromInt(T, @intCast(i32, (@intCast(i64, raw) >> 1) ^ (-(@intCast(i64, raw) & 1)))),
             else => @compileError("Invalid type passed"),
         },
         .Simple => switch (@typeInfo(T)) {
@@ -701,7 +701,7 @@ fn decode_varint_value(comptime T: type, comptime varint_type: VarintType, raw: 
                 else => @compileError("Invalid type " ++ @typeName(T) ++ " passed"),
             },
             .Bool => raw != 0,
-            .Enum => @intToEnum(T, @intCast(i32, raw)),
+            .Enum => @enumFromInt(T, @intCast(i32, raw)),
             else => @compileError("Invalid type " ++ @typeName(T) ++ " passed"),
         },
     };

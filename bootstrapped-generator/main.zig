@@ -72,7 +72,7 @@ const GenerationContext = struct {
             try self.res.file.append(ret);
         }
 
-        self.res.supported_features = @enumToInt(plugin.CodeGeneratorResponse.Feature.FEATURE_PROTO3_OPTIONAL);
+        self.res.supported_features = @intFromEnum(plugin.CodeGeneratorResponse.Feature.FEATURE_PROTO3_OPTIONAL);
     }
 
     fn fileNameFromPackage(self: *Self, package: string) !string {
