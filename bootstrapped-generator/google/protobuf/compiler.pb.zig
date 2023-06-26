@@ -5,6 +5,7 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 const protobuf = @import("protobuf");
+const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
 /// import package google.protobuf
 const google_protobuf = @import("../protobuf.pb.zig");
@@ -13,7 +14,7 @@ pub const Version = struct {
     major: ?i32,
     minor: ?i32,
     patch: ?i32,
-    suffix: ?[]const u8,
+    suffix: ?ManagedString,
 
     pub const _desc_table = .{
         .major = fd(1, .{ .Varint = .Simple }),
@@ -26,8 +27,8 @@ pub const Version = struct {
 };
 
 pub const CodeGeneratorRequest = struct {
-    file_to_generate: ArrayList([]const u8),
-    parameter: ?[]const u8,
+    file_to_generate: ArrayList(ManagedString),
+    parameter: ?ManagedString,
     proto_file: ArrayList(google_protobuf.FileDescriptorProto),
     compiler_version: ?Version,
 
@@ -42,7 +43,7 @@ pub const CodeGeneratorRequest = struct {
 };
 
 pub const CodeGeneratorResponse = struct {
-    @"error": ?[]const u8,
+    @"error": ?ManagedString,
     supported_features: ?u64,
     file: ArrayList(File),
 
@@ -59,9 +60,9 @@ pub const CodeGeneratorResponse = struct {
     };
 
     pub const File = struct {
-        name: ?[]const u8,
-        insertion_point: ?[]const u8,
-        content: ?[]const u8,
+        name: ?ManagedString,
+        insertion_point: ?ManagedString,
+        content: ?ManagedString,
         generated_code_info: ?google_protobuf.GeneratedCodeInfo,
 
         pub const _desc_table = .{

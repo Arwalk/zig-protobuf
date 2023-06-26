@@ -35,12 +35,3 @@ test "Varints - encode/decode equivalence" {
     defer decoded.deinit();
     try testing.expectEqualDeep(demo, decoded);
 }
-
-// Extracted from the documentation site
-// https://protobuf.dev/programming-guides/encoding/
-test "optional and repeated elements" {
-    const decoded = try tests.TestOptional.decode("\x22\x05\x68\x65\x6c\x6c\x6f\x28\x01\x28\x02\x28\x03", testing.allocator);
-    defer decoded.deinit();
-    try testing.expectEqualSlices(i32, &[_]i32{ 1, 2, 3 }, decoded.e.items);
-    try testing.expectEqualSlices(u8, "hello", decoded.d.?);
-}

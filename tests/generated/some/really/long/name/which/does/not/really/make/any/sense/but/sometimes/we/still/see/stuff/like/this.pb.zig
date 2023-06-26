@@ -5,6 +5,7 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 const protobuf = @import("protobuf");
+const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
 
 pub const WouldYouParseThisForMePlease = struct {
@@ -18,7 +19,7 @@ pub const WouldYouParseThisForMePlease = struct {
 };
 
 pub const Test = struct {
-    field: []const u8,
+    field: ManagedString,
 
     pub const _desc_table = .{
         .field = fd(1, .String),

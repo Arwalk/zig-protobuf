@@ -5,6 +5,7 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 const protobuf = @import("protobuf");
+const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
 
 pub const ForeignEnum = enum(i32) {
@@ -158,15 +159,15 @@ pub const TestAllTypes = struct {
     optional_float: ?f32,
     optional_double: ?f64,
     optional_bool: ?bool,
-    optional_string: ?[]const u8,
-    optional_bytes: ?[]const u8,
+    optional_string: ?ManagedString,
+    optional_bytes: ?ManagedString,
     a: ?i32,
     optional_nested_message: ?NestedMessage,
     optional_foreign_message: ?ForeignMessage,
     optional_nested_enum: ?NestedEnum,
     optional_foreign_enum: ?ForeignEnum,
-    optional_string_piece: ?[]const u8,
-    optional_cord: ?[]const u8,
+    optional_string_piece: ?ManagedString,
+    optional_cord: ?ManagedString,
     optional_lazy_message: ?NestedMessage,
     repeated_int32: ArrayList(i32),
     repeated_int64: ArrayList(i64),
@@ -181,15 +182,15 @@ pub const TestAllTypes = struct {
     repeated_float: ArrayList(f32),
     repeated_double: ArrayList(f64),
     repeated_bool: ArrayList(bool),
-    repeated_string: ArrayList([]const u8),
-    repeated_bytes: ArrayList([]const u8),
+    repeated_string: ArrayList(ManagedString),
+    repeated_bytes: ArrayList(ManagedString),
     RepeatedGroup_a: ArrayList(i32),
     repeated_nested_message: ArrayList(NestedMessage),
     repeated_foreign_message: ArrayList(ForeignMessage),
     repeated_nested_enum: ArrayList(NestedEnum),
     repeated_foreign_enum: ArrayList(ForeignEnum),
-    repeated_string_piece: ArrayList([]const u8),
-    repeated_cord: ArrayList([]const u8),
+    repeated_string_piece: ArrayList(ManagedString),
+    repeated_cord: ArrayList(ManagedString),
     repeated_lazy_message: ArrayList(NestedMessage),
     default_int32: ?i32 = 41,
     default_int64: ?i64 = 42,
@@ -204,12 +205,12 @@ pub const TestAllTypes = struct {
     default_float: ?f32 = 51.5,
     default_double: ?f64 = 52000,
     default_bool: ?bool = true,
-    default_string: ?[]const u8 = "hello",
-    default_bytes: ?[]const u8 = "world",
+    default_string: ?ManagedString = ManagedString.static("hello"),
+    default_bytes: ?ManagedString = ManagedString.static("world"),
     default_nested_enum: ?NestedEnum = .BAR,
     default_foreign_enum: ?ForeignEnum = .FOREIGN_BAR,
-    default_string_piece: ?[]const u8 = "abc",
-    default_cord: ?[]const u8 = "123",
+    default_string_piece: ?ManagedString = ManagedString.static("abc"),
+    default_cord: ?ManagedString = ManagedString.static("123"),
     oneof_field: ?oneof_field_union,
 
     pub const _oneof_field_case = enum {
@@ -221,8 +222,8 @@ pub const TestAllTypes = struct {
     pub const oneof_field_union = union(_oneof_field_case) {
         oneof_uint32: u32,
         oneof_nested_message: NestedMessage,
-        oneof_string: []const u8,
-        oneof_bytes: []const u8,
+        oneof_string: ManagedString,
+        oneof_bytes: ManagedString,
         pub const _union_desc = .{
             .oneof_uint32 = fd(111, .{ .Varint = .Simple }),
             .oneof_nested_message = fd(112, .{ .SubMessage = {} }),
@@ -406,8 +407,8 @@ pub const TestNestedExtension = struct {
 };
 
 pub const TestChildExtension = struct {
-    a: ?[]const u8,
-    b: ?[]const u8,
+    a: ?ManagedString,
+    b: ?ManagedString,
     optional_extension: ?TestAllExtensions,
 
     pub const _desc_table = .{
@@ -420,8 +421,8 @@ pub const TestChildExtension = struct {
 };
 
 pub const TestChildExtensionData = struct {
-    a: ?[]const u8,
-    b: ?[]const u8,
+    a: ?ManagedString,
+    b: ?ManagedString,
     optional_extension: ?NestedTestAllExtensionsData,
 
     pub const _desc_table = .{
@@ -811,17 +812,17 @@ pub const TestNestedMessageHasBits = struct {
 
 pub const TestCamelCaseFieldNames = struct {
     PrimitiveField: ?i32,
-    StringField: ?[]const u8,
+    StringField: ?ManagedString,
     EnumField: ?ForeignEnum,
     MessageField: ?ForeignMessage,
-    StringPieceField: ?[]const u8,
-    CordField: ?[]const u8,
+    StringPieceField: ?ManagedString,
+    CordField: ?ManagedString,
     RepeatedPrimitiveField: ArrayList(i32),
-    RepeatedStringField: ArrayList([]const u8),
+    RepeatedStringField: ArrayList(ManagedString),
     RepeatedEnumField: ArrayList(ForeignEnum),
     RepeatedMessageField: ArrayList(ForeignMessage),
-    RepeatedStringPieceField: ArrayList([]const u8),
-    RepeatedCordField: ArrayList([]const u8),
+    RepeatedStringPieceField: ArrayList(ManagedString),
+    RepeatedCordField: ArrayList(ManagedString),
 
     pub const _desc_table = .{
         .PrimitiveField = fd(1, .{ .Varint = .Simple }),
@@ -842,7 +843,7 @@ pub const TestCamelCaseFieldNames = struct {
 };
 
 pub const TestFieldOrderings = struct {
-    my_string: ?[]const u8,
+    my_string: ?ManagedString,
     my_int: ?i64,
     my_float: ?f32,
     optional_nested_message: ?NestedMessage,
@@ -870,7 +871,7 @@ pub const TestFieldOrderings = struct {
 };
 
 pub const TestExtensionOrderings1 = struct {
-    my_string: ?[]const u8,
+    my_string: ?ManagedString,
 
     pub const _desc_table = .{
         .my_string = fd(1, .String),
@@ -880,14 +881,14 @@ pub const TestExtensionOrderings1 = struct {
 };
 
 pub const TestExtensionOrderings2 = struct {
-    my_string: ?[]const u8,
+    my_string: ?ManagedString,
 
     pub const _desc_table = .{
         .my_string = fd(1, .String),
     };
 
     pub const TestExtensionOrderings3 = struct {
-        my_string: ?[]const u8,
+        my_string: ?ManagedString,
 
         pub const _desc_table = .{
             .my_string = fd(1, .String),
@@ -900,14 +901,14 @@ pub const TestExtensionOrderings2 = struct {
 };
 
 pub const TestExtremeDefaultValues = struct {
-    escaped_bytes: ?[]const u8 = "\\000\\001\\007\\010\\014\\n\\r\\t\\013\\\\\\'\\\"\\376",
+    escaped_bytes: ?ManagedString = ManagedString.static("\\000\\001\\007\\010\\014\\n\\r\\t\\013\\\\\\'\\\"\\376"),
     large_uint32: ?u32 = 4294967295,
     large_uint64: ?u64 = 18446744073709551615,
     small_int32: ?i32 = -2147483647,
     small_int64: ?i64 = -9223372036854775807,
     really_small_int32: ?i32 = -2147483648,
     really_small_int64: ?i64 = -9223372036854775808,
-    utf8_string: ?[]const u8 = "\xE1\x88\xB4",
+    utf8_string: ?ManagedString = ManagedString.static("\xE1\x88\xB4"),
     zero_float: ?f32 = 0,
     one_float: ?f32 = 1,
     small_float: ?f32 = 1.5,
@@ -921,12 +922,12 @@ pub const TestExtremeDefaultValues = struct {
     inf_float: ?f32 = std.math.inf(f32),
     neg_inf_float: ?f32 = -std.math.inf(f32),
     nan_float: ?f32 = std.math.nan(f32),
-    cpp_trigraph: ?[]const u8 = "? ? ?? ?? ??? ??/ ??-",
-    string_with_zero: ?[]const u8 = "hel\x00lo",
-    bytes_with_zero: ?[]const u8 = "wor\\000ld",
-    string_piece_with_zero: ?[]const u8 = "ab\x00c",
-    cord_with_zero: ?[]const u8 = "12\x003",
-    replacement_string: ?[]const u8 = "${unknown}",
+    cpp_trigraph: ?ManagedString = ManagedString.static("? ? ?? ?? ??? ??/ ??-"),
+    string_with_zero: ?ManagedString = ManagedString.static("hel\x00lo"),
+    bytes_with_zero: ?ManagedString = ManagedString.static("wor\\000ld"),
+    string_piece_with_zero: ?ManagedString = ManagedString.static("ab\x00c"),
+    cord_with_zero: ?ManagedString = ManagedString.static("12\x003"),
+    replacement_string: ?ManagedString = ManagedString.static("${unknown}"),
 
     pub const _desc_table = .{
         .escaped_bytes = fd(1, .String),
@@ -972,7 +973,7 @@ pub const SparseEnumMessage = struct {
 };
 
 pub const OneString = struct {
-    data: ?[]const u8,
+    data: ?ManagedString,
 
     pub const _desc_table = .{
         .data = fd(1, .String),
@@ -982,7 +983,7 @@ pub const OneString = struct {
 };
 
 pub const MoreString = struct {
-    data: ArrayList([]const u8),
+    data: ArrayList(ManagedString),
 
     pub const _desc_table = .{
         .data = fd(1, .{ .List = .String }),
@@ -992,7 +993,7 @@ pub const MoreString = struct {
 };
 
 pub const OneBytes = struct {
-    data: ?[]const u8,
+    data: ?ManagedString,
 
     pub const _desc_table = .{
         .data = fd(1, .String),
@@ -1002,7 +1003,7 @@ pub const OneBytes = struct {
 };
 
 pub const MoreBytes = struct {
-    data: ArrayList([]const u8),
+    data: ArrayList(ManagedString),
 
     pub const _desc_table = .{
         .data = fd(1, .{ .List = .String }),
@@ -1012,38 +1013,38 @@ pub const MoreBytes = struct {
 };
 
 pub const ManyOptionalString = struct {
-    str1: ?[]const u8,
-    str2: ?[]const u8,
-    str3: ?[]const u8,
-    str4: ?[]const u8,
-    str5: ?[]const u8,
-    str6: ?[]const u8,
-    str7: ?[]const u8,
-    str8: ?[]const u8,
-    str9: ?[]const u8,
-    str10: ?[]const u8,
-    str11: ?[]const u8,
-    str12: ?[]const u8,
-    str13: ?[]const u8,
-    str14: ?[]const u8,
-    str15: ?[]const u8,
-    str16: ?[]const u8,
-    str17: ?[]const u8,
-    str18: ?[]const u8,
-    str19: ?[]const u8,
-    str20: ?[]const u8,
-    str21: ?[]const u8,
-    str22: ?[]const u8,
-    str23: ?[]const u8,
-    str24: ?[]const u8,
-    str25: ?[]const u8,
-    str26: ?[]const u8,
-    str27: ?[]const u8,
-    str28: ?[]const u8,
-    str29: ?[]const u8,
-    str30: ?[]const u8,
-    str31: ?[]const u8,
-    str32: ?[]const u8,
+    str1: ?ManagedString,
+    str2: ?ManagedString,
+    str3: ?ManagedString,
+    str4: ?ManagedString,
+    str5: ?ManagedString,
+    str6: ?ManagedString,
+    str7: ?ManagedString,
+    str8: ?ManagedString,
+    str9: ?ManagedString,
+    str10: ?ManagedString,
+    str11: ?ManagedString,
+    str12: ?ManagedString,
+    str13: ?ManagedString,
+    str14: ?ManagedString,
+    str15: ?ManagedString,
+    str16: ?ManagedString,
+    str17: ?ManagedString,
+    str18: ?ManagedString,
+    str19: ?ManagedString,
+    str20: ?ManagedString,
+    str21: ?ManagedString,
+    str22: ?ManagedString,
+    str23: ?ManagedString,
+    str24: ?ManagedString,
+    str25: ?ManagedString,
+    str26: ?ManagedString,
+    str27: ?ManagedString,
+    str28: ?ManagedString,
+    str29: ?ManagedString,
+    str30: ?ManagedString,
+    str31: ?ManagedString,
+    str32: ?ManagedString,
 
     pub const _desc_table = .{
         .str1 = fd(1, .String),
@@ -1145,10 +1146,10 @@ pub const TestOneof = struct {
     };
     pub const foo_union = union(_foo_case) {
         foo_int: i32,
-        foo_string: []const u8,
+        foo_string: ManagedString,
         foo_message: TestAllTypes,
         a: i32,
-        b: []const u8,
+        b: ManagedString,
         pub const _union_desc = .{
             .foo_int = fd(1, .{ .Varint = .Simple }),
             .foo_string = fd(2, .String),
@@ -1167,10 +1168,10 @@ pub const TestOneof = struct {
 
 pub const TestOneofBackwardsCompatible = struct {
     foo_int: ?i32,
-    foo_string: ?[]const u8,
+    foo_string: ?ManagedString,
     foo_message: ?TestAllTypes,
     a: ?i32,
-    b: ?[]const u8,
+    b: ?ManagedString,
 
     pub const _desc_table = .{
         .foo_int = fd(1, .{ .Varint = .Simple }),
@@ -1185,7 +1186,7 @@ pub const TestOneofBackwardsCompatible = struct {
 
 pub const TestOneof2 = struct {
     baz_int: ?i32,
-    baz_string: ?[]const u8 = "BAZ",
+    baz_string: ?ManagedString = ManagedString.static("BAZ"),
     foo: ?foo_union,
     bar: ?bar_union,
 
@@ -1203,14 +1204,14 @@ pub const TestOneof2 = struct {
     };
     pub const foo_union = union(_foo_case) {
         foo_int: i32,
-        foo_string: []const u8,
-        foo_cord: []const u8,
-        foo_string_piece: []const u8,
-        foo_bytes: []const u8,
+        foo_string: ManagedString,
+        foo_cord: ManagedString,
+        foo_string_piece: ManagedString,
+        foo_bytes: ManagedString,
         foo_enum: NestedEnum,
         foo_message: NestedMessage,
         a: i32,
-        b: []const u8,
+        b: ManagedString,
         foo_lazy_message: NestedMessage,
         pub const _union_desc = .{
             .foo_int = fd(1, .{ .Varint = .Simple }),
@@ -1240,15 +1241,15 @@ pub const TestOneof2 = struct {
     };
     pub const bar_union = union(_bar_case) {
         bar_int: i32,
-        bar_string: []const u8,
-        bar_cord: []const u8,
-        bar_string_piece: []const u8,
-        bar_bytes: []const u8,
+        bar_string: ManagedString,
+        bar_cord: ManagedString,
+        bar_string_piece: ManagedString,
+        bar_bytes: ManagedString,
         bar_enum: NestedEnum,
-        bar_string_with_empty_default: []const u8,
-        bar_cord_with_empty_default: []const u8,
-        bar_string_piece_with_empty_default: []const u8,
-        bar_bytes_with_empty_default: []const u8,
+        bar_string_with_empty_default: ManagedString,
+        bar_cord_with_empty_default: ManagedString,
+        bar_string_piece_with_empty_default: ManagedString,
+        bar_bytes_with_empty_default: ManagedString,
         pub const _union_desc = .{
             .bar_int = fd(12, .{ .Varint = .Simple }),
             .bar_string = fd(13, .String),
@@ -1302,7 +1303,7 @@ pub const TestRequiredOneof = struct {
     };
     pub const foo_union = union(_foo_case) {
         foo_int: i32,
-        foo_string: []const u8,
+        foo_string: ManagedString,
         foo_message: NestedMessage,
         pub const _union_desc = .{
             .foo_int = fd(1, .{ .Varint = .Simple }),
@@ -1418,7 +1419,7 @@ pub const TestDynamicExtensions = struct {
     dynamic_enum_extension: ?DynamicEnumType,
     message_extension: ?ForeignMessage,
     dynamic_message_extension: ?DynamicMessageType,
-    repeated_extension: ArrayList([]const u8),
+    repeated_extension: ArrayList(ManagedString),
     packed_extension: ArrayList(i32),
 
     pub const _desc_table = .{
@@ -1522,7 +1523,7 @@ pub const TestMergeException = struct {
 };
 
 pub const TestCommentInjectionMessage = struct {
-    a: ?[]const u8 = "*/ <- Neither should this.",
+    a: ?ManagedString = ManagedString.static("*/ <- Neither should this."),
 
     pub const _desc_table = .{
         .a = fd(1, .String),
@@ -1535,7 +1536,7 @@ pub const TestMessageSize = struct {
     m1: ?bool,
     m2: ?i64,
     m3: ?bool,
-    m4: ?[]const u8,
+    m4: ?ManagedString,
     m5: ?i32,
     m6: ?i64,
 
@@ -1615,8 +1616,8 @@ pub const TestHugeFieldNumbers = struct {
     repeated_int32: ArrayList(i32),
     packed_int32: ArrayList(i32),
     optional_enum: ?ForeignEnum,
-    optional_string: ?[]const u8,
-    optional_bytes: ?[]const u8,
+    optional_string: ?ManagedString,
+    optional_bytes: ?ManagedString,
     optional_message: ?ForeignMessage,
     group_a: ?i32,
     string_string_map: ArrayList(StringStringMapEntry),
@@ -1631,8 +1632,8 @@ pub const TestHugeFieldNumbers = struct {
     pub const oneof_field_union = union(_oneof_field_case) {
         oneof_uint32: u32,
         oneof_test_all_types: TestAllTypes,
-        oneof_string: []const u8,
-        oneof_bytes: []const u8,
+        oneof_string: ManagedString,
+        oneof_bytes: ManagedString,
         pub const _union_desc = .{
             .oneof_uint32 = fd(536870011, .{ .Varint = .Simple }),
             .oneof_test_all_types = fd(536870012, .{ .SubMessage = {} }),
@@ -1656,8 +1657,8 @@ pub const TestHugeFieldNumbers = struct {
     };
 
     pub const StringStringMapEntry = struct {
-        key: ?[]const u8,
-        value: ?[]const u8,
+        key: ?ManagedString,
+        value: ?ManagedString,
 
         pub const _desc_table = .{
             .key = fd(1, .String),
@@ -1697,7 +1698,7 @@ pub const TestExtensionInsideTable = struct {
 };
 
 pub const TestNestedGroupExtensionInnerExtension = struct {
-    inner_name: ?[]const u8,
+    inner_name: ?ManagedString,
 
     pub const _desc_table = .{
         .inner_name = fd(1, .String),

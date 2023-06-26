@@ -16,6 +16,50 @@ const DecodingError = error{ NotEnoughData, InvalidInput };
 
 const UnionDecodingError = DecodingError || Allocator.Error;
 
+pub const ManagedStringTag = enum { Owned, Const };
+
+pub const AllocatedString = struct { allocator: Allocator, str: []const u8 };
+
+pub const ManagedString = union(ManagedStringTag) {
+    Owned: AllocatedString,
+    Const: []const u8,
+
+    /// copies the provided string using the allocator. the `src` parameter should be freed by the caller
+    pub fn copy(str: []const u8, allocator: Allocator) !ManagedString {
+        return ManagedString{ .Owned = AllocatedString{ .str = try allocator.dupe(u8, str), .allocator = allocator } };
+    }
+
+    /// moves the ownership of the string to the message. the caller MUST NOT free the provided string
+    pub fn move(str: []const u8, allocator: Allocator) ManagedString {
+        return ManagedString{ .Owned = AllocatedString{ .str = str, .allocator = allocator } };
+    }
+
+    /// creates a static string from a compile time const
+    pub fn static(comptime str: []const u8) ManagedString {
+        return ManagedString{ .Const = str };
+    }
+
+    pub fn isEmpty(self: ManagedString) bool {
+        return self.getSlice().len == 0;
+    }
+
+    pub fn getSlice(self: ManagedString) []const u8 {
+        switch (self) {
+            .Const => |slice| return slice,
+            .Owned => |alloc_str| return alloc_str.str,
+        }
+    }
+
+    pub fn deinit(self: ManagedString) void {
+        switch (self) {
+            .Owned => |alloc_str| {
+                alloc_str.allocator.free(alloc_str.str);
+            },
+            else => {},
+        }
+    }
+};
+
 /// Enum describing the different field types available.
 pub const FieldTypeTag = enum { Varint, FixedInt, SubMessage, List, PackedList, String, OneOf };
 
@@ -38,14 +82,6 @@ pub const ListType = union(ListTypeTag) {
     SubMessage,
 };
 
-/// Enum describing the details of keys or values for a map type.
-pub const KeyValueTypeTag = enum {
-    Varint,
-    FixedInt,
-    SubMessage,
-    List,
-};
-
 /// Main tagged union holding the details of any field type.
 pub const FieldType = union(FieldTypeTag) {
     Varint: VarintType,
@@ -60,11 +96,11 @@ pub const FieldType = union(FieldTypeTag) {
     pub fn get_wirevalue(comptime ftype: FieldType) u3 {
         return switch (ftype) {
             .Varint => 0,
-            .FixedInt => |size| @enumToInt(size),
+            .FixedInt => |size| @intFromEnum(size),
             .String, .SubMessage, .PackedList => 2,
             .List => |inner| switch (inner) {
                 .Varint => 0,
-                .FixedInt => |size| @enumToInt(size),
+                .FixedInt => |size| @intFromEnum(size),
                 .String, .SubMessage => 2,
             },
             .OneOf => @compileError("Shouldn't pass a .OneOf field to this function here."),
@@ -143,7 +179,7 @@ fn append_as_varint(pb: *ArrayList(u8), int: anytype, comptime varint_type: Vari
 /// Only serves as an indirection to manage Enum and Booleans properly.
 fn append_varint(pb: *ArrayList(u8), value: anytype, comptime varint_type: VarintType) !void {
     switch (@typeInfo(@TypeOf(value))) {
-        .Enum => try append_as_varint(pb, @as(i32, @enumToInt(value)), varint_type),
+        .Enum => try append_as_varint(pb, @as(i32, @intFromEnum(value)), varint_type),
         .Bool => try append_as_varint(pb, @as(u8, if (value) 1 else 0), varint_type),
         else => try append_as_varint(pb, value, varint_type),
     }
@@ -178,9 +214,10 @@ fn append_submessage(pb: *ArrayList(u8), value: anytype) !void {
 }
 
 /// Simple appending of a list of bytes.
-fn append_const_bytes(pb: *ArrayList(u8), value: []const u8) !void {
-    try append_as_varint(pb, value.len, .Simple);
-    try pb.appendSlice(value);
+fn append_const_bytes(pb: *ArrayList(u8), value: ManagedString) !void {
+    const slice = value.getSlice();
+    try append_as_varint(pb, slice.len, .Simple);
+    try pb.appendSlice(slice);
 }
 
 /// simple appending of a list of fixed-size data.
@@ -254,11 +291,11 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, c
     const is_default_value = switch (@typeInfo(@TypeOf(value))) {
         .Optional => value == null,
         // as per protobuf spec, the first element of the enums must be 0 and it is the default value
-        .Enum => @enumToInt(value) == 0,
+        .Enum => @intFromEnum(value) == 0,
         else => switch (@TypeOf(value)) {
             bool => value == false,
             i32, u32, i64, u64, f32, f64 => value == 0,
-            []const u8 => value.len == 0,
+            ManagedString => value.isEmpty(),
             else => false,
         },
     };
@@ -369,13 +406,13 @@ pub fn pb_encode(data: anytype, allocator: Allocator) ![]u8 {
 
 fn get_field_default_value(comptime for_type: anytype) for_type {
     return switch (@typeInfo(for_type)) {
-        .Optional => null, // |optional| get_field_default_value(optional.child),
+        .Optional => null,
         // as per protobuf spec, the first element of the enums must be 0 and it is the default value
-        .Enum => @intToEnum(for_type, 0),
+        .Enum => @enumFromInt(for_type, 0),
         else => switch (for_type) {
             bool => false,
             i32, i64, i8, i16, u8, u32, u64, f32, f64 => 0,
-            []const u8 => "",
+            ManagedString => ManagedString.static(""),
             else => undefined,
         },
     };
@@ -433,7 +470,7 @@ fn deinit_field(result: anytype, comptime field_name: []const u8, comptime ftype
             }
         },
         .List => |list_type| {
-            if (list_type == .SubMessage) {
+            if (list_type == .SubMessage or list_type == .String) {
                 for (@field(result, field_name).items) |item| {
                     item.deinit();
                 }
@@ -444,13 +481,23 @@ fn deinit_field(result: anytype, comptime field_name: []const u8, comptime ftype
             @field(result, field_name).deinit();
         },
         .String => {
-            // nothing?
+            switch (@typeInfo(@TypeOf(@field(result, field_name)))) {
+                .Optional => {
+                    if (@field(result, field_name)) |str| {
+                        str.deinit();
+                    }
+                },
+                else => @field(result, field_name).deinit(),
+            }
         },
         .OneOf => |union_type| {
+            // if the value is set, inline-iterate over the possible OneOfs
             if (@field(result, field_name)) |union_value| {
                 const active = @tagName(union_value);
                 inline for (@typeInfo(@TypeOf(union_type._union_desc)).Struct.fields) |union_field| {
+                    // and if one matches the actual tagName of the union
                     if (std.mem.eql(u8, union_field.name, active)) {
+                        // deinit the current value
                         deinit_field(union_value, union_field.name, @field(union_type._union_desc, union_field.name).ftype);
                     }
                 }
@@ -644,7 +691,7 @@ fn decode_varint_value(comptime T: type, comptime varint_type: VarintType, raw: 
                 const t = @bitCast(T, @truncate(std.meta.Int(.unsigned, @bitSizeOf(T)), raw));
                 return @intCast(T, (t >> 1) ^ (-(t & 1)));
             },
-            .Enum => @intToEnum(T, @intCast(i32, (@intCast(i64, raw) >> 1) ^ (-(@intCast(i64, raw) & 1)))),
+            .Enum => @enumFromInt(T, @intCast(i32, (@intCast(i64, raw) >> 1) ^ (-(@intCast(i64, raw) & 1)))),
             else => @compileError("Invalid type passed"),
         },
         .Simple => switch (@typeInfo(T)) {
@@ -654,7 +701,7 @@ fn decode_varint_value(comptime T: type, comptime varint_type: VarintType, raw: 
                 else => @compileError("Invalid type " ++ @typeName(T) ++ " passed"),
             },
             .Bool => raw != 0,
-            .Enum => @intToEnum(T, @intCast(i32, raw)),
+            .Enum => @enumFromInt(T, @intCast(i32, raw)),
             else => @compileError("Invalid type " ++ @typeName(T) ++ " passed"),
         },
     };
@@ -671,7 +718,7 @@ fn decode_fixed_value(comptime T: type, raw: u64) T {
 }
 
 /// this function receives a slice of a message and decodes one by one the elements of the packet list until the slice is exhausted
-fn decode_packed_list(slice: []const u8, comptime list_type: ListType, comptime T: type, array: *ArrayList(T)) UnionDecodingError!void {
+fn decode_packed_list(slice: []const u8, comptime list_type: ListType, comptime T: type, array: *ArrayList(T), allocator: Allocator) UnionDecodingError!void {
     switch (list_type) {
         .FixedInt => {
             switch (T) {
@@ -693,10 +740,12 @@ fn decode_packed_list(slice: []const u8, comptime list_type: ListType, comptime 
         .String => {
             var varint_iterator = LengthDelimitedDecoderIterator{ .input = slice };
             while (try varint_iterator.next()) |value| {
-                try array.append(value);
+                try array.append(try ManagedString.copy(value, allocator));
             }
         },
-        else => return error.InvalidInput, // submessages are not suitable for packed lists yet
+        else =>
+        // submessages are not suitable for packed lists yet, but the wire message can be malformed
+        return error.InvalidInput,
     }
 }
 
@@ -716,7 +765,7 @@ fn decode_value(comptime decoded_type: type, comptime ftype: FieldType, extracte
             else => error.InvalidInput,
         },
         .String => switch (extracted_data.data) {
-            .Slice => |slice| slice,
+            .Slice => |slice| try ManagedString.copy(slice, allocator),
             else => error.InvalidInput,
         },
         else => {
@@ -729,6 +778,10 @@ fn decode_value(comptime decoded_type: type, comptime ftype: FieldType, extracte
 fn decode_data(comptime T: type, comptime field_desc: FieldDescriptor, comptime field: StructField, result: *T, extracted_data: Extracted, allocator: Allocator) !void {
     switch (field_desc.ftype) {
         .Varint, .FixedInt, .SubMessage, .String => {
+            // first try to release the current value
+            deinit_field(result, field.name, field_desc.ftype);
+
+            // then apply the new value
             switch (@typeInfo(field.type)) {
                 .Optional => |optional| @field(result, field.name) = try decode_value(optional.child, field_desc.ftype, extracted_data, allocator),
                 else => @field(result, field.name) = try decode_value(field.type, field_desc.ftype, extracted_data, allocator),
@@ -741,21 +794,25 @@ fn decode_data(comptime T: type, comptime field_desc: FieldDescriptor, comptime 
                 .Varint => |varint_type| {
                     switch (extracted_data.data) {
                         .RawValue => |value| try @field(result, field.name).append(decode_varint_value(child_type, varint_type, value)),
-                        .Slice => |slice| try decode_packed_list(slice, list_type, child_type, &@field(result, field.name)),
+                        .Slice => |slice| try decode_packed_list(slice, list_type, child_type, &@field(result, field.name), allocator),
                     }
                 },
                 .FixedInt => |_| {
                     switch (extracted_data.data) {
                         .RawValue => |value| try @field(result, field.name).append(decode_fixed_value(child_type, value)),
-                        .Slice => |slice| try decode_packed_list(slice, list_type, child_type, &@field(result, field.name)),
+                        .Slice => |slice| try decode_packed_list(slice, list_type, child_type, &@field(result, field.name), allocator),
                     }
                 },
                 .SubMessage => switch (extracted_data.data) {
-                    .Slice => |slice| try @field(result, field.name).append(try child_type.decode(slice, allocator)),
+                    .Slice => |slice| {
+                        try @field(result, field.name).append(try child_type.decode(slice, allocator));
+                    },
                     .RawValue => return error.InvalidInput,
                 },
                 .String => switch (extracted_data.data) {
-                    .Slice => |slice| try @field(result, field.name).append(slice),
+                    .Slice => |slice| {
+                        try @field(result, field.name).append(try ManagedString.copy(slice, allocator));
+                    },
                     .RawValue => return error.InvalidInput,
                 },
             }
@@ -768,6 +825,10 @@ fn decode_data(comptime T: type, comptime field_desc: FieldDescriptor, comptime 
             inline for (@typeInfo(one_of).Union.fields) |union_field| {
                 const v = @field(desc_union, union_field.name);
                 if (is_tag_known(v, extracted_data)) {
+                    // deinit the current value of the enum to prevent leaks
+                    deinit_field(result, field.name, field_desc.ftype);
+
+                    // and decode & assign the new value
                     var value = try decode_value(union_field.type, v.ftype, extracted_data, allocator);
                     @field(result, field.name) = @unionInit(one_of, union_field.name, value);
                 }
@@ -919,7 +980,7 @@ test "unit varint packed - decode - multi-byte-varint" {
     var list = ArrayList(u32).init(testing.allocator);
     defer list.deinit();
 
-    try decode_packed_list(bytes, .{ .Varint = .Simple }, u32, &list);
+    try decode_packed_list(bytes, .{ .Varint = .Simple }, u32, &list, testing.allocator);
 
     try testing.expectEqualSlices(u32, &[_]u32{ 3, 270, 86942 }, list.items);
 }

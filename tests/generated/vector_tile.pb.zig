@@ -5,6 +5,7 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 const protobuf = @import("protobuf");
+const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
 
 pub const Tile = struct {
@@ -23,7 +24,7 @@ pub const Tile = struct {
     };
 
     pub const Value = struct {
-        string_value: ?[]const u8,
+        string_value: ?ManagedString,
         float_value: ?f32,
         double_value: ?f64,
         int_value: ?i64,
@@ -62,9 +63,9 @@ pub const Tile = struct {
 
     pub const Layer = struct {
         version: u32 = 1,
-        name: []const u8,
+        name: ManagedString,
         features: ArrayList(Tile.Feature),
-        keys: ArrayList([]const u8),
+        keys: ArrayList(ManagedString),
         values: ArrayList(Tile.Value),
         extent: ?u32 = 4096,
 

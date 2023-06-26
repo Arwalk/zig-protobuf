@@ -5,6 +5,7 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 const protobuf = @import("protobuf");
+const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
 /// import package google.protobuf
 const google_protobuf = @import("../google/protobuf.pb.zig");
@@ -39,8 +40,8 @@ pub const EnumContainer = struct {
 };
 
 pub const Simple1 = struct {
-    a_string: []const u8,
-    a_repeated_string: ArrayList([]const u8),
+    a_string: ManagedString,
+    a_repeated_string: ArrayList(ManagedString),
     a_boolean: ?bool,
 
     pub const _desc_table = .{
@@ -53,8 +54,8 @@ pub const Simple1 = struct {
 };
 
 pub const Simple2 = struct {
-    a_string: []const u8,
-    a_repeated_string: ArrayList([]const u8),
+    a_string: ManagedString,
+    a_repeated_string: ArrayList(ManagedString),
 
     pub const _desc_table = .{
         .a_string = fd(1, .String),
@@ -65,10 +66,10 @@ pub const Simple2 = struct {
 };
 
 pub const SpecialCases = struct {
-    normal: []const u8,
-    default: []const u8,
-    function: []const u8,
-    @"var": []const u8,
+    normal: ManagedString,
+    default: ManagedString,
+    function: ManagedString,
+    @"var": ManagedString,
 
     pub const _desc_table = .{
         .normal = fd(1, .String),
@@ -81,11 +82,11 @@ pub const SpecialCases = struct {
 };
 
 pub const OptionalFields = struct {
-    a_string: ?[]const u8,
+    a_string: ?ManagedString,
     a_bool: bool,
     a_nested_message: ?Nested,
     a_repeated_message: ArrayList(Nested),
-    a_repeated_string: ArrayList([]const u8),
+    a_repeated_string: ArrayList(ManagedString),
 
     pub const _desc_table = .{
         .a_string = fd(1, .String),
@@ -109,9 +110,9 @@ pub const OptionalFields = struct {
 };
 
 pub const HasExtensions = struct {
-    str1: ?[]const u8,
-    str2: ?[]const u8,
-    str3: ?[]const u8,
+    str1: ?ManagedString,
+    str2: ?ManagedString,
+    str3: ?ManagedString,
 
     pub const _desc_table = .{
         .str1 = fd(1, .String),
@@ -123,11 +124,11 @@ pub const HasExtensions = struct {
 };
 
 pub const Complex = struct {
-    a_string: []const u8,
+    a_string: ManagedString,
     an_out_of_order_bool: bool,
     a_nested_message: ?Nested,
     a_repeated_message: ArrayList(Nested),
-    a_repeated_string: ArrayList([]const u8),
+    a_repeated_string: ArrayList(ManagedString),
 
     pub const _desc_table = .{
         .a_string = fd(1, .String),
@@ -151,7 +152,7 @@ pub const Complex = struct {
 };
 
 pub const IsExtension = struct {
-    ext1: ?[]const u8,
+    ext1: ?ManagedString,
 
     pub const _desc_table = .{
         .ext1 = fd(1, .String),
@@ -167,12 +168,12 @@ pub const IndirectExtension = struct {
 };
 
 pub const DefaultValues = struct {
-    string_field: ?[]const u8 = "default<>'\"abc",
+    string_field: ?ManagedString = ManagedString.static("default<>'\"abc"),
     bool_field: ?bool = true,
     int_field: ?i64 = 11,
     enum_field: ?Enum = .E1,
-    empty_field: ?[]const u8 = "",
-    bytes_field: ?[]const u8 = "moo",
+    empty_field: ?ManagedString = ManagedString.static(""),
+    bytes_field: ?ManagedString = ManagedString.static("moo"),
 
     pub const _desc_table = .{
         .string_field = fd(1, .String),
@@ -217,11 +218,11 @@ pub const FloatingPointFields = struct {
 };
 
 pub const TestClone = struct {
-    str: ?[]const u8,
+    str: ?ManagedString,
     simple1: ?Simple1,
     simple2: ArrayList(Simple1),
-    bytes_field: ?[]const u8,
-    unused: ?[]const u8,
+    bytes_field: ?ManagedString,
+    unused: ?ManagedString,
 
     pub const _desc_table = .{
         .str = fd(1, .String),
@@ -235,7 +236,7 @@ pub const TestClone = struct {
 };
 
 pub const CloneExtension = struct {
-    ext: ?[]const u8,
+    ext: ?ManagedString,
 
     pub const _desc_table = .{
         .ext = fd(2, .String),
@@ -245,7 +246,7 @@ pub const CloneExtension = struct {
 };
 
 pub const TestGroup = struct {
-    id: ?[]const u8,
+    id: ?ManagedString,
     required_simple: ?Simple2,
     optional_simple: ?Simple2,
 
@@ -276,7 +277,7 @@ pub const TestReservedNamesExtension = struct {
 
 pub const TestMessageWithOneof = struct {
     normal_field: ?bool,
-    repeated_field: ArrayList([]const u8),
+    repeated_field: ArrayList(ManagedString),
     partial_oneof: ?partial_oneof_union,
     recursive_oneof: ?recursive_oneof_union,
     default_oneof_a: ?default_oneof_a_union,
@@ -287,8 +288,8 @@ pub const TestMessageWithOneof = struct {
         pthree,
     };
     pub const partial_oneof_union = union(_partial_oneof_case) {
-        pone: []const u8,
-        pthree: []const u8,
+        pone: ManagedString,
+        pthree: ManagedString,
         pub const _union_desc = .{
             .pone = fd(3, .String),
             .pthree = fd(5, .String),
@@ -301,7 +302,7 @@ pub const TestMessageWithOneof = struct {
     };
     pub const recursive_oneof_union = union(_recursive_oneof_case) {
         rone: TestMessageWithOneof,
-        rtwo: []const u8,
+        rtwo: ManagedString,
         pub const _union_desc = .{
             .rone = fd(6, .{ .SubMessage = {} }),
             .rtwo = fd(7, .String),
@@ -348,7 +349,7 @@ pub const TestMessageWithOneof = struct {
 
 pub const TestEndsWithBytes = struct {
     value: ?i32,
-    data: ?[]const u8,
+    data: ?ManagedString,
 
     pub const _desc_table = .{
         .value = fd(1, .{ .Varint = .Simple }),
@@ -388,8 +389,8 @@ pub const TestMapFieldsNoBinary = struct {
     };
 
     pub const MapStringStringEntry = struct {
-        key: ?[]const u8,
-        value: ?[]const u8,
+        key: ?ManagedString,
+        value: ?ManagedString,
 
         pub const _desc_table = .{
             .key = fd(1, .String),
@@ -400,7 +401,7 @@ pub const TestMapFieldsNoBinary = struct {
     };
 
     pub const MapStringInt32Entry = struct {
-        key: ?[]const u8,
+        key: ?ManagedString,
         value: ?i32,
 
         pub const _desc_table = .{
@@ -412,7 +413,7 @@ pub const TestMapFieldsNoBinary = struct {
     };
 
     pub const MapStringInt64Entry = struct {
-        key: ?[]const u8,
+        key: ?ManagedString,
         value: ?i64,
 
         pub const _desc_table = .{
@@ -424,7 +425,7 @@ pub const TestMapFieldsNoBinary = struct {
     };
 
     pub const MapStringBoolEntry = struct {
-        key: ?[]const u8,
+        key: ?ManagedString,
         value: ?bool,
 
         pub const _desc_table = .{
@@ -436,7 +437,7 @@ pub const TestMapFieldsNoBinary = struct {
     };
 
     pub const MapStringDoubleEntry = struct {
-        key: ?[]const u8,
+        key: ?ManagedString,
         value: ?f64,
 
         pub const _desc_table = .{
@@ -448,7 +449,7 @@ pub const TestMapFieldsNoBinary = struct {
     };
 
     pub const MapStringEnumEntry = struct {
-        key: ?[]const u8,
+        key: ?ManagedString,
         value: ?MapValueEnumNoBinary,
 
         pub const _desc_table = .{
@@ -460,7 +461,7 @@ pub const TestMapFieldsNoBinary = struct {
     };
 
     pub const MapStringMsgEntry = struct {
-        key: ?[]const u8,
+        key: ?ManagedString,
         value: ?MapValueMessageNoBinary,
 
         pub const _desc_table = .{
@@ -473,7 +474,7 @@ pub const TestMapFieldsNoBinary = struct {
 
     pub const MapInt32StringEntry = struct {
         key: ?i32,
-        value: ?[]const u8,
+        value: ?ManagedString,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .Varint = .Simple }),
@@ -485,7 +486,7 @@ pub const TestMapFieldsNoBinary = struct {
 
     pub const MapInt64StringEntry = struct {
         key: ?i64,
-        value: ?[]const u8,
+        value: ?ManagedString,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .Varint = .Simple }),
@@ -497,7 +498,7 @@ pub const TestMapFieldsNoBinary = struct {
 
     pub const MapBoolStringEntry = struct {
         key: ?bool,
-        value: ?[]const u8,
+        value: ?ManagedString,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .Varint = .Simple }),
@@ -508,7 +509,7 @@ pub const TestMapFieldsNoBinary = struct {
     };
 
     pub const MapStringTestmapfieldsEntry = struct {
-        key: ?[]const u8,
+        key: ?ManagedString,
         value: ?TestMapFieldsNoBinary,
 
         pub const _desc_table = .{
