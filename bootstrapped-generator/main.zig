@@ -420,7 +420,7 @@ const GenerationContext = struct {
 
             // print all oneof fields
             for (m.oneof_decl.items, 0..) |oneof, i| {
-                const union_element_count = ctx.amountOfElementsInOneofUnion(m, @intCast(i32, i));
+                const union_element_count = ctx.amountOfElementsInOneofUnion(m, @as(i32, @intCast(i)));
                 if (union_element_count > 1) {
                     const oneof_name = oneof.name.?.getSlice();
                     try list.append(try std.fmt.allocPrint(allocator, "    {s}: ?{s}_union,\n", .{ try escapeName(oneof_name), oneof_name }));
@@ -430,7 +430,7 @@ const GenerationContext = struct {
             // then print the oneof declarations
             for (m.oneof_decl.items, 0..) |oneof, i| {
                 // only emit unions that have more than one element
-                const union_element_count = ctx.amountOfElementsInOneofUnion(m, @intCast(i32, i));
+                const union_element_count = ctx.amountOfElementsInOneofUnion(m, @as(i32, @intCast(i)));
                 if (union_element_count > 1) {
                     const oneof_name = oneof.name.?.getSlice();
 
@@ -442,7 +442,7 @@ const GenerationContext = struct {
 
                     for (m.field.items) |field| {
                         const f: descriptor.FieldDescriptorProto = field;
-                        if (f.oneof_index orelse -1 == @intCast(i32, i)) {
+                        if (f.oneof_index orelse -1 == @as(i32, @intCast(i))) {
                             var name = try ctx.getFieldName(f);
                             try list.append(try std.fmt.allocPrint(allocator, "      {?s},\n", .{name}));
                         }
@@ -456,7 +456,7 @@ const GenerationContext = struct {
 
                     for (m.field.items) |field| {
                         const f: descriptor.FieldDescriptorProto = field;
-                        if (f.oneof_index orelse -1 == @intCast(i32, i)) {
+                        if (f.oneof_index orelse -1 == @as(i32, @intCast(i))) {
                             var name = try ctx.getFieldName(f);
                             var typeStr = try ctx.getFieldType(messageFqn, file, f, true);
                             try list.append(try std.fmt.allocPrint(allocator, "      {?s}: {?s},\n", .{ name, typeStr }));
@@ -470,7 +470,7 @@ const GenerationContext = struct {
 
                     for (m.field.items) |field| {
                         const f: descriptor.FieldDescriptorProto = field;
-                        if (f.oneof_index orelse -1 == @intCast(i32, i)) {
+                        if (f.oneof_index orelse -1 == @as(i32, @intCast(i))) {
                             try ctx.generateFieldDescriptor(list, messageFqn, file, m, f, true);
                         }
                     }
@@ -500,7 +500,7 @@ const GenerationContext = struct {
             // print all oneof fields
             for (m.oneof_decl.items, 0..) |oneof, i| {
                 // only emit unions that have more than one element
-                const union_element_count = ctx.amountOfElementsInOneofUnion(m, @intCast(i32, i));
+                const union_element_count = ctx.amountOfElementsInOneofUnion(m, @as(i32, @intCast(i)));
                 if (union_element_count > 1) {
                     const oneof_name = oneof.name.?.getSlice();
                     try list.append(try std.fmt.allocPrint(allocator, "    .{s} = fd(null, .{{ .OneOf = {s}_union }}),\n", .{ oneof_name, oneof_name }));
