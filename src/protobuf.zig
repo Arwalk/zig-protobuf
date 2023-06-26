@@ -128,10 +128,10 @@ pub fn fd(comptime field_number: ?u32, comptime ftype: FieldType) FieldDescripto
 fn append_raw_varint(pb: *ArrayList(u8), value: u64) !void {
     var copy = value;
     while (copy > 0x7F) {
-        try pb.append(0x80 + @intCast(u8, copy & 0x7F));
+        try pb.append(0x80 + @as(u8, @intCast(copy & 0x7F)));
         copy = copy >> 7;
     }
-    try pb.append(@intCast(u8, copy & 0x7F));
+    try pb.append(@as(u8, @intCast(copy & 0x7F)));
 }
 
 /// Inserts a varint into the pb at start_index
@@ -139,15 +139,15 @@ fn append_raw_varint(pb: *ArrayList(u8), value: u64) !void {
 /// Appended to the pb buffer.
 fn insert_raw_varint(pb: *ArrayList(u8), size: u64, start_index: usize) !void {
     if (size < 0x7F) {
-        try pb.insert(start_index, @truncate(u8, size));
+        try pb.insert(start_index, @as(u8, @truncate(size)));
     } else {
         var copy = size;
         var index = start_index;
         while (copy > 0x7F) : (index += 1) {
-            try pb.insert(index, 0x80 + @intCast(u8, copy & 0x7F));
+            try pb.insert(index, 0x80 + @as(u8, @intCast(copy & 0x7F)));
             copy = copy >> 7;
         }
-        try pb.insert(index, @intCast(u8, copy & 0x7F));
+        try pb.insert(index, @as(u8, @intCast(copy & 0x7F)));
     }
 }
 
@@ -161,14 +161,14 @@ fn append_as_varint(pb: *ArrayList(u8), int: anytype, comptime varint_type: Vari
         if (isSignedInt(type_of_val)) {
             switch (varint_type) {
                 .ZigZagOptimized => {
-                    break :blk @intCast(u64, (int >> (bitsize - 1)) ^ (int << 1));
+                    break :blk @as(u64, @intCast((int >> (bitsize - 1)) ^ (int << 1)));
                 },
                 .Simple => {
-                    break :blk @bitCast(std.meta.Int(.unsigned, bitsize), int);
+                    break :blk @as(std.meta.Int(.unsigned, bitsize), @bitCast(int));
                 },
             }
         } else {
-            break :blk @intCast(u64, int);
+            break :blk @as(u64, @intCast(int));
         }
     };
 
@@ -191,7 +191,7 @@ fn append_fixed(pb: *ArrayList(u8), value: anytype) !void {
     const bitsize = @bitSizeOf(@TypeOf(value));
 
     var as_unsigned_int = switch (@TypeOf(value)) {
-        f32, f64, i32, i64 => @bitCast(std.meta.Int(.unsigned, bitsize), value),
+        f32, f64, i32, i64 => @as(std.meta.Int(.unsigned, bitsize), @bitCast(value)),
         u32, u64, u8 => @as(u64, value),
         else => @compileError("Invalid type for append_fixed"),
     };
@@ -199,7 +199,7 @@ fn append_fixed(pb: *ArrayList(u8), value: anytype) !void {
     var index: usize = 0;
 
     while (index < (bitsize / 8)) : (index += 1) {
-        try pb.append(@truncate(u8, as_unsigned_int));
+        try pb.append(@as(u8, @truncate(as_unsigned_int)));
         as_unsigned_int = as_unsigned_int >> 8;
     }
 }
@@ -408,7 +408,7 @@ fn get_field_default_value(comptime for_type: anytype) for_type {
     return switch (@typeInfo(for_type)) {
         .Optional => null,
         // as per protobuf spec, the first element of the enums must be 0 and it is the default value
-        .Enum => @enumFromInt(for_type, 0),
+        .Enum => @as(for_type, @enumFromInt(0)),
         else => switch (for_type) {
             bool => false,
             i32, i64, i8, i16, u8, u32, u64, f32, f64 => 0,
@@ -425,7 +425,7 @@ pub fn pb_init(comptime T: type, allocator: Allocator) T {
         switch (@field(T._desc_table, field.name).ftype) {
             .String, .Varint, .FixedInt => {
                 if (field.default_value) |val| {
-                    @field(value, field.name) = @ptrCast(*align(1) const field.type, val).*;
+                    @field(value, field.name) = @as(*align(1) const field.type, @ptrCast(val)).*;
                 } else {
                     @field(value, field.name) = get_field_default_value(field.type);
                 }
@@ -539,7 +539,7 @@ fn decode_varint(comptime T: type, input: []const u8) DecodingError!DecodedVarin
     while (true) {
         if (index >= len) return error.NotEnoughData;
         const b = input[index];
-        value += (@as(T, input[index] & 0x7F)) << (@intCast(std.math.Log2Int(T), shift));
+        value += (@as(T, input[index] & 0x7F)) << (@as(std.math.Log2Int(T), @intCast(shift)));
         index += 1;
         if (b >> 7 == 0) break;
         shift += 7;
@@ -561,12 +561,12 @@ fn decode_fixed(comptime T: type, slice: []const u8) T {
     var result: result_base = 0;
 
     for (slice, 0..) |byte, index| {
-        result += @intCast(result_base, byte) << (@intCast(std.math.Log2Int(result_base), index * 8));
+        result += @as(result_base, @intCast(byte)) << (@as(std.math.Log2Int(result_base), @intCast(index * 8)));
     }
 
     return switch (T) {
         u32, u64 => result,
-        else => @bitCast(T, result),
+        else => @as(T, @bitCast(result)),
     };
 }
 
@@ -688,20 +688,20 @@ fn decode_varint_value(comptime T: type, comptime varint_type: VarintType, raw: 
     return switch (varint_type) {
         .ZigZagOptimized => switch (@typeInfo(T)) {
             .Int => {
-                const t = @bitCast(T, @truncate(std.meta.Int(.unsigned, @bitSizeOf(T)), raw));
-                return @intCast(T, (t >> 1) ^ (-(t & 1)));
+                const t = @as(T, @bitCast(@as(std.meta.Int(.unsigned, @bitSizeOf(T)), @truncate(raw))));
+                return @as(T, @intCast((t >> 1) ^ (-(t & 1))));
             },
-            .Enum => @enumFromInt(T, @intCast(i32, (@intCast(i64, raw) >> 1) ^ (-(@intCast(i64, raw) & 1)))),
+            .Enum => @as(T, @enumFromInt(@as(i32, @intCast((@as(i64, @intCast(raw)) >> 1) ^ (-(@as(i64, @intCast(raw)) & 1)))))),
             else => @compileError("Invalid type passed"),
         },
         .Simple => switch (@typeInfo(T)) {
             .Int => switch (T) {
-                u8, u16, u32, u64 => @intCast(T, raw),
-                i32, i64 => @bitCast(T, @truncate(std.meta.Int(.unsigned, @bitSizeOf(T)), raw)),
+                u8, u16, u32, u64 => @as(T, @intCast(raw)),
+                i32, i64 => @as(T, @bitCast(@as(std.meta.Int(.unsigned, @bitSizeOf(T)), @truncate(raw)))),
                 else => @compileError("Invalid type " ++ @typeName(T) ++ " passed"),
             },
             .Bool => raw != 0,
-            .Enum => @enumFromInt(T, @intCast(i32, raw)),
+            .Enum => @as(T, @enumFromInt(@as(i32, @intCast(raw)))),
             else => @compileError("Invalid type " ++ @typeName(T) ++ " passed"),
         },
     };
@@ -710,10 +710,10 @@ fn decode_varint_value(comptime T: type, comptime varint_type: VarintType, raw: 
 /// Get a real fixed value of type T from a raw u64 value.
 fn decode_fixed_value(comptime T: type, raw: u64) T {
     return switch (T) {
-        i32, u32, f32 => @bitCast(T, @truncate(std.meta.Int(.unsigned, @bitSizeOf(T)), raw)),
-        i64, f64, u64 => @bitCast(T, raw),
+        i32, u32, f32 => @as(T, @bitCast(@as(std.meta.Int(.unsigned, @bitSizeOf(T)), @truncate(raw)))),
+        i64, f64, u64 => @as(T, @bitCast(raw)),
         bool => raw != 0,
-        else => @bitCast(T, raw),
+        else => @as(T, @bitCast(raw)),
     };
 }
 
