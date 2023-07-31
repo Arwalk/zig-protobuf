@@ -115,20 +115,32 @@ const GenerationContext = struct {
             for (self.req.proto_file.items) |file| {
                 if (name.eqlString(file.package.?.getSlice())) {
                     for (file.dependency.items) |dep| {
-                        for (self.req.proto_file.items) |item| {
+                        for (self.req.proto_file.items, 0..) |item, index| {
                             if (std.mem.eql(u8, dep.getSlice(), item.name.?.getSlice())) {
-                                try importedPackages.put(item.package.?.getSlice(), true);
+                                var is_public_dep: bool = false;
+
+                                // find whether an import is marked as public
+                                for (file.public_dependency.items) |public_dep| {
+                                    if (public_dep == index) {
+                                        is_public_dep = true;
+                                    }
+                                }
+
+                                try importedPackages.put(item.package.?.getSlice(), is_public_dep);
                             }
                         }
                     }
                 }
             }
 
-            var it = importedPackages.keyIterator();
+            var it = importedPackages.iterator();
             while (it.next()) |package| {
-                if (!std.mem.eql(u8, package.*, name.buf)) {
-                    try list.append(try std.fmt.allocPrint(allocator, "/// import package {?s}\n", .{package.*}));
-                    try list.append(try std.fmt.allocPrint(allocator, "const {!s} = @import(\"{!s}\");\n", .{ self.escapeFqn(package.*), self.resolvePath(name.buf, package.*) }));
+                if (!std.mem.eql(u8, package.key_ptr.*, name.buf)) {
+                    try list.append(try std.fmt.allocPrint(allocator, "/// import package {?s}\n", .{package.key_ptr.*}));
+
+                    var optional_pub_directive: []const u8 = if (package.value_ptr.*) "pub const" else "const";
+
+                    try list.append(try std.fmt.allocPrint(allocator, "{s} {!s} = @import(\"{!s}\");\n", .{ optional_pub_directive, self.escapeFqn(package.key_ptr.*), self.resolvePath(name.buf, package.key_ptr.*) }));
                 }
             }
 
