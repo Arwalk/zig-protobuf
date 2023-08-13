@@ -18,9 +18,9 @@ const protobuf_test_messages_proto3 = @import("protobuf_test_messages/proto3.pb.
 /// import package unittest
 const unittest = @import("unittest.pb.zig");
 /// import package jspb.test
-const jspb_test = @import("jspb/test.pb.zig");
+pub const jspb_test = @import("jspb/test.pb.zig");
 /// import package vector_tile
-const vector_tile = @import("vector_tile.pb.zig");
+pub const vector_tile = @import("vector_tile.pb.zig");
 
 pub const FixedSizes = struct {
     sfixed64: i64,
@@ -71,7 +71,7 @@ pub const TestPacked = struct {
 };
 
 pub const TestOptional = struct {
-    d: ?ManagedString,
+    d: ?ManagedString = null,
     e: ArrayList(i32),
 
     pub const _desc_table = .{
@@ -152,8 +152,8 @@ pub const DemoWithAllVarint = struct {
 };
 
 pub const WithSubmessages2 = struct {
-    sub_demo1: ?Demo1,
-    sub_demo2: ?Demo2,
+    sub_demo1: ?Demo1 = null,
+    sub_demo2: ?Demo2 = null,
 
     pub const _desc_table = .{
         .sub_demo1 = fd(1, .{ .SubMessage = {} }),
@@ -350,7 +350,7 @@ pub const UnPacked = struct {
 };
 
 pub const WithSubmessages = struct {
-    with_enum: ?WithEnum,
+    with_enum: ?WithEnum = null,
 
     pub const _desc_table = .{
         .with_enum = fd(1, .{ .SubMessage = {} }),

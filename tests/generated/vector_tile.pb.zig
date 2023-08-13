@@ -24,13 +24,13 @@ pub const Tile = struct {
     };
 
     pub const Value = struct {
-        string_value: ?ManagedString,
-        float_value: ?f32,
-        double_value: ?f64,
-        int_value: ?i64,
-        uint_value: ?u64,
-        sint_value: ?i64,
-        bool_value: ?bool,
+        string_value: ?ManagedString = null,
+        float_value: ?f32 = null,
+        double_value: ?f64 = null,
+        int_value: ?i64 = null,
+        uint_value: ?u64 = null,
+        sint_value: ?i64 = null,
+        bool_value: ?bool = null,
 
         pub const _desc_table = .{
             .string_value = fd(1, .String),

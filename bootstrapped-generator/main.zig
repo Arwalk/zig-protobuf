@@ -335,13 +335,18 @@ const GenerationContext = struct {
     }
 
     fn getFieldDefault(_: *Self, field: descriptor.FieldDescriptorProto) !?string {
+        // switch (field.type.?) {
+        //     .TYPE_MESSAGE => return try allocator.dupe(u8, "null"),
+        //     else => {},
+        // }
+
         if (field.default_value == null) return null;
+
         return switch (field.type.?) {
             .TYPE_SINT32, .TYPE_SFIXED32, .TYPE_INT32, .TYPE_UINT32, .TYPE_FIXED32, .TYPE_INT64, .TYPE_SINT64, .TYPE_SFIXED64, .TYPE_UINT64, .TYPE_FIXED64, .TYPE_BOOL => field.default_value.?.getSlice(),
             .TYPE_FLOAT => if (std.mem.eql(u8, field.default_value.?.getSlice(), "inf")) "std.math.inf(f32)" else if (std.mem.eql(u8, field.default_value.?.getSlice(), "-inf")) "-std.math.inf(f32)" else if (std.mem.eql(u8, field.default_value.?.getSlice(), "nan")) "std.math.nan(f32)" else field.default_value.?.getSlice(),
             .TYPE_DOUBLE => if (std.mem.eql(u8, field.default_value.?.getSlice(), "inf")) "std.math.inf(f64)" else if (std.mem.eql(u8, field.default_value.?.getSlice(), "-inf")) "-std.math.inf(f64)" else if (std.mem.eql(u8, field.default_value.?.getSlice(), "nan")) "std.math.nan(f64)" else field.default_value.?.getSlice(),
             .TYPE_STRING, .TYPE_BYTES => try std.mem.concat(allocator, u8, &.{ "ManagedString.static(", try formatSliceEscapeImpl(field.default_value.?.getSlice()), ")" }),
-            .TYPE_MESSAGE => null, // SubMessages have no default values
             .TYPE_ENUM => try std.mem.concat(allocator, u8, &.{ ".", field.default_value.?.getSlice() }),
             else => null,
         };
@@ -394,6 +399,8 @@ const GenerationContext = struct {
 
         if (try ctx.getFieldDefault(field)) |default_value| {
             try list.append(try std.fmt.allocPrint(allocator, "    {s}: {s} = {s},\n", .{ field_name, type_str, default_value }));
+        } else if (type_str[0] == '?') {
+            try list.append(try std.fmt.allocPrint(allocator, "    {s}: {s} = null,\n", .{ field_name, type_str }));
         } else {
             try list.append(try std.fmt.allocPrint(allocator, "    {s}: {s},\n", .{ field_name, type_str }));
         }

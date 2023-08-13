@@ -19,8 +19,8 @@ pub const FileDescriptorSet = struct {
 };
 
 pub const FileDescriptorProto = struct {
-    name: ?ManagedString,
-    package: ?ManagedString,
+    name: ?ManagedString = null,
+    package: ?ManagedString = null,
     dependency: ArrayList(ManagedString),
     public_dependency: ArrayList(i32),
     weak_dependency: ArrayList(i32),
@@ -28,10 +28,10 @@ pub const FileDescriptorProto = struct {
     enum_type: ArrayList(EnumDescriptorProto),
     service: ArrayList(ServiceDescriptorProto),
     extension: ArrayList(FieldDescriptorProto),
-    options: ?FileOptions,
-    source_code_info: ?SourceCodeInfo,
-    syntax: ?ManagedString,
-    edition: ?ManagedString,
+    options: ?FileOptions = null,
+    source_code_info: ?SourceCodeInfo = null,
+    syntax: ?ManagedString = null,
+    edition: ?ManagedString = null,
 
     pub const _desc_table = .{
         .name = fd(1, .String),
@@ -53,14 +53,14 @@ pub const FileDescriptorProto = struct {
 };
 
 pub const DescriptorProto = struct {
-    name: ?ManagedString,
+    name: ?ManagedString = null,
     field: ArrayList(FieldDescriptorProto),
     extension: ArrayList(FieldDescriptorProto),
     nested_type: ArrayList(DescriptorProto),
     enum_type: ArrayList(EnumDescriptorProto),
     extension_range: ArrayList(ExtensionRange),
     oneof_decl: ArrayList(OneofDescriptorProto),
-    options: ?MessageOptions,
+    options: ?MessageOptions = null,
     reserved_range: ArrayList(ReservedRange),
     reserved_name: ArrayList(ManagedString),
 
@@ -78,9 +78,9 @@ pub const DescriptorProto = struct {
     };
 
     pub const ExtensionRange = struct {
-        start: ?i32,
-        end: ?i32,
-        options: ?ExtensionRangeOptions,
+        start: ?i32 = null,
+        end: ?i32 = null,
+        options: ?ExtensionRangeOptions = null,
 
         pub const _desc_table = .{
             .start = fd(1, .{ .Varint = .Simple }),
@@ -92,8 +92,8 @@ pub const DescriptorProto = struct {
     };
 
     pub const ReservedRange = struct {
-        start: ?i32,
-        end: ?i32,
+        start: ?i32 = null,
+        end: ?i32 = null,
 
         pub const _desc_table = .{
             .start = fd(1, .{ .Varint = .Simple }),
@@ -124,12 +124,12 @@ pub const ExtensionRangeOptions = struct {
     };
 
     pub const Declaration = struct {
-        number: ?i32,
-        full_name: ?ManagedString,
-        type: ?ManagedString,
-        is_repeated: ?bool,
-        reserved: ?bool,
-        repeated: ?bool,
+        number: ?i32 = null,
+        full_name: ?ManagedString = null,
+        type: ?ManagedString = null,
+        is_repeated: ?bool = null,
+        reserved: ?bool = null,
+        repeated: ?bool = null,
 
         pub const _desc_table = .{
             .number = fd(1, .{ .Varint = .Simple }),
@@ -147,17 +147,17 @@ pub const ExtensionRangeOptions = struct {
 };
 
 pub const FieldDescriptorProto = struct {
-    name: ?ManagedString,
-    number: ?i32,
-    label: ?Label,
-    type: ?Type,
-    type_name: ?ManagedString,
-    extendee: ?ManagedString,
-    default_value: ?ManagedString,
-    oneof_index: ?i32,
-    json_name: ?ManagedString,
-    options: ?FieldOptions,
-    proto3_optional: ?bool,
+    name: ?ManagedString = null,
+    number: ?i32 = null,
+    label: ?Label = null,
+    type: ?Type = null,
+    type_name: ?ManagedString = null,
+    extendee: ?ManagedString = null,
+    default_value: ?ManagedString = null,
+    oneof_index: ?i32 = null,
+    json_name: ?ManagedString = null,
+    options: ?FieldOptions = null,
+    proto3_optional: ?bool = null,
 
     pub const _desc_table = .{
         .name = fd(1, .String),
@@ -206,8 +206,8 @@ pub const FieldDescriptorProto = struct {
 };
 
 pub const OneofDescriptorProto = struct {
-    name: ?ManagedString,
-    options: ?OneofOptions,
+    name: ?ManagedString = null,
+    options: ?OneofOptions = null,
 
     pub const _desc_table = .{
         .name = fd(1, .String),
@@ -218,9 +218,9 @@ pub const OneofDescriptorProto = struct {
 };
 
 pub const EnumDescriptorProto = struct {
-    name: ?ManagedString,
+    name: ?ManagedString = null,
     value: ArrayList(EnumValueDescriptorProto),
-    options: ?EnumOptions,
+    options: ?EnumOptions = null,
     reserved_range: ArrayList(EnumReservedRange),
     reserved_name: ArrayList(ManagedString),
 
@@ -233,8 +233,8 @@ pub const EnumDescriptorProto = struct {
     };
 
     pub const EnumReservedRange = struct {
-        start: ?i32,
-        end: ?i32,
+        start: ?i32 = null,
+        end: ?i32 = null,
 
         pub const _desc_table = .{
             .start = fd(1, .{ .Varint = .Simple }),
@@ -248,9 +248,9 @@ pub const EnumDescriptorProto = struct {
 };
 
 pub const EnumValueDescriptorProto = struct {
-    name: ?ManagedString,
-    number: ?i32,
-    options: ?EnumValueOptions,
+    name: ?ManagedString = null,
+    number: ?i32 = null,
+    options: ?EnumValueOptions = null,
 
     pub const _desc_table = .{
         .name = fd(1, .String),
@@ -262,9 +262,9 @@ pub const EnumValueDescriptorProto = struct {
 };
 
 pub const ServiceDescriptorProto = struct {
-    name: ?ManagedString,
+    name: ?ManagedString = null,
     method: ArrayList(MethodDescriptorProto),
-    options: ?ServiceOptions,
+    options: ?ServiceOptions = null,
 
     pub const _desc_table = .{
         .name = fd(1, .String),
@@ -276,10 +276,10 @@ pub const ServiceDescriptorProto = struct {
 };
 
 pub const MethodDescriptorProto = struct {
-    name: ?ManagedString,
-    input_type: ?ManagedString,
-    output_type: ?ManagedString,
-    options: ?MethodOptions,
+    name: ?ManagedString = null,
+    input_type: ?ManagedString = null,
+    output_type: ?ManagedString = null,
+    options: ?MethodOptions = null,
     client_streaming: ?bool = false,
     server_streaming: ?bool = false,
 
@@ -296,26 +296,26 @@ pub const MethodDescriptorProto = struct {
 };
 
 pub const FileOptions = struct {
-    java_package: ?ManagedString,
-    java_outer_classname: ?ManagedString,
+    java_package: ?ManagedString = null,
+    java_outer_classname: ?ManagedString = null,
     java_multiple_files: ?bool = false,
-    java_generate_equals_and_hash: ?bool,
+    java_generate_equals_and_hash: ?bool = null,
     java_string_check_utf8: ?bool = false,
     optimize_for: ?OptimizeMode = .SPEED,
-    go_package: ?ManagedString,
+    go_package: ?ManagedString = null,
     cc_generic_services: ?bool = false,
     java_generic_services: ?bool = false,
     py_generic_services: ?bool = false,
     php_generic_services: ?bool = false,
     deprecated: ?bool = false,
     cc_enable_arenas: ?bool = true,
-    objc_class_prefix: ?ManagedString,
-    csharp_namespace: ?ManagedString,
-    swift_prefix: ?ManagedString,
-    php_class_prefix: ?ManagedString,
-    php_namespace: ?ManagedString,
-    php_metadata_namespace: ?ManagedString,
-    ruby_package: ?ManagedString,
+    objc_class_prefix: ?ManagedString = null,
+    csharp_namespace: ?ManagedString = null,
+    swift_prefix: ?ManagedString = null,
+    php_class_prefix: ?ManagedString = null,
+    php_namespace: ?ManagedString = null,
+    php_metadata_namespace: ?ManagedString = null,
+    ruby_package: ?ManagedString = null,
     uninterpreted_option: ArrayList(UninterpretedOption),
 
     pub const _desc_table = .{
@@ -356,8 +356,8 @@ pub const MessageOptions = struct {
     message_set_wire_format: ?bool = false,
     no_standard_descriptor_accessor: ?bool = false,
     deprecated: ?bool = false,
-    map_entry: ?bool,
-    deprecated_legacy_json_field_conflicts: ?bool,
+    map_entry: ?bool = null,
+    deprecated_legacy_json_field_conflicts: ?bool = null,
     uninterpreted_option: ArrayList(UninterpretedOption),
 
     pub const _desc_table = .{
@@ -374,15 +374,15 @@ pub const MessageOptions = struct {
 
 pub const FieldOptions = struct {
     ctype: ?CType = .STRING,
-    @"packed": ?bool,
+    @"packed": ?bool = null,
     jstype: ?JSType = .JS_NORMAL,
     lazy: ?bool = false,
     unverified_lazy: ?bool = false,
     deprecated: ?bool = false,
     weak: ?bool = false,
     debug_redact: ?bool = false,
-    retention: ?OptionRetention,
-    target: ?OptionTargetType,
+    retention: ?OptionRetention = null,
+    target: ?OptionTargetType = null,
     targets: ArrayList(OptionTargetType),
     uninterpreted_option: ArrayList(UninterpretedOption),
 
@@ -450,9 +450,9 @@ pub const OneofOptions = struct {
 };
 
 pub const EnumOptions = struct {
-    allow_alias: ?bool,
+    allow_alias: ?bool = null,
     deprecated: ?bool = false,
-    deprecated_legacy_json_field_conflicts: ?bool,
+    deprecated_legacy_json_field_conflicts: ?bool = null,
     uninterpreted_option: ArrayList(UninterpretedOption),
 
     pub const _desc_table = .{
@@ -512,12 +512,12 @@ pub const MethodOptions = struct {
 
 pub const UninterpretedOption = struct {
     name: ArrayList(NamePart),
-    identifier_value: ?ManagedString,
-    positive_int_value: ?u64,
-    negative_int_value: ?i64,
-    double_value: ?f64,
-    string_value: ?ManagedString,
-    aggregate_value: ?ManagedString,
+    identifier_value: ?ManagedString = null,
+    positive_int_value: ?u64 = null,
+    negative_int_value: ?i64 = null,
+    double_value: ?f64 = null,
+    string_value: ?ManagedString = null,
+    aggregate_value: ?ManagedString = null,
 
     pub const _desc_table = .{
         .name = fd(2, .{ .List = .{ .SubMessage = {} } }),
@@ -554,8 +554,8 @@ pub const SourceCodeInfo = struct {
     pub const Location = struct {
         path: ArrayList(i32),
         span: ArrayList(i32),
-        leading_comments: ?ManagedString,
-        trailing_comments: ?ManagedString,
+        leading_comments: ?ManagedString = null,
+        trailing_comments: ?ManagedString = null,
         leading_detached_comments: ArrayList(ManagedString),
 
         pub const _desc_table = .{
@@ -581,10 +581,10 @@ pub const GeneratedCodeInfo = struct {
 
     pub const Annotation = struct {
         path: ArrayList(i32),
-        source_file: ?ManagedString,
-        begin: ?i32,
-        end: ?i32,
-        semantic: ?Semantic,
+        source_file: ?ManagedString = null,
+        begin: ?i32 = null,
+        end: ?i32 = null,
+        semantic: ?Semantic = null,
 
         pub const _desc_table = .{
             .path = fd(1, .{ .PackedList = .{ .Varint = .Simple } }),
@@ -655,7 +655,7 @@ pub const Struct = struct {
 
     pub const FieldsEntry = struct {
         key: ManagedString,
-        value: ?Value,
+        value: ?Value = null,
 
         pub const _desc_table = .{
             .key = fd(1, .String),

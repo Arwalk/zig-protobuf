@@ -9,7 +9,7 @@ const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
 
 pub const WouldYouParseThisForMePlease = struct {
-    field: ?Test,
+    field: ?Test = null,
 
     pub const _desc_table = .{
         .field = fd(1, .{ .SubMessage = {} }),

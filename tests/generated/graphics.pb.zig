@@ -123,8 +123,8 @@ pub const StoredChunk = struct {
 pub const MapEntity = struct {
     x: i32,
     y: i32,
-    light: ?Light,
-    collider: ?Shape,
+    light: ?Light = null,
+    collider: ?Shape = null,
     graphic_id: i32,
     entity_id: ManagedString,
     vertical_graphic: bool,
@@ -197,7 +197,7 @@ pub const Npc = struct {
     max_strenght: i32,
     skills: ArrayList(SkillsEntry),
     abilities: ArrayList(AbilitiesEntry),
-    visual: ?Character,
+    visual: ?Character = null,
 
     pub const _desc_table = .{
         .x = fd(1, .{ .Varint = .Simple }),
@@ -350,9 +350,9 @@ pub const Texture = struct {
     emmisive: ManagedString,
     width: i32,
     height: i32,
-    dxt1: ?SubTexture,
-    dxt3: ?SubTexture,
-    dxt5: ?SubTexture,
+    dxt1: ?SubTexture = null,
+    dxt3: ?SubTexture = null,
+    dxt5: ?SubTexture = null,
 
     pub const _desc_table = .{
         .diffuse = fd(1, .String),
