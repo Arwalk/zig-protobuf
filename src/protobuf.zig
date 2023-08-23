@@ -50,6 +50,13 @@ pub const ManagedString = union(ManagedStringTag) {
         }
     }
 
+    pub fn dupe(self: ManagedString, allocator: Allocator) !ManagedString {
+        switch (self) {
+            .Const => return self,
+            .Owned => |alloc_str| return copy(alloc_str.str, allocator),
+        }
+    }
+
     pub fn deinit(self: ManagedString) void {
         switch (self) {
             .Owned => |alloc_str| {
@@ -443,6 +450,79 @@ pub fn pb_init(comptime T: type, allocator: Allocator) T {
     }
 
     return value;
+}
+
+/// Generic function to deeply duplicate a message using a new allocator.
+/// The original parameter is constant
+pub fn pb_dupe(comptime T: type, original: T, allocator: Allocator) !T {
+    var result: T = undefined;
+
+    inline for (@typeInfo(T).Struct.fields) |field| {
+        @field(result, field.name) = try dupe_field(original, field.name, @field(T._desc_table, field.name).ftype, allocator);
+    }
+
+    return result;
+}
+
+/// Internal deinit function for a specific field
+fn dupe_field(original: anytype, comptime field_name: []const u8, comptime ftype: FieldType, allocator: Allocator) !@TypeOf(@field(original, field_name)) {
+    switch (ftype) {
+        .Varint, .FixedInt => {
+            return @field(original, field_name);
+        },
+        .List => |list_type| {
+            var capacity = @field(original, field_name).items.len;
+            var list = try @TypeOf(@field(original, field_name)).initCapacity(allocator, capacity);
+            if (list_type == .SubMessage or list_type == .String) {
+                for (@field(original, field_name).items) |item| {
+                    try list.append(try item.dupe(allocator));
+                }
+            } else {
+                for (@field(original, field_name).items) |item| {
+                    try list.append(item);
+                }
+            }
+            return list;
+        },
+        .PackedList => |_| {
+            var capacity = @field(original, field_name).items.len;
+            var list = try @TypeOf(@field(original, field_name)).initCapacity(allocator, capacity);
+
+            for (@field(original, field_name).items) |item| {
+                try list.append(item);
+            }
+
+            return list;
+        },
+        .SubMessage, .String => {
+            switch (@typeInfo(@TypeOf(@field(original, field_name)))) {
+                .Optional => {
+                    if (@field(original, field_name)) |val| {
+                        return try val.dupe(allocator);
+                    } else {
+                        return null;
+                    }
+                },
+                else => return try @field(original, field_name).dupe(allocator),
+            }
+        },
+        .OneOf => |one_of| {
+            // if the value is set, inline-iterate over the possible OneOfs
+            if (@field(original, field_name)) |union_value| {
+                const active = @tagName(union_value);
+                inline for (@typeInfo(@TypeOf(one_of._union_desc)).Struct.fields) |union_field| {
+                    // and if one matches the actual tagName of the union
+                    if (std.mem.eql(u8, union_field.name, active)) {
+                        // deinit the current value
+                        var value = try dupe_field(union_value, union_field.name, @field(one_of._union_desc, union_field.name).ftype, allocator);
+
+                        return @unionInit(one_of, union_field.name, value);
+                    }
+                }
+            }
+            return null;
+        },
+    }
 }
 
 /// Generic deinit function. Properly initialise any field required. Meant to be embedded in generated structs.
@@ -886,6 +966,9 @@ pub fn MessageMixins(comptime Self: type) type {
         }
         pub fn deinit(self: Self) void {
             return pb_deinit(self);
+        }
+        pub fn dupe(self: Self, allocator: Allocator) !Self {
+            return pb_dupe(Self, self, allocator);
         }
     };
 }
