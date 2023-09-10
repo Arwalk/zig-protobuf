@@ -39,6 +39,11 @@ pub const ManagedString = union(ManagedStringTag) {
         return ManagedString{ .Const = str };
     }
 
+    /// creates a static string that will not be released by calling .deinit()
+    pub fn managed(str: []const u8) ManagedString {
+        return ManagedString{ .Const = str };
+    }
+
     pub fn isEmpty(self: ManagedString) bool {
         return self.getSlice().len == 0;
     }
