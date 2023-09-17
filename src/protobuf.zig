@@ -16,13 +16,14 @@ const DecodingError = error{ NotEnoughData, InvalidInput };
 
 const UnionDecodingError = DecodingError || Allocator.Error;
 
-pub const ManagedStringTag = enum { Owned, Const };
+pub const ManagedStringTag = enum { Owned, Const, Empty };
 
 pub const AllocatedString = struct { allocator: Allocator, str: []const u8 };
 
 pub const ManagedString = union(ManagedStringTag) {
     Owned: AllocatedString,
     Const: []const u8,
+    Empty,
 
     /// copies the provided string using the allocator. the `src` parameter should be freed by the caller
     pub fn copy(str: []const u8, allocator: Allocator) !ManagedString {
@@ -50,15 +51,16 @@ pub const ManagedString = union(ManagedStringTag) {
 
     pub fn getSlice(self: ManagedString) []const u8 {
         switch (self) {
-            .Const => |slice| return slice,
             .Owned => |alloc_str| return alloc_str.str,
+            .Const => |slice| return slice,
+            .Empty => return "",
         }
     }
 
     pub fn dupe(self: ManagedString, allocator: Allocator) !ManagedString {
         switch (self) {
-            .Const => return self,
             .Owned => |alloc_str| return copy(alloc_str.str, allocator),
+            .Const, .Empty => return self,
         }
     }
 
@@ -300,7 +302,7 @@ fn append_tag(pb: *ArrayList(u8), comptime field: FieldDescriptor) !void {
 fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, comptime force_append: bool) !void {
 
     // TODO: review semantics of default-value in regards to wire protocol
-    const is_default_value = switch (@typeInfo(@TypeOf(value))) {
+    const is_default_scalar_value = switch (@typeInfo(@TypeOf(value))) {
         .Optional => value == null,
         // as per protobuf spec, the first element of the enums must be 0 and it is the default value
         .Enum => @intFromEnum(value) == 0,
@@ -314,25 +316,25 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, c
 
     switch (field.ftype) {
         .Varint => |varint_type| {
-            if (!is_default_value or force_append) {
+            if (!is_default_scalar_value or force_append) {
                 try append_tag(pb, field);
                 try append_varint(pb, value, varint_type);
             }
         },
         .FixedInt => {
-            if (!is_default_value or force_append) {
+            if (!is_default_scalar_value or force_append) {
                 try append_tag(pb, field);
                 try append_fixed(pb, value);
             }
         },
         .SubMessage => {
-            if (!is_default_value or force_append) {
+            if (!is_default_scalar_value or force_append) {
                 try append_tag(pb, field);
                 try append_submessage(pb, value);
             }
         },
         .String => {
-            if (!is_default_value or force_append) {
+            if (!is_default_scalar_value or force_append) {
                 try append_tag(pb, field);
                 try append_const_bytes(pb, value);
             }
@@ -424,7 +426,7 @@ fn get_field_default_value(comptime for_type: anytype) for_type {
         else => switch (for_type) {
             bool => false,
             i32, i64, i8, i16, u8, u32, u64, f32, f64 => 0,
-            ManagedString => ManagedString.static(""),
+            ManagedString => .Empty,
             else => undefined,
         },
     };

@@ -19,7 +19,7 @@ pub const WouldYouParseThisForMePlease = struct {
 };
 
 pub const Test = struct {
-    field: ManagedString,
+    field: ManagedString = .Empty,
 
     pub const _desc_table = .{
         .field = fd(1, .String),

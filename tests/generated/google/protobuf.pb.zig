@@ -608,8 +608,8 @@ pub const GeneratedCodeInfo = struct {
 };
 
 pub const Any = struct {
-    type_url: ManagedString,
-    value: ManagedString,
+    type_url: ManagedString = .Empty,
+    value: ManagedString = .Empty,
 
     pub const _desc_table = .{
         .type_url = fd(1, .String),
@@ -620,8 +620,8 @@ pub const Any = struct {
 };
 
 pub const Duration = struct {
-    seconds: i64,
-    nanos: i32,
+    seconds: i64 = 0,
+    nanos: i32 = 0,
 
     pub const _desc_table = .{
         .seconds = fd(1, .{ .Varint = .Simple }),
@@ -654,7 +654,7 @@ pub const Struct = struct {
     };
 
     pub const FieldsEntry = struct {
-        key: ManagedString,
+        key: ManagedString = .Empty,
         value: ?Value = null,
 
         pub const _desc_table = .{
@@ -714,8 +714,8 @@ pub const ListValue = struct {
 };
 
 pub const Timestamp = struct {
-    seconds: i64,
-    nanos: i32,
+    seconds: i64 = 0,
+    nanos: i32 = 0,
 
     pub const _desc_table = .{
         .seconds = fd(1, .{ .Varint = .Simple }),
@@ -726,7 +726,7 @@ pub const Timestamp = struct {
 };
 
 pub const DoubleValue = struct {
-    value: f64,
+    value: f64 = 0,
 
     pub const _desc_table = .{
         .value = fd(1, .{ .FixedInt = .I64 }),
@@ -736,7 +736,7 @@ pub const DoubleValue = struct {
 };
 
 pub const FloatValue = struct {
-    value: f32,
+    value: f32 = 0,
 
     pub const _desc_table = .{
         .value = fd(1, .{ .FixedInt = .I32 }),
@@ -746,7 +746,7 @@ pub const FloatValue = struct {
 };
 
 pub const Int64Value = struct {
-    value: i64,
+    value: i64 = 0,
 
     pub const _desc_table = .{
         .value = fd(1, .{ .Varint = .Simple }),
@@ -756,7 +756,7 @@ pub const Int64Value = struct {
 };
 
 pub const UInt64Value = struct {
-    value: u64,
+    value: u64 = 0,
 
     pub const _desc_table = .{
         .value = fd(1, .{ .Varint = .Simple }),
@@ -766,7 +766,7 @@ pub const UInt64Value = struct {
 };
 
 pub const Int32Value = struct {
-    value: i32,
+    value: i32 = 0,
 
     pub const _desc_table = .{
         .value = fd(1, .{ .Varint = .Simple }),
@@ -776,7 +776,7 @@ pub const Int32Value = struct {
 };
 
 pub const UInt32Value = struct {
-    value: u32,
+    value: u32 = 0,
 
     pub const _desc_table = .{
         .value = fd(1, .{ .Varint = .Simple }),
@@ -786,7 +786,7 @@ pub const UInt32Value = struct {
 };
 
 pub const BoolValue = struct {
-    value: bool,
+    value: bool = false,
 
     pub const _desc_table = .{
         .value = fd(1, .{ .Varint = .Simple }),
@@ -796,7 +796,7 @@ pub const BoolValue = struct {
 };
 
 pub const StringValue = struct {
-    value: ManagedString,
+    value: ManagedString = .Empty,
 
     pub const _desc_table = .{
         .value = fd(1, .String),
@@ -806,7 +806,7 @@ pub const StringValue = struct {
 };
 
 pub const BytesValue = struct {
-    value: ManagedString,
+    value: ManagedString = .Empty,
 
     pub const _desc_table = .{
         .value = fd(1, .String),
