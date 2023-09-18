@@ -105,9 +105,9 @@ pub const FieldType = union(FieldTypeTag) {
     Varint: VarintType,
     FixedInt: FixedSize,
     SubMessage,
-    String,
     List: ListType,
     PackedList: ListType,
+    String,
     OneOf: type,
 
     /// returns the wire type of a field. see https://developers.google.com/protocol-buffers/docs/encoding#structure
