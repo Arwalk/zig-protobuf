@@ -59,7 +59,11 @@ pub const ManagedString = union(ManagedStringTag) {
 
     pub fn dupe(self: ManagedString, allocator: Allocator) !ManagedString {
         switch (self) {
-            .Owned => |alloc_str| return copy(alloc_str.str, allocator),
+            .Owned => |alloc_str| if(alloc_str.str.len == 0) {
+                return .Empty;
+            } else {
+                return copy(alloc_str.str, allocator);
+            },
             .Const, .Empty => return self,
         }
     }
