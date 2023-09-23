@@ -9,16 +9,16 @@ const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
 
 pub const LongsMessage = struct {
-    fixed64_field_min: u64,
-    fixed64_field_max: u64,
-    int64_field_min: i64,
-    int64_field_max: i64,
-    sfixed64_field_min: i64,
-    sfixed64_field_max: i64,
-    sint64_field_min: i64,
-    sint64_field_max: i64,
-    uint64_field_min: u64,
-    uint64_field_max: u64,
+    fixed64_field_min: u64 = 0,
+    fixed64_field_max: u64 = 0,
+    int64_field_min: i64 = 0,
+    int64_field_max: i64 = 0,
+    sfixed64_field_min: i64 = 0,
+    sfixed64_field_max: i64 = 0,
+    sint64_field_min: i64 = 0,
+    sint64_field_max: i64 = 0,
+    uint64_field_min: u64 = 0,
+    uint64_field_max: u64 = 0,
 
     pub const _desc_table = .{
         .fixed64_field_min = fd(1, .{ .FixedInt = .I64 }),

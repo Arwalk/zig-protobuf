@@ -18,17 +18,17 @@ const protobuf_test_messages_proto3 = @import("protobuf_test_messages/proto3.pb.
 /// import package unittest
 const unittest = @import("unittest.pb.zig");
 /// import package jspb.test
-const jspb_test = @import("jspb/test.pb.zig");
+pub const jspb_test = @import("jspb/test.pb.zig");
 /// import package vector_tile
-const vector_tile = @import("vector_tile.pb.zig");
+pub const vector_tile = @import("vector_tile.pb.zig");
 
 pub const FixedSizes = struct {
-    sfixed64: i64,
-    sfixed32: i32,
-    fixed32: u32,
-    fixed64: u64,
-    double: f64,
-    float: f32,
+    sfixed64: i64 = 0,
+    sfixed32: i32 = 0,
+    fixed32: u32 = 0,
+    fixed64: u64 = 0,
+    double: f64 = 0,
+    float: f32 = 0,
 
     pub const _desc_table = .{
         .sfixed64 = fd(1, .{ .FixedInt = .I64 }),
@@ -43,11 +43,11 @@ pub const FixedSizes = struct {
 };
 
 pub const Varints = struct {
-    sint32: i32,
-    sint64: i64,
-    uint32: u32,
-    uint64: u64,
-    a_bool: bool,
+    sint32: i32 = 0,
+    sint64: i64 = 0,
+    uint32: u32 = 0,
+    uint64: u64 = 0,
+    a_bool: bool = false,
 
     pub const _desc_table = .{
         .sint32 = fd(1, .{ .Varint = .ZigZagOptimized }),
@@ -71,7 +71,7 @@ pub const TestPacked = struct {
 };
 
 pub const TestOptional = struct {
-    d: ?ManagedString,
+    d: ?ManagedString = null,
     e: ArrayList(i32),
 
     pub const _desc_table = .{
@@ -83,7 +83,7 @@ pub const TestOptional = struct {
 };
 
 pub const Demo1 = struct {
-    a: u32,
+    a: u32 = 0,
 
     pub const _desc_table = .{
         .a = fd(1, .{ .Varint = .Simple }),
@@ -93,8 +93,8 @@ pub const Demo1 = struct {
 };
 
 pub const Demo2 = struct {
-    a: u32,
-    b: u32,
+    a: u32 = 0,
+    b: u32 = 0,
 
     pub const _desc_table = .{
         .a = fd(1, .{ .Varint = .Simple }),
@@ -105,8 +105,8 @@ pub const Demo2 = struct {
 };
 
 pub const WithNegativeIntegers = struct {
-    a: i32,
-    b: i32,
+    a: i32 = 0,
+    b: i32 = 0,
 
     pub const _desc_table = .{
         .a = fd(1, .{ .Varint = .ZigZagOptimized }),
@@ -117,16 +117,16 @@ pub const WithNegativeIntegers = struct {
 };
 
 pub const DemoWithAllVarint = struct {
-    sint32: i32,
-    sint64: i64,
-    uint32: u32,
-    uint64: u64,
-    a_bool: bool,
-    a_enum: DemoEnum,
-    pos_int32: i32,
-    pos_int64: i64,
-    neg_int32: i32,
-    neg_int64: i64,
+    sint32: i32 = 0,
+    sint64: i64 = 0,
+    uint32: u32 = 0,
+    uint64: u64 = 0,
+    a_bool: bool = false,
+    a_enum: DemoEnum = @enumFromInt(0),
+    pos_int32: i32 = 0,
+    pos_int64: i64 = 0,
+    neg_int32: i32 = 0,
+    neg_int64: i64 = 0,
 
     pub const _desc_table = .{
         .sint32 = fd(1, .{ .Varint = .ZigZagOptimized }),
@@ -152,8 +152,8 @@ pub const DemoWithAllVarint = struct {
 };
 
 pub const WithSubmessages2 = struct {
-    sub_demo1: ?Demo1,
-    sub_demo2: ?Demo2,
+    sub_demo1: ?Demo1 = null,
+    sub_demo2: ?Demo2 = null,
 
     pub const _desc_table = .{
         .sub_demo1 = fd(1, .{ .SubMessage = {} }),
@@ -249,7 +249,7 @@ pub const TopLevelEnum = enum(i32) {
 };
 
 pub const WithEnum = struct {
-    value: SomeEnum,
+    value: SomeEnum = @enumFromInt(0),
 
     pub const _desc_table = .{
         .value = fd(1, .{ .Varint = .Simple }),
@@ -267,7 +267,7 @@ pub const WithEnum = struct {
 };
 
 pub const WithEnumShadow = struct {
-    value: SomeEnum,
+    value: SomeEnum = @enumFromInt(0),
 
     pub const _desc_table = .{
         .value = fd(1, .{ .Varint = .Simple }),
@@ -350,7 +350,7 @@ pub const UnPacked = struct {
 };
 
 pub const WithSubmessages = struct {
-    with_enum: ?WithEnum,
+    with_enum: ?WithEnum = null,
 
     pub const _desc_table = .{
         .with_enum = fd(1, .{ .SubMessage = {} }),
@@ -360,7 +360,7 @@ pub const WithSubmessages = struct {
 };
 
 pub const WithStrings = struct {
-    name: ManagedString,
+    name: ManagedString = .Empty,
 
     pub const _desc_table = .{
         .name = fd(1, .String),

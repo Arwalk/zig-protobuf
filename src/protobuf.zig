@@ -16,13 +16,14 @@ const DecodingError = error{ NotEnoughData, InvalidInput };
 
 const UnionDecodingError = DecodingError || Allocator.Error;
 
-pub const ManagedStringTag = enum { Owned, Const };
+pub const ManagedStringTag = enum { Owned, Const, Empty };
 
 pub const AllocatedString = struct { allocator: Allocator, str: []const u8 };
 
 pub const ManagedString = union(ManagedStringTag) {
     Owned: AllocatedString,
     Const: []const u8,
+    Empty,
 
     /// copies the provided string using the allocator. the `src` parameter should be freed by the caller
     pub fn copy(str: []const u8, allocator: Allocator) !ManagedString {
@@ -39,14 +40,31 @@ pub const ManagedString = union(ManagedStringTag) {
         return ManagedString{ .Const = str };
     }
 
+    /// creates a static string that will not be released by calling .deinit()
+    pub fn managed(str: []const u8) ManagedString {
+        return ManagedString{ .Const = str };
+    }
+
     pub fn isEmpty(self: ManagedString) bool {
         return self.getSlice().len == 0;
     }
 
     pub fn getSlice(self: ManagedString) []const u8 {
         switch (self) {
-            .Const => |slice| return slice,
             .Owned => |alloc_str| return alloc_str.str,
+            .Const => |slice| return slice,
+            .Empty => return "",
+        }
+    }
+
+    pub fn dupe(self: ManagedString, allocator: Allocator) !ManagedString {
+        switch (self) {
+            .Owned => |alloc_str| if (alloc_str.str.len == 0) {
+                return .Empty;
+            } else {
+                return copy(alloc_str.str, allocator);
+            },
+            .Const, .Empty => return self,
         }
     }
 
@@ -61,7 +79,7 @@ pub const ManagedString = union(ManagedStringTag) {
 };
 
 /// Enum describing the different field types available.
-pub const FieldTypeTag = enum { Varint, FixedInt, SubMessage, List, PackedList, String, OneOf };
+pub const FieldTypeTag = enum { Varint, FixedInt, SubMessage, String, List, PackedList, OneOf };
 
 /// Enum describing how much bits a FixedInt will use.
 pub const FixedSize = enum(u3) { I64 = 1, I32 = 5 };
@@ -87,9 +105,9 @@ pub const FieldType = union(FieldTypeTag) {
     Varint: VarintType,
     FixedInt: FixedSize,
     SubMessage,
+    String,
     List: ListType,
     PackedList: ListType,
-    String,
     OneOf: type,
 
     /// returns the wire type of a field. see https://developers.google.com/protocol-buffers/docs/encoding#structure
@@ -288,7 +306,7 @@ fn append_tag(pb: *ArrayList(u8), comptime field: FieldDescriptor) !void {
 fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, comptime force_append: bool) !void {
 
     // TODO: review semantics of default-value in regards to wire protocol
-    const is_default_value = switch (@typeInfo(@TypeOf(value))) {
+    const is_default_scalar_value = switch (@typeInfo(@TypeOf(value))) {
         .Optional => value == null,
         // as per protobuf spec, the first element of the enums must be 0 and it is the default value
         .Enum => @intFromEnum(value) == 0,
@@ -302,25 +320,25 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, c
 
     switch (field.ftype) {
         .Varint => |varint_type| {
-            if (!is_default_value or force_append) {
+            if (!is_default_scalar_value or force_append) {
                 try append_tag(pb, field);
                 try append_varint(pb, value, varint_type);
             }
         },
         .FixedInt => {
-            if (!is_default_value or force_append) {
+            if (!is_default_scalar_value or force_append) {
                 try append_tag(pb, field);
                 try append_fixed(pb, value);
             }
         },
         .SubMessage => {
-            if (!is_default_value or force_append) {
+            if (!is_default_scalar_value or force_append) {
                 try append_tag(pb, field);
                 try append_submessage(pb, value);
             }
         },
         .String => {
-            if (!is_default_value or force_append) {
+            if (!is_default_scalar_value or force_append) {
                 try append_tag(pb, field);
                 try append_const_bytes(pb, value);
             }
@@ -412,7 +430,7 @@ fn get_field_default_value(comptime for_type: anytype) for_type {
         else => switch (for_type) {
             bool => false,
             i32, i64, i8, i16, u8, u32, u64, f32, f64 => 0,
-            ManagedString => ManagedString.static(""),
+            ManagedString => .Empty,
             else => undefined,
         },
     };
@@ -443,6 +461,79 @@ pub fn pb_init(comptime T: type, allocator: Allocator) T {
     }
 
     return value;
+}
+
+/// Generic function to deeply duplicate a message using a new allocator.
+/// The original parameter is constant
+pub fn pb_dupe(comptime T: type, original: T, allocator: Allocator) !T {
+    var result: T = undefined;
+
+    inline for (@typeInfo(T).Struct.fields) |field| {
+        @field(result, field.name) = try dupe_field(original, field.name, @field(T._desc_table, field.name).ftype, allocator);
+    }
+
+    return result;
+}
+
+/// Internal dupe function for a specific field
+fn dupe_field(original: anytype, comptime field_name: []const u8, comptime ftype: FieldType, allocator: Allocator) !@TypeOf(@field(original, field_name)) {
+    switch (ftype) {
+        .Varint, .FixedInt => {
+            return @field(original, field_name);
+        },
+        .List => |list_type| {
+            var capacity = @field(original, field_name).items.len;
+            var list = try @TypeOf(@field(original, field_name)).initCapacity(allocator, capacity);
+            if (list_type == .SubMessage or list_type == .String) {
+                for (@field(original, field_name).items) |item| {
+                    try list.append(try item.dupe(allocator));
+                }
+            } else {
+                for (@field(original, field_name).items) |item| {
+                    try list.append(item);
+                }
+            }
+            return list;
+        },
+        .PackedList => |_| {
+            var capacity = @field(original, field_name).items.len;
+            var list = try @TypeOf(@field(original, field_name)).initCapacity(allocator, capacity);
+
+            for (@field(original, field_name).items) |item| {
+                try list.append(item);
+            }
+
+            return list;
+        },
+        .SubMessage, .String => {
+            switch (@typeInfo(@TypeOf(@field(original, field_name)))) {
+                .Optional => {
+                    if (@field(original, field_name)) |val| {
+                        return try val.dupe(allocator);
+                    } else {
+                        return null;
+                    }
+                },
+                else => return try @field(original, field_name).dupe(allocator),
+            }
+        },
+        .OneOf => |one_of| {
+            // if the value is set, inline-iterate over the possible OneOfs
+            if (@field(original, field_name)) |union_value| {
+                const active = @tagName(union_value);
+                inline for (@typeInfo(@TypeOf(one_of._union_desc)).Struct.fields) |union_field| {
+                    // and if one matches the actual tagName of the union
+                    if (std.mem.eql(u8, union_field.name, active)) {
+                        // deinit the current value
+                        var value = try dupe_field(union_value, union_field.name, @field(one_of._union_desc, union_field.name).ftype, allocator);
+
+                        return @unionInit(one_of, union_field.name, value);
+                    }
+                }
+            }
+            return null;
+        },
+    }
 }
 
 /// Generic deinit function. Properly initialise any field required. Meant to be embedded in generated structs.
@@ -886,6 +977,9 @@ pub fn MessageMixins(comptime Self: type) type {
         }
         pub fn deinit(self: Self) void {
             return pb_deinit(self);
+        }
+        pub fn dupe(self: Self, allocator: Allocator) !Self {
+            return pb_dupe(Self, self, allocator);
         }
     };
 }

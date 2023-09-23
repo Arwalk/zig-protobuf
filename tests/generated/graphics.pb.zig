@@ -9,12 +9,12 @@ const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
 
 pub const InventoryItem = struct {
-    slot: i32,
-    name: ManagedString,
-    image: i32,
-    quantity: i32,
-    description: ManagedString,
-    id: i32,
+    slot: i32 = 0,
+    name: ManagedString = .Empty,
+    image: i32 = 0,
+    quantity: i32 = 0,
+    description: ManagedString = .Empty,
+    id: i32 = 0,
 
     pub const _desc_table = .{
         .slot = fd(1, .{ .Varint = .Simple }),
@@ -29,19 +29,19 @@ pub const InventoryItem = struct {
 };
 
 pub const Character = struct {
-    id: ManagedString,
-    class: i32,
-    gender: i32,
-    race: i32,
-    head: i32,
-    body: i32,
-    helmet: i32,
-    right_hand: i32,
-    nick: ManagedString,
-    left_hand: i32,
-    color: ManagedString,
-    clan: ManagedString,
-    enabled: bool,
+    id: ManagedString = .Empty,
+    class: i32 = 0,
+    gender: i32 = 0,
+    race: i32 = 0,
+    head: i32 = 0,
+    body: i32 = 0,
+    helmet: i32 = 0,
+    right_hand: i32 = 0,
+    nick: ManagedString = .Empty,
+    left_hand: i32 = 0,
+    color: ManagedString = .Empty,
+    clan: ManagedString = .Empty,
+    enabled: bool = false,
 
     pub const _desc_table = .{
         .id = fd(1, .String),
@@ -63,9 +63,9 @@ pub const Character = struct {
 };
 
 pub const Alignment = struct {
-    id: ManagedString,
-    name: ManagedString,
-    color: ManagedString,
+    id: ManagedString = .Empty,
+    name: ManagedString = .Empty,
+    color: ManagedString = .Empty,
 
     pub const _desc_table = .{
         .id = fd(1, .String),
@@ -77,12 +77,12 @@ pub const Alignment = struct {
 };
 
 pub const Index = struct {
-    id: i32,
+    id: i32 = 0,
     grh: ArrayList(i32),
-    offset_x: i32,
-    offset_y: i32,
+    offset_x: i32 = 0,
+    offset_y: i32 = 0,
     animations: ArrayList(AnimationsEntry),
-    name: ManagedString,
+    name: ManagedString = .Empty,
 
     pub const _desc_table = .{
         .id = fd(1, .{ .Varint = .Simple }),
@@ -94,8 +94,8 @@ pub const Index = struct {
     };
 
     pub const AnimationsEntry = struct {
-        key: ManagedString,
-        value: i32,
+        key: ManagedString = .Empty,
+        value: i32 = 0,
 
         pub const _desc_table = .{
             .key = fd(1, .String),
@@ -109,7 +109,7 @@ pub const Index = struct {
 };
 
 pub const StoredChunk = struct {
-    chunk_id: i32,
+    chunk_id: i32 = 0,
     entities: ArrayList(MapEntity),
 
     pub const _desc_table = .{
@@ -121,13 +121,13 @@ pub const StoredChunk = struct {
 };
 
 pub const MapEntity = struct {
-    x: i32,
-    y: i32,
-    light: ?Light,
-    collider: ?Shape,
-    graphic_id: i32,
-    entity_id: ManagedString,
-    vertical_graphic: bool,
+    x: i32 = 0,
+    y: i32 = 0,
+    light: ?Light = null,
+    collider: ?Shape = null,
+    graphic_id: i32 = 0,
+    entity_id: ManagedString = .Empty,
+    vertical_graphic: bool = false,
 
     pub const _desc_table = .{
         .x = fd(1, .{ .Varint = .Simple }),
@@ -143,11 +143,11 @@ pub const MapEntity = struct {
 };
 
 pub const Light = struct {
-    hue: f32,
-    height: f32,
-    radius: f32,
-    saturation: f32,
-    fall_off: f32,
+    hue: f32 = 0,
+    height: f32 = 0,
+    radius: f32 = 0,
+    saturation: f32 = 0,
+    fall_off: f32 = 0,
 
     pub const _desc_table = .{
         .hue = fd(1, .{ .FixedInt = .I32 }),
@@ -161,8 +161,8 @@ pub const Light = struct {
 };
 
 pub const Point = struct {
-    x: i32,
-    y: i32,
+    x: i32 = 0,
+    y: i32 = 0,
 
     pub const _desc_table = .{
         .x = fd(1, .{ .Varint = .Simple }),
@@ -183,21 +183,21 @@ pub const Shape = struct {
 };
 
 pub const Npc = struct {
-    x: i32,
-    y: i32,
+    x: i32 = 0,
+    y: i32 = 0,
     items: ArrayList(InventoryItem),
-    name: ManagedString,
-    alignment: ManagedString,
-    ai: ManagedString,
-    min_hp: i32,
-    max_hp: i32,
-    min_mana: i32,
-    max_mana: i32,
-    min_strenght: i32,
-    max_strenght: i32,
+    name: ManagedString = .Empty,
+    alignment: ManagedString = .Empty,
+    ai: ManagedString = .Empty,
+    min_hp: i32 = 0,
+    max_hp: i32 = 0,
+    min_mana: i32 = 0,
+    max_mana: i32 = 0,
+    min_strenght: i32 = 0,
+    max_strenght: i32 = 0,
     skills: ArrayList(SkillsEntry),
     abilities: ArrayList(AbilitiesEntry),
-    visual: ?Character,
+    visual: ?Character = null,
 
     pub const _desc_table = .{
         .x = fd(1, .{ .Varint = .Simple }),
@@ -218,8 +218,8 @@ pub const Npc = struct {
     };
 
     pub const SkillsEntry = struct {
-        key: i32,
-        value: i32,
+        key: i32 = 0,
+        value: i32 = 0,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .Varint = .Simple }),
@@ -230,8 +230,8 @@ pub const Npc = struct {
     };
 
     pub const AbilitiesEntry = struct {
-        key: i32,
-        value: i32,
+        key: i32 = 0,
+        value: i32 = 0,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .Varint = .Simple }),
@@ -245,15 +245,15 @@ pub const Npc = struct {
 };
 
 pub const Tile = struct {
-    x: i32,
-    y: i32,
-    tileset_grh: i32,
-    tileset: i32,
-    flags: i32,
-    blocked: i32,
-    layer2: i32,
-    layer3: i32,
-    layer4: i32,
+    x: i32 = 0,
+    y: i32 = 0,
+    tileset_grh: i32 = 0,
+    tileset: i32 = 0,
+    flags: i32 = 0,
+    blocked: i32 = 0,
+    layer2: i32 = 0,
+    layer3: i32 = 0,
+    layer4: i32 = 0,
 
     pub const _desc_table = .{
         .x = fd(1, .{ .Varint = .Simple }),
@@ -271,10 +271,10 @@ pub const Tile = struct {
 };
 
 pub const MapItem = struct {
-    x: i32,
-    y: i32,
-    item: i32,
-    amount: i32,
+    x: i32 = 0,
+    y: i32 = 0,
+    item: i32 = 0,
+    amount: i32 = 0,
 
     pub const _desc_table = .{
         .x = fd(1, .{ .Varint = .Simple }),
@@ -315,8 +315,8 @@ pub const GraphicsDB = struct {
 };
 
 pub const Script = struct {
-    path: ManagedString,
-    code: ManagedString,
+    path: ManagedString = .Empty,
+    code: ManagedString = .Empty,
 
     pub const _desc_table = .{
         .path = fd(1, .String),
@@ -327,11 +327,11 @@ pub const Script = struct {
 };
 
 pub const SubTexture = struct {
-    diffuse: ManagedString,
-    normal: ManagedString,
-    emmisive: ManagedString,
-    width: i32,
-    height: i32,
+    diffuse: ManagedString = .Empty,
+    normal: ManagedString = .Empty,
+    emmisive: ManagedString = .Empty,
+    width: i32 = 0,
+    height: i32 = 0,
 
     pub const _desc_table = .{
         .diffuse = fd(1, .String),
@@ -345,14 +345,14 @@ pub const SubTexture = struct {
 };
 
 pub const Texture = struct {
-    diffuse: ManagedString,
-    normal: ManagedString,
-    emmisive: ManagedString,
-    width: i32,
-    height: i32,
-    dxt1: ?SubTexture,
-    dxt3: ?SubTexture,
-    dxt5: ?SubTexture,
+    diffuse: ManagedString = .Empty,
+    normal: ManagedString = .Empty,
+    emmisive: ManagedString = .Empty,
+    width: i32 = 0,
+    height: i32 = 0,
+    dxt1: ?SubTexture = null,
+    dxt3: ?SubTexture = null,
+    dxt5: ?SubTexture = null,
 
     pub const _desc_table = .{
         .diffuse = fd(1, .String),
@@ -369,8 +369,8 @@ pub const Texture = struct {
 };
 
 pub const Graphic = struct {
-    id: i32,
-    name: ManagedString,
+    id: i32 = 0,
+    name: ManagedString = .Empty,
     type: ?type_union,
 
     pub const _type_case = enum {
@@ -396,13 +396,13 @@ pub const Graphic = struct {
 };
 
 pub const Sprite = struct {
-    texture: i32,
-    x: i32,
-    y: i32,
-    w: i32,
-    h: i32,
-    pivot_x: i32,
-    pivot_y: i32,
+    texture: i32 = 0,
+    x: i32 = 0,
+    y: i32 = 0,
+    w: i32 = 0,
+    h: i32 = 0,
+    pivot_x: i32 = 0,
+    pivot_y: i32 = 0,
 
     pub const _desc_table = .{
         .texture = fd(1, .{ .Varint = .Simple }),
@@ -419,7 +419,7 @@ pub const Sprite = struct {
 
 pub const Animation = struct {
     frames: ArrayList(i32),
-    speed: f32,
+    speed: f32 = 0,
 
     pub const _desc_table = .{
         .frames = fd(1, .{ .PackedList = .{ .Varint = .Simple } }),
@@ -430,9 +430,9 @@ pub const Animation = struct {
 };
 
 pub const Spine = struct {
-    name: ManagedString,
-    json: ManagedString,
-    atlas: ManagedString,
+    name: ManagedString = .Empty,
+    json: ManagedString = .Empty,
+    atlas: ManagedString = .Empty,
 
     pub const _desc_table = .{
         .name = fd(1, .String),

@@ -30,7 +30,7 @@ pub const Empty = struct {
 };
 
 pub const EnumContainer = struct {
-    outer_enum: ?OuterEnum,
+    outer_enum: ?OuterEnum = null,
 
     pub const _desc_table = .{
         .outer_enum = fd(1, .{ .Varint = .Simple }),
@@ -42,7 +42,7 @@ pub const EnumContainer = struct {
 pub const Simple1 = struct {
     a_string: ManagedString,
     a_repeated_string: ArrayList(ManagedString),
-    a_boolean: ?bool,
+    a_boolean: ?bool = null,
 
     pub const _desc_table = .{
         .a_string = fd(1, .String),
@@ -82,9 +82,9 @@ pub const SpecialCases = struct {
 };
 
 pub const OptionalFields = struct {
-    a_string: ?ManagedString,
+    a_string: ?ManagedString = null,
     a_bool: bool,
-    a_nested_message: ?Nested,
+    a_nested_message: ?Nested = null,
     a_repeated_message: ArrayList(Nested),
     a_repeated_string: ArrayList(ManagedString),
 
@@ -97,7 +97,7 @@ pub const OptionalFields = struct {
     };
 
     pub const Nested = struct {
-        an_int: ?i32,
+        an_int: ?i32 = null,
 
         pub const _desc_table = .{
             .an_int = fd(1, .{ .Varint = .Simple }),
@@ -110,9 +110,9 @@ pub const OptionalFields = struct {
 };
 
 pub const HasExtensions = struct {
-    str1: ?ManagedString,
-    str2: ?ManagedString,
-    str3: ?ManagedString,
+    str1: ?ManagedString = null,
+    str2: ?ManagedString = null,
+    str3: ?ManagedString = null,
 
     pub const _desc_table = .{
         .str1 = fd(1, .String),
@@ -126,7 +126,7 @@ pub const HasExtensions = struct {
 pub const Complex = struct {
     a_string: ManagedString,
     an_out_of_order_bool: bool,
-    a_nested_message: ?Nested,
+    a_nested_message: ?Nested = null,
     a_repeated_message: ArrayList(Nested),
     a_repeated_string: ArrayList(ManagedString),
 
@@ -152,7 +152,7 @@ pub const Complex = struct {
 };
 
 pub const IsExtension = struct {
-    ext1: ?ManagedString,
+    ext1: ?ManagedString = null,
 
     pub const _desc_table = .{
         .ext1 = fd(1, .String),
@@ -172,7 +172,7 @@ pub const DefaultValues = struct {
     bool_field: ?bool = true,
     int_field: ?i64 = 11,
     enum_field: ?Enum = .E1,
-    empty_field: ?ManagedString = ManagedString.static(""),
+    empty_field: ?ManagedString = .Empty,
     bytes_field: ?ManagedString = ManagedString.static("moo"),
 
     pub const _desc_table = .{
@@ -194,11 +194,11 @@ pub const DefaultValues = struct {
 };
 
 pub const FloatingPointFields = struct {
-    optional_float_field: ?f32,
+    optional_float_field: ?f32 = null,
     required_float_field: f32,
     repeated_float_field: ArrayList(f32),
     default_float_field: ?f32 = 2,
-    optional_double_field: ?f64,
+    optional_double_field: ?f64 = null,
     required_double_field: f64,
     repeated_double_field: ArrayList(f64),
     default_double_field: ?f64 = 2,
@@ -218,11 +218,11 @@ pub const FloatingPointFields = struct {
 };
 
 pub const TestClone = struct {
-    str: ?ManagedString,
-    simple1: ?Simple1,
+    str: ?ManagedString = null,
+    simple1: ?Simple1 = null,
     simple2: ArrayList(Simple1),
-    bytes_field: ?ManagedString,
-    unused: ?ManagedString,
+    bytes_field: ?ManagedString = null,
+    unused: ?ManagedString = null,
 
     pub const _desc_table = .{
         .str = fd(1, .String),
@@ -236,7 +236,7 @@ pub const TestClone = struct {
 };
 
 pub const CloneExtension = struct {
-    ext: ?ManagedString,
+    ext: ?ManagedString = null,
 
     pub const _desc_table = .{
         .ext = fd(2, .String),
@@ -246,9 +246,9 @@ pub const CloneExtension = struct {
 };
 
 pub const TestGroup = struct {
-    id: ?ManagedString,
-    required_simple: ?Simple2,
-    optional_simple: ?Simple2,
+    id: ?ManagedString = null,
+    required_simple: ?Simple2 = null,
+    optional_simple: ?Simple2 = null,
 
     pub const _desc_table = .{
         .id = fd(6, .String),
@@ -260,7 +260,7 @@ pub const TestGroup = struct {
 };
 
 pub const TestReservedNames = struct {
-    extension: ?i32,
+    extension: ?i32 = null,
 
     pub const _desc_table = .{
         .extension = fd(1, .{ .Varint = .Simple }),
@@ -276,7 +276,7 @@ pub const TestReservedNamesExtension = struct {
 };
 
 pub const TestMessageWithOneof = struct {
-    normal_field: ?bool,
+    normal_field: ?bool = null,
     repeated_field: ArrayList(ManagedString),
     partial_oneof: ?partial_oneof_union,
     recursive_oneof: ?recursive_oneof_union,
@@ -348,8 +348,8 @@ pub const TestMessageWithOneof = struct {
 };
 
 pub const TestEndsWithBytes = struct {
-    value: ?i32,
-    data: ?ManagedString,
+    value: ?i32 = null,
+    data: ?ManagedString = null,
 
     pub const _desc_table = .{
         .value = fd(1, .{ .Varint = .Simple }),
@@ -370,7 +370,7 @@ pub const TestMapFieldsNoBinary = struct {
     map_int32_string: ArrayList(MapInt32StringEntry),
     map_int64_string: ArrayList(MapInt64StringEntry),
     map_bool_string: ArrayList(MapBoolStringEntry),
-    test_map_fields: ?TestMapFieldsNoBinary,
+    test_map_fields: ?TestMapFieldsNoBinary = null,
     map_string_testmapfields: ArrayList(MapStringTestmapfieldsEntry),
 
     pub const _desc_table = .{
@@ -389,8 +389,8 @@ pub const TestMapFieldsNoBinary = struct {
     };
 
     pub const MapStringStringEntry = struct {
-        key: ?ManagedString,
-        value: ?ManagedString,
+        key: ?ManagedString = null,
+        value: ?ManagedString = null,
 
         pub const _desc_table = .{
             .key = fd(1, .String),
@@ -401,8 +401,8 @@ pub const TestMapFieldsNoBinary = struct {
     };
 
     pub const MapStringInt32Entry = struct {
-        key: ?ManagedString,
-        value: ?i32,
+        key: ?ManagedString = null,
+        value: ?i32 = null,
 
         pub const _desc_table = .{
             .key = fd(1, .String),
@@ -413,8 +413,8 @@ pub const TestMapFieldsNoBinary = struct {
     };
 
     pub const MapStringInt64Entry = struct {
-        key: ?ManagedString,
-        value: ?i64,
+        key: ?ManagedString = null,
+        value: ?i64 = null,
 
         pub const _desc_table = .{
             .key = fd(1, .String),
@@ -425,8 +425,8 @@ pub const TestMapFieldsNoBinary = struct {
     };
 
     pub const MapStringBoolEntry = struct {
-        key: ?ManagedString,
-        value: ?bool,
+        key: ?ManagedString = null,
+        value: ?bool = null,
 
         pub const _desc_table = .{
             .key = fd(1, .String),
@@ -437,8 +437,8 @@ pub const TestMapFieldsNoBinary = struct {
     };
 
     pub const MapStringDoubleEntry = struct {
-        key: ?ManagedString,
-        value: ?f64,
+        key: ?ManagedString = null,
+        value: ?f64 = null,
 
         pub const _desc_table = .{
             .key = fd(1, .String),
@@ -449,8 +449,8 @@ pub const TestMapFieldsNoBinary = struct {
     };
 
     pub const MapStringEnumEntry = struct {
-        key: ?ManagedString,
-        value: ?MapValueEnumNoBinary,
+        key: ?ManagedString = null,
+        value: ?MapValueEnumNoBinary = null,
 
         pub const _desc_table = .{
             .key = fd(1, .String),
@@ -461,8 +461,8 @@ pub const TestMapFieldsNoBinary = struct {
     };
 
     pub const MapStringMsgEntry = struct {
-        key: ?ManagedString,
-        value: ?MapValueMessageNoBinary,
+        key: ?ManagedString = null,
+        value: ?MapValueMessageNoBinary = null,
 
         pub const _desc_table = .{
             .key = fd(1, .String),
@@ -473,8 +473,8 @@ pub const TestMapFieldsNoBinary = struct {
     };
 
     pub const MapInt32StringEntry = struct {
-        key: ?i32,
-        value: ?ManagedString,
+        key: ?i32 = null,
+        value: ?ManagedString = null,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .Varint = .Simple }),
@@ -485,8 +485,8 @@ pub const TestMapFieldsNoBinary = struct {
     };
 
     pub const MapInt64StringEntry = struct {
-        key: ?i64,
-        value: ?ManagedString,
+        key: ?i64 = null,
+        value: ?ManagedString = null,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .Varint = .Simple }),
@@ -497,8 +497,8 @@ pub const TestMapFieldsNoBinary = struct {
     };
 
     pub const MapBoolStringEntry = struct {
-        key: ?bool,
-        value: ?ManagedString,
+        key: ?bool = null,
+        value: ?ManagedString = null,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .Varint = .Simple }),
@@ -509,8 +509,8 @@ pub const TestMapFieldsNoBinary = struct {
     };
 
     pub const MapStringTestmapfieldsEntry = struct {
-        key: ?ManagedString,
-        value: ?TestMapFieldsNoBinary,
+        key: ?ManagedString = null,
+        value: ?TestMapFieldsNoBinary = null,
 
         pub const _desc_table = .{
             .key = fd(1, .String),
@@ -524,7 +524,7 @@ pub const TestMapFieldsNoBinary = struct {
 };
 
 pub const MapValueMessageNoBinary = struct {
-    foo: ?i32,
+    foo: ?i32 = null,
 
     pub const _desc_table = .{
         .foo = fd(1, .{ .Varint = .Simple }),
@@ -540,7 +540,7 @@ pub const Deeply = struct {
         pub const _desc_table = .{};
 
         pub const Message = struct {
-            count: ?i32,
+            count: ?i32 = null,
 
             pub const _desc_table = .{
                 .count = fd(1, .{ .Varint = .Simple }),

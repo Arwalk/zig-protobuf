@@ -11,10 +11,10 @@ const fd = protobuf.fd;
 const google_protobuf = @import("../protobuf.pb.zig");
 
 pub const Version = struct {
-    major: ?i32,
-    minor: ?i32,
-    patch: ?i32,
-    suffix: ?ManagedString,
+    major: ?i32 = null,
+    minor: ?i32 = null,
+    patch: ?i32 = null,
+    suffix: ?ManagedString = null,
 
     pub const _desc_table = .{
         .major = fd(1, .{ .Varint = .Simple }),
@@ -28,9 +28,9 @@ pub const Version = struct {
 
 pub const CodeGeneratorRequest = struct {
     file_to_generate: ArrayList(ManagedString),
-    parameter: ?ManagedString,
+    parameter: ?ManagedString = null,
     proto_file: ArrayList(google_protobuf.FileDescriptorProto),
-    compiler_version: ?Version,
+    compiler_version: ?Version = null,
 
     pub const _desc_table = .{
         .file_to_generate = fd(1, .{ .List = .String }),
@@ -43,8 +43,8 @@ pub const CodeGeneratorRequest = struct {
 };
 
 pub const CodeGeneratorResponse = struct {
-    @"error": ?ManagedString,
-    supported_features: ?u64,
+    @"error": ?ManagedString = null,
+    supported_features: ?u64 = null,
     file: ArrayList(File),
 
     pub const _desc_table = .{
@@ -60,10 +60,10 @@ pub const CodeGeneratorResponse = struct {
     };
 
     pub const File = struct {
-        name: ?ManagedString,
-        insertion_point: ?ManagedString,
-        content: ?ManagedString,
-        generated_code_info: ?google_protobuf.GeneratedCodeInfo,
+        name: ?ManagedString = null,
+        insertion_point: ?ManagedString = null,
+        content: ?ManagedString = null,
+        generated_code_info: ?google_protobuf.GeneratedCodeInfo = null,
 
         pub const _desc_table = .{
             .name = fd(1, .String),
