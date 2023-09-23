@@ -475,7 +475,7 @@ pub fn pb_dupe(comptime T: type, original: T, allocator: Allocator) !T {
     return result;
 }
 
-/// Internal deinit function for a specific field
+/// Internal dupe function for a specific field
 fn dupe_field(original: anytype, comptime field_name: []const u8, comptime ftype: FieldType, allocator: Allocator) !@TypeOf(@field(original, field_name)) {
     switch (ftype) {
         .Varint, .FixedInt => {
