@@ -172,7 +172,7 @@ pub const DefaultValues = struct {
     bool_field: ?bool = true,
     int_field: ?i64 = 11,
     enum_field: ?Enum = .E1,
-    empty_field: ?ManagedString = ManagedString.static(""),
+    empty_field: ?ManagedString = .Empty,
     bytes_field: ?ManagedString = ManagedString.static("moo"),
 
     pub const _desc_table = .{

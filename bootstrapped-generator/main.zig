@@ -266,7 +266,7 @@ const GenerationContext = struct {
     }
 
     fn isPacked(_: *Self, file: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto) bool {
-        const default = if (file.syntax != null and std.mem.eql(u8, file.syntax.?.getSlice(), "proto3"))
+        const default = if (is_proto3_file(file))
             if (field.type) |t|
                 isScalarNumeric(t)
             else
@@ -283,7 +283,7 @@ const GenerationContext = struct {
     }
 
     fn isOptional(_: *Self, file: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto) bool {
-        if (file.syntax != null and std.mem.eql(u8, file.syntax.?.getSlice(), "proto3")) {
+        if (is_proto3_file(file)) {
             return field.proto3_optional == true;
         }
 
@@ -334,11 +334,39 @@ const GenerationContext = struct {
         return try std.mem.concat(allocator, u8, &.{ prefix, infix, postfix });
     }
 
-    fn getFieldDefault(_: *Self, field: descriptor.FieldDescriptorProto) !?string {
-        // switch (field.type.?) {
-        //     .TYPE_MESSAGE => return try allocator.dupe(u8, "null"),
-        //     else => {},
-        // }
+    fn getFieldDefault(ctx: *Self, field: descriptor.FieldDescriptorProto, file: descriptor.FileDescriptorProto, nullable: bool) !?string {
+        // ArrayLists need to be initialized
+        const repeated = ctx.isRepeated(field);
+        if (repeated) return null;
+
+        const is_proto3 = is_proto3_file(file);
+
+        if (nullable and field.default_value == null) {
+            return "null";
+        }
+
+        // proto3 does not support explicit default values, the default scalar values are used instead
+        if (is_proto3) {
+            return switch (field.type.?) {
+                .TYPE_SINT32,
+                .TYPE_SFIXED32,
+                .TYPE_INT32,
+                .TYPE_UINT32,
+                .TYPE_FIXED32,
+                .TYPE_INT64,
+                .TYPE_SINT64,
+                .TYPE_SFIXED64,
+                .TYPE_UINT64,
+                .TYPE_FIXED64,
+                .TYPE_FLOAT,
+                .TYPE_DOUBLE,
+                => "0",
+                .TYPE_BOOL => "false",
+                .TYPE_STRING, .TYPE_BYTES => ".Empty",
+                .TYPE_ENUM => "@enumFromInt(0)",
+                else => null,
+            };
+        }
 
         if (field.default_value == null) return null;
 
@@ -346,7 +374,10 @@ const GenerationContext = struct {
             .TYPE_SINT32, .TYPE_SFIXED32, .TYPE_INT32, .TYPE_UINT32, .TYPE_FIXED32, .TYPE_INT64, .TYPE_SINT64, .TYPE_SFIXED64, .TYPE_UINT64, .TYPE_FIXED64, .TYPE_BOOL => field.default_value.?.getSlice(),
             .TYPE_FLOAT => if (std.mem.eql(u8, field.default_value.?.getSlice(), "inf")) "std.math.inf(f32)" else if (std.mem.eql(u8, field.default_value.?.getSlice(), "-inf")) "-std.math.inf(f32)" else if (std.mem.eql(u8, field.default_value.?.getSlice(), "nan")) "std.math.nan(f32)" else field.default_value.?.getSlice(),
             .TYPE_DOUBLE => if (std.mem.eql(u8, field.default_value.?.getSlice(), "inf")) "std.math.inf(f64)" else if (std.mem.eql(u8, field.default_value.?.getSlice(), "-inf")) "-std.math.inf(f64)" else if (std.mem.eql(u8, field.default_value.?.getSlice(), "nan")) "std.math.nan(f64)" else field.default_value.?.getSlice(),
-            .TYPE_STRING, .TYPE_BYTES => try std.mem.concat(allocator, u8, &.{ "ManagedString.static(", try formatSliceEscapeImpl(field.default_value.?.getSlice()), ")" }),
+            .TYPE_STRING, .TYPE_BYTES => if (field.default_value.?.isEmpty())
+                ".Empty"
+            else
+                try std.mem.concat(allocator, u8, &.{ "ManagedString.static(", try formatSliceEscapeImpl(field.default_value.?.getSlice()), ")" }),
             .TYPE_ENUM => try std.mem.concat(allocator, u8, &.{ ".", field.default_value.?.getSlice() }),
             else => null,
         };
@@ -394,13 +425,12 @@ const GenerationContext = struct {
     fn generateFieldDeclaration(ctx: *Self, list: *std.ArrayList(string), fqn: FullName, file: descriptor.FileDescriptorProto, message: descriptor.DescriptorProto, field: descriptor.FieldDescriptorProto, is_union: bool) !void {
         _ = message;
 
-        var type_str = try ctx.getFieldType(fqn, file, field, is_union);
-        var field_name = try ctx.getFieldName(field);
+        const type_str = try ctx.getFieldType(fqn, file, field, is_union);
+        const field_name = try ctx.getFieldName(field);
+        const nullable = type_str[0] == '?';
 
-        if (try ctx.getFieldDefault(field)) |default_value| {
+        if (try ctx.getFieldDefault(field, file, nullable)) |default_value| {
             try list.append(try std.fmt.allocPrint(allocator, "    {s}: {s} = {s},\n", .{ field_name, type_str, default_value }));
-        } else if (type_str[0] == '?') {
-            try list.append(try std.fmt.allocPrint(allocator, "    {s}: {s} = null,\n", .{ field_name, type_str }));
         } else {
             try list.append(try std.fmt.allocPrint(allocator, "    {s}: {s},\n", .{ field_name, type_str }));
         }
@@ -543,6 +573,11 @@ const GenerationContext = struct {
         }
     }
 };
+
+fn is_proto3_file(file: descriptor.FileDescriptorProto) bool {
+    if (file.syntax) |syntax| return std.mem.eql(u8, syntax.getSlice(), "proto3");
+    return false;
+}
 
 pub fn formatSliceEscapeImpl(
     str: string,

@@ -20,6 +20,13 @@ test "oneof encode/decode int" {
 
     demo.some_oneof = .{ .a_number = 10 };
 
+    {
+        // duplicate the one-of and deep compare
+        const dupe = try demo.dupe(testing.allocator);
+        defer dupe.deinit();
+        try testing.expectEqualDeep(demo, dupe);
+    }
+
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
 
@@ -42,6 +49,13 @@ test "oneof encode/decode enum" {
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
 
+    {
+        // duplicate the one-of and deep compare
+        const dupe = try demo.dupe(testing.allocator);
+        defer dupe.deinit();
+        try testing.expectEqualDeep(demo, dupe);
+    }
+
     try testing.expectEqualSlices(u8, &[_]u8{
         0x30, 0x02,
     }, obtained);
@@ -57,6 +71,13 @@ test "oneof encode/decode string" {
     defer demo.deinit();
 
     demo.some_oneof = .{ .string_in_oneof = protobuf.ManagedString.static("123") };
+
+    {
+        // duplicate the one-of and deep compare
+        const dupe = try demo.dupe(testing.allocator);
+        defer dupe.deinit();
+        try testing.expectEqualDeep(demo, dupe);
+    }
 
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);
@@ -76,6 +97,13 @@ test "oneof encode/decode submessage" {
     defer demo.deinit();
 
     demo.some_oneof = .{ .message_in_oneof = .{ .value = 1, .str = protobuf.ManagedString.static("123") } };
+
+    {
+        // duplicate the one-of and deep compare
+        const dupe = try demo.dupe(testing.allocator);
+        defer dupe.deinit();
+        try testing.expectEqualDeep(demo, dupe);
+    }
 
     const obtained = try demo.encode(testing.allocator);
     defer testing.allocator.free(obtained);

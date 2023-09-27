@@ -2,7 +2,7 @@
 
 -------
 
-## This is WIP
+## Welcome!
 
 This is an implementation of google Protocol Buffers version 3 in Zig.
 
@@ -18,73 +18,14 @@ Zig's compile-time evaluation becomes extremely strong and useful in this contex
 
 This repository, so far, only aims at implementing [protocol buffers version 3](https://developers.google.com/protocol-buffers/docs/proto3#simple).
 
-The current version of the zig compiler used for this project is 0.11.0+dev.
+The latest version of the zig compiler used for this project is 0.12.0-dev.293+f33bb0228.
 
-### Encoding
+This project is currently able to handle all scalar types for encoding, decoding, and generation through the plugin.
 
-- Scalar Value Types
-    - [x] double
-    - [x] float
-    - [x] int32
-    - [x] int64
-    - [x] uint32
-    - [x] uint64
-    - [x] sint32
-    - [x] sint64
-    - [x] fixed32
-    - [x] fixed64
-    - [x] sfixed32
-    - [x] sfixed64
-    - [x] bool
-    - [x] string / bytes
-- [x] Enumerations
-- [x] Submessages
-- [x] Any
-- [x] Oneof
-- [x] Maps
 
-### Decoding
+## How to use
 
-- Scalar Value Types
-    - [x] double
-    - [x] float
-    - [x] int32
-    - [x] int64
-    - [x] uint32
-    - [x] uint64
-    - [x] sint32
-    - [x] sint64
-    - [x] fixed32
-    - [x] fixed64
-    - [x] sfixed32
-    - [x] sfixed64
-    - [x] bool
-    - [x] string / bytes
-- [x] Enumerations
-- [x] Submessages
-- [x] Any
-- [ ] Oneof **currently on hiatus to find a solution, focusing on generator**
-- [x] Maps
+Start by building the generator with `zig build install`. This will generate `zig-out/bin/protoc-gen-zig`. This executable is the `protoc` plugin that will allow you to generate zig code from `.proto` message files using `protoc --plugin=zig-out/bin/protoc-gen-zig my_message_file.proto`.
 
-### Code generator
+You can now use your newly generated files with the library implementation in `src/protobuf.zig`.
 
-- Scalar Value Types
-    - [x] double
-    - [x] float
-    - [x] int32
-    - [x] int64
-    - [x] uint32
-    - [x] uint64
-    - [x] sint32
-    - [x] sint64
-    - [x] fixed32
-    - [x] fixed64
-    - [x] sfixed32
-    - [x] sfixed64
-    - [x] bool
-    - [x] string / bytes
-- [x] Enumerations
-- [x] Submessages
-- [ ] Any
-- [ ] Oneof
-- [ ] Maps
