@@ -1,6 +1,11 @@
 const std = @import("std");
+const builtin = @import("builtin");
+const Build = std.Build;
+const Step = std.Build.Step;
+const fs = std.fs;
+const mem = std.mem;
 
-pub fn build(b: *std.build.Builder) void {
+pub fn build(b: *std.build.Builder) !void {
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
     // means any target is allowed, and the default is native. Other options
@@ -30,17 +35,10 @@ pub fn build(b: *std.build.Builder) void {
         .source_file = .{ .path = "src/protobuf.zig" },
     });
 
-    const exe = b.addExecutable(.{
-        .name = "protoc-gen-zig",
-        // In this case the main source file is merely a path, however, in more
-        // complicated build scripts, this could be a generated file.
-        .root_source_file = .{ .path = "bootstrapped-generator/main.zig" },
+    const exe = buildGenerator(b, .{
         .target = target,
         .optimize = optimize,
     });
-
-    exe.step.dependOn(&lib.step);
-    exe.addModule("protobuf", module);
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
@@ -94,6 +92,12 @@ pub fn build(b: *std.build.Builder) void {
         }),
     };
 
+    const convertStep = RunProtocStep.create(b, .{
+        .destination_directory = .{ .path = "tests/.generated" },
+        .source_files = &.{"tests/protos_for_test/generated_in_ci.proto"},
+        .include_directories = &.{"tests/protos_for_test"},
+    });
+
     for (tests) |test_item| {
         test_item.addModule("protobuf", module);
 
@@ -102,5 +106,353 @@ pub fn build(b: *std.build.Builder) void {
         // This will evaluate the `test` step rather than the default, which is "install".
         const run_main_tests = b.addRunArtifact(test_item);
         test_step.dependOn(&run_main_tests.step);
+
+        test_step.dependOn(&convertStep.step);
     }
+    // protoc --plugin=libs/zig-protobuf/zig-out/bin/protoc-gen-zig \
+    // 	--zig_out=src/protocol \
+    // 	-Iprotocol \
+    // 	--experimental_allow_proto3_optional \
+    // 	protocol/all.proto
+
+}
+
+pub const RunProtocStep = struct {
+    step: Step,
+    source_files: []const []const u8,
+    include_directories: []const []const u8,
+    destination_directory: std.build.FileSource,
+    generator: *std.build.Step.Compile,
+
+    pub const base_id = .protoc;
+
+    pub const Options = struct {
+        source_files: []const []const u8,
+        include_directories: []const []const u8 = &.{},
+        destination_directory: std.build.FileSource,
+    };
+
+    pub const StepErr = error{
+        FailedToConvertProtobuf,
+    };
+
+    pub fn create(
+        owner: *std.Build,
+        options: Options,
+    ) *RunProtocStep {
+        var self: *RunProtocStep = owner.allocator.create(RunProtocStep) catch @panic("OOM");
+        self.* = .{
+            .step = Step.init(.{
+                .id = .check_file,
+                .name = "run protoc",
+                .owner = owner,
+                .makeFn = make,
+            }),
+            .source_files = owner.dupeStrings(options.source_files),
+            .include_directories = owner.dupeStrings(options.include_directories),
+            .destination_directory = options.destination_directory.dupe(owner),
+            .generator = buildGenerator(owner, .{}),
+        };
+
+        self.step.dependOn(&self.generator.step);
+
+        return self;
+    }
+
+    pub fn setName(self: *RunProtocStep, name: []const u8) void {
+        self.step.name = name;
+    }
+
+    fn make(step: *Step, prog_node: *std.Progress.Node) !void {
+        _ = prog_node;
+        const b = step.owner;
+        const self = @fieldParentPtr(RunProtocStep, "step", step);
+
+        var args = std.ArrayList([]const u8).init(b.allocator);
+
+        // prog_node.start("run protoc", 2);
+        const protoc_path = try ensureProtocBinaryDownloaded(std.heap.page_allocator, "23.4");
+        // prog_node.setCompletedItems(1);
+        try args.append(protoc_path);
+
+        // specify the path to the plugin
+        try args.append(try std.mem.concat(b.allocator, u8, &.{ "--plugin=", self.generator.getEmittedBin().getPath(b) }));
+
+        // specify the destination
+        const absPathOut = self.destination_directory.getPath(b);
+        try args.append(try std.mem.concat(b.allocator, u8, &.{ "--zig_out=", absPathOut }));
+        if (!dirExists(absPathOut)) {
+            try std.fs.makeDirAbsolute(absPathOut);
+        }
+
+        // include directories
+        for (self.include_directories) |it| {
+            try args.append(try std.mem.concat(b.allocator, u8, &.{ "-I", it }));
+        }
+        for (self.source_files) |it| {
+            try args.append(it);
+        }
+
+        std.debug.print("Running:\n", .{});
+        for (args.items) |it| {
+            std.debug.print("  {s}\n", .{it});
+        }
+
+        try step.evalChildProcess(args.items);
+        // prog_node.setCompletedItems(2);
+        // prog_node.end();
+    }
+};
+
+pub const GenOptions = struct {
+    target: std.zig.CrossTarget = .{},
+    optimize: std.builtin.OptimizeMode = .Debug,
+};
+
+pub fn buildGenerator(b: *std.build.Builder, opt: GenOptions) *std.build.Step.Compile {
+    const exe = b.addExecutable(.{
+        .name = "protoc-gen-zig",
+        // In this case the main source file is merely a path, however, in more
+        // complicated build scripts, this could be a generated file.
+        .root_source_file = .{ .path = "bootstrapped-generator/main.zig" },
+        .target = opt.target,
+        .optimize = opt.optimize,
+    });
+
+    const module = b.addModule("protobuf", .{
+        .source_file = .{ .path = "src/protobuf.zig" },
+    });
+
+    exe.addModule("protobuf", module);
+
+    b.installArtifact(exe);
+
+    return exe;
+}
+
+fn getGitHubBaseURLOwned(allocator: std.mem.Allocator) ![]const u8 {
+    if (std.process.getEnvVarOwned(allocator, "GITHUB_BASE_URL")) |base_url| {
+        std.log.info("zig-protobuf: respecting GITHUB_BASE_URL: {s}\n", .{base_url});
+        return base_url;
+    } else |_| {
+        return allocator.dupe(u8, "https://github.com");
+    }
+}
+
+var download_mutex = std.Thread.Mutex{};
+
+/// ensures the protoc executable exists and returns an absolute path to it
+fn ensureProtocBinaryDownloaded(
+    allocator: std.mem.Allocator,
+    protoc_version: []const u8,
+) ![]const u8 {
+    const base_cache_dir_rel = try std.fs.path.join(allocator, &.{ "zig-cache", "zig-protobuf", "protoc" });
+    try std.fs.cwd().makePath(base_cache_dir_rel);
+    const base_cache_dir = try std.fs.cwd().realpathAlloc(allocator, base_cache_dir_rel);
+    const versioned_cache_dir = try std.fs.path.join(allocator, &.{ base_cache_dir, protoc_version });
+    defer {
+        allocator.free(base_cache_dir_rel);
+        allocator.free(base_cache_dir);
+        allocator.free(versioned_cache_dir);
+    }
+
+    const target_cache_dir = try std.fs.path.join(allocator, &.{ versioned_cache_dir, @tagName(builtin.os.tag), @tagName(builtin.cpu.arch) });
+    defer allocator.free(target_cache_dir);
+
+    const executable_path = if (builtin.os.tag == .windows)
+        try std.fs.path.join(allocator, &.{ target_cache_dir, "bin", "protoc.exe" })
+    else
+        try std.fs.path.join(allocator, &.{ target_cache_dir, "bin", "protoc" });
+
+    if (fileExists(executable_path)) {
+        return executable_path; // nothing to do, already have the binary
+    }
+
+    downloadProtoc(allocator, target_cache_dir, protoc_version) catch |err| {
+        // A download failed, or extraction failed, so wipe out the directory to ensure we correctly
+        // try again next time.
+        std.fs.deleteTreeAbsolute(base_cache_dir) catch {};
+        std.log.err("zig-protobuf: download protoc failed: {s}", .{@errorName(err)});
+        std.process.exit(1);
+    };
+
+    if (!fileExists(executable_path)) {
+        std.log.err("zig-protobuf: file not found: {s}", .{executable_path});
+        std.process.exit(1);
+    }
+
+    return executable_path;
+}
+
+/// Compose the download URL, e.g.:
+/// https://github.com/protocolbuffers/protobuf/releases/download/v24.3/protoc-24.3-linux-aarch_64.zip
+fn getProtocDownloadLink(allocator: std.mem.Allocator, version: []const u8) !?[]const u8 {
+    const github_base_url = try getGitHubBaseURLOwned(allocator);
+    defer allocator.free(github_base_url);
+
+    const os: ?[]const u8 = switch (builtin.os.tag) {
+        .macos => "osx",
+        .linux => "linux",
+        else => null,
+    };
+
+    const arch: ?[]const u8 = switch (builtin.cpu.arch) {
+        .powerpcle, .powerpc64le => "ppcle",
+        .aarch64, .aarch64_be, .aarch64_32 => "aarch_64",
+        .s390x => "s390",
+        .x86_64 => "x86_64",
+        .x86 => "x86_32",
+        else => null,
+    };
+
+    const asset = if (builtin.os.tag == .windows)
+        try std.mem.concat(allocator, u8, &.{ "protoc-", version, "-win64.zip" })
+    else if (os != null and arch != null)
+        try std.mem.concat(allocator, u8, &.{ "protoc-", version, "-", os.?, "-", arch.?, ".zip" })
+    else
+        return null;
+    defer allocator.free(asset);
+
+    return try std.mem.concat(allocator, u8, &.{
+        github_base_url,
+        "/protocolbuffers/protobuf/releases/download/v",
+        version,
+        "/",
+        asset,
+    });
+}
+
+fn downloadProtoc(
+    allocator: std.mem.Allocator,
+    target_cache_dir: []const u8,
+    protoc_version: []const u8,
+) !void {
+    download_mutex.lock();
+    defer download_mutex.unlock();
+
+    ensureCanDownloadFiles(allocator);
+    ensureCanUnzipFiles(allocator);
+
+    const download_dir = try std.fs.path.join(allocator, &.{ target_cache_dir, "download" });
+    defer allocator.free(download_dir);
+    std.fs.cwd().makePath(download_dir) catch @panic(download_dir);
+    std.debug.print("download_dir: {s}\n", .{download_dir});
+
+    // Replace "..." with "---" because GitHub releases has very weird restrictions on file names.
+    // https://twitter.com/slimsag/status/1498025997987315713
+
+    const download_url = try getProtocDownloadLink(allocator, protoc_version);
+
+    if (download_url == null) {
+        std.log.err("zig-protobuf: cannot resolve a protoc version to download. make sure the architecture you are using is supported", .{});
+        std.process.exit(1);
+    }
+
+    defer allocator.free(download_url.?);
+
+    // Download protoc
+    const zip_target_file = try std.fs.path.join(allocator, &.{ download_dir, "protoc.zip" });
+    defer allocator.free(zip_target_file);
+    downloadFile(allocator, zip_target_file, download_url.?) catch @panic(zip_target_file);
+
+    // Decompress the .zip file
+    unzipFile(allocator, zip_target_file, target_cache_dir) catch @panic(zip_target_file);
+
+    try std.fs.deleteTreeAbsolute(download_dir);
+}
+
+fn dirExists(path: []const u8) bool {
+    var dir = std.fs.openDirAbsolute(path, .{}) catch return false;
+    dir.close();
+    return true;
+}
+
+fn fileExists(path: []const u8) bool {
+    var file = std.fs.openFileAbsolute(path, .{}) catch return false;
+    file.close();
+    return true;
+}
+
+fn isEnvVarTruthy(allocator: std.mem.Allocator, name: []const u8) bool {
+    if (std.process.getEnvVarOwned(allocator, name)) |truthy| {
+        defer allocator.free(truthy);
+        if (std.mem.eql(u8, truthy, "true")) return true;
+        return false;
+    } else |_| {
+        return false;
+    }
+}
+
+fn downloadFile(allocator: std.mem.Allocator, target_file: []const u8, url: []const u8) !void {
+    std.debug.print("downloading {s}..\n", .{url});
+
+    // Some Windows users experience `SSL certificate problem: unable to get local issuer certificate`
+    // so we give them the option to disable SSL if they desire / don't want to debug the issue.
+    var child = if (isEnvVarTruthy(allocator, "CURL_INSECURE"))
+        std.ChildProcess.init(&.{ "curl", "--insecure", "-L", "-o", target_file, url }, allocator)
+    else
+        std.ChildProcess.init(&.{ "curl", "-L", "-o", target_file, url }, allocator);
+    child.cwd = sdkPath("/");
+    child.stderr = std.io.getStdErr();
+    child.stdout = std.io.getStdOut();
+    _ = try child.spawnAndWait();
+}
+
+fn unzipFile(allocator: std.mem.Allocator, file: []const u8, target_directory: []const u8) !void {
+    std.debug.print("decompressing {s}..\n", .{file});
+
+    var child = std.ChildProcess.init(
+        &.{ "unzip", "-o", file, "-d", target_directory },
+        allocator,
+    );
+    child.cwd = sdkPath("/");
+    child.stderr = std.io.getStdErr();
+    child.stdout = std.io.getStdOut();
+    _ = try child.spawnAndWait();
+}
+
+fn ensureCanDownloadFiles(allocator: std.mem.Allocator) void {
+    const result = std.ChildProcess.exec(.{
+        .allocator = allocator,
+        .argv = &.{ "curl", "--version" },
+        .cwd = sdkPath("/"),
+    }) catch { // e.g. FileNotFound
+        std.log.err("zig-protobuf: error: 'curl --version' failed. Is curl not installed?", .{});
+        std.process.exit(1);
+    };
+    defer {
+        allocator.free(result.stderr);
+        allocator.free(result.stdout);
+    }
+    if (result.term.Exited != 0) {
+        std.log.err("zig-protobuf: error: 'curl --version' failed. Is curl not installed?", .{});
+        std.process.exit(1);
+    }
+}
+
+fn ensureCanUnzipFiles(allocator: std.mem.Allocator) void {
+    const result = std.ChildProcess.exec(.{
+        .allocator = allocator,
+        .argv = &.{"unzip"},
+        .cwd = sdkPath("/"),
+    }) catch { // e.g. FileNotFound
+        std.log.err("zig-protobuf: error: 'unzip' failed. Is curl not installed?", .{});
+        std.process.exit(1);
+    };
+    defer {
+        allocator.free(result.stderr);
+        allocator.free(result.stdout);
+    }
+    if (result.term.Exited != 0) {
+        std.log.err("zig-protobuf: error: 'unzip' failed. Is curl not installed?", .{});
+        std.process.exit(1);
+    }
+}
+
+fn sdkPath(comptime suffix: []const u8) []const u8 {
+    if (suffix[0] != '/') @compileError("suffix must be an absolute path");
+    return comptime blk: {
+        const root_dir = std.fs.path.dirname(@src().file) orelse ".";
+        break :blk root_dir ++ suffix;
+    };
 }

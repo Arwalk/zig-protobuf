@@ -2,7 +2,6 @@ syntax = "proto3";
 package tests;
 
 import public "fixedsizes.proto";
-import public "varints.proto";
 import public "mapbox.proto";
 import public "jspb.proto";
 import public "test_messages_proto3.proto";

@@ -1,5 +1,5 @@
 syntax = "proto3";
-package tests;
+package generated_in_ci;
 
 message Varints {
     sint32 sint32 = 1;
