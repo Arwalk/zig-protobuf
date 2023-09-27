@@ -26,7 +26,9 @@ pub fn build(b: *std.build.Builder) void {
     // running `zig build`).
     b.installArtifact(lib);
 
-    const protobuf = b.createModule(.{ .source_file = .{ .path = "src/protobuf.zig" } });
+    const module = b.addModule("protobuf", .{
+        .source_file = .{ .path = "src/protobuf.zig" },
+    });
 
     const exe = b.addExecutable(.{
         .name = "protoc-gen-zig",
@@ -38,7 +40,7 @@ pub fn build(b: *std.build.Builder) void {
     });
 
     exe.step.dependOn(&lib.step);
-    exe.addModule("protobuf", protobuf);
+    exe.addModule("protobuf", module);
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
@@ -93,7 +95,7 @@ pub fn build(b: *std.build.Builder) void {
     };
 
     for (tests) |test_item| {
-        test_item.addModule("protobuf", protobuf);
+        test_item.addModule("protobuf", module);
 
         // This creates a build step. It will be visible in the `zig build --help` menu,
         // and can be selected like this: `zig build test`
