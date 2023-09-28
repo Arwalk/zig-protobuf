@@ -94,13 +94,13 @@ pub fn build(b: *std.build.Builder) !void {
         }),
     };
 
-    const convertStep = RunProtocStep.create(b, .{
+    const convertStep = RunProtocStep.create(b, b, .{
         .destination_directory = .{ .path = "tests/.generated" },
         .source_files = &.{"tests/protos_for_test/generated_in_ci.proto"},
         .include_directories = &.{"tests/protos_for_test"},
     });
 
-    const convertStep2 = RunProtocStep.create(b, .{
+    const convertStep2 = RunProtocStep.create(b, b, .{
         .destination_directory = .{ .path = "tests/generated" },
         .source_files = &.{ "tests/protos_for_test/all.proto", "tests/protos_for_test/whitespace-in-name.proto" },
         .include_directories = &.{"tests/protos_for_test"},
@@ -123,7 +123,7 @@ pub fn build(b: *std.build.Builder) !void {
 
     const bootstrap = b.step("bootstrap", "run the generator over its own sources");
 
-    const bootstrapConversion = RunProtocStep.create(b, .{
+    const bootstrapConversion = RunProtocStep.create(b, b, .{
         .destination_directory = .{ .path = "bootstrapped-generator" },
         .source_files = &.{
             b.pathJoin(&.{ wd, "include/google/protobuf/compiler/plugin.proto" }),
@@ -156,6 +156,7 @@ pub const RunProtocStep = struct {
 
     pub fn create(
         owner: *std.Build,
+        dependency_builder: *std.Build,
         options: Options,
     ) *RunProtocStep {
         var self: *RunProtocStep = owner.allocator.create(RunProtocStep) catch @panic("OOM");
@@ -169,7 +170,7 @@ pub const RunProtocStep = struct {
             .source_files = owner.dupeStrings(options.source_files),
             .include_directories = owner.dupeStrings(options.include_directories),
             .destination_directory = options.destination_directory.dupe(owner),
-            .generator = buildGenerator(owner, .{}),
+            .generator = buildGenerator(dependency_builder, .{}),
         };
 
         self.step.dependOn(&self.generator.step);
@@ -195,7 +196,7 @@ pub const RunProtocStep = struct {
             try argv.append(protoc_path);
 
             // specify the path to the plugin
-            try argv.append(try std.mem.concat(b.allocator, u8, &.{ "--plugin=zig=", self.generator.getEmittedBin().getPath(b) }));
+            try argv.append(try std.mem.concat(b.allocator, u8, &.{ "--plugin=", self.generator.getEmittedBin().getPath(b) }));
 
             // specify the destination
 

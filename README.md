@@ -62,11 +62,17 @@ You can do this programatically as a compilation step for your application. The 
 const protobuf = @import("protobuf");
 
 pub fn build(b: *std.build.Builder) !void {
+    // first create a build for the dependency
+    const protobuf_dep = b.dependency("protobuf", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    
     ...
 
     const gen_proto = b.step("gen-proto", "generates zig files from protocol buffer definitions");
 
-    const protoc_step = protobuf.RunProtocStep.create(b, .{
+    const protoc_step = protobuf.RunProtocStep.create(b, protobuf_dep.builder, .{
         .destination_directory = .{
             // out directory for the generated zig files
             .path = "src/proto",
