@@ -18,8 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: install protoc
-        run: sudo bash .devcontainer/install-protoc.sh
       - uses: goto-bus-stop/setup-zig@v1
         with:
           version: master
