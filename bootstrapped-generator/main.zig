@@ -154,7 +154,10 @@ const GenerationContext = struct {
     fn resolvePath(self: *Self, a: string, b: string) !string {
         const aPath = std.fs.path.dirname(try self.fileNameFromPackage(a)) orelse "";
         const bPath = try self.fileNameFromPackage(b);
-        return std.fs.path.relative(allocator, aPath, bPath);
+
+        // to resolve some escaping oddities, the windows path separator is canonicalized to /
+        const resolvedRelativePath = try std.fs.path.relative(allocator, aPath, bPath);
+        return std.mem.replaceOwned(u8, self.req.file_to_generate.allocator, resolvedRelativePath, "\\", "/");
     }
 
     pub fn printFileDeclarations(self: *Self, fqn: FullName, file: descriptor.FileDescriptorProto) !void {

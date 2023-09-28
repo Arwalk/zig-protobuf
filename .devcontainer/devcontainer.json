@@ -6,8 +6,16 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "ziglang.vscode-zig"
-      ]
+        "ziglang.vscode-zig",
+        "zxh404.vscode-proto3"
+      ],
+      "settings": {
+        "zig.zls.enabled": true,
+        "zig.zigPath": "/usr/local/bin/zig",
+        "zig.zls.zigLibPath": "/usr/local/lib/zig/lib/",
+        "zig.zls.path": "/usr/local/bin/zls",
+        "zig.buildOption": "build"
+      }
     }
   },
   "containerEnv": {

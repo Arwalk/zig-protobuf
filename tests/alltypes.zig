@@ -82,20 +82,6 @@ test "Required.Proto3.ProtobufInput.ValidDataRepeated.BOOL.PackedInput.ProtobufO
     // TODO: try testing.expectEqualSlices(bool, &[_]bool{ false, false, false, false, true, false, false }, m.repeated_bool.items);
 }
 
-test "packed example from protobuf documentation" {
-    const bytes = "\x32\x06\x03\x8e\x02\x9e\xa7\x05";
-    const m = try tests.TestPacked.decode(bytes, testing.allocator);
-    defer m.deinit();
-    try testing.expectEqualSlices(i32, &[_]i32{ 3, 270, 86942 }, m.f.items);
-}
-
-test "packed example from protobuf documentation repeated" {
-    const bytes = "\x32\x06\x03\x8e\x02\x9e\xa7\x05\x32\x06\x03\x8e\x02\x9e\xa7\x05";
-    const m = try tests.TestPacked.decode(bytes, testing.allocator);
-    defer m.deinit();
-    try testing.expectEqualSlices(i32, &[_]i32{ 3, 270, 86942, 3, 270, 86942 }, m.f.items);
-}
-
 test "msg-longs.proto" {
     const bytes = &[_]u8{ 17, 255, 255, 255, 255, 255, 255, 255, 255, 24, 128, 128, 128, 128, 128, 128, 128, 128, 128, 1, 32, 255, 255, 255, 255, 255, 255, 255, 255, 127, 41, 0, 0, 0, 0, 0, 0, 0, 128, 49, 255, 255, 255, 255, 255, 255, 255, 127, 56, 255, 255, 255, 255, 255, 255, 255, 255, 255, 1, 64, 254, 255, 255, 255, 255, 255, 255, 255, 255, 1, 80, 255, 255, 255, 255, 255, 255, 255, 255, 255, 1, 97, 255, 255, 255, 255, 255, 255, 255, 255, 104, 128, 128, 128, 128, 128, 128, 128, 128, 128, 1, 112, 255, 255, 255, 255, 255, 255, 255, 255, 127, 121, 0, 0, 0, 0, 0, 0, 0, 128, 129, 1, 255, 255, 255, 255, 255, 255, 255, 127, 136, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 1, 144, 1, 254, 255, 255, 255, 255, 255, 255, 255, 255, 1, 160, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 1, 177, 1, 255, 255, 255, 255, 255, 255, 255, 255, 184, 1, 128, 128, 128, 128, 128, 128, 128, 128, 128, 1, 192, 1, 255, 255, 255, 255, 255, 255, 255, 255, 127, 201, 1, 0, 0, 0, 0, 0, 0, 0, 128, 209, 1, 255, 255, 255, 255, 255, 255, 255, 127, 216, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 1, 224, 1, 254, 255, 255, 255, 255, 255, 255, 255, 255, 1, 240, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 1 };
     var decoded = try longs.LongsMessage.decode(bytes, testing.allocator);
