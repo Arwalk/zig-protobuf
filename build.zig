@@ -5,6 +5,8 @@ const Step = std.Build.Step;
 const fs = std.fs;
 const mem = std.mem;
 
+const PROTOC_VERSION = "23.4";
+
 pub fn build(b: *std.build.Builder) !void {
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
@@ -98,6 +100,12 @@ pub fn build(b: *std.build.Builder) !void {
         .include_directories = &.{"tests/protos_for_test"},
     });
 
+    const convertStep2 = RunProtocStep.create(b, .{
+        .destination_directory = .{ .path = "tests/generated" },
+        .source_files = &.{ "tests/protos_for_test/all.proto", "tests/protos_for_test/whitespace-in-name.proto" },
+        .include_directories = &.{"tests/protos_for_test"},
+    });
+
     for (tests) |test_item| {
         test_item.addModule("protobuf", module);
 
@@ -108,13 +116,23 @@ pub fn build(b: *std.build.Builder) !void {
         test_step.dependOn(&run_main_tests.step);
 
         test_step.dependOn(&convertStep.step);
+        test_step.dependOn(&convertStep2.step);
     }
-    // protoc --plugin=libs/zig-protobuf/zig-out/bin/protoc-gen-zig \
-    // 	--zig_out=src/protocol \
-    // 	-Iprotocol \
-    // 	--experimental_allow_proto3_optional \
-    // 	protocol/all.proto
 
+    const wd = try getProtocInstallDir(std.heap.page_allocator, PROTOC_VERSION);
+
+    const bootstrap = b.step("bootstrap", "run the generator over its own sources");
+
+    const bootstrapConversion = RunProtocStep.create(b, .{
+        .destination_directory = .{ .path = "bootstrapped-generator" },
+        .source_files = &.{
+            b.pathJoin(&.{ wd, "include/google/protobuf/compiler/plugin.proto" }),
+            b.pathJoin(&.{ wd, "include/google/protobuf/descriptor.proto" }),
+        },
+        .include_directories = &.{},
+    });
+
+    bootstrap.dependOn(&bootstrapConversion.step);
 }
 
 pub const RunProtocStep = struct {
@@ -168,39 +186,49 @@ pub const RunProtocStep = struct {
         const b = step.owner;
         const self = @fieldParentPtr(RunProtocStep, "step", step);
 
-        var args = std.ArrayList([]const u8).init(b.allocator);
+        const absolute_dest_dir = self.destination_directory.getPath(b);
 
-        // prog_node.start("run protoc", 2);
-        const protoc_path = try ensureProtocBinaryDownloaded(std.heap.page_allocator, "23.4");
-        // prog_node.setCompletedItems(1);
-        try args.append(protoc_path);
+        { // run protoc
+            var argv = std.ArrayList([]const u8).init(b.allocator);
 
-        // specify the path to the plugin
-        try args.append(try std.mem.concat(b.allocator, u8, &.{ "--plugin=", self.generator.getEmittedBin().getPath(b) }));
+            const protoc_path = try ensureProtocBinaryDownloaded(std.heap.page_allocator, PROTOC_VERSION);
+            try argv.append(protoc_path);
 
-        // specify the destination
-        const absPathOut = self.destination_directory.getPath(b);
-        try args.append(try std.mem.concat(b.allocator, u8, &.{ "--zig_out=", absPathOut }));
-        if (!dirExists(absPathOut)) {
-            try std.fs.makeDirAbsolute(absPathOut);
+            // specify the path to the plugin
+            try argv.append(try std.mem.concat(b.allocator, u8, &.{ "--plugin=", self.generator.getEmittedBin().getPath(b) }));
+
+            // specify the destination
+
+            try argv.append(try std.mem.concat(b.allocator, u8, &.{ "--zig_out=", absolute_dest_dir }));
+            if (!dirExists(absolute_dest_dir)) {
+                try std.fs.makeDirAbsolute(absolute_dest_dir);
+            }
+
+            // include directories
+            for (self.include_directories) |it| {
+                try argv.append(try std.mem.concat(b.allocator, u8, &.{ "-I", it }));
+            }
+            for (self.source_files) |it| {
+                try argv.append(it);
+            }
+
+            std.debug.print("Running:\n", .{});
+            for (argv.items) |it| {
+                std.debug.print("  {s}\n", .{it});
+            }
+
+            try step.evalChildProcess(argv.items);
         }
 
-        // include directories
-        for (self.include_directories) |it| {
-            try args.append(try std.mem.concat(b.allocator, u8, &.{ "-I", it }));
-        }
-        for (self.source_files) |it| {
-            try args.append(it);
-        }
+        { // run zig fmt <destination>
+            var argv = std.ArrayList([]const u8).init(b.allocator);
 
-        std.debug.print("Running:\n", .{});
-        for (args.items) |it| {
-            std.debug.print("  {s}\n", .{it});
-        }
+            try argv.append(b.zig_exe);
+            try argv.append("fmt");
+            try argv.append(absolute_dest_dir);
 
-        try step.evalChildProcess(args.items);
-        // prog_node.setCompletedItems(2);
-        // prog_node.end();
+            try step.evalChildProcess(argv.items);
+        }
     }
 };
 
@@ -241,8 +269,7 @@ fn getGitHubBaseURLOwned(allocator: std.mem.Allocator) ![]const u8 {
 
 var download_mutex = std.Thread.Mutex{};
 
-/// ensures the protoc executable exists and returns an absolute path to it
-fn ensureProtocBinaryDownloaded(
+fn getProtocInstallDir(
     allocator: std.mem.Allocator,
     protoc_version: []const u8,
 ) ![]const u8 {
@@ -257,7 +284,15 @@ fn ensureProtocBinaryDownloaded(
     }
 
     const target_cache_dir = try std.fs.path.join(allocator, &.{ versioned_cache_dir, @tagName(builtin.os.tag), @tagName(builtin.cpu.arch) });
-    defer allocator.free(target_cache_dir);
+    return target_cache_dir;
+}
+
+/// ensures the protoc executable exists and returns an absolute path to it
+fn ensureProtocBinaryDownloaded(
+    allocator: std.mem.Allocator,
+    protoc_version: []const u8,
+) ![]const u8 {
+    const target_cache_dir = try getProtocInstallDir(allocator, protoc_version);
 
     const executable_path = if (builtin.os.tag == .windows)
         try std.fs.path.join(allocator, &.{ target_cache_dir, "bin", "protoc.exe" })
@@ -271,7 +306,7 @@ fn ensureProtocBinaryDownloaded(
     downloadProtoc(allocator, target_cache_dir, protoc_version) catch |err| {
         // A download failed, or extraction failed, so wipe out the directory to ensure we correctly
         // try again next time.
-        std.fs.deleteTreeAbsolute(base_cache_dir) catch {};
+        // std.fs.deleteTreeAbsolute(base_cache_dir) catch {};
         std.log.err("zig-protobuf: download protoc failed: {s}", .{@errorName(err)});
         std.process.exit(1);
     };

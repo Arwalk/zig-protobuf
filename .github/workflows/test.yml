@@ -23,12 +23,10 @@ jobs:
       - uses: goto-bus-stop/setup-zig@v1
         with:
           version: master
-      - run: zig build
       - run: zig build test
-      - run: bash ./bootstrap.sh
-      - run: zig build
-      - run: bash ./generate-tests.sh
+      - run: zig build bootstrap
       - run: zig build test
+      - run: zig build
       - run: git diff
 
   lint:

@@ -25,7 +25,58 @@ This project is currently able to handle all scalar types for encoding, decoding
 
 ## How to use
 
-Start by building the generator with `zig build install`. This will generate `zig-out/bin/protoc-gen-zig`. This executable is the `protoc` plugin that will allow you to generate zig code from `.proto` message files using `protoc --plugin=zig-out/bin/protoc-gen-zig my_message_file.proto`.
+1. Add `protobuf` to your `build.zig.zon`.  
+    ```zig
+    .{
+        .name = "my_project",
+        .version = "0.0.1",
+        .dependencies = .{
+            .protobuf = .{
+                .url = "https://github.com/Arwalk/zig-protobuf/archive/<some-commit-sha>.tar.gz",
+                .hash = "00000000000000000000000000000000000000000000000000000000000000000000",
+                // leave the hash as zeroes, the build system will tell you which hash to put here based on your commit
+            },
+        },
+    }
+    ```
+1. Use the `protobuf` module   
+    ```zig
+    pub fn build(b: *std.build.Builder) !void {
+        // first create a build for the dependency
+        const protobuf_dep = b.dependency("protobuf", .{
+            .target = target,
+            .optimize = optimize,
+        });
 
-You can now use your newly generated files with the library implementation in `src/protobuf.zig`.
+        // and lastly use the dependency as a module
+        exe.addModule("protobuf", protobuf_dep.module("protobuf"));
+    }
+    ```
 
+
+## Generating .zig files out of .proto definitions
+
+You can do this programatically as a compilation step for your application. The following snippet shows how to create a `zig build gen-proto` command for your project.
+
+```zig
+const protobuf = @import("protobuf");
+
+pub fn build(b: *std.build.Builder) !void {
+    ...
+
+    const gen_proto = b.step("gen-proto", "generates zig files from protocol buffer definitions");
+
+    const protoc_step = protobuf.RunProtocStep.create(b, .{
+        .destination_directory = .{
+            // out directory for the generated zig files
+            .path = "src/proto",
+        },
+        .source_files = &.{
+            "protocol/all.proto",
+        },
+        .include_directories = &.{},
+    });
+
+    gen_proto.dependOn(&protoc_step.step);
+}
+```
