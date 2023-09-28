@@ -195,7 +195,7 @@ pub const RunProtocStep = struct {
             try argv.append(protoc_path);
 
             // specify the path to the plugin
-            try argv.append(try std.mem.concat(b.allocator, u8, &.{ "--plugin=", self.generator.getEmittedBin().getPath(b) }));
+            try argv.append(try std.mem.concat(b.allocator, u8, &.{ "--plugin=zig=", self.generator.getEmittedBin().getPath(b) }));
 
             // specify the destination
 
