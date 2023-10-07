@@ -141,6 +141,7 @@ pub const RunProtocStep = struct {
     include_directories: []const []const u8,
     destination_directory: std.build.FileSource,
     generator: *std.build.Step.Compile,
+    verbose : bool = false, // useful for debugging if you need to know what protoc command is sent
 
     pub const base_id = .protoc;
 
@@ -213,11 +214,13 @@ pub const RunProtocStep = struct {
                 try argv.append(it);
             }
 
-            std.debug.print("Running protoc:", .{});
-            for (argv.items) |it| {
-                std.debug.print(" {s}", .{it});
+            if(self.verbose) {
+                std.debug.print("Running protoc:", .{});
+                for (argv.items) |it| {
+                    std.debug.print(" {s}", .{it});
+                }
+                std.debug.print("\n", .{});
             }
-            std.debug.print("\n", .{});
 
             try step.evalChildProcess(argv.items);
         }
