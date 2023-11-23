@@ -49,7 +49,7 @@ pub fn build(b: *std.build.Builder) !void {
 
     const test_step = b.step("test", "Run library tests");
 
-    var tests = [_]*std.build.LibExeObjStep{
+    const tests = [_]*std.build.LibExeObjStep{
         b.addTest(.{
             .name = "protobuf",
             .root_source_file = .{ .path = "src/protobuf.zig" },
@@ -141,7 +141,7 @@ pub const RunProtocStep = struct {
     include_directories: []const []const u8,
     destination_directory: std.build.FileSource,
     generator: *std.build.Step.Compile,
-    verbose : bool = false, // useful for debugging if you need to know what protoc command is sent
+    verbose: bool = false, // useful for debugging if you need to know what protoc command is sent
 
     pub const base_id = .protoc;
 
@@ -214,7 +214,7 @@ pub const RunProtocStep = struct {
                 try argv.append(it);
             }
 
-            if(self.verbose) {
+            if (self.verbose) {
                 std.debug.print("Running protoc:", .{});
                 for (argv.items) |it| {
                     std.debug.print(" {s}", .{it});
@@ -452,7 +452,7 @@ fn unzipFile(allocator: std.mem.Allocator, file: []const u8, target_directory: [
 }
 
 fn ensureCanDownloadFiles(allocator: std.mem.Allocator) void {
-    const result = std.ChildProcess.exec(.{
+    const result = std.ChildProcess.run(.{
         .allocator = allocator,
         .argv = &.{ "curl", "--version" },
         .cwd = sdkPath("/"),
@@ -471,7 +471,7 @@ fn ensureCanDownloadFiles(allocator: std.mem.Allocator) void {
 }
 
 fn ensureCanUnzipFiles(allocator: std.mem.Allocator) void {
-    const result = std.ChildProcess.exec(.{
+    const result = std.ChildProcess.run(.{
         .allocator = allocator,
         .argv = &.{"unzip"},
         .cwd = sdkPath("/"),

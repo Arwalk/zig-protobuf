@@ -1,6 +1,5 @@
 const std = @import("std");
 const StructField = std.builtin.Type.StructField;
-const isSignedInt = std.meta.trait.isSignedInt;
 const isIntegral = std.meta.trait.isIntegral;
 const Allocator = std.mem.Allocator;
 const testing = std.testing;
@@ -176,7 +175,7 @@ fn append_as_varint(pb: *ArrayList(u8), int: anytype, comptime varint_type: Vari
     const type_of_val = @TypeOf(int);
     const bitsize = @bitSizeOf(type_of_val);
     const val: u64 = blk: {
-        if (isSignedInt(type_of_val)) {
+        if (@typeInfo(type_of_val).Int.signedness == .signed) {
             switch (varint_type) {
                 .ZigZagOptimized => {
                     break :blk @as(u64, @intCast((int >> (bitsize - 1)) ^ (int << 1)));
@@ -482,7 +481,7 @@ fn dupe_field(original: anytype, comptime field_name: []const u8, comptime ftype
             return @field(original, field_name);
         },
         .List => |list_type| {
-            var capacity = @field(original, field_name).items.len;
+            const capacity = @field(original, field_name).items.len;
             var list = try @TypeOf(@field(original, field_name)).initCapacity(allocator, capacity);
             if (list_type == .SubMessage or list_type == .String) {
                 for (@field(original, field_name).items) |item| {
@@ -496,7 +495,7 @@ fn dupe_field(original: anytype, comptime field_name: []const u8, comptime ftype
             return list;
         },
         .PackedList => |_| {
-            var capacity = @field(original, field_name).items.len;
+            const capacity = @field(original, field_name).items.len;
             var list = try @TypeOf(@field(original, field_name)).initCapacity(allocator, capacity);
 
             for (@field(original, field_name).items) |item| {
@@ -525,7 +524,7 @@ fn dupe_field(original: anytype, comptime field_name: []const u8, comptime ftype
                     // and if one matches the actual tagName of the union
                     if (std.mem.eql(u8, union_field.name, active)) {
                         // deinit the current value
-                        var value = try dupe_field(union_value, union_field.name, @field(one_of._union_desc, union_field.name).ftype, allocator);
+                        const value = try dupe_field(union_value, union_field.name, @field(one_of._union_desc, union_field.name).ftype, allocator);
 
                         return @unionInit(one_of, union_field.name, value);
                     }
@@ -920,7 +919,7 @@ fn decode_data(comptime T: type, comptime field_desc: FieldDescriptor, comptime 
                     deinit_field(result, field.name, field_desc.ftype);
 
                     // and decode & assign the new value
-                    var value = try decode_value(union_field.type, v.ftype, extracted_data, allocator);
+                    const value = try decode_value(union_field.type, v.ftype, extracted_data, allocator);
                     @field(result, field.name) = @unionInit(one_of, union_field.name, value);
                 }
             }
