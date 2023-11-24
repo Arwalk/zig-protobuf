@@ -8,7 +8,7 @@ const binary_file = @embedFile("./fixtures/vector_tile.bin");
 test "mapbox decoding and re-encoding" {
     // we will decode a releaseable copy of the binary file. to ensure that string slices are not
     // leaked into final string values
-    var copied_slice = try testing.allocator.dupe(u8, binary_file);
+    const copied_slice = try testing.allocator.dupe(u8, binary_file);
 
     // first decode the binary
     const decoded = try vector_tile.Tile.decode(copied_slice, testing.allocator);

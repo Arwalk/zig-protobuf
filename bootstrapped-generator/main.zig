@@ -19,7 +19,7 @@ pub fn main() !void {
     const file_buffer = try stdin.readToEndAlloc(allocator, buffer_size);
     defer allocator.free(file_buffer);
 
-    var request: plugin.CodeGeneratorRequest = try plugin.CodeGeneratorRequest.decode(file_buffer, allocator);
+    const request: plugin.CodeGeneratorRequest = try plugin.CodeGeneratorRequest.decode(file_buffer, allocator);
 
     var ctx: GenerationContext = GenerationContext{ .req = request };
 
@@ -91,7 +91,7 @@ const GenerationContext = struct {
     }
 
     fn getOutputList(self: *Self, name: FullName) !*std.ArrayList([]const u8) {
-        var entry = try self.output_lists.getOrPut(name.buf);
+        const entry = try self.output_lists.getOrPut(name.buf);
 
         if (!entry.found_existing) {
             var list = std.ArrayList([]const u8).init(allocator);
@@ -138,7 +138,7 @@ const GenerationContext = struct {
                 if (!std.mem.eql(u8, package.key_ptr.*, name.buf)) {
                     try list.append(try std.fmt.allocPrint(allocator, "/// import package {?s}\n", .{package.key_ptr.*}));
 
-                    var optional_pub_directive: []const u8 = if (package.value_ptr.*) "pub const" else "const";
+                    const optional_pub_directive: []const u8 = if (package.value_ptr.*) "pub const" else "const";
 
                     try list.append(try std.fmt.allocPrint(allocator, "{s} {!s} = @import(\"{!s}\");\n", .{ optional_pub_directive, self.escapeFqn(package.key_ptr.*), self.resolvePath(name.buf, package.key_ptr.*) }));
                 }
@@ -161,7 +161,7 @@ const GenerationContext = struct {
     }
 
     pub fn printFileDeclarations(self: *Self, fqn: FullName, file: descriptor.FileDescriptorProto) !void {
-        var list = try self.getOutputList(fqn);
+        const list = try self.getOutputList(fqn);
 
         try self.generateEnums(list, fqn, file, file.enum_type);
         try self.generateMessages(list, fqn, file, file.message_type);
@@ -419,8 +419,8 @@ const GenerationContext = struct {
 
     fn generateFieldDescriptor(ctx: *Self, list: *std.ArrayList(string), fqn: FullName, file: descriptor.FileDescriptorProto, message: descriptor.DescriptorProto, field: descriptor.FieldDescriptorProto, is_union: bool) !void {
         _ = message;
-        var name = try ctx.getFieldName(field);
-        var descStr = try ctx.getFieldTypeDescriptor(fqn, file, field, is_union);
+        const name = try ctx.getFieldName(field);
+        const descStr = try ctx.getFieldTypeDescriptor(fqn, file, field, is_union);
         const format = "        .{s} = fd({?d}, {s}),\n";
         try list.append(try std.fmt.allocPrint(allocator, format, .{ name, field.number, descStr }));
     }
@@ -495,7 +495,7 @@ const GenerationContext = struct {
                     for (m.field.items) |field| {
                         const f: descriptor.FieldDescriptorProto = field;
                         if (f.oneof_index orelse -1 == @as(i32, @intCast(i))) {
-                            var name = try ctx.getFieldName(f);
+                            const name = try ctx.getFieldName(f);
                             try list.append(try std.fmt.allocPrint(allocator, "      {?s},\n", .{name}));
                         }
                     }
@@ -509,8 +509,8 @@ const GenerationContext = struct {
                     for (m.field.items) |field| {
                         const f: descriptor.FieldDescriptorProto = field;
                         if (f.oneof_index orelse -1 == @as(i32, @intCast(i))) {
-                            var name = try ctx.getFieldName(f);
-                            var typeStr = try ctx.getFieldType(messageFqn, file, f, true);
+                            const name = try ctx.getFieldName(f);
+                            const typeStr = try ctx.getFieldType(messageFqn, file, f, true);
                             try list.append(try std.fmt.allocPrint(allocator, "      {?s}: {?s},\n", .{ name, typeStr }));
                         }
                     }
