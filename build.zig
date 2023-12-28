@@ -113,10 +113,11 @@ pub fn build(b: *std.build.Builder) !void {
         // and can be selected like this: `zig build test`
         // This will evaluate the `test` step rather than the default, which is "install".
         const run_main_tests = b.addRunArtifact(test_item);
-        test_step.dependOn(&run_main_tests.step);
 
-        test_step.dependOn(&convertStep.step);
-        test_step.dependOn(&convertStep2.step);
+        test_item.step.dependOn(&convertStep.step);
+        test_item.step.dependOn(&convertStep2.step);
+
+        test_step.dependOn(&run_main_tests.step);
     }
 
     const wd = try getProtocInstallDir(std.heap.page_allocator, PROTOC_VERSION);
