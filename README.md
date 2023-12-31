@@ -30,6 +30,7 @@ This project is currently able to handle all scalar types for encoding, decoding
     .{
         .name = "my_project",
         .version = "0.0.1",
+        .paths = .{""},
         .dependencies = .{
             .protobuf = .{
                 .url = "https://github.com/Arwalk/zig-protobuf/archive/<some-commit-sha>.tar.gz",
