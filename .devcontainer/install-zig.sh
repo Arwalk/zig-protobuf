@@ -2,6 +2,7 @@
 
 
 set -e
+set -x
 
 ZIG_VERSION=$1
 echo "v" $ZIG_VERSION
@@ -42,7 +43,13 @@ rm /usr/local/bin/zig || true
 ln -s /usr/local/lib/zig/zig /usr/local/bin/zig
 
 # install language server
-wget -c https://zig.pm/zls/downloads/$(arch)-linux/bin/zls -O /usr/local/bin/zls
+
+git clone --depth 1 https://github.com/zigtools/zls
+cd zls
+zig build -Doptimize=ReleaseSafe
+mv zig-out/bin/zls /usr/local/bin/zls
+cd ..
+rm -rf zls
 
 # make binary executable
 chmod +x /usr/local/bin/zls

@@ -18,7 +18,7 @@ Zig's compile-time evaluation becomes extremely strong and useful in this contex
 
 This repository, so far, only aims at implementing [protocol buffers version 3](https://developers.google.com/protocol-buffers/docs/proto3#simple).
 
-The latest version of the zig compiler used for this project is 0.12.0-dev.293+f33bb0228.
+The latest version of the zig compiler used for this project is 0.12.0-dev.2341+92211135f.
 
 This project is currently able to handle all scalar types for encoding, decoding, and generation through the plugin.
 
