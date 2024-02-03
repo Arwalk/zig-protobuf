@@ -2,6 +2,7 @@
 
 
 set -e
+set -x
 
 ZIG_VERSION=$1
 echo "v" $ZIG_VERSION
@@ -14,7 +15,7 @@ fi
 # Clean up
 rm -rf /var/lib/apt/lists/*
 
-ARCH="$(uname -m)"
+ARCH="$(uname -m)"	
 
 # Checks if packages are installed and installs them if not
 check_packages() {
@@ -42,7 +43,12 @@ rm /usr/local/bin/zig || true
 ln -s /usr/local/lib/zig/zig /usr/local/bin/zig
 
 # install language server
-wget -c https://zig.pm/zls/downloads/$(arch)-linux/bin/zls -O /usr/local/bin/zls
+
+LATEST_ZLS=$(curl https://zigtools-releases.nyc3.digitaloceanspaces.com/zls/index.json | /usr/bin/jq -r '.latest')
+
+wget https://zigtools-releases.nyc3.digitaloceanspaces.com/zls/$LATEST_ZLS/$ARCH-linux/zls
+
+mv zls /usr/local/bin/zls
 
 # make binary executable
 chmod +x /usr/local/bin/zls
