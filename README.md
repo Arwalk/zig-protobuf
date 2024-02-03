@@ -73,7 +73,7 @@ pub fn build(b: *std.build.Builder) !void {
 
     const gen_proto = b.step("gen-proto", "generates zig files from protocol buffer definitions");
 
-    const protoc_step = protobuf.RunProtocStep.create(b, protobuf_dep.builder, .{
+    const protoc_step = protobuf.RunProtocStep.create(b, protobuf_dep.builder, target, .{
         .destination_directory = .{
             // out directory for the generated zig files
             .path = "src/proto",

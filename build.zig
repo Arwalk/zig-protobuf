@@ -94,17 +94,17 @@ pub fn build(b: *std.Build) !void {
         }),
     };
 
-    const convertStep = RunProtocStep.create(b, b, .{
+    const convertStep = RunProtocStep.create(b, b, target,  .{
         .destination_directory = .{ .path = "tests/.generated" },
         .source_files = &.{"tests/protos_for_test/generated_in_ci.proto"},
         .include_directories = &.{"tests/protos_for_test"},
-    }, target);
+    });
 
-    const convertStep2 = RunProtocStep.create(b, b, .{
+    const convertStep2 = RunProtocStep.create(b, b, target,  .{
         .destination_directory = .{ .path = "tests/generated" },
         .source_files = &.{ "tests/protos_for_test/all.proto", "tests/protos_for_test/whitespace-in-name.proto" },
         .include_directories = &.{"tests/protos_for_test"},
-    }, target);
+    });
 
     for (tests) |test_item| {
         test_item.root_module.addImport("protobuf", module);
@@ -124,14 +124,14 @@ pub fn build(b: *std.Build) !void {
 
     const bootstrap = b.step("bootstrap", "run the generator over its own sources");
 
-    const bootstrapConversion = RunProtocStep.create(b, b, .{
+    const bootstrapConversion = RunProtocStep.create(b, b, target, .{
         .destination_directory = .{ .path = "bootstrapped-generator" },
         .source_files = &.{
             b.pathJoin(&.{ wd, "include/google/protobuf/compiler/plugin.proto" }),
             b.pathJoin(&.{ wd, "include/google/protobuf/descriptor.proto" }),
         },
         .include_directories = &.{},
-    }, target);
+    });
 
     bootstrap.dependOn(&bootstrapConversion.step);
 }
@@ -159,8 +159,8 @@ pub const RunProtocStep = struct {
     pub fn create(
         owner: *std.Build,
         dependency_builder: *std.Build,
+        target: std.Build.ResolvedTarget,
         options: Options,
-        target: std.Build.ResolvedTarget
     ) *RunProtocStep {
         var self: *RunProtocStep = owner.allocator.create(RunProtocStep) catch @panic("OOM");
         self.* = .{
