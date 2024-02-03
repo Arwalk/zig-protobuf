@@ -15,7 +15,7 @@ fi
 # Clean up
 rm -rf /var/lib/apt/lists/*
 
-ARCH="$(uname -m)"
+ARCH="$(uname -m)"	
 
 # Checks if packages are installed and installs them if not
 check_packages() {
@@ -44,12 +44,11 @@ ln -s /usr/local/lib/zig/zig /usr/local/bin/zig
 
 # install language server
 
-git clone --depth 1 https://github.com/zigtools/zls
-cd zls
-zig build -Doptimize=ReleaseSafe
-mv zig-out/bin/zls /usr/local/bin/zls
-cd ..
-rm -rf zls
+LATEST_ZLS=$(curl https://zigtools-releases.nyc3.digitaloceanspaces.com/zls/index.json | /usr/bin/jq -r '.latest')
+
+wget https://zigtools-releases.nyc3.digitaloceanspaces.com/zls/$LATEST_ZLS/$ARCH-linux/zls
+
+mv zls /usr/local/bin/zls
 
 # make binary executable
 chmod +x /usr/local/bin/zls
