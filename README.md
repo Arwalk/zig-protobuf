@@ -34,15 +34,15 @@ This project is currently able to handle all scalar types for encoding, decoding
         .dependencies = .{
             .protobuf = .{
                 .url = "https://github.com/Arwalk/zig-protobuf/archive/<some-commit-sha>.tar.gz",
-                .hash = "00000000000000000000000000000000000000000000000000000000000000000000",
-                // leave the hash as zeroes, the build system will tell you which hash to put here based on your commit
+                .hash = "12ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+                // leave the hash as is, the build system will tell you which hash to put here based on your commit
             },
         },
     }
     ```
 1. Use the `protobuf` module   
     ```zig
-    pub fn build(b: *std.build.Builder) !void {
+    pub fn build(b: *std.Build) !void {
         // first create a build for the dependency
         const protobuf_dep = b.dependency("protobuf", .{
             .target = target,
@@ -50,7 +50,7 @@ This project is currently able to handle all scalar types for encoding, decoding
         });
 
         // and lastly use the dependency as a module
-        exe.addModule("protobuf", protobuf_dep.module("protobuf"));
+        exe.root_module.addImport("protobuf", protobuf_dep.module("protobuf"));
     }
     ```
 
@@ -62,7 +62,7 @@ You can do this programatically as a compilation step for your application. The 
 ```zig
 const protobuf = @import("protobuf");
 
-pub fn build(b: *std.build.Builder) !void {
+pub fn build(b: *std.Build) !void {
     // first create a build for the dependency
     const protobuf_dep = b.dependency("protobuf", .{
         .target = target,
