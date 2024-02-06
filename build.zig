@@ -230,7 +230,7 @@ pub const RunProtocStep = struct {
         { // run zig fmt <destination>
             var argv = std.ArrayList([]const u8).init(b.allocator);
 
-            try argv.append(b.zig_exe);
+            try argv.append(b.graph.zig_exe);
             try argv.append("fmt");
             try argv.append(absolute_dest_dir);
 
