@@ -942,6 +942,48 @@ inline fn is_tag_known(comptime field_desc: FieldDescriptor, tag_to_check: Extra
     return false;
 }
 
+const json = std.json;
+
+const JsonDecodeErrors = error {
+    
+};
+
+fn json_is_compatible(comptime field_desc: FieldDescriptor, extracted_data: json.Value) bool {
+    return switch (field_desc.ftype) {
+        .Varint, .FixedInt => extracted_data == json.Value.integer,
+        .SubMessage => extracted_data == json.Value.object,
+        .String => extracted_data == json.Value.string,
+        .List => false,
+        .PackedList  => false,
+        .OneOf => false
+    };
+}
+
+fn decode_json_data(comptime T: type, comptime field_desc: FieldDescriptor, comptime field: StructField, result: *T, extracted_data: json.Value, allocator: Allocator) !void {
+    
+}
+
+pub fn json_decode(comptime T: type, input: []const u8, allocator: Allocator) !T {
+    const m : json.Parsed(json.Value.object) = try json.parseFromSlice(json.Value.object, allocator, input, .{});
+    defer m.deinit();
+
+    const obj : json.ObjectMap = m.value;
+
+    var result = pb_init(T, allocator);
+
+    inline for (@typeInfo(T).Struct.fields) |field| {
+        if(obj.get(field.name)) |f| {
+            const v = @field(T._desc_table, field.name);
+            break try decode_json_data(T, v, field, &result, f, allocator);
+        }
+    } else {
+        std.debug.print("Unknown field received in {s} {any}\n", .{ @typeName(T), extracted_data });
+    }
+
+    return result;
+}
+
+
 /// public decoding function meant to be embedded in message structures
 /// Iterates over the input and try to fill the resulting structure accordingly.
 pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) !T {
