@@ -1,5 +1,8 @@
 name: test_and_lint
-on: [push]
+on:
+  push:
+  schedule:
+    - cron: "30 1 1,15 * *"
 jobs:
   test_latest:
     strategy:
