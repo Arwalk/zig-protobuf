@@ -6,7 +6,7 @@
 
 This is an implementation of google Protocol Buffers version 3 in Zig.
 
-Protocol Buffers is a serialization protocol so systems, from any programming language nor platform, can exchange data reliably.
+Protocol Buffers is a serialization protocol so systems, from any programming language or platform, can exchange data reliably.
 
 Protobuf's strength lies in a generic codec paired with user-defined "messages" that will define the true nature of the data encoded.
 
