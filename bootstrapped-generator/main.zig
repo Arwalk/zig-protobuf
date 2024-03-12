@@ -165,6 +165,7 @@ const GenerationContext = struct {
 
         try self.generateEnums(list, fqn, file, file.enum_type);
         try self.generateMessages(list, fqn, file, file.message_type);
+        try self.generateServices(list, fqn, file, file.service);
     }
 
     fn generateEnums(ctx: *Self, list: *std.ArrayList(string), fqn: FullName, file: descriptor.FileDescriptorProto, enums: std.ArrayList(descriptor.EnumDescriptorProto)) !void {
@@ -196,8 +197,8 @@ const GenerationContext = struct {
             return name;
     }
 
-    fn fieldTypeFqn(ctx: *Self, parentFqn: FullName, file: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto) !string {
-        if (field.type_name) |typeName| {
+    fn fieldTypeFqn(ctx: *Self, parentFqn: FullName, file: descriptor.FileDescriptorProto, field_name: ?pb.ManagedString) !string {
+        if (field_name) |typeName| {
             const fullTypeName = FullName{ .buf = typeName.getSlice()[1..] };
 
             if (fullTypeName.parent()) |parent| {
@@ -235,9 +236,7 @@ const GenerationContext = struct {
                 parent = parent.?.parent();
             }
 
-            std.debug.print("Unknown type: {s} from {s} in {?s}\n", .{ fullTypeName.buf, parentFqn.buf, file.package.?.getSlice() });
-
-            return try ctx.escapeFqn(field.type_name.?.getSlice());
+            return try ctx.escapeFqn(typeName.getSlice());
         }
         @panic("field has no type");
     }
@@ -327,7 +326,7 @@ const GenerationContext = struct {
             .TYPE_DOUBLE => "f64",
             .TYPE_FLOAT => "f32",
             .TYPE_STRING, .TYPE_BYTES => "ManagedString",
-            .TYPE_ENUM, .TYPE_MESSAGE => try ctx.fieldTypeFqn(fqn, file, field),
+            .TYPE_ENUM, .TYPE_MESSAGE => try ctx.fieldTypeFqn(fqn, file, field.type_name),
             else => {
                 std.debug.print("Unrecognized type {}\n", .{t});
                 @panic("Unrecognized type");
@@ -566,6 +565,7 @@ const GenerationContext = struct {
 
             try ctx.generateEnums(list, messageFqn, file, m.enum_type);
             try ctx.generateMessages(list, messageFqn, file, m.nested_type);
+            // no services in nested types apparently
 
             try list.append(try std.fmt.allocPrint(allocator,
                 \\
@@ -573,6 +573,98 @@ const GenerationContext = struct {
                 \\}};
                 \\
             , .{}));
+        }
+    }
+
+    fn generateServices(ctx: *Self, list: *std.ArrayList(string), fqn: FullName, file: descriptor.FileDescriptorProto, services: std.ArrayList(descriptor.ServiceDescriptorProto)) !void {
+        for (services.items) |s| {
+            try list.append(try std.fmt.allocPrint(allocator, "\n pub const {?s} = struct {{\n", .{s.name.?.getSlice()}));
+            const serviceName = s.name.?.getSlice();
+            // building interface
+            {
+                try list.append("\nconst Interface = struct {\n");
+                for (s.method.items) |method| {
+                    const methodName = try ctx.fieldTypeFqn(fqn, file, method.name);
+                    const inputName = try ctx.fieldTypeFqn(fqn, file, method.input_type);
+                    const outputName = try ctx.fieldTypeFqn(fqn, file, method.output_type);
+                    try list.append(try std.fmt.allocPrint(allocator, "{?s} : *const fn(x : *anyopaque, p : {?s}) {?s},", .{ methodName, inputName, outputName }));
+                }
+                try list.append("};\n");
+            }
+
+            try list.append("\n_ptr: *anyopaque,\n");
+            try list.append("_vtab: *const Interface,\n\n");
+
+            // writing init
+            {
+                try list.append(try std.fmt.allocPrint(allocator,
+                    \\pub fn init(obj: anytype) {?s} {{
+                    \\  const Ptr = @TypeOf(obj);
+                    \\  const PtrInfo = @typeInfo(Ptr);
+                    \\  std.debug.assert(PtrInfo == .Pointer); // Must be a pointer
+                    \\  std.debug.assert(PtrInfo.Pointer.size == .One); // Must be a single-item pointer
+                    \\  std.debug.assert(@typeInfo(PtrInfo.Pointer.child) == .Struct); // Must point to a struct
+                    \\
+                , .{s.name.?.getSlice()}));
+                // writing sub_impl
+                {
+                    try list.append(try std.fmt.allocPrint(allocator, "const impl = struct {{\n", .{}));
+                    for (s.method.items) |method| {
+                        const methodName = try ctx.fieldTypeFqn(fqn, file, method.name);
+                        const inputName = try ctx.fieldTypeFqn(fqn, file, method.input_type);
+                        const outputName = try ctx.fieldTypeFqn(fqn, file, method.output_type);
+                        try list.append(try std.fmt.allocPrint(allocator,
+                            \\ pub fn {?s}(ptr: *anyopaque, param: {?s}) {?s} {{
+                            \\  const self : Ptr = @ptrCast(@alignCast(ptr));
+                            \\  return self.{?s}(param);
+                            \\}}
+                            \\
+                        , .{ methodName, inputName, outputName, methodName }));
+                    }
+                    try list.append("};\n");
+                }
+                // writing final instance
+                {
+                    try list.append(
+                        \\ return .{
+                        \\  ._ptr = obj,
+                        \\  ._vtab = &.{
+                    );
+
+                    for (s.method.items) |method| {
+                        const methodName = try ctx.fieldTypeFqn(fqn, file, method.name);
+                        try list.append(try std.fmt.allocPrint(allocator, ".{?s} = impl.{?s}, \n", .{ methodName, methodName }));
+                    }
+
+                    try list.append(
+                        \\  }
+                        \\};
+                        \\
+                    );
+                }
+                try list.append("}\n");
+            }
+
+            // writing methods
+            {
+                for (s.method.items) |method| {
+                    const methodName = try ctx.fieldTypeFqn(fqn, file, method.name);
+                    const inputName = try ctx.fieldTypeFqn(fqn, file, method.input_type);
+                    const outputName = try ctx.fieldTypeFqn(fqn, file, method.output_type);
+
+                    try list.append(try std.fmt.allocPrint(allocator,
+                        \\
+                        \\pub fn {?s}(self: {?s}, param: {?s}) {?s} {{
+                        \\  return self._vtab.{?s}(self._ptr, param);
+                        \\}}
+                        \\
+                        \\
+                    , .{ methodName, serviceName, inputName, outputName, methodName }));
+                }
+            }
+
+            //closing
+            try list.append("};");
         }
     }
 };
