@@ -236,6 +236,8 @@ const GenerationContext = struct {
                 parent = parent.?.parent();
             }
 
+            std.debug.print("Unknown type: {s} from {s} in {?s}\n", .{ fullTypeName.buf, parentFqn.buf, file.package.?.getSlice() });
+
             return try ctx.escapeFqn(typeName.getSlice());
         }
         @panic("field has no type");
@@ -584,7 +586,7 @@ const GenerationContext = struct {
             {
                 try list.append("\nconst Interface = struct {\n");
                 for (s.method.items) |method| {
-                    const methodName = try ctx.fieldTypeFqn(fqn, file, method.name);
+                    const methodName = method.name.?.getSlice();
                     const inputName = try ctx.fieldTypeFqn(fqn, file, method.input_type);
                     const outputName = try ctx.fieldTypeFqn(fqn, file, method.output_type);
                     try list.append(try std.fmt.allocPrint(allocator, "{?s} : *const fn(x : *anyopaque, p : {?s}) {?s},", .{ methodName, inputName, outputName }));
@@ -605,12 +607,12 @@ const GenerationContext = struct {
                     \\  std.debug.assert(PtrInfo.Pointer.size == .One); // Must be a single-item pointer
                     \\  std.debug.assert(@typeInfo(PtrInfo.Pointer.child) == .Struct); // Must point to a struct
                     \\
-                , .{s.name.?.getSlice()}));
+                , .{serviceName}));
                 // writing sub_impl
                 {
                     try list.append(try std.fmt.allocPrint(allocator, "const impl = struct {{\n", .{}));
                     for (s.method.items) |method| {
-                        const methodName = try ctx.fieldTypeFqn(fqn, file, method.name);
+                        const methodName = method.name.?.getSlice();
                         const inputName = try ctx.fieldTypeFqn(fqn, file, method.input_type);
                         const outputName = try ctx.fieldTypeFqn(fqn, file, method.output_type);
                         try list.append(try std.fmt.allocPrint(allocator,
@@ -632,7 +634,7 @@ const GenerationContext = struct {
                     );
 
                     for (s.method.items) |method| {
-                        const methodName = try ctx.fieldTypeFqn(fqn, file, method.name);
+                        const methodName = method.name.?.getSlice();
                         try list.append(try std.fmt.allocPrint(allocator, ".{?s} = impl.{?s}, \n", .{ methodName, methodName }));
                     }
 
@@ -648,7 +650,7 @@ const GenerationContext = struct {
             // writing methods
             {
                 for (s.method.items) |method| {
-                    const methodName = try ctx.fieldTypeFqn(fqn, file, method.name);
+                    const methodName = method.name.?.getSlice();
                     const inputName = try ctx.fieldTypeFqn(fqn, file, method.input_type);
                     const outputName = try ctx.fieldTypeFqn(fqn, file, method.output_type);
 
