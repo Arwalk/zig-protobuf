@@ -2121,3 +2121,43 @@ pub const EnumParseTester = struct {
 
     pub usingnamespace protobuf.MessageMixins(@This());
 };
+
+pub const TestService = struct {
+    const Interface = struct {
+        Foo: *const fn (x: *anyopaque, p: FooRequest) FooResponse,
+        Bar: *const fn (x: *anyopaque, p: BarRequest) BarResponse,
+    };
+
+    _ptr: *anyopaque,
+    _vtab: *const Interface,
+
+    pub fn init(obj: anytype) TestService {
+        const Ptr = @TypeOf(obj);
+        const PtrInfo = @typeInfo(Ptr);
+        std.debug.assert(PtrInfo == .Pointer); // Must be a pointer
+        std.debug.assert(PtrInfo.Pointer.size == .One); // Must be a single-item pointer
+        std.debug.assert(@typeInfo(PtrInfo.Pointer.child) == .Struct); // Must point to a struct
+        const impl = struct {
+            pub fn Foo(ptr: *anyopaque, param: FooRequest) FooResponse {
+                const self: Ptr = @ptrCast(@alignCast(ptr));
+                return self.Foo(param);
+            }
+            pub fn Bar(ptr: *anyopaque, param: BarRequest) BarResponse {
+                const self: Ptr = @ptrCast(@alignCast(ptr));
+                return self.Bar(param);
+            }
+        };
+        return .{ ._ptr = obj, ._vtab = &.{
+            .Foo = impl.Foo,
+            .Bar = impl.Bar,
+        } };
+    }
+
+    pub fn Foo(self: TestService, param: FooRequest) FooResponse {
+        return self._vtab.Foo(self._ptr, param);
+    }
+
+    pub fn Bar(self: TestService, param: BarRequest) BarResponse {
+        return self._vtab.Bar(self._ptr, param);
+    }
+};
