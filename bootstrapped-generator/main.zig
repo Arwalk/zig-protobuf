@@ -580,8 +580,9 @@ const GenerationContext = struct {
 
     fn generateServices(ctx: *Self, list: *std.ArrayList(string), fqn: FullName, file: descriptor.FileDescriptorProto, services: std.ArrayList(descriptor.ServiceDescriptorProto)) !void {
         for (services.items) |s| {
-            try list.append(try std.fmt.allocPrint(allocator, "\n pub const {?s} = struct {{\n", .{s.name.?.getSlice()}));
+            try list.append(try std.fmt.allocPrint(allocator, "\n pub fn {?s}(errorType: type) type {{\n", .{s.name.?.getSlice()}));
             const serviceName = s.name.?.getSlice();
+            try list.append("return struct{");
             // building interface
             {
                 try list.append("\nconst Interface = struct {\n");
@@ -589,7 +590,7 @@ const GenerationContext = struct {
                     const methodName = method.name.?.getSlice();
                     const inputName = try ctx.fieldTypeFqn(fqn, file, method.input_type);
                     const outputName = try ctx.fieldTypeFqn(fqn, file, method.output_type);
-                    try list.append(try std.fmt.allocPrint(allocator, "{?s} : *const fn(x : *anyopaque, p : {?s}) {?s},", .{ methodName, inputName, outputName }));
+                    try list.append(try std.fmt.allocPrint(allocator, "{?s} : *const fn(x : *anyopaque, p : {?s}) errorType!{?s},", .{ methodName, inputName, outputName }));
                 }
                 try list.append("};\n");
             }
@@ -600,7 +601,7 @@ const GenerationContext = struct {
             // writing init
             {
                 try list.append(try std.fmt.allocPrint(allocator,
-                    \\pub fn init(obj: anytype) {?s} {{
+                    \\pub fn init(obj: anytype) {?s}(errorType) {{
                     \\  const Ptr = @TypeOf(obj);
                     \\  const PtrInfo = @typeInfo(Ptr);
                     \\  std.debug.assert(PtrInfo == .Pointer); // Must be a pointer
@@ -616,7 +617,7 @@ const GenerationContext = struct {
                         const inputName = try ctx.fieldTypeFqn(fqn, file, method.input_type);
                         const outputName = try ctx.fieldTypeFqn(fqn, file, method.output_type);
                         try list.append(try std.fmt.allocPrint(allocator,
-                            \\ pub fn {?s}(ptr: *anyopaque, param: {?s}) {?s} {{
+                            \\ pub fn {?s}(ptr: *anyopaque, param: {?s}) errorType!{?s} {{
                             \\  const self : Ptr = @ptrCast(@alignCast(ptr));
                             \\  return self.{?s}(param);
                             \\}}
@@ -656,7 +657,7 @@ const GenerationContext = struct {
 
                     try list.append(try std.fmt.allocPrint(allocator,
                         \\
-                        \\pub fn {?s}(self: {?s}, param: {?s}) {?s} {{
+                        \\pub fn {?s}(self: {?s}(errorType), param: {?s}) errorType!{?s} {{
                         \\  return self._vtab.{?s}(self._ptr, param);
                         \\}}
                         \\
@@ -667,6 +668,7 @@ const GenerationContext = struct {
 
             //closing
             try list.append("};");
+            try list.append("}");
         }
     }
 };
