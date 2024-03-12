@@ -7,6 +7,7 @@ const ArrayList = std.ArrayList;
 const protobuf = @import("protobuf");
 const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
+const ServiceError = protobuf.ServiceError;
 
 pub const ForeignEnum = enum(i32) {
     FOREIGN_FOO = 4,
@@ -2124,8 +2125,8 @@ pub const EnumParseTester = struct {
 
 pub const TestService = struct {
     const Interface = struct {
-        Foo: *const fn (x: *anyopaque, p: FooRequest) FooResponse,
-        Bar: *const fn (x: *anyopaque, p: BarRequest) BarResponse,
+        Foo: *const fn (x: *anyopaque, p: FooRequest) ServiceError!FooResponse,
+        Bar: *const fn (x: *anyopaque, p: BarRequest) ServiceError!BarResponse,
     };
 
     _ptr: *anyopaque,
@@ -2138,11 +2139,11 @@ pub const TestService = struct {
         std.debug.assert(PtrInfo.Pointer.size == .One); // Must be a single-item pointer
         std.debug.assert(@typeInfo(PtrInfo.Pointer.child) == .Struct); // Must point to a struct
         const impl = struct {
-            pub fn Foo(ptr: *anyopaque, param: FooRequest) FooResponse {
+            pub fn Foo(ptr: *anyopaque, param: FooRequest) ServiceError!FooResponse {
                 const self: Ptr = @ptrCast(@alignCast(ptr));
                 return self.Foo(param);
             }
-            pub fn Bar(ptr: *anyopaque, param: BarRequest) BarResponse {
+            pub fn Bar(ptr: *anyopaque, param: BarRequest) ServiceError!BarResponse {
                 const self: Ptr = @ptrCast(@alignCast(ptr));
                 return self.Bar(param);
             }
@@ -2153,11 +2154,11 @@ pub const TestService = struct {
         } };
     }
 
-    pub fn Foo(self: TestService, param: FooRequest) FooResponse {
+    pub fn Foo(self: TestService, param: FooRequest) ServiceError!FooResponse {
         return self._vtab.Foo(self._ptr, param);
     }
 
-    pub fn Bar(self: TestService, param: BarRequest) BarResponse {
+    pub fn Bar(self: TestService, param: BarRequest) ServiceError!BarResponse {
         return self._vtab.Bar(self._ptr, param);
     }
 };

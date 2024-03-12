@@ -7,6 +7,7 @@ const ArrayList = std.ArrayList;
 const protobuf = @import("protobuf");
 const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
+const ServiceError = protobuf.ServiceError;
 /// import package tests.oneof
 const tests_oneof = @import("tests/oneof.pb.zig");
 /// import package graphics

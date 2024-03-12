@@ -106,6 +106,7 @@ const GenerationContext = struct {
                 \\const protobuf = @import("protobuf");
                 \\const ManagedString = protobuf.ManagedString;
                 \\const fd = protobuf.fd;
+                \\const ServiceError = protobuf.ServiceError;
                 \\
             , .{name.buf}));
 
@@ -589,7 +590,7 @@ const GenerationContext = struct {
                     const methodName = method.name.?.getSlice();
                     const inputName = try ctx.fieldTypeFqn(fqn, file, method.input_type);
                     const outputName = try ctx.fieldTypeFqn(fqn, file, method.output_type);
-                    try list.append(try std.fmt.allocPrint(allocator, "{?s} : *const fn(x : *anyopaque, p : {?s}) {?s},", .{ methodName, inputName, outputName }));
+                    try list.append(try std.fmt.allocPrint(allocator, "{?s} : *const fn(x : *anyopaque, p : {?s}) ServiceError!{?s},", .{ methodName, inputName, outputName }));
                 }
                 try list.append("};\n");
             }
@@ -616,7 +617,7 @@ const GenerationContext = struct {
                         const inputName = try ctx.fieldTypeFqn(fqn, file, method.input_type);
                         const outputName = try ctx.fieldTypeFqn(fqn, file, method.output_type);
                         try list.append(try std.fmt.allocPrint(allocator,
-                            \\ pub fn {?s}(ptr: *anyopaque, param: {?s}) {?s} {{
+                            \\ pub fn {?s}(ptr: *anyopaque, param: {?s}) ServiceError!{?s} {{
                             \\  const self : Ptr = @ptrCast(@alignCast(ptr));
                             \\  return self.{?s}(param);
                             \\}}
@@ -656,7 +657,7 @@ const GenerationContext = struct {
 
                     try list.append(try std.fmt.allocPrint(allocator,
                         \\
-                        \\pub fn {?s}(self: {?s}, param: {?s}) {?s} {{
+                        \\pub fn {?s}(self: {?s}, param: {?s}) ServiceError!{?s} {{
                         \\  return self._vtab.{?s}(self._ptr, param);
                         \\}}
                         \\

@@ -7,6 +7,7 @@ const ArrayList = std.ArrayList;
 const protobuf = @import("protobuf");
 const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
+const ServiceError = protobuf.ServiceError;
 
 pub const WouldYouParseThisForMePlease = struct {
     field: ?Test = null,

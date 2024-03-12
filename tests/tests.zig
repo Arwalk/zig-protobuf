@@ -53,15 +53,17 @@ test "DefaultValuesDecode" {
     try testing.expectEqualSlices(u8, "moo", demo.bytes_field.?.getSlice());
 }
 
+const ServiceError = protobuf.ServiceError;
+
 const TestServiceImplementation = struct {
     counter: u32,
 
-    pub fn Foo(self: *TestServiceImplementation, _: FooRequest) FooResponse {
+    pub fn Foo(self: *TestServiceImplementation, _: FooRequest) ServiceError!FooResponse {
         self.counter += 1;
         return FooResponse{};
     }
 
-    pub fn Bar(self:*TestServiceImplementation, _: BarRequest) BarResponse {
+    pub fn Bar(self:*TestServiceImplementation, _: BarRequest) ServiceError!BarResponse {
         self.counter += 1;
         return BarResponse{};
     }
@@ -71,8 +73,8 @@ test "services" {
     var testServiceImpl = TestServiceImplementation{.counter =  0};
     var testService = TestService.init(&testServiceImpl);
 
-    _ = testService.Foo(FooRequest{});
-    _ = testService.Bar(BarRequest{});
+    _ = try testService.Foo(FooRequest{});
+    _ = try testService.Bar(BarRequest{});
 
     try testing.expectEqual(2, testServiceImpl.counter);
 }

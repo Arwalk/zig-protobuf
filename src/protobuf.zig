@@ -983,6 +983,29 @@ pub fn MessageMixins(comptime Self: type) type {
     };
 }
 
+// for services
+pub const OSILayerError = error {
+    Application,
+    Presentation,
+    Session,
+    Transport,
+    Network,
+    DataLink,
+    Physical
+};
+
+pub const DataError = error {
+    MissingData,
+    InvalidData,
+    IncompatibleVersions,
+};
+
+pub const CustomErrors = error {
+    UserDefined
+};
+
+pub const ServiceError = OSILayerError || DataError || std.mem.Allocator.Error || CustomErrors;
+
 test "get varint" {
     var pb = ArrayList(u8).init(testing.allocator);
     defer pb.deinit();
