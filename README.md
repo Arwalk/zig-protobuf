@@ -87,3 +87,6 @@ pub fn build(b: *std.Build) !void {
     gen_proto.dependOn(&protoc_step.step);
 }
 ```
+
+If you're really bored, you can buy me a coffe here.
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/N4N7VMS4F)
