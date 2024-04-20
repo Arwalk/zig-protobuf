@@ -94,13 +94,13 @@ pub fn build(b: *std.Build) !void {
         }),
     };
 
-    const convertStep = RunProtocStep.create(b, b, target,  .{
+    const convertStep = RunProtocStep.create(b, b, target, .{
         .destination_directory = .{ .path = "tests/.generated" },
         .source_files = &.{"tests/protos_for_test/generated_in_ci.proto"},
         .include_directories = &.{"tests/protos_for_test"},
     });
 
-    const convertStep2 = RunProtocStep.create(b, b, target,  .{
+    const convertStep2 = RunProtocStep.create(b, b, target, .{
         .destination_directory = .{ .path = "tests/generated" },
         .source_files = &.{ "tests/protos_for_test/all.proto", "tests/protos_for_test/whitespace-in-name.proto" },
         .include_directories = &.{"tests/protos_for_test"},
@@ -188,7 +188,7 @@ pub const RunProtocStep = struct {
     fn make(step: *Step, prog_node: *std.Progress.Node) !void {
         _ = prog_node;
         const b = step.owner;
-        const self = @fieldParentPtr(RunProtocStep, "step", step);
+        const self: *RunProtocStep = @fieldParentPtr("step", step);
 
         const absolute_dest_dir = self.destination_directory.getPath(b);
 
@@ -257,7 +257,6 @@ pub fn buildGenerator(b: *std.Build, opt: GenOptions) *std.Build.Step.Compile {
     const module = b.addModule("protobuf", .{
         .root_source_file = .{ .path = "src/protobuf.zig" },
     });
-
 
     exe.root_module.addImport("protobuf", module);
 
