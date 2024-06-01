@@ -4,6 +4,7 @@ const Build = std.Build;
 const Step = std.Build.Step;
 const fs = std.fs;
 const mem = std.mem;
+const LazyPath = std.Build.LazyPath;
 
 const PROTOC_VERSION = "23.4";
 
@@ -23,7 +24,7 @@ pub fn build(b: *std.Build) !void {
         .name = "zig-protobuf",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
-        .root_source_file = .{ .path = "src/protobuf.zig" },
+        .root_source_file = .{ .cwd_relative =  "src/protobuf.zig" },
         .target = target,
         .optimize = optimize,
     });
@@ -34,7 +35,7 @@ pub fn build(b: *std.Build) !void {
     b.installArtifact(lib);
 
     const module = b.addModule("protobuf", .{
-        .root_source_file = .{ .path = "src/protobuf.zig" },
+        .root_source_file = .{ .cwd_relative = "src/protobuf.zig" },
     });
 
     const exe = buildGenerator(b, .{
@@ -52,56 +53,56 @@ pub fn build(b: *std.Build) !void {
     const tests = [_]*std.Build.Step.Compile{
         b.addTest(.{
             .name = "protobuf",
-            .root_source_file = .{ .path = "src/protobuf.zig" },
+            .root_source_file = .{ .cwd_relative = "src/protobuf.zig" },
             .target = target,
             .optimize = optimize,
         }),
         b.addTest(.{
             .name = "tests",
-            .root_source_file = .{ .path = "tests/tests.zig" },
+            .root_source_file = .{ .cwd_relative = "tests/tests.zig" },
             .target = target,
             .optimize = optimize,
         }),
         b.addTest(.{
             .name = "alltypes",
-            .root_source_file = .{ .path = "tests/alltypes.zig" },
+            .root_source_file = .{ .cwd_relative = "tests/alltypes.zig" },
             .target = target,
             .optimize = optimize,
         }),
         b.addTest(.{
             .name = "integration",
-            .root_source_file = .{ .path = "tests/integration.zig" },
+            .root_source_file = .{ .cwd_relative = "tests/integration.zig" },
             .target = target,
             .optimize = optimize,
         }),
         b.addTest(.{
             .name = "fixedsizes",
-            .root_source_file = .{ .path = "tests/tests_fixedsizes.zig" },
+            .root_source_file = .{ .cwd_relative = "tests/tests_fixedsizes.zig" },
             .target = target,
             .optimize = optimize,
         }),
         b.addTest(.{
             .name = "varints",
-            .root_source_file = .{ .path = "tests/tests_varints.zig" },
+            .root_source_file = .{ .cwd_relative = "tests/tests_varints.zig" },
             .target = target,
             .optimize = optimize,
         }),
         b.addTest(.{
             .name = "FullName",
-            .root_source_file = .{ .path = "bootstrapped-generator/FullName.zig" },
+            .root_source_file = .{ .cwd_relative = "bootstrapped-generator/FullName.zig" },
             .target = target,
             .optimize = optimize,
         }),
     };
 
     const convertStep = RunProtocStep.create(b, b, target, .{
-        .destination_directory = .{ .path = "tests/.generated" },
+        .destination_directory = .{ .cwd_relative = "tests/.generated" },
         .source_files = &.{"tests/protos_for_test/generated_in_ci.proto"},
         .include_directories = &.{"tests/protos_for_test"},
     });
 
     const convertStep2 = RunProtocStep.create(b, b, target, .{
-        .destination_directory = .{ .path = "tests/generated" },
+        .destination_directory = .{ .cwd_relative = "tests/generated" },
         .source_files = &.{ "tests/protos_for_test/all.proto", "tests/protos_for_test/whitespace-in-name.proto" },
         .include_directories = &.{"tests/protos_for_test"},
     });
@@ -125,7 +126,7 @@ pub fn build(b: *std.Build) !void {
     const bootstrap = b.step("bootstrap", "run the generator over its own sources");
 
     const bootstrapConversion = RunProtocStep.create(b, b, target, .{
-        .destination_directory = .{ .path = "bootstrapped-generator" },
+        .destination_directory = .{ .cwd_relative = "bootstrapped-generator" },
         .source_files = &.{
             b.pathJoin(&.{ wd, "include/google/protobuf/compiler/plugin.proto" }),
             b.pathJoin(&.{ wd, "include/google/protobuf/descriptor.proto" }),
@@ -185,7 +186,7 @@ pub const RunProtocStep = struct {
         self.step.name = name;
     }
 
-    fn make(step: *Step, prog_node: *std.Progress.Node) !void {
+    fn make(step: *Step, prog_node: std.Progress.Node) anyerror!void {
         _ = prog_node;
         const b = step.owner;
         const self: *RunProtocStep = @fieldParentPtr("step", step);
@@ -249,13 +250,13 @@ pub fn buildGenerator(b: *std.Build, opt: GenOptions) *std.Build.Step.Compile {
         .name = "protoc-gen-zig",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
-        .root_source_file = .{ .path = "bootstrapped-generator/main.zig" },
+        .root_source_file = .{ .cwd_relative = "bootstrapped-generator/main.zig" },
         .target = opt.target,
         .optimize = opt.optimize,
     });
 
     const module = b.addModule("protobuf", .{
-        .root_source_file = .{ .path = "src/protobuf.zig" },
+        .root_source_file = .{ .cwd_relative = "src/protobuf.zig" },
     });
 
     exe.root_module.addImport("protobuf", module);
@@ -431,9 +432,9 @@ fn downloadFile(allocator: std.mem.Allocator, target_file: []const u8, url: []co
     // Some Windows users experience `SSL certificate problem: unable to get local issuer certificate`
     // so we give them the option to disable SSL if they desire / don't want to debug the issue.
     var child = if (isEnvVarTruthy(allocator, "CURL_INSECURE"))
-        std.ChildProcess.init(&.{ "curl", "--insecure", "-L", "-o", target_file, url }, allocator)
+        std.process.Child.init(&.{ "curl", "--insecure", "-L", "-o", target_file, url }, allocator)
     else
-        std.ChildProcess.init(&.{ "curl", "-L", "-o", target_file, url }, allocator);
+        std.process.Child.init(&.{ "curl", "-L", "-o", target_file, url }, allocator);
     child.cwd = sdkPath("/");
     child.stderr = std.io.getStdErr();
     child.stdout = std.io.getStdOut();
@@ -443,7 +444,7 @@ fn downloadFile(allocator: std.mem.Allocator, target_file: []const u8, url: []co
 fn unzipFile(allocator: std.mem.Allocator, file: []const u8, target_directory: []const u8) !void {
     std.debug.print("decompressing {s}..\n", .{file});
 
-    var child = std.ChildProcess.init(
+    var child = std.process.Child.init(
         &.{ "unzip", "-o", file, "-d", target_directory },
         allocator,
     );
@@ -454,7 +455,7 @@ fn unzipFile(allocator: std.mem.Allocator, file: []const u8, target_directory: [
 }
 
 fn ensureCanDownloadFiles(allocator: std.mem.Allocator) void {
-    const result = std.ChildProcess.run(.{
+    const result = std.process.Child.run(.{
         .allocator = allocator,
         .argv = &.{ "curl", "--version" },
         .cwd = sdkPath("/"),
@@ -473,7 +474,7 @@ fn ensureCanDownloadFiles(allocator: std.mem.Allocator) void {
 }
 
 fn ensureCanUnzipFiles(allocator: std.mem.Allocator) void {
-    const result = std.ChildProcess.run(.{
+    const result = std.process.Child.run(.{
         .allocator = allocator,
         .argv = &.{"unzip"},
         .cwd = sdkPath("/"),

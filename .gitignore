@@ -11,3 +11,4 @@ dcl
 protocol
 tests/.generated
 debug
+.zig-cache
