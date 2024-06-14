@@ -281,7 +281,7 @@ fn getProtocInstallDir(
     allocator: std.mem.Allocator,
     protoc_version: []const u8,
 ) ![]const u8 {
-    const base_cache_dir_rel = try std.fs.path.join(allocator, &.{ "zig-cache", "zig-protobuf", "protoc" });
+    const base_cache_dir_rel = try std.fs.path.join(allocator, &.{ ".zig-cache", "zig-protobuf", "protoc" });
     try std.fs.cwd().makePath(base_cache_dir_rel);
     const base_cache_dir = try std.fs.cwd().realpathAlloc(allocator, base_cache_dir_rel);
     const versioned_cache_dir = try std.fs.path.join(allocator, &.{ base_cache_dir, protoc_version });
