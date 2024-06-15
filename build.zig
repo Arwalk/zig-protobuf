@@ -24,7 +24,7 @@ pub fn build(b: *std.Build) !void {
         .name = "zig-protobuf",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
-        .root_source_file = .{ .cwd_relative =  "src/protobuf.zig" },
+        .root_source_file = b.path("src/protobuf.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -35,7 +35,7 @@ pub fn build(b: *std.Build) !void {
     b.installArtifact(lib);
 
     const module = b.addModule("protobuf", .{
-        .root_source_file = .{ .cwd_relative = "src/protobuf.zig" },
+        .root_source_file = b.path("src/protobuf.zig"),
     });
 
     const exe = buildGenerator(b, .{
@@ -53,56 +53,56 @@ pub fn build(b: *std.Build) !void {
     const tests = [_]*std.Build.Step.Compile{
         b.addTest(.{
             .name = "protobuf",
-            .root_source_file = .{ .cwd_relative = "src/protobuf.zig" },
+            .root_source_file = b.path("src/protobuf.zig"),
             .target = target,
             .optimize = optimize,
         }),
         b.addTest(.{
             .name = "tests",
-            .root_source_file = .{ .cwd_relative = "tests/tests.zig" },
+            .root_source_file = b.path("tests/tests.zig"),
             .target = target,
             .optimize = optimize,
         }),
         b.addTest(.{
             .name = "alltypes",
-            .root_source_file = .{ .cwd_relative = "tests/alltypes.zig" },
+            .root_source_file = b.path("tests/alltypes.zig"),
             .target = target,
             .optimize = optimize,
         }),
         b.addTest(.{
             .name = "integration",
-            .root_source_file = .{ .cwd_relative = "tests/integration.zig" },
+            .root_source_file = b.path("tests/integration.zig"),
             .target = target,
             .optimize = optimize,
         }),
         b.addTest(.{
             .name = "fixedsizes",
-            .root_source_file = .{ .cwd_relative = "tests/tests_fixedsizes.zig" },
+            .root_source_file = b.path("tests/tests_fixedsizes.zig"),
             .target = target,
             .optimize = optimize,
         }),
         b.addTest(.{
             .name = "varints",
-            .root_source_file = .{ .cwd_relative = "tests/tests_varints.zig" },
+            .root_source_file = b.path("tests/tests_varints.zig"),
             .target = target,
             .optimize = optimize,
         }),
         b.addTest(.{
             .name = "FullName",
-            .root_source_file = .{ .cwd_relative = "bootstrapped-generator/FullName.zig" },
+            .root_source_file = b.path("bootstrapped-generator/FullName.zig"),
             .target = target,
             .optimize = optimize,
         }),
     };
 
     const convertStep = RunProtocStep.create(b, b, target, .{
-        .destination_directory = .{ .cwd_relative = "tests/.generated" },
+        .destination_directory = b.path("tests/.generated"),
         .source_files = &.{"tests/protos_for_test/generated_in_ci.proto"},
         .include_directories = &.{"tests/protos_for_test"},
     });
 
     const convertStep2 = RunProtocStep.create(b, b, target, .{
-        .destination_directory = .{ .cwd_relative = "tests/generated" },
+        .destination_directory = b.path("tests/generated"),
         .source_files = &.{ "tests/protos_for_test/all.proto", "tests/protos_for_test/whitespace-in-name.proto" },
         .include_directories = &.{"tests/protos_for_test"},
     });
@@ -126,7 +126,7 @@ pub fn build(b: *std.Build) !void {
     const bootstrap = b.step("bootstrap", "run the generator over its own sources");
 
     const bootstrapConversion = RunProtocStep.create(b, b, target, .{
-        .destination_directory = .{ .cwd_relative = "bootstrapped-generator" },
+        .destination_directory = b.path("bootstrapped-generator"),
         .source_files = &.{
             b.pathJoin(&.{ wd, "include/google/protobuf/compiler/plugin.proto" }),
             b.pathJoin(&.{ wd, "include/google/protobuf/descriptor.proto" }),
@@ -250,13 +250,13 @@ pub fn buildGenerator(b: *std.Build, opt: GenOptions) *std.Build.Step.Compile {
         .name = "protoc-gen-zig",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
-        .root_source_file = .{ .cwd_relative = "bootstrapped-generator/main.zig" },
+        .root_source_file = b.path("bootstrapped-generator/main.zig"),
         .target = opt.target,
         .optimize = opt.optimize,
     });
 
     const module = b.addModule("protobuf", .{
-        .root_source_file = .{ .cwd_relative = "src/protobuf.zig" },
+        .root_source_file = b.path("src/protobuf.zig"),
     });
 
     exe.root_module.addImport("protobuf", module);
@@ -281,7 +281,7 @@ fn getProtocInstallDir(
     allocator: std.mem.Allocator,
     protoc_version: []const u8,
 ) ![]const u8 {
-    const base_cache_dir_rel = try std.fs.path.join(allocator, &.{ "zig-cache", "zig-protobuf", "protoc" });
+    const base_cache_dir_rel = try std.fs.path.join(allocator, &.{ ".zig-cache", "zig-protobuf", "protoc" });
     try std.fs.cwd().makePath(base_cache_dir_rel);
     const base_cache_dir = try std.fs.cwd().realpathAlloc(allocator, base_cache_dir_rel);
     const versioned_cache_dir = try std.fs.path.join(allocator, &.{ base_cache_dir, protoc_version });
