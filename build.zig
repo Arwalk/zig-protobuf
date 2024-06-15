@@ -250,13 +250,13 @@ pub fn buildGenerator(b: *std.Build, opt: GenOptions) *std.Build.Step.Compile {
         .name = "protoc-gen-zig",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
-        .root_source_file = .{ .cwd_relative = "bootstrapped-generator/main.zig" },
+        .root_source_file = b.path("bootstrapped-generator/main.zig"),
         .target = opt.target,
         .optimize = opt.optimize,
     });
 
     const module = b.addModule("protobuf", .{
-        .root_source_file = .{ .cwd_relative = "src/protobuf.zig" },
+        .root_source_file = b.path("src/protobuf.zig"),
     });
 
     exe.root_module.addImport("protobuf", module);
