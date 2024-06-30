@@ -2,10 +2,18 @@ const std = @import("std");
 const ArrayList = std.ArrayList;
 const json = std.json;
 
+const expect = std.testing.expect;
+const ally = std.testing.allocator;
+
+const protobuf = @import("protobuf");
+const ManagedString = protobuf.ManagedString;
+
 const tests = @import("./generated/tests.pb.zig");
 const FixedSizes = tests.FixedSizes;
 const TopLevelEnum = tests.TopLevelEnum;
 const RepeatedEnum = tests.RepeatedEnum;
+const WithStrings = tests.WithStrings;
+const WithRepeatedStrings = tests.WithRepeatedStrings;
 
 test "test_json_encode_fixedsizes" {
     const test_pb = FixedSizes{
@@ -17,14 +25,13 @@ test "test_json_encode_fixedsizes" {
         .float = 6.0,
     };
 
-    const ally = std.testing.allocator;
     const encoded = try test_pb.json_encode(
         .{ .whitespace = .indent_2 },
         ally,
     );
     defer ally.free(encoded);
 
-    try std.testing.expect(std.mem.eql(
+    try expect(std.mem.eql(
         u8,
         encoded,
         \\{
@@ -49,7 +56,6 @@ test "test_json_decode_fixedsizes" {
         .float = 6.0,
     };
 
-    const ally = std.testing.allocator;
     const test_json = try FixedSizes.json_decode(
         \\{
         \\  "sfixed64": 1,
@@ -64,12 +70,10 @@ test "test_json_decode_fixedsizes" {
         ally,
     );
 
-    try std.testing.expect(std.meta.eql(test_pb, test_json));
+    try expect(std.meta.eql(test_pb, test_json));
 }
 
 test "test_json_encode_repeatedenum" {
-    const ally = std.testing.allocator;
-
     var value = ArrayList(TopLevelEnum).init(ally);
     defer value.deinit();
 
@@ -84,7 +88,7 @@ test "test_json_encode_repeatedenum" {
     );
     defer ally.free(encoded);
 
-    try std.testing.expect(std.mem.eql(
+    try expect(std.mem.eql(
         u8,
         encoded,
         \\{
@@ -98,8 +102,6 @@ test "test_json_encode_repeatedenum" {
 }
 
 test "test_json_decode_repeatedenum" {
-    const ally = std.testing.allocator;
-
     var value = ArrayList(TopLevelEnum).init(ally);
     defer value.deinit();
 
@@ -136,10 +138,46 @@ test "test_json_decode_repeatedenum" {
         const test_json = try RepeatedEnum.json_decode(json_string, .{}, ally);
         defer test_json.deinit();
 
-        try std.testing.expect(std.mem.eql(
+        try expect(std.mem.eql(
             TopLevelEnum,
             test_pb.value.items,
             test_json.value.items,
         ));
     }
+}
+
+test "test_json_encode_withstrings" {
+    const test_pb = WithStrings{ .name = ManagedString.static("test_string") };
+
+    const encoded = try test_pb.json_encode(.{ .whitespace = .indent_2 }, ally);
+    defer ally.free(encoded);
+
+    try expect(std.mem.eql(
+        u8,
+        encoded,
+        \\{
+        \\  "name": "test_string"
+        \\}
+        ,
+    ));
+}
+
+test "test_json_decode_withstrings" {
+    const test_pb = WithStrings{ .name = ManagedString.static("test_string") };
+
+    const test_json = try WithStrings.json_decode(
+        \\{
+        \\  "name": "test_string"
+        \\}
+    ,
+        .{},
+        ally,
+    );
+    defer test_json.deinit();
+
+    try expect(std.mem.eql(
+        u8,
+        test_pb.name.getSlice(),
+        test_json.name.getSlice(),
+    ));
 }

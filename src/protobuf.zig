@@ -76,6 +76,19 @@ pub const ManagedString = union(ManagedStringTag) {
             else => {},
         }
     }
+
+    pub fn jsonParse(
+        allocator: Allocator,
+        source: anytype,
+        options: json.ParseOptions,
+    ) !ManagedString {
+        const string = try json.innerParse([]const u8, allocator, source, options);
+        return ManagedString.copy(string, allocator);
+    }
+
+    pub fn jsonStringify(self: *const ManagedString, jws: anytype) !void {
+        try jws.write(self.getSlice());
+    }
 };
 
 /// Enum describing the different field types available.
