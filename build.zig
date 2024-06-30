@@ -88,6 +88,12 @@ pub fn build(b: *std.Build) !void {
             .optimize = optimize,
         }),
         b.addTest(.{
+            .name = "varints",
+            .root_source_file = b.path("tests/tests_json.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+        b.addTest(.{
             .name = "FullName",
             .root_source_file = b.path("bootstrapped-generator/FullName.zig"),
             .target = target,

@@ -3,6 +3,7 @@ const StructField = std.builtin.Type.StructField;
 const isIntegral = std.meta.trait.isIntegral;
 const Allocator = std.mem.Allocator;
 const testing = std.testing;
+const json = std.json;
 
 // common definitions
 
@@ -963,6 +964,91 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) !T {
     return result;
 }
 
+fn freeAllocated(allocator: Allocator, token: json.Token) void {
+    // Took from std.json source code since it was non-public one
+    switch (token) {
+        .allocated_number, .allocated_string => |slice| {
+            allocator.free(slice);
+        },
+        else => {},
+    }
+}
+
+fn fillDefaultStructValues(
+    comptime T: type,
+    r: *T,
+    fields_seen: *[@typeInfo(T).Struct.fields.len]bool,
+) !void {
+    // Took from std.json source code since it was non-public one
+    inline for (@typeInfo(T).Struct.fields, 0..) |field, i| {
+        if (!fields_seen[i]) {
+            if (field.default_value) |default_ptr| {
+                const default = @as(
+                    *align(1) const field.type,
+                    @ptrCast(default_ptr),
+                ).*;
+                @field(r, field.name) = default;
+            } else {
+                return error.MissingField;
+            }
+        }
+    }
+}
+
+fn parseStructField(
+    comptime T: type,
+    result: *T,
+    comptime fieldInfo: StructField,
+    allocator: Allocator,
+    source: anytype,
+    options: json.ParseOptions,
+) !void {
+    // Is this a good way to check if it's ArrayList or not? Took from here:
+    // https://ziggit.dev/t/how-to-json-de-ser-struct-with-arraylist-field/3510/5
+    if (comptime std.mem.indexOf(
+        u8,
+        @typeName(fieldInfo.type),
+        "ArrayListAligned",
+    )) |_| {
+        @field(result.*, fieldInfo.name) = @TypeOf(
+            @field(result, fieldInfo.name),
+        ).fromOwnedSlice(
+            allocator,
+            try json.innerParse(
+                [](@typeInfo(fieldInfo.type.Slice).Pointer.child),
+                allocator,
+                source,
+                options,
+            ),
+        );
+    } else {
+        @field(result.*, fieldInfo.name) = try json.innerParse(
+            fieldInfo.type,
+            allocator,
+            source,
+            options,
+        );
+    }
+}
+
+pub fn pb_json_decode(
+    comptime T: type,
+    input: []const u8,
+    options: json.ParseOptions,
+    allocator: Allocator,
+) !T {
+    const parsed = try json.parseFromSliceLeaky(T, allocator, input, options);
+    return parsed;
+}
+
+pub fn pb_json_encode(
+    data: anytype,
+    options: json.StringifyOptions,
+    allocator: Allocator,
+) ![]u8 {
+    return try json.stringifyAlloc(allocator, data, options);
+}
+
 pub fn MessageMixins(comptime Self: type) type {
     return struct {
         pub fn encode(self: Self, allocator: Allocator) ![]u8 {
@@ -979,6 +1065,138 @@ pub fn MessageMixins(comptime Self: type) type {
         }
         pub fn dupe(self: Self, allocator: Allocator) !Self {
             return pb_dupe(Self, self, allocator);
+        }
+        pub fn json_decode(
+            input: []const u8,
+            options: json.ParseOptions,
+            allocator: Allocator,
+        ) !Self {
+            return pb_json_decode(Self, input, options, allocator);
+        }
+        pub fn json_encode(
+            self: Self,
+            options: json.StringifyOptions,
+            allocator: Allocator,
+        ) ![]const u8 {
+            return pb_json_encode(self, options, allocator);
+        }
+        pub fn jsonParse(
+            allocator: Allocator,
+            source: anytype,
+            options: json.ParseOptions,
+        ) !Self {
+            if (.object_begin != try source.next()) {
+                return error.UnexpectedToken;
+            }
+
+            // Mainly taken from 0.13.0's source code
+            var result: Self = undefined;
+            const structInfo = @typeInfo(Self).Struct;
+            var fields_seen = [_]bool{false} ** structInfo.fields.len;
+
+            while (true) {
+                var name_token: ?json.Token = try source.nextAllocMax(
+                    allocator,
+                    .alloc_if_needed,
+                    options.max_value_len.?,
+                );
+                const field_name = switch (name_token.?) {
+                    inline .string, .allocated_string => |slice| slice,
+                    .object_end => { // No more fields.
+                        break;
+                    },
+                    else => {
+                        return error.UnexpectedToken;
+                    },
+                };
+
+                inline for (structInfo.fields, 0..) |field, i| {
+                    if (field.is_comptime) {
+                        @compileError("comptime fields are not supported: " ++ @typeName(Self) ++ "." ++ field.name);
+                    }
+                    if (std.mem.eql(u8, field.name, field_name)) {
+                        // Free the name token now in case we're using an
+                        // allocator that optimizes freeing the last
+                        // allocated object. (Recursing into innerParse()
+                        // might trigger more allocations.)
+                        freeAllocated(allocator, name_token.?);
+                        name_token = null;
+                        if (fields_seen[i]) {
+                            switch (options.duplicate_field_behavior) {
+                                .use_first => {
+                                    // Parse and ignore the redundant value.
+                                    // We don't want to skip the value,
+                                    // because we want type checking.
+                                    try parseStructField(
+                                        Self,
+                                        &result,
+                                        field,
+                                        allocator,
+                                        source,
+                                        options,
+                                    );
+                                    break;
+                                },
+                                .@"error" => return error.DuplicateField,
+                                .use_last => {},
+                            }
+                        }
+                        try parseStructField(
+                            Self,
+                            &result,
+                            field,
+                            allocator,
+                            source,
+                            options,
+                        );
+                        fields_seen[i] = true;
+                        break;
+                    }
+                } else {
+                    // Didn't match anything.
+                    freeAllocated(allocator, name_token.?);
+                    if (options.ignore_unknown_fields) {
+                        try source.skipValue();
+                    } else {
+                        return error.UnknownField;
+                    }
+                }
+            }
+            try fillDefaultStructValues(Self, &result, &fields_seen);
+            return result;
+        }
+        pub fn jsonStringify(self: *const Self, jws: anytype) !void {
+            try jws.beginObject();
+
+            inline for (@typeInfo(Self).Struct.fields) |fieldInfo| {
+                switch (@typeInfo(fieldInfo.type)) {
+                    .Optional => {
+                        if (@field(self, fieldInfo.name)) |v| {
+                            try jws.objectField(fieldInfo.name);
+                            try jws.write(v);
+                        }
+                    },
+                    .Struct => {
+                        if (comptime std.mem.indexOf(
+                            u8,
+                            @typeName(fieldInfo.type),
+                            "ArrayListAligned",
+                        )) |_| {
+                            try jws.objectField(fieldInfo.name);
+                            try jws.write(@field(self, fieldInfo.name).items);
+                        } else {
+                            try jws.objectField(fieldInfo.name);
+                            try jws.write(@field(self, fieldInfo.name));
+                        }
+                    },
+                    else => {
+                        try jws.objectField(fieldInfo.name);
+                        try jws.write(@field(self, fieldInfo.name));
+                    },
+                }
+            }
+
+            try jws.endObject();
         }
     };
 }
