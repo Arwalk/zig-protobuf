@@ -14,6 +14,8 @@ const TopLevelEnum = tests.TopLevelEnum;
 const RepeatedEnum = tests.RepeatedEnum;
 const WithStrings = tests.WithStrings;
 const WithRepeatedStrings = tests.WithRepeatedStrings;
+const WithEnum = tests.WithEnum;
+const WithSubmessages = tests.WithSubmessages;
 
 test "test_json_encode_fixedsizes" {
     const test_pb = FixedSizes{
@@ -180,4 +182,42 @@ test "test_json_decode_withstrings" {
         test_pb.name.getSlice(),
         test_json.name.getSlice(),
     ));
+}
+
+test "test_json_encode_withsubmessages" {
+    const test_pb = WithSubmessages{ .with_enum = WithEnum{ .value = .A } };
+
+    const encoded = try test_pb.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(std.mem.eql(
+        u8,
+        encoded,
+        \\{
+        \\  "with_enum": {
+        \\    "value": "A"
+        \\  }
+        \\}
+        ,
+    ));
+}
+
+test "test_json_decode_withsubmessages" {
+    const test_pb = WithSubmessages{ .with_enum = WithEnum{ .value = .A } };
+
+    const test_json = try WithSubmessages.json_decode(
+        \\{
+        \\  "with_enum": {
+        \\    "value": "A"
+        \\  }
+        \\}
+    ,
+        .{},
+        ally,
+    );
+
+    try expect(std.meta.eql(test_pb, test_json));
 }
