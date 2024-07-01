@@ -1,4 +1,5 @@
 const std = @import("std");
+const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const json = std.json;
 
@@ -18,8 +19,20 @@ const WithEnum = tests.WithEnum;
 const WithSubmessages = tests.WithSubmessages;
 const Packed = tests.Packed;
 
-test "test_json_encode_fixedsizes" {
-    const test_pb = FixedSizes{
+// FixedSizes tests
+const fixedsizes_str =
+    \\{
+    \\  "sfixed64": 1,
+    \\  "sfixed32": 2,
+    \\  "fixed32": 3,
+    \\  "fixed64": 4,
+    \\  "double": 5e0,
+    \\  "float": 6e0
+    \\}
+;
+
+fn fixedsizes_test_pb() FixedSizes {
+    return FixedSizes{
         .sfixed64 = 1,
         .sfixed32 = 2,
         .fixed32 = 3,
@@ -27,6 +40,10 @@ test "test_json_encode_fixedsizes" {
         .double = 5.0,
         .float = 6.0,
     };
+}
+
+test "test_json_encode_fixedsizes" {
+    const test_pb = fixedsizes_test_pb();
 
     const encoded = try test_pb.json_encode(
         .{ .whitespace = .indent_2 },
@@ -34,49 +51,19 @@ test "test_json_encode_fixedsizes" {
     );
     defer ally.free(encoded);
 
-    try expect(std.mem.eql(
-        u8,
-        encoded,
-        \\{
-        \\  "sfixed64": 1,
-        \\  "sfixed32": 2,
-        \\  "fixed32": 3,
-        \\  "fixed64": 4,
-        \\  "double": 5e0,
-        \\  "float": 6e0
-        \\}
-        ,
-    ));
+    try expect(std.mem.eql(u8, encoded, fixedsizes_str));
 }
 
 test "test_json_decode_fixedsizes" {
-    const test_pb = FixedSizes{
-        .sfixed64 = 1,
-        .sfixed32 = 2,
-        .fixed32 = 3,
-        .fixed64 = 4,
-        .double = 5.0,
-        .float = 6.0,
-    };
+    const test_pb = fixedsizes_test_pb();
 
-    const test_json = try FixedSizes.json_decode(
-        \\{
-        \\  "sfixed64": 1,
-        \\  "sfixed32": 2,
-        \\  "fixed32": 3,
-        \\  "fixed64": 4,
-        \\  "double": 5e0,
-        \\  "float": 6e0
-        \\}
-    ,
-        .{},
-        ally,
-    );
+    const test_json = try FixedSizes.json_decode(fixedsizes_str, .{}, ally);
     defer test_json.deinit();
 
     try expect(std.meta.eql(test_pb, test_json));
 }
 
+// RepeatedEnum tests
 test "test_json_encode_repeatedenum" {
     var value = ArrayList(TopLevelEnum).init(ally);
     defer value.deinit();
@@ -150,33 +137,30 @@ test "test_json_decode_repeatedenum" {
     }
 }
 
+// WithStrings tests
+const withstrings_str =
+    \\{
+    \\  "name": "test_string"
+    \\}
+;
+
+fn withstrings_test_pb() WithStrings {
+    return WithStrings{ .name = ManagedString.static("test_string") };
+}
+
 test "test_json_encode_withstrings" {
-    const test_pb = WithStrings{ .name = ManagedString.static("test_string") };
+    const test_pb = withstrings_test_pb();
 
     const encoded = try test_pb.json_encode(.{ .whitespace = .indent_2 }, ally);
     defer ally.free(encoded);
 
-    try expect(std.mem.eql(
-        u8,
-        encoded,
-        \\{
-        \\  "name": "test_string"
-        \\}
-        ,
-    ));
+    try expect(std.mem.eql(u8, encoded, withstrings_str));
 }
 
 test "test_json_decode_withstrings" {
-    const test_pb = WithStrings{ .name = ManagedString.static("test_string") };
+    const test_pb = withstrings_test_pb();
 
-    const test_json = try WithStrings.json_decode(
-        \\{
-        \\  "name": "test_string"
-        \\}
-    ,
-        .{},
-        ally,
-    );
+    const test_json = try WithStrings.json_decode(withstrings_str, .{}, ally);
     defer test_json.deinit();
 
     try expect(std.mem.eql(
@@ -186,8 +170,21 @@ test "test_json_decode_withstrings" {
     ));
 }
 
+// WithSubmessages tests
+const withsubmessages_str =
+    \\{
+    \\  "with_enum": {
+    \\    "value": "A"
+    \\  }
+    \\}
+;
+
+fn withsubmessages_test_pb() WithSubmessages {
+    return WithSubmessages{ .with_enum = WithEnum{ .value = .A } };
+}
+
 test "test_json_encode_withsubmessages" {
-    const test_pb = WithSubmessages{ .with_enum = WithEnum{ .value = .A } };
+    const test_pb = withsubmessages_test_pb();
 
     const encoded = try test_pb.json_encode(
         .{ .whitespace = .indent_2 },
@@ -195,39 +192,73 @@ test "test_json_encode_withsubmessages" {
     );
     defer ally.free(encoded);
 
-    try expect(std.mem.eql(
-        u8,
-        encoded,
-        \\{
-        \\  "with_enum": {
-        \\    "value": "A"
-        \\  }
-        \\}
-        ,
-    ));
+    try expect(std.mem.eql(u8, encoded, withsubmessages_str));
 }
 
 test "test_json_decode_withsubmessages" {
-    const test_pb = WithSubmessages{ .with_enum = WithEnum{ .value = .A } };
+    const test_pb = withsubmessages_test_pb();
 
-    const test_json = try WithSubmessages.json_decode(
-        \\{
-        \\  "with_enum": {
-        \\    "value": "A"
-        \\  }
-        \\}
-    ,
-        .{},
-        ally,
-    );
+    const test_json = try WithSubmessages.json_decode(withsubmessages_str, .{}, ally);
     defer test_json.deinit();
 
     try expect(std.meta.eql(test_pb, test_json));
 }
 
-test "test_json_encode_packed" {
-    var test_pb = Packed.init(ally);
-    defer test_pb.deinit();
+// Packed tests
+const packed_str =
+    \\{
+    \\  "int32_list": [
+    \\    -1,
+    \\    2,
+    \\    3
+    \\  ],
+    \\  "uint32_list": [
+    \\    1,
+    \\    2,
+    \\    3
+    \\  ],
+    \\  "sint32_list": [
+    \\    2,
+    \\    3,
+    \\    4
+    \\  ],
+    \\  "float_list": [
+    \\    1e0,
+    \\    -1e3
+    \\  ],
+    \\  "double_list": [
+    \\    2.1e0,
+    \\    -1e3
+    \\  ],
+    \\  "int64_list": [
+    \\    3,
+    \\    -4,
+    \\    5
+    \\  ],
+    \\  "sint64_list": [
+    \\    -4,
+    \\    5,
+    \\    -6
+    \\  ],
+    \\  "uint64_list": [
+    \\    5,
+    \\    6,
+    \\    7
+    \\  ],
+    \\  "bool_list": [
+    \\    true,
+    \\    false,
+    \\    false
+    \\  ],
+    \\  "enum_list": [
+    \\    "SE_ZERO",
+    \\    "SE2_ONE"
+    \\  ]
+    \\}
+;
+
+fn packed_test_pb(allocator: Allocator) !Packed {
+    var test_pb = Packed.init(allocator);
 
     try test_pb.int32_list.append(-1);
     try test_pb.int32_list.append(2);
@@ -265,6 +296,13 @@ test "test_json_encode_packed" {
 
     try test_pb.enum_list.append(.SE_ZERO);
     try test_pb.enum_list.append(.SE2_ONE);
+
+    return test_pb;
+}
+
+test "test_json_encode_packed" {
+    const test_pb = try packed_test_pb(ally);
+    defer test_pb.deinit();
 
     const encoded = try test_pb.json_encode(
         .{ .whitespace = .indent_2 },
@@ -272,157 +310,14 @@ test "test_json_encode_packed" {
     );
     defer ally.free(encoded);
 
-    try expect(std.mem.eql(
-        u8,
-        encoded,
-        \\{
-        \\  "int32_list": [
-        \\    -1,
-        \\    2,
-        \\    3
-        \\  ],
-        \\  "uint32_list": [
-        \\    1,
-        \\    2,
-        \\    3
-        \\  ],
-        \\  "sint32_list": [
-        \\    2,
-        \\    3,
-        \\    4
-        \\  ],
-        \\  "float_list": [
-        \\    1e0,
-        \\    -1e3
-        \\  ],
-        \\  "double_list": [
-        \\    2.1e0,
-        \\    -1e3
-        \\  ],
-        \\  "int64_list": [
-        \\    3,
-        \\    -4,
-        \\    5
-        \\  ],
-        \\  "sint64_list": [
-        \\    -4,
-        \\    5,
-        \\    -6
-        \\  ],
-        \\  "uint64_list": [
-        \\    5,
-        \\    6,
-        \\    7
-        \\  ],
-        \\  "bool_list": [
-        \\    true,
-        \\    false,
-        \\    false
-        \\  ],
-        \\  "enum_list": [
-        \\    "SE_ZERO",
-        \\    "SE2_ONE"
-        \\  ]
-        \\}
-        ,
-    ));
+    try expect(std.mem.eql(u8, encoded, packed_str));
 }
 
 test "test_json_decode_packed" {
-    var test_pb = Packed.init(ally);
+    const test_pb = try packed_test_pb(ally);
     defer test_pb.deinit();
 
-    try test_pb.int32_list.append(-1);
-    try test_pb.int32_list.append(2);
-    try test_pb.int32_list.append(3);
-
-    try test_pb.uint32_list.append(1);
-    try test_pb.uint32_list.append(2);
-    try test_pb.uint32_list.append(3);
-
-    try test_pb.sint32_list.append(2);
-    try test_pb.sint32_list.append(3);
-    try test_pb.sint32_list.append(4);
-
-    try test_pb.float_list.append(1.0);
-    try test_pb.float_list.append(-1_000.0);
-
-    try test_pb.double_list.append(2.1);
-    try test_pb.double_list.append(-1_000.0);
-
-    try test_pb.int64_list.append(3);
-    try test_pb.int64_list.append(-4);
-    try test_pb.int64_list.append(5);
-
-    try test_pb.sint64_list.append(-4);
-    try test_pb.sint64_list.append(5);
-    try test_pb.sint64_list.append(-6);
-
-    try test_pb.uint64_list.append(5);
-    try test_pb.uint64_list.append(6);
-    try test_pb.uint64_list.append(7);
-
-    try test_pb.bool_list.append(true);
-    try test_pb.bool_list.append(false);
-    try test_pb.bool_list.append(false);
-
-    try test_pb.enum_list.append(.SE_ZERO);
-    try test_pb.enum_list.append(.SE2_ONE);
-
-    const test_json = try Packed.json_decode(
-        \\{
-        \\  "int32_list": [
-        \\    -1,
-        \\    2,
-        \\    3
-        \\  ],
-        \\  "uint32_list": [
-        \\    1,
-        \\    2,
-        \\    3
-        \\  ],
-        \\  "sint32_list": [
-        \\    2,
-        \\    3,
-        \\    4
-        \\  ],
-        \\  "float_list": [
-        \\    1e0,
-        \\    -1e3
-        \\  ],
-        \\  "double_list": [
-        \\    2.1e0,
-        \\    -1e3
-        \\  ],
-        \\  "int64_list": [
-        \\    3,
-        \\    -4,
-        \\    5
-        \\  ],
-        \\  "sint64_list": [
-        \\    -4,
-        \\    5,
-        \\    -6
-        \\  ],
-        \\  "uint64_list": [
-        \\    5,
-        \\    6,
-        \\    7
-        \\  ],
-        \\  "bool_list": [
-        \\    true,
-        \\    false,
-        \\    false
-        \\  ],
-        \\  "enum_list": [
-        \\    "SE_ZERO",
-        \\    "SE2_ONE"
-        \\  ]
-        \\}
-    ,
-        .{},
-        ally,
-    );
+    const test_json = try Packed.json_decode(packed_str, .{}, ally);
     defer test_json.deinit();
 
     inline for (std.meta.fields(Packed)) |structInfo| {
