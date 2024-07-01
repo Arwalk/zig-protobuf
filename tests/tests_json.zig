@@ -16,6 +16,7 @@ const WithStrings = tests.WithStrings;
 const WithRepeatedStrings = tests.WithRepeatedStrings;
 const WithEnum = tests.WithEnum;
 const WithSubmessages = tests.WithSubmessages;
+const Packed = tests.Packed;
 
 test "test_json_encode_fixedsizes" {
     const test_pb = FixedSizes{
@@ -71,6 +72,7 @@ test "test_json_decode_fixedsizes" {
         .{},
         ally,
     );
+    defer test_json.deinit();
 
     try expect(std.meta.eql(test_pb, test_json));
 }
@@ -218,6 +220,217 @@ test "test_json_decode_withsubmessages" {
         .{},
         ally,
     );
+    defer test_json.deinit();
 
     try expect(std.meta.eql(test_pb, test_json));
+}
+
+test "test_json_encode_packed" {
+    var test_pb = Packed.init(ally);
+    defer test_pb.deinit();
+
+    try test_pb.int32_list.append(-1);
+    try test_pb.int32_list.append(2);
+    try test_pb.int32_list.append(3);
+
+    try test_pb.uint32_list.append(1);
+    try test_pb.uint32_list.append(2);
+    try test_pb.uint32_list.append(3);
+
+    try test_pb.sint32_list.append(2);
+    try test_pb.sint32_list.append(3);
+    try test_pb.sint32_list.append(4);
+
+    try test_pb.float_list.append(1.0);
+    try test_pb.float_list.append(-1_000.0);
+
+    try test_pb.double_list.append(2.1);
+    try test_pb.double_list.append(-1_000.0);
+
+    try test_pb.int64_list.append(3);
+    try test_pb.int64_list.append(-4);
+    try test_pb.int64_list.append(5);
+
+    try test_pb.sint64_list.append(-4);
+    try test_pb.sint64_list.append(5);
+    try test_pb.sint64_list.append(-6);
+
+    try test_pb.uint64_list.append(5);
+    try test_pb.uint64_list.append(6);
+    try test_pb.uint64_list.append(7);
+
+    try test_pb.bool_list.append(true);
+    try test_pb.bool_list.append(false);
+    try test_pb.bool_list.append(false);
+
+    try test_pb.enum_list.append(.SE_ZERO);
+    try test_pb.enum_list.append(.SE2_ONE);
+
+    const encoded = try test_pb.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(std.mem.eql(
+        u8,
+        encoded,
+        \\{
+        \\  "int32_list": [
+        \\    -1,
+        \\    2,
+        \\    3
+        \\  ],
+        \\  "uint32_list": [
+        \\    1,
+        \\    2,
+        \\    3
+        \\  ],
+        \\  "sint32_list": [
+        \\    2,
+        \\    3,
+        \\    4
+        \\  ],
+        \\  "float_list": [
+        \\    1e0,
+        \\    -1e3
+        \\  ],
+        \\  "double_list": [
+        \\    2.1e0,
+        \\    -1e3
+        \\  ],
+        \\  "int64_list": [
+        \\    3,
+        \\    -4,
+        \\    5
+        \\  ],
+        \\  "sint64_list": [
+        \\    -4,
+        \\    5,
+        \\    -6
+        \\  ],
+        \\  "uint64_list": [
+        \\    5,
+        \\    6,
+        \\    7
+        \\  ],
+        \\  "bool_list": [
+        \\    true,
+        \\    false,
+        \\    false
+        \\  ],
+        \\  "enum_list": [
+        \\    "SE_ZERO",
+        \\    "SE2_ONE"
+        \\  ]
+        \\}
+        ,
+    ));
+}
+
+test "test_json_decode_packed" {
+    var test_pb = Packed.init(ally);
+    defer test_pb.deinit();
+
+    try test_pb.int32_list.append(-1);
+    try test_pb.int32_list.append(2);
+    try test_pb.int32_list.append(3);
+
+    try test_pb.uint32_list.append(1);
+    try test_pb.uint32_list.append(2);
+    try test_pb.uint32_list.append(3);
+
+    try test_pb.sint32_list.append(2);
+    try test_pb.sint32_list.append(3);
+    try test_pb.sint32_list.append(4);
+
+    try test_pb.float_list.append(1.0);
+    try test_pb.float_list.append(-1_000.0);
+
+    try test_pb.double_list.append(2.1);
+    try test_pb.double_list.append(-1_000.0);
+
+    try test_pb.int64_list.append(3);
+    try test_pb.int64_list.append(-4);
+    try test_pb.int64_list.append(5);
+
+    try test_pb.sint64_list.append(-4);
+    try test_pb.sint64_list.append(5);
+    try test_pb.sint64_list.append(-6);
+
+    try test_pb.uint64_list.append(5);
+    try test_pb.uint64_list.append(6);
+    try test_pb.uint64_list.append(7);
+
+    try test_pb.bool_list.append(true);
+    try test_pb.bool_list.append(false);
+    try test_pb.bool_list.append(false);
+
+    try test_pb.enum_list.append(.SE_ZERO);
+    try test_pb.enum_list.append(.SE2_ONE);
+
+    const test_json = try Packed.json_decode(
+        \\{
+        \\  "int32_list": [
+        \\    -1,
+        \\    2,
+        \\    3
+        \\  ],
+        \\  "uint32_list": [
+        \\    1,
+        \\    2,
+        \\    3
+        \\  ],
+        \\  "sint32_list": [
+        \\    2,
+        \\    3,
+        \\    4
+        \\  ],
+        \\  "float_list": [
+        \\    1e0,
+        \\    -1e3
+        \\  ],
+        \\  "double_list": [
+        \\    2.1e0,
+        \\    -1e3
+        \\  ],
+        \\  "int64_list": [
+        \\    3,
+        \\    -4,
+        \\    5
+        \\  ],
+        \\  "sint64_list": [
+        \\    -4,
+        \\    5,
+        \\    -6
+        \\  ],
+        \\  "uint64_list": [
+        \\    5,
+        \\    6,
+        \\    7
+        \\  ],
+        \\  "bool_list": [
+        \\    true,
+        \\    false,
+        \\    false
+        \\  ],
+        \\  "enum_list": [
+        \\    "SE_ZERO",
+        \\    "SE2_ONE"
+        \\  ]
+        \\}
+    ,
+        .{},
+        ally,
+    );
+    defer test_json.deinit();
+
+    inline for (std.meta.fields(Packed)) |structInfo| {
+        const test_pb_items = @field(test_pb, structInfo.name).items;
+        try expect(std.mem.eql(
+            @typeInfo(@TypeOf(test_pb_items)).Pointer.child,
+            test_pb_items,
+            @field(test_json, structInfo.name).items,
+        ));
+    }
 }
