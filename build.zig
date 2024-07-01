@@ -88,7 +88,7 @@ pub fn build(b: *std.Build) !void {
             .optimize = optimize,
         }),
         b.addTest(.{
-            .name = "varints",
+            .name = "json",
             .root_source_file = b.path("tests/tests_json.zig"),
             .target = target,
             .optimize = optimize,
