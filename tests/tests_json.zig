@@ -18,6 +18,7 @@ const WithRepeatedStrings = tests.WithRepeatedStrings;
 const WithEnum = tests.WithEnum;
 const WithSubmessages = tests.WithSubmessages;
 const Packed = tests.Packed;
+const OneofContainer = @import("./generated/tests/oneof.pb.zig").OneofContainer;
 
 // FixedSizes tests
 const fixedsizes_str =
@@ -328,4 +329,124 @@ test "test_json_decode_packed" {
             @field(test_json, structInfo.name).items,
         ));
     }
+}
+
+const oneofcontainer_oneof_string_in_oneof_str =
+    \\{
+    \\  "regular_field": "this field is always the same",
+    \\  "enum_field": "SOMETHING",
+    \\  "some_oneof": {
+    \\    "string_in_oneof": "testing oneof field being the string"
+    \\  }
+    \\}
+;
+
+fn oneofcontainer_oneof_string_in_oneof_test_pb() !OneofContainer {
+    return OneofContainer{
+        .some_oneof = .{ .string_in_oneof = ManagedString.static(
+            "testing oneof field being the string",
+        ) },
+        .regular_field = ManagedString.static("this field is always the same"),
+        .enum_field = .SOMETHING,
+    };
+}
+
+const oneofcontainer_oneof_message_in_oneof_str =
+    \\{
+    \\  "regular_field": "this field is always the same",
+    \\  "enum_field": "UNSPECIFIED",
+    \\  "some_oneof": {
+    \\    "message_in_oneof": {
+    \\      "value": -17,
+    \\      "str": "that's a string inside message_in_oneof"
+    \\    }
+    \\  }
+    \\}
+;
+
+fn oneofcontainer_oneof_message_in_oneof_test_pb() !OneofContainer {
+    return OneofContainer{
+        .some_oneof = .{ .message_in_oneof = .{
+            .value = -17,
+            .str = ManagedString.static(
+                "that's a string inside message_in_oneof",
+            ),
+        } },
+        .regular_field = ManagedString.static("this field is always the same"),
+        .enum_field = .UNSPECIFIED,
+    };
+}
+
+test "test_json_encode_oneofcontainer_oneof_string_in_oneof" {
+    const test_pb = try oneofcontainer_oneof_string_in_oneof_test_pb();
+
+    const encoded = try test_pb.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(std.mem.eql(u8, encoded, oneofcontainer_oneof_string_in_oneof_str));
+}
+
+test "test_json_decode_oneofcontainer_oneof_string_in_oneof" {
+    const test_pb = try oneofcontainer_oneof_string_in_oneof_test_pb();
+
+    const test_json = try OneofContainer.json_decode(
+        oneofcontainer_oneof_string_in_oneof_str,
+        .{},
+        ally,
+    );
+    defer test_json.deinit();
+
+    // TODO(libro): Make some alternative to std.meta.eql to
+    //   effectively compare two generated struct instances
+    //   which would handle ManagedStrings etc.
+    try expect(std.mem.eql(
+        u8,
+        test_pb.regular_field.getSlice(),
+        test_json.regular_field.getSlice(),
+    ));
+    try expect(test_pb.enum_field == test_json.enum_field);
+    try expect(std.mem.eql(
+        u8,
+        test_pb.some_oneof.?.string_in_oneof.getSlice(),
+        test_json.some_oneof.?.string_in_oneof.getSlice(),
+    ));
+}
+
+test "test_json_encode_oneofcontainer_oneof_message_in_oneof" {
+    const test_pb = try oneofcontainer_oneof_message_in_oneof_test_pb();
+
+    const encoded = try test_pb.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(std.mem.eql(u8, encoded, oneofcontainer_oneof_message_in_oneof_str));
+}
+
+test "test_json_decode_oneofcontainer_oneof_message_in_oneof" {
+    const test_pb = try oneofcontainer_oneof_message_in_oneof_test_pb();
+
+    const test_json = try OneofContainer.json_decode(
+        oneofcontainer_oneof_message_in_oneof_str,
+        .{},
+        ally,
+    );
+    defer test_json.deinit();
+
+    try expect(std.mem.eql(
+        u8,
+        test_pb.regular_field.getSlice(),
+        test_json.regular_field.getSlice(),
+    ));
+    try expect(test_pb.enum_field == test_json.enum_field);
+    try expect(test_pb.some_oneof.?.message_in_oneof.value == test_json.some_oneof.?.message_in_oneof.value);
+    try expect(std.mem.eql(
+        u8,
+        test_pb.some_oneof.?.message_in_oneof.str.getSlice(),
+        test_json.some_oneof.?.message_in_oneof.str.getSlice(),
+    ));
 }
