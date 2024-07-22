@@ -77,6 +77,8 @@ pub const ManagedString = union(ManagedStringTag) {
         }
     }
 
+    // This method is used by std.json
+    // internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: Allocator,
         source: anytype,
@@ -86,6 +88,8 @@ pub const ManagedString = union(ManagedStringTag) {
         return ManagedString.copy(string, allocator);
     }
 
+    // This method is used by std.json
+    // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const ManagedString, jws: anytype) !void {
         try jws.write(self.getSlice());
     }
@@ -1093,6 +1097,9 @@ pub fn MessageMixins(comptime Self: type) type {
         ) ![]const u8 {
             return pb_json_encode(self, options, allocator);
         }
+
+        // This method is used by std.json
+        // internally for deserialization. DO NOT RENAME!
         pub fn jsonParse(
             allocator: Allocator,
             source: anytype,
@@ -1178,6 +1185,9 @@ pub fn MessageMixins(comptime Self: type) type {
             try fillDefaultStructValues(Self, &result, &fields_seen);
             return result;
         }
+
+        // This method is used by std.json
+        // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const Self, jws: anytype) !void {
             try jws.beginObject();
 
