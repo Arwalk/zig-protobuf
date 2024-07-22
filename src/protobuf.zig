@@ -1020,14 +1020,11 @@ fn parseStructField(
     source: anytype,
     options: json.ParseOptions,
 ) !void {
-    // Is this a good way to check if it's ArrayList or not? Took from here:
-    // https://ziggit.dev/t/how-to-json-de-ser-struct-with-arraylist-field/3510/5
-    if (comptime std.mem.indexOf(
-        u8,
-        @typeName(fieldInfo.type),
-        "ArrayListAligned",
-    )) |_| {
-        @field(result.*, fieldInfo.name) = @TypeOf(
+    @field(result.*, fieldInfo.name) = switch (@field(
+        T._desc_table,
+        fieldInfo.name,
+    ).ftype) {
+        .List, .PackedList => @TypeOf(
             @field(result, fieldInfo.name),
         ).fromOwnedSlice(
             allocator,
@@ -1037,15 +1034,14 @@ fn parseStructField(
                 source,
                 options,
             ),
-        );
-    } else {
-        @field(result.*, fieldInfo.name) = try json.innerParse(
+        ),
+        else => try json.innerParse(
             fieldInfo.type,
             allocator,
             source,
             options,
-        );
-    }
+        ),
+    };
 }
 
 pub fn pb_json_decode(
@@ -1200,16 +1196,17 @@ pub fn MessageMixins(comptime Self: type) type {
                         }
                     },
                     .Struct => {
-                        if (comptime std.mem.indexOf(
-                            u8,
-                            @typeName(fieldInfo.type),
-                            "ArrayListAligned",
-                        )) |_| {
-                            try jws.objectField(fieldInfo.name);
-                            try jws.write(@field(self, fieldInfo.name).items);
-                        } else {
-                            try jws.objectField(fieldInfo.name);
-                            try jws.write(@field(self, fieldInfo.name));
+                        try jws.objectField(fieldInfo.name);
+                        switch (@field(
+                            Self._desc_table,
+                            fieldInfo.name,
+                        ).ftype) {
+                            .List, .PackedList => {
+                                try jws.write(@field(self, fieldInfo.name).items);
+                            },
+                            else => {
+                                try jws.write(@field(self, fieldInfo.name));
+                            },
                         }
                     },
                     else => {
