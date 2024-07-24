@@ -4,6 +4,9 @@ const isIntegral = std.meta.trait.isIntegral;
 const Allocator = std.mem.Allocator;
 const testing = std.testing;
 const json = std.json;
+const base64 = std.base64;
+const base64Errors = std.base64.Error;
+const ParseFromValueError = std.json.ParseFromValueError;
 
 // common definitions
 
@@ -1015,6 +1018,13 @@ fn fillDefaultStructValues(
     }
 }
 
+fn base64ErrorToJsonParseError(err: base64Errors) ParseFromValueError {
+    return switch(err) {
+        base64Errors.NoSpaceLeft => ParseFromValueError.Overflow,
+        base64Errors.InvalidPadding, base64Errors.InvalidCharacter => ParseFromValueError.UnexpectedToken
+    };
+}
+
 fn parseStructField(
     comptime T: type,
     result: *T,
@@ -1038,6 +1048,14 @@ fn parseStructField(
                 options,
             ),
         ),
+        .Bytes => bytes: {
+            const temp_raw = try json.innerParse([]u8, allocator, source, options);
+            const size = base64.standard.Decoder.calcSizeForSlice(temp_raw) catch |err| return base64ErrorToJsonParseError(err);
+            const tempstring = try allocator.alloc(u8, size);
+            errdefer allocator.free(tempstring);
+            base64.standard.Decoder.decode(tempstring, temp_raw) catch |err| return base64ErrorToJsonParseError(err);
+            break :bytes ManagedString.move(tempstring, allocator);
+        },
         else => try json.innerParse(
             fieldInfo.type,
             allocator,
