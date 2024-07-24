@@ -105,6 +105,7 @@ pub const FixedSize = enum(u3) { I64 = 1, I32 = 5 };
 pub const ListTypeTag = enum {
     Varint,
     String,
+    Bytes,
     FixedInt,
     SubMessage,
 };
@@ -113,6 +114,7 @@ pub const ListTypeTag = enum {
 pub const ListType = union(ListTypeTag) {
     Varint: VarintType,
     String,
+    Bytes,
     FixedInt: FixedSize,
     SubMessage,
 };
@@ -137,7 +139,7 @@ pub const FieldType = union(FieldTypeTag) {
             .List => |inner| switch (inner) {
                 .Varint => 0,
                 .FixedInt => |size| @intFromEnum(size),
-                .String, .SubMessage => 2,
+                .String, .SubMessage, .Bytes => 2,
             },
             .OneOf => @compileError("Shouldn't pass a .OneOf field to this function here."),
         };
@@ -369,7 +371,7 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, c
                 .Varint => |varint_type| {
                     try append_packed_list_of_varint(pb, value, field, varint_type);
                 },
-                .String => |varint_type| {
+                .String, .Bytes => |varint_type| {
                     // TODO: find examples about how to encode and decode packed strings. the documentation is ambiguous
                     try append_packed_list_of_strings(pb, value, varint_type);
                 },
@@ -387,7 +389,7 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, c
                 .SubMessage => {
                     try append_list_of_submessages(pb, field, value);
                 },
-                .String => {
+                .String, .Bytes => {
                     for (value.items) |item| {
                         try append_tag(pb, field);
                         try append_const_bytes(pb, item);
@@ -873,11 +875,11 @@ fn decode_value(comptime decoded_type: type, comptime ftype: FieldType, extracte
             .Slice => |slice| try pb_decode(decoded_type, slice, allocator),
             else => error.InvalidInput,
         },
-        .String => switch (extracted_data.data) {
+        .String, .Bytes => switch (extracted_data.data) {
             .Slice => |slice| try ManagedString.copy(slice, allocator),
             else => error.InvalidInput,
         },
-        else => {
+        .List, .PackedList, .OneOf => {
             std.log.warn("Invalid scalar type {any}\n", .{ftype});
             return error.InvalidInput;
         },
@@ -918,7 +920,7 @@ fn decode_data(comptime T: type, comptime field_desc: FieldDescriptor, comptime 
                     },
                     .RawValue => return error.InvalidInput,
                 },
-                .String => switch (extracted_data.data) {
+                .String, .Bytes => switch (extracted_data.data) {
                     .Slice => |slice| {
                         try @field(result, field.name).append(try ManagedString.copy(slice, allocator));
                     },

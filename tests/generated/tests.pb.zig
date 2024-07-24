@@ -184,7 +184,7 @@ pub const WithBytes = struct {
     byte_field: ManagedString = .Empty,
 
     pub const _desc_table = .{
-        .byte_field = fd(1, .String),
+        .byte_field = fd(1, .Bytes),
     };
 
     pub usingnamespace protobuf.MessageMixins(@This());
