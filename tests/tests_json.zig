@@ -18,7 +18,145 @@ const WithRepeatedStrings = tests.WithRepeatedStrings;
 const WithEnum = tests.WithEnum;
 const WithSubmessages = tests.WithSubmessages;
 const Packed = tests.Packed;
-const OneofContainer = @import("./generated/tests/oneof.pb.zig").OneofContainer;
+
+const oneof_tests = @import("./generated/tests/oneof.pb.zig");
+const OneofContainer = oneof_tests.OneofContainer;
+
+fn _compare_pb_strings(value1: ManagedString, value2: @TypeOf(value1)) bool {
+    return std.mem.eql(u8, value1.getSlice(), value2.getSlice());
+}
+
+fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
+    const T = @TypeOf(value1);
+    inline for (std.meta.fields(T)) |structInfo| {
+        const field_type = @TypeOf(@field(value1, structInfo.name));
+
+        var field1: switch (@typeInfo(field_type)) {
+            .Optional => |optional| optional.child,
+            else => field_type,
+        } = undefined;
+        var field2: @TypeOf(field1) = undefined;
+
+        // If this variable will stay null after next switch statement than:
+        //   1. It was non-optional field
+        //   2. Field is optional, both field are
+        //        not null and thus further check are
+        //        requied (for those .? is applied)
+        var are_optionals_equal: ?bool = null;
+        switch (@typeInfo(field_type)) {
+            .Optional => {
+                if (@field(
+                    value1,
+                    structInfo.name,
+                ) == null and @field(
+                    value2,
+                    structInfo.name,
+                ) == null) {
+                    // Both field are nulls, so they're
+                    // passing the equality check
+                    are_optionals_equal = true;
+                } else if (@field(
+                    value1,
+                    structInfo.name,
+                ) == null or @field(
+                    value2,
+                    structInfo.name,
+                ) == null) {
+                    // One optional field is null while other one
+                    // is not - equality check definitely failed here
+                    are_optionals_equal = false;
+                } else {
+                    field1 = @field(value1, structInfo.name).?;
+                    field2 = @field(value2, structInfo.name).?;
+                }
+            },
+            else => {
+                field1 = @field(value1, structInfo.name);
+                field2 = @field(value2, structInfo.name);
+            },
+        }
+
+        if (are_optionals_equal != null) {
+            if (!are_optionals_equal.?) return false;
+        } else switch (@field(T._desc_table, structInfo.name).ftype) {
+            .List, .PackedList => |list_type| {
+                if (field1.items.len != field2.items.len) return false;
+                for (field1.items, field2.items) |array1_el, array2_el| {
+                    if (!switch (list_type) {
+                        .String => _compare_pb_strings(array1_el, array2_el),
+                        .SubMessage => compare_pb_structs(array1_el, array2_el),
+                        else => std.meta.eql(array1_el, array2_el),
+                    }) return false;
+                }
+            },
+            .OneOf => {
+                const union_info = switch (@typeInfo(@TypeOf(field1))) {
+                    .Union => |u| u,
+                    else => @compileError("Oneof should have .Union type"),
+                };
+                if (union_info.tag_type == null) {
+                    @compileError("There should be no such thing as untagged unions");
+                }
+
+                const union1_active_tag = std.meta.activeTag(field1);
+                const union2_active_tag = std.meta.activeTag(field2);
+                if (union1_active_tag != union2_active_tag) return false;
+
+                inline for (union_info.fields) |field_info| {
+                    if (@field(
+                        union_info.tag_type.?,
+                        field_info.name,
+                    ) == union1_active_tag) {
+                        if (!switch (@field(
+                            @TypeOf(field1)._union_desc,
+                            field_info.name,
+                        ).ftype) {
+                            .String => _compare_pb_strings(
+                                @field(field1, field_info.name),
+                                @field(field2, field_info.name),
+                            ),
+                            .SubMessage => compare_pb_structs(
+                                @field(field1, field_info.name),
+                                @field(field2, field_info.name),
+                            ),
+                            else => std.meta.eql(
+                                @field(field1, field_info.name),
+                                @field(field2, field_info.name),
+                            ),
+                        }) return false;
+                    }
+                }
+            },
+            .String => {
+                if (!_compare_pb_strings(field1, field2)) return false;
+            },
+            .SubMessage => {
+                if (!compare_pb_structs(field1, field2)) return false;
+            },
+            else => {
+                if (!std.meta.eql(field1, field2)) return false;
+            },
+        }
+    }
+    return true;
+}
+
+fn compare_pb_jsons(json1: []const u8, json2: []const u8) bool {
+    const are_jsons_equal = std.mem.eql(u8, json1, json2);
+    if (!are_jsons_equal) {
+        std.debug.print(
+            \\
+            \\JSON mismatch:
+            \\--------------
+            \\{s}
+            \\--------------
+            \\{s}
+            \\--------------
+            \\
+        , .{json1, json2});
+    }
+    return are_jsons_equal;
+}
 
 // FixedSizes tests
 const fixedsizes_str =
@@ -52,7 +190,7 @@ test "test_json_encode_fixedsizes" {
     );
     defer ally.free(encoded);
 
-    try expect(std.mem.eql(u8, encoded, fixedsizes_str));
+    try expect(compare_pb_jsons(encoded, fixedsizes_str));
 }
 
 test "test_json_decode_fixedsizes" {
@@ -61,7 +199,7 @@ test "test_json_decode_fixedsizes" {
     const test_json = try FixedSizes.json_decode(fixedsizes_str, .{}, ally);
     defer test_json.deinit();
 
-    try expect(std.meta.eql(test_pb, test_json));
+    try expect(compare_pb_structs(test_pb, test_json));
 }
 
 // RepeatedEnum tests
@@ -80,8 +218,7 @@ test "test_json_encode_repeatedenum" {
     );
     defer ally.free(encoded);
 
-    try expect(std.mem.eql(
-        u8,
+    try expect(compare_pb_jsons(
         encoded,
         \\{
         \\  "value": [
@@ -130,11 +267,7 @@ test "test_json_decode_repeatedenum" {
         const test_json = try RepeatedEnum.json_decode(json_string, .{}, ally);
         defer test_json.deinit();
 
-        try expect(std.mem.eql(
-            TopLevelEnum,
-            test_pb.value.items,
-            test_json.value.items,
-        ));
+        try expect(compare_pb_structs(test_pb, test_json));
     }
 }
 
@@ -155,7 +288,7 @@ test "test_json_encode_withstrings" {
     const encoded = try test_pb.json_encode(.{ .whitespace = .indent_2 }, ally);
     defer ally.free(encoded);
 
-    try expect(std.mem.eql(u8, encoded, withstrings_str));
+    try expect(compare_pb_jsons(encoded, withstrings_str));
 }
 
 test "test_json_decode_withstrings" {
@@ -164,11 +297,7 @@ test "test_json_decode_withstrings" {
     const test_json = try WithStrings.json_decode(withstrings_str, .{}, ally);
     defer test_json.deinit();
 
-    try expect(std.mem.eql(
-        u8,
-        test_pb.name.getSlice(),
-        test_json.name.getSlice(),
-    ));
+    try expect(compare_pb_structs(test_pb, test_json));
 }
 
 // WithSubmessages tests
@@ -193,7 +322,7 @@ test "test_json_encode_withsubmessages" {
     );
     defer ally.free(encoded);
 
-    try expect(std.mem.eql(u8, encoded, withsubmessages_str));
+    try expect(compare_pb_jsons(encoded, withsubmessages_str));
 }
 
 test "test_json_decode_withsubmessages" {
@@ -202,7 +331,7 @@ test "test_json_decode_withsubmessages" {
     const test_json = try WithSubmessages.json_decode(withsubmessages_str, .{}, ally);
     defer test_json.deinit();
 
-    try expect(std.meta.eql(test_pb, test_json));
+    try expect(compare_pb_structs(test_pb, test_json));
 }
 
 // Packed tests
@@ -311,7 +440,7 @@ test "test_json_encode_packed" {
     );
     defer ally.free(encoded);
 
-    try expect(std.mem.eql(u8, encoded, packed_str));
+    try expect(compare_pb_jsons(encoded, packed_str));
 }
 
 test "test_json_decode_packed" {
@@ -321,14 +450,7 @@ test "test_json_decode_packed" {
     const test_json = try Packed.json_decode(packed_str, .{}, ally);
     defer test_json.deinit();
 
-    inline for (std.meta.fields(Packed)) |structInfo| {
-        const test_pb_items = @field(test_pb, structInfo.name).items;
-        try expect(std.mem.eql(
-            @typeInfo(@TypeOf(test_pb_items)).Pointer.child,
-            test_pb_items,
-            @field(test_json, structInfo.name).items,
-        ));
-    }
+    try expect(compare_pb_structs(test_pb, test_json));
 }
 
 const oneofcontainer_oneof_string_in_oneof_str =
@@ -386,7 +508,7 @@ test "test_json_encode_oneofcontainer_oneof_string_in_oneof" {
     );
     defer ally.free(encoded);
 
-    try expect(std.mem.eql(u8, encoded, oneofcontainer_oneof_string_in_oneof_str));
+    try expect(compare_pb_jsons(encoded, oneofcontainer_oneof_string_in_oneof_str));
 }
 
 test "test_json_decode_oneofcontainer_oneof_string_in_oneof" {
@@ -399,20 +521,7 @@ test "test_json_decode_oneofcontainer_oneof_string_in_oneof" {
     );
     defer test_json.deinit();
 
-    // TODO(libro): Make some alternative to std.meta.eql to
-    //   effectively compare two generated struct instances
-    //   which would handle ManagedStrings etc.
-    try expect(std.mem.eql(
-        u8,
-        test_pb.regular_field.getSlice(),
-        test_json.regular_field.getSlice(),
-    ));
-    try expect(test_pb.enum_field == test_json.enum_field);
-    try expect(std.mem.eql(
-        u8,
-        test_pb.some_oneof.?.string_in_oneof.getSlice(),
-        test_json.some_oneof.?.string_in_oneof.getSlice(),
-    ));
+    try expect(compare_pb_structs(test_pb, test_json));
 }
 
 test "test_json_encode_oneofcontainer_oneof_message_in_oneof" {
@@ -424,7 +533,7 @@ test "test_json_encode_oneofcontainer_oneof_message_in_oneof" {
     );
     defer ally.free(encoded);
 
-    try expect(std.mem.eql(u8, encoded, oneofcontainer_oneof_message_in_oneof_str));
+    try expect(compare_pb_jsons(encoded, oneofcontainer_oneof_message_in_oneof_str));
 }
 
 test "test_json_decode_oneofcontainer_oneof_message_in_oneof" {
@@ -437,16 +546,5 @@ test "test_json_decode_oneofcontainer_oneof_message_in_oneof" {
     );
     defer test_json.deinit();
 
-    try expect(std.mem.eql(
-        u8,
-        test_pb.regular_field.getSlice(),
-        test_json.regular_field.getSlice(),
-    ));
-    try expect(test_pb.enum_field == test_json.enum_field);
-    try expect(test_pb.some_oneof.?.message_in_oneof.value == test_json.some_oneof.?.message_in_oneof.value);
-    try expect(std.mem.eql(
-        u8,
-        test_pb.some_oneof.?.message_in_oneof.str.getSlice(),
-        test_json.some_oneof.?.message_in_oneof.str.getSlice(),
-    ));
+    try expect(compare_pb_structs(test_pb, test_json));
 }
