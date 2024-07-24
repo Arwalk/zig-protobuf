@@ -1019,9 +1019,9 @@ fn fillDefaultStructValues(
 }
 
 fn base64ErrorToJsonParseError(err: base64Errors) ParseFromValueError {
-    return switch(err) {
+    return switch (err) {
         base64Errors.NoSpaceLeft => ParseFromValueError.Overflow,
-        base64Errors.InvalidPadding, base64Errors.InvalidCharacter => ParseFromValueError.UnexpectedToken
+        base64Errors.InvalidPadding, base64Errors.InvalidCharacter => ParseFromValueError.UnexpectedToken,
     };
 }
 
