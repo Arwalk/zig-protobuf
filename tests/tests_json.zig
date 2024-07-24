@@ -196,10 +196,10 @@ test "test_json_encode_fixedsizes" {
 test "test_json_decode_fixedsizes" {
     const test_pb = fixedsizes_test_pb();
 
-    const test_json = try FixedSizes.json_decode(fixedsizes_str, .{}, ally);
-    defer test_json.deinit();
+    const parsed_json = try FixedSizes.json_decode(fixedsizes_str, .{}, ally);
+    defer parsed_json.deinit();
 
-    try expect(compare_pb_structs(test_pb, test_json));
+    try expect(compare_pb_structs(test_pb, parsed_json.value));
 }
 
 // RepeatedEnum tests
@@ -264,10 +264,10 @@ test "test_json_decode_repeatedenum" {
         \\}
         ,
     }) |json_string| {
-        const test_json = try RepeatedEnum.json_decode(json_string, .{}, ally);
-        defer test_json.deinit();
+        const parsed_json = try RepeatedEnum.json_decode(json_string, .{}, ally);
+        defer parsed_json.deinit();
 
-        try expect(compare_pb_structs(test_pb, test_json));
+        try expect(compare_pb_structs(test_pb, parsed_json.value));
     }
 }
 
@@ -294,10 +294,10 @@ test "test_json_encode_withstrings" {
 test "test_json_decode_withstrings" {
     const test_pb = withstrings_test_pb();
 
-    const test_json = try WithStrings.json_decode(withstrings_str, .{}, ally);
-    defer test_json.deinit();
+    const parsed_json = try WithStrings.json_decode(withstrings_str, .{}, ally);
+    defer parsed_json.deinit();
 
-    try expect(compare_pb_structs(test_pb, test_json));
+    try expect(compare_pb_structs(test_pb, parsed_json.value));
 }
 
 // WithSubmessages tests
@@ -328,10 +328,10 @@ test "test_json_encode_withsubmessages" {
 test "test_json_decode_withsubmessages" {
     const test_pb = withsubmessages_test_pb();
 
-    const test_json = try WithSubmessages.json_decode(withsubmessages_str, .{}, ally);
-    defer test_json.deinit();
+    const parsed_json = try WithSubmessages.json_decode(withsubmessages_str, .{}, ally);
+    defer parsed_json.deinit();
 
-    try expect(compare_pb_structs(test_pb, test_json));
+    try expect(compare_pb_structs(test_pb, parsed_json.value));
 }
 
 // Packed tests
@@ -447,10 +447,10 @@ test "test_json_decode_packed" {
     const test_pb = try packed_test_pb(ally);
     defer test_pb.deinit();
 
-    const test_json = try Packed.json_decode(packed_str, .{}, ally);
-    defer test_json.deinit();
+    const parsed_json = try Packed.json_decode(packed_str, .{}, ally);
+    defer parsed_json.deinit();
 
-    try expect(compare_pb_structs(test_pb, test_json));
+    try expect(compare_pb_structs(test_pb, parsed_json.value));
 }
 
 const oneofcontainer_oneof_string_in_oneof_str =
@@ -514,14 +514,14 @@ test "test_json_encode_oneofcontainer_oneof_string_in_oneof" {
 test "test_json_decode_oneofcontainer_oneof_string_in_oneof" {
     const test_pb = try oneofcontainer_oneof_string_in_oneof_test_pb();
 
-    const test_json = try OneofContainer.json_decode(
+    const parsed_json = try OneofContainer.json_decode(
         oneofcontainer_oneof_string_in_oneof_str,
         .{},
         ally,
     );
-    defer test_json.deinit();
+    defer parsed_json.deinit();
 
-    try expect(compare_pb_structs(test_pb, test_json));
+    try expect(compare_pb_structs(test_pb, parsed_json.value));
 }
 
 test "test_json_encode_oneofcontainer_oneof_message_in_oneof" {
@@ -539,12 +539,12 @@ test "test_json_encode_oneofcontainer_oneof_message_in_oneof" {
 test "test_json_decode_oneofcontainer_oneof_message_in_oneof" {
     const test_pb = try oneofcontainer_oneof_message_in_oneof_test_pb();
 
-    const test_json = try OneofContainer.json_decode(
+    const parsed_json = try OneofContainer.json_decode(
         oneofcontainer_oneof_message_in_oneof_str,
         .{},
         ally,
     );
-    defer test_json.deinit();
+    defer parsed_json.deinit();
 
-    try expect(compare_pb_structs(test_pb, test_json));
+    try expect(compare_pb_structs(test_pb, parsed_json.value));
 }

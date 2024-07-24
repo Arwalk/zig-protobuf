@@ -1049,8 +1049,8 @@ pub fn pb_json_decode(
     input: []const u8,
     options: json.ParseOptions,
     allocator: Allocator,
-) !T {
-    const parsed = try json.parseFromSliceLeaky(T, allocator, input, options);
+) !std.json.Parsed(T) {
+    const parsed = try json.parseFromSlice(T, allocator, input, options);
     return parsed;
 }
 
@@ -1083,7 +1083,7 @@ pub fn MessageMixins(comptime Self: type) type {
             input: []const u8,
             options: json.ParseOptions,
             allocator: Allocator,
-        ) !Self {
+        ) !std.json.Parsed(Self) {
             return pb_json_decode(Self, input, options, allocator);
         }
         pub fn json_encode(
