@@ -4,6 +4,7 @@ const ArrayList = std.ArrayList;
 const json = std.json;
 
 const expect = std.testing.expect;
+const expectEqualSlices = std.testing.expectEqualSlices;
 const ally = std.testing.allocator;
 
 const protobuf = @import("protobuf");
@@ -18,6 +19,7 @@ const WithRepeatedStrings = tests.WithRepeatedStrings;
 const WithEnum = tests.WithEnum;
 const WithSubmessages = tests.WithSubmessages;
 const Packed = tests.Packed;
+const WithBytes = tests.WithBytes;
 
 const oneof_tests = @import("./generated/tests/oneof.pb.zig");
 const OneofContainer = oneof_tests.OneofContainer;
@@ -547,4 +549,26 @@ test "test_json_decode_oneofcontainer_oneof_message_in_oneof" {
     defer parsed_json.deinit();
 
     try expect(compare_pb_structs(test_pb, parsed_json.value));
+}
+
+
+const bytes_json = @embedFile("json_data/bytes.json");
+
+test "json encode bytes" {
+    var bytes_data = WithBytes.init(ally);
+    bytes_data.byte_field = ManagedString.static(&[_]u8{0xCA, 0xFE, 0xCA, 0xFE});
+
+    const encoded = try bytes_data.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+    try expect(compare_pb_jsons(encoded, bytes_json));
+}
+
+test "json parse bytes" {
+    const decoded = try WithBytes.json_decode(bytes_json, .{}, ally);
+    defer decoded.deinit();
+
+    try expectEqualSlices(u8, &[_]u8{0xCA, 0xFE, 0xCA, 0xFE}, decoded.value.byte_field.getSlice());
 }

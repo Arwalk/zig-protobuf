@@ -179,3 +179,13 @@ pub const WithRepeatedStrings = struct {
 
     pub usingnamespace protobuf.MessageMixins(@This());
 };
+
+pub const WithBytes = struct {
+    byte_field: ManagedString = .Empty,
+
+    pub const _desc_table = .{
+        .byte_field = fd(1, .String),
+    };
+
+    pub usingnamespace protobuf.MessageMixins(@This());
+};
