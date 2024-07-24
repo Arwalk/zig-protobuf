@@ -96,7 +96,7 @@ pub const ManagedString = union(ManagedStringTag) {
 };
 
 /// Enum describing the different field types available.
-pub const FieldTypeTag = enum { Varint, FixedInt, SubMessage, String, List, PackedList, OneOf };
+pub const FieldTypeTag = enum { Varint, FixedInt, SubMessage, String, Bytes, List, PackedList, OneOf };
 
 /// Enum describing how much bits a FixedInt will use.
 pub const FixedSize = enum(u3) { I64 = 1, I32 = 5 };
@@ -123,6 +123,7 @@ pub const FieldType = union(FieldTypeTag) {
     FixedInt: FixedSize,
     SubMessage,
     String,
+    Bytes,
     List: ListType,
     PackedList: ListType,
     OneOf: type,
@@ -132,7 +133,7 @@ pub const FieldType = union(FieldTypeTag) {
         return switch (ftype) {
             .Varint => 0,
             .FixedInt => |size| @intFromEnum(size),
-            .String, .SubMessage, .PackedList => 2,
+            .String, .SubMessage, .PackedList, .Bytes => 2,
             .List => |inner| switch (inner) {
                 .Varint => 0,
                 .FixedInt => |size| @intFromEnum(size),
@@ -354,7 +355,7 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, c
                 try append_submessage(pb, value);
             }
         },
-        .String => {
+        .String, .Bytes => {
             if (!is_default_scalar_value or force_append) {
                 try append_tag(pb, field);
                 try append_const_bytes(pb, value);
@@ -458,7 +459,7 @@ pub fn pb_init(comptime T: type, allocator: Allocator) T {
     var value: T = undefined;
     inline for (@typeInfo(T).Struct.fields) |field| {
         switch (@field(T._desc_table, field.name).ftype) {
-            .String, .Varint, .FixedInt => {
+            .String, .Varint, .FixedInt, .Bytes => {
                 if (field.default_value) |val| {
                     @field(value, field.name) = @as(*align(1) const field.type, @ptrCast(val)).*;
                 } else {
@@ -522,7 +523,7 @@ fn dupe_field(original: anytype, comptime field_name: []const u8, comptime ftype
 
             return list;
         },
-        .SubMessage, .String => {
+        .SubMessage, .String, .Bytes => {
             switch (@typeInfo(@TypeOf(@field(original, field_name)))) {
                 .Optional => {
                     if (@field(original, field_name)) |val| {
@@ -588,7 +589,7 @@ fn deinit_field(result: anytype, comptime field_name: []const u8, comptime ftype
         .PackedList => |_| {
             @field(result, field_name).deinit();
         },
-        .String => {
+        .String, .Bytes => {
             switch (@typeInfo(@TypeOf(@field(result, field_name)))) {
                 .Optional => {
                     if (@field(result, field_name)) |str| {
@@ -885,7 +886,7 @@ fn decode_value(comptime decoded_type: type, comptime ftype: FieldType, extracte
 
 fn decode_data(comptime T: type, comptime field_desc: FieldDescriptor, comptime field: StructField, result: *T, extracted_data: Extracted, allocator: Allocator) !void {
     switch (field_desc.ftype) {
-        .Varint, .FixedInt, .SubMessage, .String => {
+        .Varint, .FixedInt, .SubMessage, .String, .Bytes => {
             // first try to release the current value
             deinit_field(result, field.name, field_desc.ftype);
 
