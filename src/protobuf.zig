@@ -1232,7 +1232,22 @@ pub fn MessageMixins(comptime Self: type) type {
                     },
                     else => {
                         try jws.objectField(fieldInfo.name);
-                        try jws.write(@field(self, fieldInfo.name));
+                        switch (@field(
+                            Self._desc_table,
+                            fieldInfo.name,
+                        ).ftype) {
+                            .Bytes => {
+                                const size = base64.standard.Encoder.calcSize(@field(self, fieldInfo.name).getSlice().len);
+                                const innerAllocator = jws.nesting_stack.bytes.allocator;
+                                const temp = try innerAllocator.alloc(u8, size + 1);
+                                defer innerAllocator.free(temp);
+                                const encoded = base64.standard.Encoder.encode(temp, @field(self, fieldInfo.name).getSlice());
+                                try jws.write(encoded);
+                            },
+                            else => {
+                                try jws.write(@field(self, fieldInfo.name));
+                            },
+                        }
                     },
                 }
             }
