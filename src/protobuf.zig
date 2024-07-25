@@ -99,7 +99,7 @@ pub const ManagedString = union(ManagedStringTag) {
 };
 
 /// Enum describing the different field types available.
-pub const FieldTypeTag = enum { Varint, FixedInt, SubMessage, String, Bytes, List, PackedList, OneOf };
+pub const FieldTypeTag = enum { Varint, FixedInt, SubMessage, String, Bytes, List, PackedList, Map, OneOf };
 
 /// Enum describing how much bits a FixedInt will use.
 pub const FixedSize = enum(u3) { I64 = 1, I32 = 5 };
@@ -122,6 +122,25 @@ pub const ListType = union(ListTypeTag) {
     SubMessage,
 };
 
+
+pub const MapKeyTypeTag = enum {
+    Varint,
+    FixedInt,
+    String,
+};
+
+pub const MapKeyType = union(MapKeyTypeTag) {
+    Varint: VarintType,
+    FixedInt: FixedSize,
+    String,
+};
+
+
+pub const MapItemType = struct {
+    keyType: MapKeyType,
+    valueType: FieldType,
+};
+
 /// Main tagged union holding the details of any field type.
 pub const FieldType = union(FieldTypeTag) {
     Varint: VarintType,
@@ -131,6 +150,7 @@ pub const FieldType = union(FieldTypeTag) {
     Bytes,
     List: ListType,
     PackedList: ListType,
+    Map: ListType,
     OneOf: type,
 
     /// returns the wire type of a field. see https://developers.google.com/protocol-buffers/docs/encoding#structure
@@ -139,7 +159,7 @@ pub const FieldType = union(FieldTypeTag) {
             .Varint => 0,
             .FixedInt => |size| @intFromEnum(size),
             .String, .SubMessage, .PackedList, .Bytes => 2,
-            .List => |inner| switch (inner) {
+            .List, .Map => |inner| switch (inner) {
                 .Varint => 0,
                 .FixedInt => |size| @intFromEnum(size),
                 .String, .SubMessage, .Bytes => 2,
@@ -381,7 +401,7 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, c
                 .SubMessage => @compileError("submessages are not suitable for PackedLists."),
             }
         },
-        .List => |list_type| {
+        .List, .Map => |list_type| {
             switch (list_type) {
                 .FixedInt => {
                     for (value.items) |item| {
@@ -477,7 +497,7 @@ pub fn pb_init(comptime T: type, allocator: Allocator) T {
             .OneOf => {
                 @field(value, field.name) = null;
             },
-            .List, .PackedList => {
+            .List, .PackedList, .Map => {
                 @field(value, field.name) = @TypeOf(@field(value, field.name)).init(allocator);
             },
         }
@@ -504,7 +524,7 @@ fn dupe_field(original: anytype, comptime field_name: []const u8, comptime ftype
         .Varint, .FixedInt => {
             return @field(original, field_name);
         },
-        .List => |list_type| {
+        .List, .Map => |list_type| {
             const capacity = @field(original, field_name).items.len;
             var list = try @TypeOf(@field(original, field_name)).initCapacity(allocator, capacity);
             if (list_type == .SubMessage or list_type == .String) {
@@ -583,7 +603,7 @@ fn deinit_field(result: anytype, comptime field_name: []const u8, comptime ftype
                 else => @compileError("unreachable"),
             }
         },
-        .List => |list_type| {
+        .List, .Map => |list_type| {
             if (list_type == .SubMessage or list_type == .String) {
                 for (@field(result, field_name).items) |item| {
                     item.deinit();
@@ -882,7 +902,7 @@ fn decode_value(comptime decoded_type: type, comptime ftype: FieldType, extracte
             .Slice => |slice| try ManagedString.copy(slice, allocator),
             else => error.InvalidInput,
         },
-        .List, .PackedList, .OneOf => {
+        .List, .PackedList, .Map, .OneOf => {
             std.log.warn("Invalid scalar type {any}\n", .{ftype});
             return error.InvalidInput;
         },
@@ -901,7 +921,7 @@ fn decode_data(comptime T: type, comptime field_desc: FieldDescriptor, comptime 
                 else => @field(result, field.name) = try decode_value(field.type, field_desc.ftype, extracted_data, allocator),
             }
         },
-        .List, .PackedList => |list_type| {
+        .List, .PackedList, .Map => |list_type| {
             const child_type = @typeInfo(@TypeOf(@field(result, field.name).items)).Pointer.child;
 
             switch (list_type) {
