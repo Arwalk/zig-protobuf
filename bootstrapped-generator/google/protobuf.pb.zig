@@ -525,7 +525,7 @@ pub const UninterpretedOption = struct {
         .positive_int_value = fd(4, .{ .Varint = .Simple }),
         .negative_int_value = fd(5, .{ .Varint = .Simple }),
         .double_value = fd(6, .{ .FixedInt = .I64 }),
-        .string_value = fd(7, .String),
+        .string_value = fd(7, .Bytes),
         .aggregate_value = fd(8, .String),
     };
 
