@@ -1,8 +1,11 @@
-name: test_and_lint
+name: test_and_lint_latest_zig
 on:
   push:
-  schedule:
-    - cron: "30 1 1,15 * *"
+    branches:
+      - zig-master
+  pull_request:
+    branches:
+      - zig-master
 jobs:
   test_latest:
     strategy:
