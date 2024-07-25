@@ -859,7 +859,7 @@ fn decode_value(comptime decoded_type: type, comptime ftype: FieldType, extracte
             else => error.InvalidInput,
         },
         else => {
-            std.debug.print("Invalid scalar type {any}\n", .{ftype});
+            std.log.warn("Invalid scalar type {any}\n", .{ftype});
             return error.InvalidInput;
         },
     };
@@ -956,7 +956,7 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) !T {
                 break try decode_data(T, v, field, &result, extracted_data, allocator);
             }
         } else {
-            std.debug.print("Unknown field received in {s} {any}\n", .{ @typeName(T), extracted_data });
+            std.log.warn("Unknown field received in {s} {any}\n", .{ @typeName(T), extracted_data });
         }
     }
 
