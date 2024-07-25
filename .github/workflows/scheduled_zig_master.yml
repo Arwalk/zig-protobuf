@@ -1,0 +1,19 @@
+name: scheduled_zig_master
+on:
+  schedule:
+    - cron: "30 1 1,15 * *"
+jobs:
+  test_latest_scheduled:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+            ref: zig-master
+      - uses: goto-bus-stop/setup-zig@v1
+        with:
+          version: master
+      - run: zig build
+      - run: zig build test
