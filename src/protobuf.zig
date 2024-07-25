@@ -122,25 +122,6 @@ pub const ListType = union(ListTypeTag) {
     SubMessage,
 };
 
-
-pub const MapKeyTypeTag = enum {
-    Varint,
-    FixedInt,
-    String,
-};
-
-pub const MapKeyType = union(MapKeyTypeTag) {
-    Varint: VarintType,
-    FixedInt: FixedSize,
-    String,
-};
-
-
-pub const MapItemType = struct {
-    keyType: MapKeyType,
-    valueType: FieldType,
-};
-
 /// Main tagged union holding the details of any field type.
 pub const FieldType = union(FieldTypeTag) {
     Varint: VarintType,
