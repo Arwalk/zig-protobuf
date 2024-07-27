@@ -1083,6 +1083,40 @@ pub fn pb_json_encode(
     return try json.stringifyAlloc(allocator, data, options);
 }
 
+fn to_camel_case(not_camel_cased_string: []const u8, allocator: Allocator) ![]const u8 {
+    var underscore_count: usize = 0;
+    for (not_camel_cased_string) |byte| {
+        if (byte == '_') underscore_count += 1;
+    }
+    if (underscore_count == 0 or underscore_count == not_camel_cased_string.len) {
+        // You better not touch fields like "_____________"
+        return not_camel_cased_string;
+    }
+
+    var capitalize_next_letter = false;
+    var camel_cased_string = try allocator.alloc(u8, not_camel_cased_string.len - underscore_count);
+
+    var i: usize = 0;
+    for (not_camel_cased_string) |char| {
+        if (char == '_') {
+            capitalize_next_letter = i > 0;
+        } else if (capitalize_next_letter) {
+            camel_cased_string[i] = std.ascii.toUpper(char);
+            capitalize_next_letter = false;
+            i += 1;
+        } else {
+            camel_cased_string[i] = char;
+            i += 1;
+        }
+    }
+
+    if (std.ascii.isUpper(camel_cased_string[0])) {
+        camel_cased_string[0] = std.ascii.toLower(camel_cased_string[0]);
+    }
+
+    return camel_cased_string;
+}
+
 pub fn MessageMixins(comptime Self: type) type {
     return struct {
         pub fn encode(self: Self, allocator: Allocator) ![]u8 {
@@ -1151,7 +1185,24 @@ pub fn MessageMixins(comptime Self: type) type {
                     if (field.is_comptime) {
                         @compileError("comptime fields are not supported: " ++ @typeName(Self) ++ "." ++ field.name);
                     }
-                    if (std.mem.eql(u8, field.name, field_name)) {
+
+                    const yes1 = std.mem.eql(u8, field.name, field_name);
+                    var yes2: bool = undefined;
+
+                    const camel_case_name = try to_camel_case(field.name, allocator);
+                    if (field.name.ptr == camel_case_name.ptr) {
+                        // If there was no case conversion than the same
+                        // array will be returned (there's no need
+                        // for deallocation in this case)
+                        yes2 = false;
+                    } else {
+                        yes2 = std.mem.eql(u8, camel_case_name, field_name);
+                        allocator.free(camel_case_name);
+                    }
+
+                    if (yes1 and yes2) {
+                        return error.FieldNameCollision;
+                    } else if (yes1 or yes2) {
                         // Free the name token now in case we're using an
                         // allocator that optimizes freeing the last
                         // allocated object. (Recursing into innerParse()
@@ -1206,18 +1257,31 @@ pub fn MessageMixins(comptime Self: type) type {
         // This method is used by std.json
         // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const Self, jws: anytype) !void {
+            const innerAllocator = jws.nesting_stack.bytes.allocator;
             try jws.beginObject();
 
             inline for (@typeInfo(Self).Struct.fields) |fieldInfo| {
+                const camel_case_name = try to_camel_case(fieldInfo.name, innerAllocator);
+
+                if (switch (@typeInfo(fieldInfo.type)) {
+                    .Optional => @field(self, fieldInfo.name) != null,
+                    else => true,
+                }) {
+                    if (camel_case_name.ptr == fieldInfo.name.ptr) {
+                        try jws.objectField(fieldInfo.name);
+                    } else {
+                        defer innerAllocator.free(camel_case_name);
+                        try jws.objectField(camel_case_name);
+                    }
+                }
+
                 switch (@typeInfo(fieldInfo.type)) {
                     .Optional => {
                         if (@field(self, fieldInfo.name)) |v| {
-                            try jws.objectField(fieldInfo.name);
                             try jws.write(v);
                         }
                     },
                     .Struct => {
-                        try jws.objectField(fieldInfo.name);
                         switch (@field(
                             Self._desc_table,
                             fieldInfo.name,
@@ -1231,14 +1295,14 @@ pub fn MessageMixins(comptime Self: type) type {
                         }
                     },
                     else => {
-                        try jws.objectField(fieldInfo.name);
                         switch (@field(
                             Self._desc_table,
                             fieldInfo.name,
                         ).ftype) {
                             .Bytes => {
-                                const size = base64.standard.Encoder.calcSize(@field(self, fieldInfo.name).getSlice().len);
-                                const innerAllocator = jws.nesting_stack.bytes.allocator;
+                                const size = base64.standard.Encoder.calcSize(
+                                    @field(self, fieldInfo.name).getSlice().len,
+                                );
                                 const temp = try innerAllocator.alloc(u8, size + 1);
                                 defer innerAllocator.free(temp);
                                 const encoded = base64.standard.Encoder.encode(temp, @field(self, fieldInfo.name).getSlice());

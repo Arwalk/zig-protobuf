@@ -24,6 +24,10 @@ const WithBytes = tests.WithBytes;
 const oneof_tests = @import("./generated/tests/oneof.pb.zig");
 const OneofContainer = oneof_tests.OneofContainer;
 
+// TODO(libro): Also need to check if JSON string snake_case field
+//   names will be decoded correctly (parser should handle
+//   both camelCase and snake_case variants)
+
 fn _compare_pb_strings(value1: ManagedString, value2: @TypeOf(value1)) bool {
     return std.mem.eql(u8, value1.getSlice(), value2.getSlice());
 }
@@ -143,19 +147,19 @@ fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
     return true;
 }
 
-fn compare_pb_jsons(json1: []const u8, json2: []const u8) bool {
-    const are_jsons_equal = std.mem.eql(u8, json1, json2);
+fn compare_pb_jsons(encoded: []const u8, expected: []const u8) bool {
+    const are_jsons_equal = std.mem.eql(u8, encoded, expected);
     if (!are_jsons_equal) {
         std.debug.print(
-            \\
-            \\JSON mismatch:
-            \\--------------
+            \\fail:
+            \\JSON strings mismatch:
+            \\- (encoded) ----------
             \\{s}
-            \\--------------
+            \\- (expected) ---------
             \\{s}
-            \\--------------
+            \\----------------------
             \\
-        , .{json1, json2});
+        , .{ encoded, expected });
     }
     return are_jsons_equal;
 }
@@ -551,12 +555,11 @@ test "test_json_decode_oneofcontainer_oneof_message_in_oneof" {
     try expect(compare_pb_structs(test_pb, parsed_json.value));
 }
 
-
 const bytes_json = @embedFile("json_data/bytes.json");
 
 test "json encode bytes" {
     var bytes_data = WithBytes.init(ally);
-    bytes_data.byte_field = ManagedString.static(&[_]u8{0xCA, 0xFE, 0xCA, 0xFE});
+    bytes_data.byte_field = ManagedString.static(&[_]u8{ 0xCA, 0xFE, 0xCA, 0xFE });
 
     const encoded = try bytes_data.json_encode(
         .{ .whitespace = .indent_2 },
@@ -570,5 +573,5 @@ test "json parse bytes" {
     const decoded = try WithBytes.json_decode(bytes_json, .{}, ally);
     defer decoded.deinit();
 
-    try expectEqualSlices(u8, &[_]u8{0xCA, 0xFE, 0xCA, 0xFE}, decoded.value.byte_field.getSlice());
+    try expectEqualSlices(u8, &[_]u8{ 0xCA, 0xFE, 0xCA, 0xFE }, decoded.value.byte_field.getSlice());
 }
