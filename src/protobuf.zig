@@ -1037,24 +1037,104 @@ fn parseStructField(
         T._desc_table,
         fieldInfo.name,
     ).ftype) {
-        .List, .PackedList => @TypeOf(
-            @field(result, fieldInfo.name),
-        ).fromOwnedSlice(
-            allocator,
-            try json.innerParse(
-                [](@typeInfo(fieldInfo.type.Slice).Pointer.child),
+        .List, .PackedList => list: {
+            // repeated T -> ArrayList(T)
+            break :list @TypeOf(
+                @field(result, fieldInfo.name),
+            ).fromOwnedSlice(
                 allocator,
-                source,
-                options,
-            ),
-        ),
+                try json.innerParse(
+                    [](@typeInfo(fieldInfo.type.Slice).Pointer.child),
+                    allocator,
+                    source,
+                    options,
+                ),
+            );
+        },
         .Bytes => bytes: {
+            // "bytes" -> ManagerString
             const temp_raw = try json.innerParse([]u8, allocator, source, options);
-            const size = base64.standard.Decoder.calcSizeForSlice(temp_raw) catch |err| return base64ErrorToJsonParseError(err);
+            const size = base64.standard.Decoder.calcSizeForSlice(temp_raw) catch |err| {
+                return base64ErrorToJsonParseError(err);
+            };
             const tempstring = try allocator.alloc(u8, size);
             errdefer allocator.free(tempstring);
-            base64.standard.Decoder.decode(tempstring, temp_raw) catch |err| return base64ErrorToJsonParseError(err);
+            base64.standard.Decoder.decode(tempstring, temp_raw) catch |err| {
+                return base64ErrorToJsonParseError(err);
+            };
             break :bytes ManagedString.move(tempstring, allocator);
+        },
+        .OneOf => oneof: {
+            // oneof -> union
+            var union_value: switch (@typeInfo(
+                @TypeOf(@field(result.*, fieldInfo.name)),
+            )) {
+                .Union => @TypeOf(@field(result.*, fieldInfo.name)),
+                .Optional => |optional| optional.child,
+                else => unreachable,
+            } = undefined;
+
+            const union_type = @TypeOf(union_value);
+            const union_info = @typeInfo(union_type).Union;
+            if (union_info.tag_type == null) {
+                @compileError("Untagged unions are not supported here");
+            }
+
+            if (.object_begin != try source.next()) {
+                return error.UnexpectedToken;
+            }
+
+            var name_token: ?std.json.Token = try source.nextAllocMax(
+                allocator,
+                .alloc_if_needed,
+                options.max_value_len.?,
+            );
+            const field_name = switch (name_token.?) {
+                inline .string, .allocated_string => |slice| slice,
+                else => {
+                    return error.UnexpectedToken;
+                },
+            };
+
+            inline for (union_info.fields) |union_field| {
+                // snake_case comparison
+                var this_field = std.mem.eql(u8, union_field.name, field_name);
+                if (!this_field) {
+                    const union_camel_case_name = try to_camel_case(
+                        union_field.name,
+                        allocator,
+                    );
+                    if (union_camel_case_name.ptr != union_field.name.ptr) {
+                        defer allocator.free(union_camel_case_name);
+                        this_field = std.mem.eql(
+                            u8,
+                            union_camel_case_name,
+                            field_name,
+                        );
+                    }
+                }
+
+                if (this_field) {
+                    freeAllocated(allocator, name_token.?);
+                    name_token = null;
+                    union_value = @unionInit(
+                        union_type,
+                        union_field.name,
+                        try json.innerParse(
+                            union_field.type,
+                            allocator,
+                            source,
+                            options,
+                        ),
+                    );
+                    break;
+                }
+            } else return error.UnknownField;
+            if (.object_end != try source.next()) {
+                return error.UnexpectedToken;
+            }
+
+            break :oneof union_value;
         },
         else => try json.innerParse(
             fieldInfo.type,
@@ -1089,7 +1169,7 @@ fn to_camel_case(not_camel_cased_string: []const u8, allocator: Allocator) ![]co
         if (byte == '_') underscore_count += 1;
     }
     if (underscore_count == 0 or underscore_count == not_camel_cased_string.len) {
-        // You better not touch fields like "_____________"
+        // You better not touch fields like "_____________" (or should we?)
         return not_camel_cased_string;
     }
 
@@ -1115,6 +1195,83 @@ fn to_camel_case(not_camel_cased_string: []const u8, allocator: Allocator) ![]co
     }
 
     return camel_cased_string;
+}
+
+fn strinfigy_struct_field(
+    struct_field: anytype,
+    field_descriptor: FieldDescriptor,
+    jws: anytype,
+) !void {
+    var value: switch (@typeInfo(@TypeOf(struct_field))) {
+        .Optional => |optional| optional.child,
+        else => @TypeOf(struct_field),
+    } = undefined;
+
+    switch (@typeInfo(@TypeOf(struct_field))) {
+        .Optional => {
+            if (struct_field) |v| {
+                value = v;
+            } else return;
+        },
+        else => {
+            value = struct_field;
+        },
+    }
+
+    const innerAllocator = jws.nesting_stack.bytes.allocator;
+
+    switch (field_descriptor.ftype) {
+        .Bytes => {
+            // ManagedString representing protobuf's "bytes" type
+            const size = base64.standard.Encoder.calcSize(
+                value.getSlice().len,
+            );
+            const temp = try innerAllocator.alloc(u8, size + 1);
+            defer innerAllocator.free(temp);
+            const encoded = base64.standard.Encoder.encode(
+                temp,
+                value.getSlice(),
+            );
+            try jws.write(encoded);
+        },
+        .List, .PackedList => {
+            // ArrayList
+            try jws.write(value.items);
+        },
+        .OneOf => {
+            // Tagged union type
+            const union_info = @typeInfo(@TypeOf(value)).Union;
+            if (union_info.tag_type == null) {
+                @compileError("Untagged unions are not supported here");
+            }
+
+            try jws.beginObject();
+            inline for (union_info.fields) |union_field| {
+                if (value == @field(
+                    union_info.tag_type.?,
+                    union_field.name,
+                )) {
+                    const union_camel_case_name = try to_camel_case(
+                        union_field.name,
+                        innerAllocator,
+                    );
+                    if (union_field.name.ptr == union_camel_case_name.ptr) {
+                        try jws.objectField(union_field.name);
+                    } else {
+                        defer innerAllocator.free(union_camel_case_name);
+                        try jws.objectField(union_camel_case_name);
+                    }
+                    try jws.write(@field(value, union_field.name));
+                    break;
+                }
+            } else unreachable;
+
+            try jws.endObject();
+        },
+        else => {
+            try jws.write(value);
+        },
+    }
 }
 
 pub fn MessageMixins(comptime Self: type) type {
@@ -1261,7 +1418,10 @@ pub fn MessageMixins(comptime Self: type) type {
             try jws.beginObject();
 
             inline for (@typeInfo(Self).Struct.fields) |fieldInfo| {
-                const camel_case_name = try to_camel_case(fieldInfo.name, innerAllocator);
+                const camel_case_name = try to_camel_case(
+                    fieldInfo.name,
+                    innerAllocator,
+                );
 
                 if (switch (@typeInfo(fieldInfo.type)) {
                     .Optional => @field(self, fieldInfo.name) != null,
@@ -1275,45 +1435,11 @@ pub fn MessageMixins(comptime Self: type) type {
                     }
                 }
 
-                switch (@typeInfo(fieldInfo.type)) {
-                    .Optional => {
-                        if (@field(self, fieldInfo.name)) |v| {
-                            try jws.write(v);
-                        }
-                    },
-                    .Struct => {
-                        switch (@field(
-                            Self._desc_table,
-                            fieldInfo.name,
-                        ).ftype) {
-                            .List, .PackedList => {
-                                try jws.write(@field(self, fieldInfo.name).items);
-                            },
-                            else => {
-                                try jws.write(@field(self, fieldInfo.name));
-                            },
-                        }
-                    },
-                    else => {
-                        switch (@field(
-                            Self._desc_table,
-                            fieldInfo.name,
-                        ).ftype) {
-                            .Bytes => {
-                                const size = base64.standard.Encoder.calcSize(
-                                    @field(self, fieldInfo.name).getSlice().len,
-                                );
-                                const temp = try innerAllocator.alloc(u8, size + 1);
-                                defer innerAllocator.free(temp);
-                                const encoded = base64.standard.Encoder.encode(temp, @field(self, fieldInfo.name).getSlice());
-                                try jws.write(encoded);
-                            },
-                            else => {
-                                try jws.write(@field(self, fieldInfo.name));
-                            },
-                        }
-                    },
-                }
+                try strinfigy_struct_field(
+                    @field(self, fieldInfo.name),
+                    @field(Self._desc_table, fieldInfo.name),
+                    jws,
+                );
             }
 
             try jws.endObject();
