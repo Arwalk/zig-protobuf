@@ -305,7 +305,7 @@ test "test_json_decode_withstrings" {
 // WithSubmessages tests
 const withsubmessages_str =
     \\{
-    \\  "with_enum": {
+    \\  "withEnum": {
     \\    "value": "A"
     \\  }
     \\}
@@ -339,50 +339,50 @@ test "test_json_decode_withsubmessages" {
 // Packed tests
 const packed_str =
     \\{
-    \\  "int32_list": [
+    \\  "int32List": [
     \\    -1,
     \\    2,
     \\    3
     \\  ],
-    \\  "uint32_list": [
+    \\  "uint32List": [
     \\    1,
     \\    2,
     \\    3
     \\  ],
-    \\  "sint32_list": [
+    \\  "sint32List": [
     \\    2,
     \\    3,
     \\    4
     \\  ],
-    \\  "float_list": [
+    \\  "floatList": [
     \\    1e0,
     \\    -1e3
     \\  ],
-    \\  "double_list": [
+    \\  "doubleList": [
     \\    2.1e0,
     \\    -1e3
     \\  ],
-    \\  "int64_list": [
+    \\  "int64List": [
     \\    3,
     \\    -4,
     \\    5
     \\  ],
-    \\  "sint64_list": [
+    \\  "sint64List": [
     \\    -4,
     \\    5,
     \\    -6
     \\  ],
-    \\  "uint64_list": [
+    \\  "uint64List": [
     \\    5,
     \\    6,
     \\    7
     \\  ],
-    \\  "bool_list": [
+    \\  "boolList": [
     \\    true,
     \\    false,
     \\    false
     \\  ],
-    \\  "enum_list": [
+    \\  "enumList": [
     \\    "SE_ZERO",
     \\    "SE2_ONE"
     \\  ]
@@ -457,10 +457,10 @@ test "test_json_decode_packed" {
 
 const oneofcontainer_oneof_string_in_oneof_str =
     \\{
-    \\  "regular_field": "this field is always the same",
-    \\  "enum_field": "SOMETHING",
-    \\  "some_oneof": {
-    \\    "string_in_oneof": "testing oneof field being the string"
+    \\  "regularField": "this field is always the same",
+    \\  "enumField": "SOMETHING",
+    \\  "someOneof": {
+    \\    "stringInOneof": "testing oneof field being the string"
     \\  }
     \\}
 ;
@@ -477,10 +477,10 @@ fn oneofcontainer_oneof_string_in_oneof_test_pb() !OneofContainer {
 
 const oneofcontainer_oneof_message_in_oneof_str =
     \\{
-    \\  "regular_field": "this field is always the same",
-    \\  "enum_field": "UNSPECIFIED",
-    \\  "some_oneof": {
-    \\    "message_in_oneof": {
+    \\  "regularField": "this field is always the same",
+    \\  "enumField": "UNSPECIFIED",
+    \\  "someOneof": {
+    \\    "messageInOneof": {
     \\      "value": -17,
     \\      "str": "that's a string inside message_in_oneof"
     \\    }
