@@ -1136,12 +1136,24 @@ fn parseStructField(
 
             break :oneof union_value;
         },
-        else => try json.innerParse(
-            fieldInfo.type,
-            allocator,
-            source,
-            options,
-        ),
+        .Varint, .FixedInt, .SubMessage, .String => other: {
+            // .SubMessage's (generated structs) and .String's
+            //   (ManagedString's) have its own jsonParse implementation
+            // Numeric types will be handled using default std.json parser
+            break :other try json.innerParse(
+                fieldInfo.type,
+                allocator,
+                source,
+                options,
+            );
+        },
+        // TODO: ATM there's no support for Timestamp, Duration
+        //   and some other protobuf types (see progress at
+        //   https://github.com/Arwalk/zig-protobuf/pull/49)
+        //   so it's better to see "switch must handle all possibilities"
+        //   compiler error here and then add JSON (de)serialization support
+        //   for them than hope that default std.json (de)serializer
+        //   will make all right by its own
     };
 }
 
@@ -1268,9 +1280,14 @@ fn strinfigy_struct_field(
 
             try jws.endObject();
         },
-        else => {
+        .Varint, .FixedInt, .SubMessage, .String => {
+            // .SubMessage's (generated structs) and .String's
+            //   (ManagedString's) have its own jsonStringify implementation
+            // Numeric types will be handled using default std.json parser
             try jws.write(value);
         },
+        // NOTE: You better not to use *else* here, see todo comment
+        //   at the end of parseStructField function above
     }
 }
 
