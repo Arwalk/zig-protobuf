@@ -32,6 +32,27 @@ fn _compare_pb_strings(value1: ManagedString, value2: @TypeOf(value1)) bool {
     return std.mem.eql(u8, value1.getSlice(), value2.getSlice());
 }
 
+fn _compare_numerics(value1: anytype, value2: @TypeOf(value1)) bool {
+    switch (@typeInfo(@TypeOf(value1))) {
+        .Int, .ComptimeInt, .Enum, .Bool => {
+            return value1 == value2;
+        },
+        .Float, .ComptimeFloat => {
+            if (std.math.isNan(value1)) {
+                return std.math.isNan(value2);
+            }
+            if (std.math.isPositiveInf(value1)) {
+                return std.math.isPositiveInf(value2);
+            }
+            if (std.math.isNegativeInf(value1)) {
+                return std.math.isNegativeInf(value2);
+            }
+            return value1 == value2;
+        },
+        else => unreachable,
+    }
+}
+
 fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
     const T = @TypeOf(value1);
     inline for (std.meta.fields(T)) |structInfo| {
@@ -91,6 +112,7 @@ fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
                     if (!switch (list_type) {
                         .String => _compare_pb_strings(array1_el, array2_el),
                         .SubMessage => compare_pb_structs(array1_el, array2_el),
+                        .Varint, .FixedInt => _compare_numerics(array1_el, array2_el),
                         else => std.meta.eql(array1_el, array2_el),
                     }) return false;
                 }
@@ -140,7 +162,7 @@ fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
                 if (!compare_pb_structs(field1, field2)) return false;
             },
             .Varint, .FixedInt => {
-                if (!std.meta.eql(field1, field2)) return false;
+                if (!_compare_numerics(field1, field2)) return false;
             },
         }
     }
@@ -340,120 +362,52 @@ test "test_json_decode_withsubmessages" {
     try expect(compare_pb_structs(test_pb, parsed_json.value));
 }
 
-// Packed tests
-const packed_str =
-    \\{
-    \\  "int32List": [
-    \\    -1,
-    \\    2,
-    \\    3
-    \\  ],
-    \\  "uint32List": [
-    \\    1,
-    \\    2,
-    \\    3
-    \\  ],
-    \\  "sint32List": [
-    \\    2,
-    \\    3,
-    \\    4
-    \\  ],
-    \\  "floatList": [
-    \\    1e0,
-    \\    -1e3
-    \\  ],
-    \\  "doubleList": [
-    \\    2.1e0,
-    \\    -1e3
-    \\  ],
-    \\  "int64List": [
-    \\    3,
-    \\    -4,
-    \\    5
-    \\  ],
-    \\  "sint64List": [
-    \\    -4,
-    \\    5,
-    \\    -6
-    \\  ],
-    \\  "uint64List": [
-    \\    5,
-    \\    6,
-    \\    7
-    \\  ],
-    \\  "boolList": [
-    \\    true,
-    \\    false,
-    \\    false
-    \\  ],
-    \\  "enumList": [
-    \\    "SE_ZERO",
-    \\    "SE2_ONE"
-    \\  ]
-    \\}
-;
+// -----------
+// Packed test
+// -----------
+const packed_init = @import("./json_data/packed/instance.zig").get;
+const packed_camel_case_json = @embedFile("./json_data/packed/camelCase.json");
+const packed_snake_case_json = @embedFile("./json_data/packed/snake_case.json");
+const packed_mixed_case_json = @embedFile("./json_data/packed/mixed_case.json");
 
-fn packed_test_pb(allocator: Allocator) !Packed {
-    var test_pb = Packed.init(allocator);
+test "JSON: encode Packed" {
+    const pb_instance = try packed_init(ally);
+    defer pb_instance.deinit();
 
-    try test_pb.int32_list.append(-1);
-    try test_pb.int32_list.append(2);
-    try test_pb.int32_list.append(3);
-
-    try test_pb.uint32_list.append(1);
-    try test_pb.uint32_list.append(2);
-    try test_pb.uint32_list.append(3);
-
-    try test_pb.sint32_list.append(2);
-    try test_pb.sint32_list.append(3);
-    try test_pb.sint32_list.append(4);
-
-    try test_pb.float_list.append(1.0);
-    try test_pb.float_list.append(-1_000.0);
-
-    try test_pb.double_list.append(2.1);
-    try test_pb.double_list.append(-1_000.0);
-
-    try test_pb.int64_list.append(3);
-    try test_pb.int64_list.append(-4);
-    try test_pb.int64_list.append(5);
-
-    try test_pb.sint64_list.append(-4);
-    try test_pb.sint64_list.append(5);
-    try test_pb.sint64_list.append(-6);
-
-    try test_pb.uint64_list.append(5);
-    try test_pb.uint64_list.append(6);
-    try test_pb.uint64_list.append(7);
-
-    try test_pb.bool_list.append(true);
-    try test_pb.bool_list.append(false);
-    try test_pb.bool_list.append(false);
-
-    try test_pb.enum_list.append(.SE_ZERO);
-    try test_pb.enum_list.append(.SE2_ONE);
-
-    return test_pb;
-}
-
-test "test_json_encode_packed" {
-    const test_pb = try packed_test_pb(ally);
-    defer test_pb.deinit();
-
-    const encoded = try test_pb.json_encode(
+    const encoded = try pb_instance.json_encode(
         .{ .whitespace = .indent_2 },
         ally,
     );
     defer ally.free(encoded);
 
-    try expect(compare_pb_jsons(encoded, packed_str));
+    try expect(compare_pb_jsons(encoded, packed_camel_case_json));
 }
 
-test "test_json_decode_packed" {
-    const test_pb = try packed_test_pb(ally);
+test "JSON: decode Packed (from camelCase)" {
+    const test_pb = try packed_init(ally);
     defer test_pb.deinit();
 
-    const parsed_json = try Packed.json_decode(packed_str, .{}, ally);
+    const parsed_json = try Packed.json_decode(packed_camel_case_json, .{}, ally);
+    defer parsed_json.deinit();
+
+    try expect(compare_pb_structs(test_pb, parsed_json.value));
+}
+
+test "JSON: decode Packed (from snake_case)" {
+    const test_pb = try packed_init(ally);
+    defer test_pb.deinit();
+
+    const parsed_json = try Packed.json_decode(packed_snake_case_json, .{}, ally);
+    defer parsed_json.deinit();
+
+    try expect(compare_pb_structs(test_pb, parsed_json.value));
+}
+
+test "JSON: decode Packed (from mixed_case)" {
+    const test_pb = try packed_init(ally);
+    defer test_pb.deinit();
+
+    const parsed_json = try Packed.json_decode(packed_mixed_case_json, .{}, ally);
     defer parsed_json.deinit();
 
     try expect(compare_pb_structs(test_pb, parsed_json.value));

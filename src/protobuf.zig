@@ -1209,6 +1209,23 @@ fn to_camel_case(not_camel_cased_string: []const u8, allocator: Allocator) ![]co
     return camel_cased_string;
 }
 
+fn print_float(value: anytype, jws: anytype) !void {
+    switch (@typeInfo(@TypeOf(value))) {
+        .Float, .ComptimeFloat => {},
+        else => @compileError("Float expected"),
+    }
+
+    if (std.math.isNan(value)) {
+        try jws.write("NaN");
+    } else if (std.math.isPositiveInf(value)) {
+        try jws.write("Infinity");
+    } else if (std.math.isNegativeInf(value)) {
+        try jws.write("-Infinity");
+    } else {
+        try jws.write(value);
+    }
+}
+
 fn strinfigy_struct_field(
     struct_field: anytype,
     field_descriptor: FieldDescriptor,
@@ -1248,7 +1265,17 @@ fn strinfigy_struct_field(
         },
         .List, .PackedList => {
             // ArrayList
-            try jws.write(value.items);
+            const slice = value.items;
+            switch (@typeInfo(std.meta.Child(@TypeOf(slice)))) {
+                .Float, .ComptimeFloat => {
+                    try jws.beginArray();
+                    for (slice) |el| {
+                        try print_float(el, jws);
+                    }
+                    try jws.endArray();
+                },
+                else => try jws.write(&slice),
+            }
         },
         .OneOf => {
             // Tagged union type
@@ -1280,7 +1307,17 @@ fn strinfigy_struct_field(
 
             try jws.endObject();
         },
-        .Varint, .FixedInt, .SubMessage, .String => {
+        .Varint, .FixedInt => {
+            switch (@typeInfo(@TypeOf(value))) {
+                .Float, .ComptimeFloat => {
+                    try print_float(value, jws);
+                },
+                else => {
+                    try jws.write(value);
+                },
+            }
+        },
+        .SubMessage, .String => {
             // .SubMessage's (generated structs) and .String's
             //   (ManagedString's) have its own jsonStringify implementation
             // Numeric types will be handled using default std.json parser
