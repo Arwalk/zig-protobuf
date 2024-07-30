@@ -459,100 +459,168 @@ test "test_json_decode_packed" {
     try expect(compare_pb_structs(test_pb, parsed_json.value));
 }
 
-const oneofcontainer_oneof_string_in_oneof_str =
-    \\{
-    \\  "regularField": "this field is always the same",
-    \\  "enumField": "SOMETHING",
-    \\  "someOneof": {
-    \\    "stringInOneof": "testing oneof field being the string"
-    \\  }
-    \\}
-;
+// ------------------------------------------------
+// OneofContainer test (some_oneof=string_in_oneof)
+// ------------------------------------------------
+const string_in_oneof_init = @import(
+    "./json_data/oneof_container/string_in_oneof_instance.zig",
+).get;
+const string_in_oneof_camel_case_json = @embedFile(
+    "./json_data/oneof_container/string_in_oneof_camelCase.json",
+);
+const string_in_oneof_snake_case_json = @embedFile(
+    "./json_data/oneof_container/string_in_oneof_snake_case.json",
+);
+const string_in_oneof_mixed_case1_json = @embedFile(
+    "./json_data/oneof_container/string_in_oneof_mixed_case1.json",
+);
+const string_in_oneof_mixed_case2_json = @embedFile(
+    "./json_data/oneof_container/string_in_oneof_mixed_case2.json",
+);
 
-fn oneofcontainer_oneof_string_in_oneof_test_pb() !OneofContainer {
-    return OneofContainer{
-        .some_oneof = .{ .string_in_oneof = ManagedString.static(
-            "testing oneof field being the string",
-        ) },
-        .regular_field = ManagedString.static("this field is always the same"),
-        .enum_field = .SOMETHING,
-    };
-}
-
-const oneofcontainer_oneof_message_in_oneof_str =
-    \\{
-    \\  "regularField": "this field is always the same",
-    \\  "enumField": "UNSPECIFIED",
-    \\  "someOneof": {
-    \\    "messageInOneof": {
-    \\      "value": -17,
-    \\      "str": "that's a string inside message_in_oneof"
-    \\    }
-    \\  }
-    \\}
-;
-
-fn oneofcontainer_oneof_message_in_oneof_test_pb() !OneofContainer {
-    return OneofContainer{
-        .some_oneof = .{ .message_in_oneof = .{
-            .value = -17,
-            .str = ManagedString.static(
-                "that's a string inside message_in_oneof",
-            ),
-        } },
-        .regular_field = ManagedString.static("this field is always the same"),
-        .enum_field = .UNSPECIFIED,
-    };
-}
-
-test "test_json_encode_oneofcontainer_oneof_string_in_oneof" {
-    const test_pb = try oneofcontainer_oneof_string_in_oneof_test_pb();
-
-    const encoded = try test_pb.json_encode(
+test "JSON: encode OneofContainer (string_in_oneof)" {
+    const pb_instance = string_in_oneof_init();
+    const encoded = try pb_instance.json_encode(
         .{ .whitespace = .indent_2 },
         ally,
     );
     defer ally.free(encoded);
 
-    try expect(compare_pb_jsons(encoded, oneofcontainer_oneof_string_in_oneof_str));
+    try expect(compare_pb_jsons(encoded, string_in_oneof_camel_case_json));
 }
 
-test "test_json_decode_oneofcontainer_oneof_string_in_oneof" {
-    const test_pb = try oneofcontainer_oneof_string_in_oneof_test_pb();
+test "JSON: decode OneofContainer (string_in_oneof) (from camelCase)" {
+    const pb_instance = string_in_oneof_init();
 
-    const parsed_json = try OneofContainer.json_decode(
-        oneofcontainer_oneof_string_in_oneof_str,
+    const decoded = try OneofContainer.json_decode(
+        string_in_oneof_camel_case_json,
         .{},
         ally,
     );
-    defer parsed_json.deinit();
+    defer decoded.deinit();
 
-    try expect(compare_pb_structs(test_pb, parsed_json.value));
+    try expect(compare_pb_structs(pb_instance, decoded.value));
 }
 
-test "test_json_encode_oneofcontainer_oneof_message_in_oneof" {
-    const test_pb = try oneofcontainer_oneof_message_in_oneof_test_pb();
+test "JSON: decode OneofContainer (string_in_oneof) (from snake_case)" {
+    const pb_instance = string_in_oneof_init();
 
-    const encoded = try test_pb.json_encode(
+    const decoded = try OneofContainer.json_decode(
+        string_in_oneof_snake_case_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode OneofContainer (string_in_oneof) (from mixed_case1)" {
+    const pb_instance = string_in_oneof_init();
+
+    const decoded = try OneofContainer.json_decode(
+        string_in_oneof_mixed_case1_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode OneofContainer (string_in_oneof) (from mixed_case2)" {
+    const pb_instance = string_in_oneof_init();
+
+    const decoded = try OneofContainer.json_decode(
+        string_in_oneof_mixed_case2_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+// ------------------------------------------------
+// OneofContainer test (some_oneof=message_in_oneof)
+// ------------------------------------------------
+const message_in_oneof_init = @import(
+    "./json_data/oneof_container/message_in_oneof_instance.zig",
+).get;
+const message_in_oneof_camel_case_json = @embedFile(
+    "./json_data/oneof_container/message_in_oneof_camelCase.json",
+);
+const message_in_oneof_snake_case_json = @embedFile(
+    "./json_data/oneof_container/message_in_oneof_snake_case.json",
+);
+const message_in_oneof_mixed_case1_json = @embedFile(
+    "./json_data/oneof_container/message_in_oneof_mixed_case1.json",
+);
+const message_in_oneof_mixed_case2_json = @embedFile(
+    "./json_data/oneof_container/message_in_oneof_mixed_case2.json",
+);
+
+test "JSON: encode OneofContainer (message_in_oneof)" {
+    const pb_instance = message_in_oneof_init();
+    const encoded = try pb_instance.json_encode(
         .{ .whitespace = .indent_2 },
         ally,
     );
     defer ally.free(encoded);
 
-    try expect(compare_pb_jsons(encoded, oneofcontainer_oneof_message_in_oneof_str));
+    try expect(compare_pb_jsons(encoded, message_in_oneof_camel_case_json));
 }
 
-test "test_json_decode_oneofcontainer_oneof_message_in_oneof" {
-    const test_pb = try oneofcontainer_oneof_message_in_oneof_test_pb();
+test "JSON: decode OneofContainer (message_in_oneof) (from camelCase)" {
+    const pb_instance = message_in_oneof_init();
 
-    const parsed_json = try OneofContainer.json_decode(
-        oneofcontainer_oneof_message_in_oneof_str,
+    const decoded = try OneofContainer.json_decode(
+        message_in_oneof_camel_case_json,
         .{},
         ally,
     );
-    defer parsed_json.deinit();
+    defer decoded.deinit();
 
-    try expect(compare_pb_structs(test_pb, parsed_json.value));
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode OneofContainer (message_in_oneof) (from snake_case)" {
+    const pb_instance = message_in_oneof_init();
+
+    const decoded = try OneofContainer.json_decode(
+        message_in_oneof_snake_case_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode OneofContainer (message_in_oneof) (from mixed_case1)" {
+    const pb_instance = message_in_oneof_init();
+
+    const decoded = try OneofContainer.json_decode(
+        message_in_oneof_mixed_case1_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode OneofContainer (message_in_oneof) (from mixed_case2)" {
+    const pb_instance = message_in_oneof_init();
+
+    const decoded = try OneofContainer.json_decode(
+        message_in_oneof_mixed_case2_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
 }
 
 // --------------
