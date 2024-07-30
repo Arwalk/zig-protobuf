@@ -133,13 +133,13 @@ fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
                     }
                 }
             },
-            .String => {
+            .String, .Bytes => {
                 if (!_compare_pb_strings(field1, field2)) return false;
             },
             .SubMessage => {
                 if (!compare_pb_structs(field1, field2)) return false;
             },
-            else => {
+            .Varint, .FixedInt => {
                 if (!std.meta.eql(field1, field2)) return false;
             },
         }
@@ -555,23 +555,38 @@ test "test_json_decode_oneofcontainer_oneof_message_in_oneof" {
     try expect(compare_pb_structs(test_pb, parsed_json.value));
 }
 
-const bytes_json = @embedFile("json_data/bytes.json");
+// --------------
+// WithBytes test
+// --------------
+const bytes_init = @import("./json_data/with_bytes/instance.zig").get;
+const bytes_camel_case_json = @embedFile("json_data/with_bytes/camelCase.json");
+const bytes_snake_case_json = @embedFile("json_data/with_bytes/snake_case.json");
 
-test "json encode bytes" {
-    var bytes_data = WithBytes.init(ally);
-    bytes_data.byte_field = ManagedString.static(&[_]u8{ 0xCA, 0xFE, 0xCA, 0xFE });
-
-    const encoded = try bytes_data.json_encode(
+test "JSON: encode Bytes" {
+    const pb_instance = bytes_init();
+    const encoded = try pb_instance.json_encode(
         .{ .whitespace = .indent_2 },
         ally,
     );
     defer ally.free(encoded);
-    try expect(compare_pb_jsons(encoded, bytes_json));
+
+    try expect(compare_pb_jsons(encoded, bytes_camel_case_json));
 }
 
-test "json parse bytes" {
-    const decoded = try WithBytes.json_decode(bytes_json, .{}, ally);
+test "JSON: decode Bytes (from camelCase)" {
+    const pb_instance = bytes_init();
+
+    const decoded = try WithBytes.json_decode(bytes_camel_case_json, .{}, ally);
     defer decoded.deinit();
 
-    try expectEqualSlices(u8, &[_]u8{ 0xCA, 0xFE, 0xCA, 0xFE }, decoded.value.byte_field.getSlice());
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode Bytes (from snake_case)" {
+    const pb_instance = bytes_init();
+
+    const decoded = try WithBytes.json_decode(bytes_snake_case_json, .{}, ally);
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
 }
