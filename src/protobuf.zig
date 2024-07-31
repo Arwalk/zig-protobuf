@@ -1286,11 +1286,11 @@ fn stringify_struct_field(
                 value.getSlice().len,
             );
 
-            var innerArrayList: *ArrayList(u8) = jws.stream.context;
-            try innerArrayList.ensureTotalCapacity(innerArrayList.capacity + size + 1);
             try jsonValueStartAssumeTypeOk(jws);
             try jws.stream.writeByte('"');
 
+            var innerArrayList: *ArrayList(u8) = jws.stream.context;
+            try innerArrayList.ensureTotalCapacity(innerArrayList.capacity + size + 1);
             const temp = innerArrayList.unusedCapacitySlice();
             _ = base64.standard.Encoder.encode(
                 temp,
@@ -1298,6 +1298,7 @@ fn stringify_struct_field(
             );
             innerArrayList.items.len += size;
             try jws.stream.writeByte('"');
+
             jws.next_punctuation = .comma;
         },
         .List, .PackedList => {
