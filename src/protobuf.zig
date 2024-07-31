@@ -1305,7 +1305,7 @@ fn stringify_struct_field(
                 value.getSlice().len,
             );
 
-            var innerArrayList : *ArrayList(u8) = jws.stream.context;
+            var innerArrayList: *ArrayList(u8) = jws.stream.context;
             try innerArrayList.ensureTotalCapacity(innerArrayList.capacity + size + 1);
             try jsonValueStartAssumeTypeOk(jws);
             try jws.stream.writeByte('"');
