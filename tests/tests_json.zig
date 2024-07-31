@@ -633,3 +633,6 @@ test "JSON: decode Bytes (from snake_case)" {
 
     try expect(compare_pb_structs(pb_instance, decoded.value));
 }
+
+// TODO: Test "repeated bytes" (MoreBytes instance for example)
+// TODO: Test when oneof value == Nan/Infinity/-Infinity
