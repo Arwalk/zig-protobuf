@@ -1226,6 +1226,54 @@ fn print_float(value: anytype, jws: anytype) !void {
     }
 }
 
+fn jsonIndent(jws: anytype) !void {
+    var char: u8 = ' ';
+    const n_chars = switch (jws.options.whitespace) {
+        .minified => return,
+        .indent_1 => 1 * jws.indent_level,
+        .indent_2 => 2 * jws.indent_level,
+        .indent_3 => 3 * jws.indent_level,
+        .indent_4 => 4 * jws.indent_level,
+        .indent_8 => 8 * jws.indent_level,
+        .indent_tab => blk: {
+            char = '\t';
+            break :blk jws.indent_level;
+        },
+    };
+    try jws.stream.writeByte('\n');
+    try jws.stream.writeByteNTimes(char, n_chars);
+}
+
+const assert = std.debug.assert;
+
+fn jsonIsComplete(jws: anytype) bool {
+    return jws.indent_level == 0 and jws.next_punctuation == .comma;
+}
+
+fn jsonValueStartAssumeTypeOk(jws: anytype) !void {
+    assert(!jsonIsComplete(jws));
+    switch (jws.next_punctuation) {
+        .the_beginning => {
+            // No indentation for the very beginning.
+        },
+        .none => {
+            // First item in a container.
+            try jsonIndent(jws);
+        },
+        .comma => {
+            // Subsequent item in a container.
+            try jws.stream.writeByte(',');
+            try jsonIndent(jws);
+        },
+        .colon => {
+            try jws.stream.writeByte(':');
+            if (jws.options.whitespace != .minified) {
+                try jws.stream.writeByte(' ');
+            }
+        },
+    }
+}
+
 fn stringify_struct_field(
     struct_field: anytype,
     field_descriptor: FieldDescriptor,
@@ -1252,16 +1300,24 @@ fn stringify_struct_field(
     switch (field_descriptor.ftype) {
         .Bytes => {
             // ManagedString representing protobuf's "bytes" type
+
             const size = base64.standard.Encoder.calcSize(
                 value.getSlice().len,
             );
-            const temp = try innerAllocator.alloc(u8, size + 1);
-            defer innerAllocator.free(temp);
-            const encoded = base64.standard.Encoder.encode(
+
+            var innerArrayList : *ArrayList(u8) = jws.stream.context;
+            try innerArrayList.ensureTotalCapacity(innerArrayList.capacity + size + 1);
+            try jsonValueStartAssumeTypeOk(jws);
+            try jws.stream.writeByte('"');
+
+            const temp = innerArrayList.unusedCapacitySlice();
+            _ = base64.standard.Encoder.encode(
                 temp,
                 value.getSlice(),
             );
-            try jws.write(encoded);
+            innerArrayList.items.len += size;
+            try jws.stream.writeByte('"');
+            jws.next_punctuation = .comma;
         },
         .List, .PackedList => {
             // ArrayList
@@ -1412,7 +1468,7 @@ pub fn MessageMixins(comptime Self: type) type {
                     }
 
                     if (yes1 and yes2) {
-                        return error.FieldNameCollision;
+                        return error.UnexpectedToken;
                     } else if (yes1 or yes2) {
                         // Free the name token now in case we're using an
                         // allocator that optimizes freeing the last
