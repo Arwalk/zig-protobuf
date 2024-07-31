@@ -187,116 +187,85 @@ fn compare_pb_jsons(encoded: []const u8, expected: []const u8) bool {
 }
 
 // FixedSizes tests
-const fixedsizes_str =
-    \\{
-    \\  "sfixed64": 1,
-    \\  "sfixed32": 2,
-    \\  "fixed32": 3,
-    \\  "fixed64": 4,
-    \\  "double": 5e0,
-    \\  "float": 6e0
-    \\}
-;
+const fixed_sizes_init = @import("./json_data/fixed_sizes/instance.zig").get;
+const fixed_sizes_camel_case_json = @embedFile("./json_data/fixed_sizes/camelCase.json");
 
-fn fixedsizes_test_pb() FixedSizes {
-    return FixedSizes{
-        .sfixed64 = 1,
-        .sfixed32 = 2,
-        .fixed32 = 3,
-        .fixed64 = 4,
-        .double = 5.0,
-        .float = 6.0,
-    };
-}
-
-test "test_json_encode_fixedsizes" {
-    const test_pb = fixedsizes_test_pb();
-
-    const encoded = try test_pb.json_encode(
+test "JSON: encode FixedSizes" {
+    const pb_instance = fixed_sizes_init();
+    const encoded = try pb_instance.json_encode(
         .{ .whitespace = .indent_2 },
         ally,
     );
     defer ally.free(encoded);
 
-    try expect(compare_pb_jsons(encoded, fixedsizes_str));
+    try expect(compare_pb_jsons(encoded, fixed_sizes_camel_case_json));
 }
 
-test "test_json_decode_fixedsizes" {
-    const test_pb = fixedsizes_test_pb();
+test "JSON: decode FixedSizes (camelCase)" {
+    const pb_instance = fixed_sizes_init();
 
-    const parsed_json = try FixedSizes.json_decode(fixedsizes_str, .{}, ally);
-    defer parsed_json.deinit();
+    const decoded = try FixedSizes.json_decode(fixed_sizes_camel_case_json, .{}, ally);
+    defer decoded.deinit();
 
-    try expect(compare_pb_structs(test_pb, parsed_json.value));
+    try expect(compare_pb_structs(pb_instance, decoded.value));
 }
 
 // RepeatedEnum tests
-test "test_json_encode_repeatedenum" {
-    var value = ArrayList(TopLevelEnum).init(ally);
-    defer value.deinit();
+const repeated_enum_init = @import("./json_data/repeated_enum/instance.zig").get;
 
-    try value.append(.SE_ZERO);
-    try value.append(.SE2_ZERO);
+// Parsers accept both enum names and integer values
+// https://protobuf.dev/programming-guides/proto3/#json
+const repeated_enum_camel_case1_json = @embedFile(
+    "./json_data/repeated_enum/camelCase1.json",
+);
+const repeated_enum_camel_case2_json = @embedFile(
+    "./json_data/repeated_enum/camelCase2.json",
+);
+const repeated_enum_camel_case3_json = @embedFile(
+    "./json_data/repeated_enum/camelCase3.json",
+);
 
-    const test_pb = RepeatedEnum{ .value = value };
+test "JSON: encode RepeatedEnum" {
+    const pb_instance = try repeated_enum_init(ally);
+    defer pb_instance.deinit();
 
-    const encoded = try test_pb.json_encode(
+    const encoded = try pb_instance.json_encode(
         .{ .whitespace = .indent_2 },
         ally,
     );
     defer ally.free(encoded);
 
-    try expect(compare_pb_jsons(
-        encoded,
-        \\{
-        \\  "value": [
-        \\    "SE_ZERO",
-        \\    "SE2_ZERO"
-        \\  ]
-        \\}
-        ,
-    ));
+    try expect(compare_pb_jsons(encoded, repeated_enum_camel_case1_json));
 }
 
-test "test_json_decode_repeatedenum" {
-    var value = ArrayList(TopLevelEnum).init(ally);
-    defer value.deinit();
+test "JSON: decode RepeatedEnum (camelCase, variant 1)" {
+    const pb_instance = try repeated_enum_init(ally);
+    defer pb_instance.deinit();
 
-    try value.append(.SE_ZERO);
-    try value.append(.SE2_ZERO);
+    const decoded = try RepeatedEnum.json_decode(repeated_enum_camel_case1_json, .{}, ally);
+    defer decoded.deinit();
 
-    const test_pb = RepeatedEnum{ .value = value };
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
 
-    // Parsers accept both enum names and integer values
-    // https://protobuf.dev/programming-guides/proto3/#json
-    for ([_][]const u8{
-        \\{
-        \\  "value": [
-        \\    "SE_ZERO",
-        \\    "SE2_ZERO"
-        \\  ]
-        \\}
-        ,
-        \\{
-        \\  "value": [
-        \\    0,
-        \\    "SE2_ZERO"
-        \\  ]
-        \\}
-        ,
-        \\{
-        \\  "value": [
-        \\    0,
-        \\    3
-        \\  ]
-        \\}
-        ,
-    }) |json_string| {
-        const parsed_json = try RepeatedEnum.json_decode(json_string, .{}, ally);
-        defer parsed_json.deinit();
+test "JSON: decode RepeatedEnum (camelCase, variant 2)" {
+    const pb_instance = try repeated_enum_init(ally);
+    defer pb_instance.deinit();
 
-        try expect(compare_pb_structs(test_pb, parsed_json.value));
-    }
+    const decoded = try RepeatedEnum.json_decode(repeated_enum_camel_case2_json, .{}, ally);
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode RepeatedEnum (camelCase, variant 3)" {
+    const pb_instance = try repeated_enum_init(ally);
+    defer pb_instance.deinit();
+
+    const decoded = try RepeatedEnum.json_decode(repeated_enum_camel_case3_json, .{}, ally);
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
 }
 
 // WithStrings tests
