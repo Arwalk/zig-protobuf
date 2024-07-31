@@ -10,20 +10,6 @@ const ally = std.testing.allocator;
 const protobuf = @import("protobuf");
 const ManagedString = protobuf.ManagedString;
 
-const tests = @import("./generated/tests.pb.zig");
-const FixedSizes = tests.FixedSizes;
-const TopLevelEnum = tests.TopLevelEnum;
-const RepeatedEnum = tests.RepeatedEnum;
-const WithStrings = tests.WithStrings;
-const WithRepeatedStrings = tests.WithRepeatedStrings;
-const WithEnum = tests.WithEnum;
-const WithSubmessages = tests.WithSubmessages;
-const Packed = tests.Packed;
-const WithBytes = tests.WithBytes;
-
-const oneof_tests = @import("./generated/tests/oneof.pb.zig");
-const OneofContainer = oneof_tests.OneofContainer;
-
 // TODO(libro): Also need to check if JSON string snake_case field
 //   names will be decoded correctly (parser should handle
 //   both camelCase and snake_case variants)
@@ -204,7 +190,11 @@ test "JSON: encode FixedSizes" {
 test "JSON: decode FixedSizes (camelCase)" {
     const pb_instance = fixed_sizes_init();
 
-    const decoded = try FixedSizes.json_decode(fixed_sizes_camel_case_json, .{}, ally);
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        fixed_sizes_camel_case_json,
+        .{},
+        ally,
+    );
     defer decoded.deinit();
 
     try expect(compare_pb_structs(pb_instance, decoded.value));
@@ -242,7 +232,11 @@ test "JSON: decode RepeatedEnum (camelCase, variant 1)" {
     const pb_instance = try repeated_enum_init(ally);
     defer pb_instance.deinit();
 
-    const decoded = try RepeatedEnum.json_decode(repeated_enum_camel_case1_json, .{}, ally);
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        repeated_enum_camel_case1_json,
+        .{},
+        ally,
+    );
     defer decoded.deinit();
 
     try expect(compare_pb_structs(pb_instance, decoded.value));
@@ -252,7 +246,11 @@ test "JSON: decode RepeatedEnum (camelCase, variant 2)" {
     const pb_instance = try repeated_enum_init(ally);
     defer pb_instance.deinit();
 
-    const decoded = try RepeatedEnum.json_decode(repeated_enum_camel_case2_json, .{}, ally);
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        repeated_enum_camel_case2_json,
+        .{},
+        ally,
+    );
     defer decoded.deinit();
 
     try expect(compare_pb_structs(pb_instance, decoded.value));
@@ -262,7 +260,11 @@ test "JSON: decode RepeatedEnum (camelCase, variant 3)" {
     const pb_instance = try repeated_enum_init(ally);
     defer pb_instance.deinit();
 
-    const decoded = try RepeatedEnum.json_decode(repeated_enum_camel_case3_json, .{}, ally);
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        repeated_enum_camel_case3_json,
+        .{},
+        ally,
+    );
     defer decoded.deinit();
 
     try expect(compare_pb_structs(pb_instance, decoded.value));
@@ -287,7 +289,7 @@ test "JSON: encode WithStrings" {
 test "JSON: decode WithStrings" {
     const pb_instance = with_strings_init();
 
-    const decoded = try WithStrings.json_decode(
+    const decoded = try @TypeOf(pb_instance).json_decode(
         with_strings_camel_case_json,
         .{},
         ally,
@@ -325,7 +327,7 @@ test "JSON: encode WithSubmessages" {
 test "JSON: decode WithSubmessages (from camelCase)" {
     const pb_instance = with_submessages_init();
 
-    const decoded = try WithSubmessages.json_decode(
+    const decoded = try @TypeOf(pb_instance).json_decode(
         with_submessages_camel_case_json,
         .{},
         ally,
@@ -338,7 +340,7 @@ test "JSON: decode WithSubmessages (from camelCase)" {
 test "JSON: decode WithSubmessages (from camelCase, enum as integer)" {
     const pb_instance = with_submessages_init();
 
-    const decoded = try WithSubmessages.json_decode(
+    const decoded = try @TypeOf(pb_instance).json_decode(
         with_submessages_camel_case_enum_as_integer_json,
         .{},
         ally,
@@ -351,7 +353,7 @@ test "JSON: decode WithSubmessages (from camelCase, enum as integer)" {
 test "JSON: decode WithSubmessages (from snake_case)" {
     const pb_instance = with_submessages_init();
 
-    const decoded = try WithSubmessages.json_decode(
+    const decoded = try @TypeOf(pb_instance).json_decode(
         with_submessages_snake_case_json,
         .{},
         ally,
@@ -386,7 +388,11 @@ test "JSON: decode Packed (from camelCase)" {
     const pb_instance = try packed_init(ally);
     defer pb_instance.deinit();
 
-    const decoded = try Packed.json_decode(packed_camel_case_json, .{}, ally);
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        packed_camel_case_json,
+        .{},
+        ally,
+    );
     defer decoded.deinit();
 
     try expect(compare_pb_structs(pb_instance, decoded.value));
@@ -396,7 +402,11 @@ test "JSON: decode Packed (from snake_case)" {
     const pb_instance = try packed_init(ally);
     defer pb_instance.deinit();
 
-    const decoded = try Packed.json_decode(packed_snake_case_json, .{}, ally);
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        packed_snake_case_json,
+        .{},
+        ally,
+    );
     defer decoded.deinit();
 
     try expect(compare_pb_structs(pb_instance, decoded.value));
@@ -406,7 +416,11 @@ test "JSON: decode Packed (from mixed_case)" {
     const pb_instance = try packed_init(ally);
     defer pb_instance.deinit();
 
-    const decoded = try Packed.json_decode(packed_mixed_case_json, .{}, ally);
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        packed_mixed_case_json,
+        .{},
+        ally,
+    );
     defer decoded.deinit();
 
     try expect(compare_pb_structs(pb_instance, decoded.value));
@@ -445,7 +459,7 @@ test "JSON: encode OneofContainer (string_in_oneof)" {
 test "JSON: decode OneofContainer (string_in_oneof) (from camelCase)" {
     const pb_instance = string_in_oneof_init();
 
-    const decoded = try OneofContainer.json_decode(
+    const decoded = try @TypeOf(pb_instance).json_decode(
         string_in_oneof_camel_case_json,
         .{},
         ally,
@@ -458,7 +472,7 @@ test "JSON: decode OneofContainer (string_in_oneof) (from camelCase)" {
 test "JSON: decode OneofContainer (string_in_oneof) (from snake_case)" {
     const pb_instance = string_in_oneof_init();
 
-    const decoded = try OneofContainer.json_decode(
+    const decoded = try @TypeOf(pb_instance).json_decode(
         string_in_oneof_snake_case_json,
         .{},
         ally,
@@ -471,7 +485,7 @@ test "JSON: decode OneofContainer (string_in_oneof) (from snake_case)" {
 test "JSON: decode OneofContainer (string_in_oneof) (from mixed_case1)" {
     const pb_instance = string_in_oneof_init();
 
-    const decoded = try OneofContainer.json_decode(
+    const decoded = try @TypeOf(pb_instance).json_decode(
         string_in_oneof_mixed_case1_json,
         .{},
         ally,
@@ -484,7 +498,7 @@ test "JSON: decode OneofContainer (string_in_oneof) (from mixed_case1)" {
 test "JSON: decode OneofContainer (string_in_oneof) (from mixed_case2)" {
     const pb_instance = string_in_oneof_init();
 
-    const decoded = try OneofContainer.json_decode(
+    const decoded = try @TypeOf(pb_instance).json_decode(
         string_in_oneof_mixed_case2_json,
         .{},
         ally,
@@ -527,7 +541,7 @@ test "JSON: encode OneofContainer (message_in_oneof)" {
 test "JSON: decode OneofContainer (message_in_oneof) (from camelCase)" {
     const pb_instance = message_in_oneof_init();
 
-    const decoded = try OneofContainer.json_decode(
+    const decoded = try @TypeOf(pb_instance).json_decode(
         message_in_oneof_camel_case_json,
         .{},
         ally,
@@ -540,7 +554,7 @@ test "JSON: decode OneofContainer (message_in_oneof) (from camelCase)" {
 test "JSON: decode OneofContainer (message_in_oneof) (from snake_case)" {
     const pb_instance = message_in_oneof_init();
 
-    const decoded = try OneofContainer.json_decode(
+    const decoded = try @TypeOf(pb_instance).json_decode(
         message_in_oneof_snake_case_json,
         .{},
         ally,
@@ -553,7 +567,7 @@ test "JSON: decode OneofContainer (message_in_oneof) (from snake_case)" {
 test "JSON: decode OneofContainer (message_in_oneof) (from mixed_case1)" {
     const pb_instance = message_in_oneof_init();
 
-    const decoded = try OneofContainer.json_decode(
+    const decoded = try @TypeOf(pb_instance).json_decode(
         message_in_oneof_mixed_case1_json,
         .{},
         ally,
@@ -566,7 +580,7 @@ test "JSON: decode OneofContainer (message_in_oneof) (from mixed_case1)" {
 test "JSON: decode OneofContainer (message_in_oneof) (from mixed_case2)" {
     const pb_instance = message_in_oneof_init();
 
-    const decoded = try OneofContainer.json_decode(
+    const decoded = try @TypeOf(pb_instance).json_decode(
         message_in_oneof_mixed_case2_json,
         .{},
         ally,
@@ -597,7 +611,11 @@ test "JSON: encode Bytes" {
 test "JSON: decode Bytes (from camelCase)" {
     const pb_instance = bytes_init();
 
-    const decoded = try WithBytes.json_decode(bytes_camel_case_json, .{}, ally);
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        bytes_camel_case_json,
+        .{},
+        ally,
+    );
     defer decoded.deinit();
 
     try expect(compare_pb_structs(pb_instance, decoded.value));
@@ -606,7 +624,11 @@ test "JSON: decode Bytes (from camelCase)" {
 test "JSON: decode Bytes (from snake_case)" {
     const pb_instance = bytes_init();
 
-    const decoded = try WithBytes.json_decode(bytes_snake_case_json, .{}, ally);
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        bytes_snake_case_json,
+        .{},
+        ally,
+    );
     defer decoded.deinit();
 
     try expect(compare_pb_structs(pb_instance, decoded.value));
