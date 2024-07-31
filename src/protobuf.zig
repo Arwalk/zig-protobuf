@@ -1052,7 +1052,7 @@ fn parseStructField(
             );
         },
         .Bytes => bytes: {
-            // "bytes" -> ManagerString
+            // "bytes" -> ManagedString
             const temp_raw = try json.innerParse([]u8, allocator, source, options);
             const size = base64.standard.Decoder.calcSizeForSlice(temp_raw) catch |err| {
                 return base64ErrorToJsonParseError(err);
