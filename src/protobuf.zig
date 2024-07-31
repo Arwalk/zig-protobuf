@@ -1226,7 +1226,7 @@ fn print_float(value: anytype, jws: anytype) !void {
     }
 }
 
-fn strinfigy_struct_field(
+fn stringify_struct_field(
     struct_field: anytype,
     field_descriptor: FieldDescriptor,
     jws: anytype,
@@ -1489,7 +1489,7 @@ pub fn MessageMixins(comptime Self: type) type {
                     }
                 }
 
-                try strinfigy_struct_field(
+                try stringify_struct_field(
                     @field(self, fieldInfo.name),
                     @field(Self._desc_table, fieldInfo.name),
                     jws,
