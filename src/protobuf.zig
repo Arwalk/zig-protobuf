@@ -1100,18 +1100,8 @@ fn parseStructField(
                 // snake_case comparison
                 var this_field = std.mem.eql(u8, union_field.name, field_name);
                 if (!this_field) {
-                    const union_camel_case_name = try to_camel_case(
-                        union_field.name,
-                        allocator,
-                    );
-                    if (union_camel_case_name.ptr != union_field.name.ptr) {
-                        defer allocator.free(union_camel_case_name);
-                        this_field = std.mem.eql(
-                            u8,
-                            union_camel_case_name,
-                            field_name,
-                        );
-                    }
+                    const union_camel_case_name = comptime to_camel_case(union_field.name);
+                    this_field = std.mem.eql(u8, union_camel_case_name, field_name);
                 }
 
                 if (this_field) {
@@ -1175,34 +1165,27 @@ pub fn pb_json_encode(
     return try json.stringifyAlloc(allocator, data, options);
 }
 
-fn to_camel_case(not_camel_cased_string: []const u8, allocator: Allocator) ![]const u8 {
-    var underscore_count: usize = 0;
-    for (not_camel_cased_string) |byte| {
-        if (byte == '_') underscore_count += 1;
-    }
-    if (underscore_count == 0 or underscore_count == not_camel_cased_string.len) {
-        // You better not touch fields like "_____________" (or should we?)
-        return not_camel_cased_string;
-    }
+fn to_camel_case(not_camel_cased_string: []const u8) []const u8 {
+    comptime var capitalize_next_letter = false;
+    comptime var camel_cased_string: []const u8 = "";
+    comptime var i: usize = 0;
 
-    var capitalize_next_letter = false;
-    var camel_cased_string = try allocator.alloc(u8, not_camel_cased_string.len - underscore_count);
-
-    var i: usize = 0;
-    for (not_camel_cased_string) |char| {
+    inline for (not_camel_cased_string) |char| {
         if (char == '_') {
             capitalize_next_letter = i > 0;
         } else if (capitalize_next_letter) {
-            camel_cased_string[i] = std.ascii.toUpper(char);
+            camel_cased_string = camel_cased_string ++ .{
+                comptime std.ascii.toUpper(char),
+            };
             capitalize_next_letter = false;
             i += 1;
         } else {
-            camel_cased_string[i] = char;
+            camel_cased_string = camel_cased_string ++ .{char};
             i += 1;
         }
     }
 
-    if (std.ascii.isUpper(camel_cased_string[0])) {
+    if (comptime std.ascii.isUpper(camel_cased_string[0])) {
         camel_cased_string[0] = std.ascii.toLower(camel_cased_string[0]);
     }
 
@@ -1295,8 +1278,6 @@ fn stringify_struct_field(
         },
     }
 
-    const innerAllocator = jws.nesting_stack.bytes.allocator;
-
     switch (field_descriptor.ftype) {
         .Bytes => {
             // ManagedString representing protobuf's "bytes" type
@@ -1346,16 +1327,8 @@ fn stringify_struct_field(
                     union_info.tag_type.?,
                     union_field.name,
                 )) {
-                    const union_camel_case_name = try to_camel_case(
-                        union_field.name,
-                        innerAllocator,
-                    );
-                    if (union_field.name.ptr == union_camel_case_name.ptr) {
-                        try jws.objectField(union_field.name);
-                    } else {
-                        defer innerAllocator.free(union_camel_case_name);
-                        try jws.objectField(union_camel_case_name);
-                    }
+                    const union_camel_case_name = comptime to_camel_case(union_field.name);
+                    try jws.objectField(union_camel_case_name);
                     try jws.write(@field(value, union_field.name));
                     break;
                 }
@@ -1454,17 +1427,12 @@ pub fn MessageMixins(comptime Self: type) type {
                     }
 
                     const yes1 = std.mem.eql(u8, field.name, field_name);
+                    const camel_case_name = comptime to_camel_case(field.name);
                     var yes2: bool = undefined;
-
-                    const camel_case_name = try to_camel_case(field.name, allocator);
-                    if (field.name.ptr == camel_case_name.ptr) {
-                        // If there was no case conversion than the same
-                        // array will be returned (there's no need
-                        // for deallocation in this case)
+                    if (comptime std.mem.eql(u8, field.name, camel_case_name)) {
                         yes2 = false;
                     } else {
                         yes2 = std.mem.eql(u8, camel_case_name, field_name);
-                        allocator.free(camel_case_name);
                     }
 
                     if (yes1 and yes2) {
@@ -1524,26 +1492,15 @@ pub fn MessageMixins(comptime Self: type) type {
         // This method is used by std.json
         // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const Self, jws: anytype) !void {
-            const innerAllocator = jws.nesting_stack.bytes.allocator;
             try jws.beginObject();
 
             inline for (@typeInfo(Self).Struct.fields) |fieldInfo| {
-                const camel_case_name = try to_camel_case(
-                    fieldInfo.name,
-                    innerAllocator,
-                );
+                const camel_case_name = comptime to_camel_case(fieldInfo.name);
 
                 if (switch (@typeInfo(fieldInfo.type)) {
                     .Optional => @field(self, fieldInfo.name) != null,
                     else => true,
-                }) {
-                    if (camel_case_name.ptr == fieldInfo.name.ptr) {
-                        try jws.objectField(fieldInfo.name);
-                    } else {
-                        defer innerAllocator.free(camel_case_name);
-                        try jws.objectField(camel_case_name);
-                    }
-                }
+                }) try jws.objectField(camel_case_name);
 
                 try stringify_struct_field(
                     @field(self, fieldInfo.name),
