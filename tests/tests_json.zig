@@ -300,66 +300,96 @@ test "test_json_decode_repeatedenum" {
 }
 
 // WithStrings tests
-const withstrings_str =
-    \\{
-    \\  "name": "test_string"
-    \\}
-;
+const with_strings_init = @import("./json_data/with_strings/instance.zig").get;
+const with_strings_camel_case_json = @embedFile("./json_data/with_strings/camelCase.json");
 
-fn withstrings_test_pb() WithStrings {
-    return WithStrings{ .name = ManagedString.static("test_string") };
-}
+test "JSON: encode WithStrings" {
+    const pb_instance = with_strings_init();
 
-test "test_json_encode_withstrings" {
-    const test_pb = withstrings_test_pb();
-
-    const encoded = try test_pb.json_encode(.{ .whitespace = .indent_2 }, ally);
-    defer ally.free(encoded);
-
-    try expect(compare_pb_jsons(encoded, withstrings_str));
-}
-
-test "test_json_decode_withstrings" {
-    const test_pb = withstrings_test_pb();
-
-    const parsed_json = try WithStrings.json_decode(withstrings_str, .{}, ally);
-    defer parsed_json.deinit();
-
-    try expect(compare_pb_structs(test_pb, parsed_json.value));
-}
-
-// WithSubmessages tests
-const withsubmessages_str =
-    \\{
-    \\  "withEnum": {
-    \\    "value": "A"
-    \\  }
-    \\}
-;
-
-fn withsubmessages_test_pb() WithSubmessages {
-    return WithSubmessages{ .with_enum = WithEnum{ .value = .A } };
-}
-
-test "test_json_encode_withsubmessages" {
-    const test_pb = withsubmessages_test_pb();
-
-    const encoded = try test_pb.json_encode(
+    const encoded = try pb_instance.json_encode(
         .{ .whitespace = .indent_2 },
         ally,
     );
     defer ally.free(encoded);
 
-    try expect(compare_pb_jsons(encoded, withsubmessages_str));
+    try expect(compare_pb_jsons(encoded, with_strings_camel_case_json));
 }
 
-test "test_json_decode_withsubmessages" {
-    const test_pb = withsubmessages_test_pb();
+test "JSON: decode WithStrings" {
+    const pb_instance = with_strings_init();
 
-    const parsed_json = try WithSubmessages.json_decode(withsubmessages_str, .{}, ally);
-    defer parsed_json.deinit();
+    const decoded = try WithStrings.json_decode(
+        with_strings_camel_case_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
 
-    try expect(compare_pb_structs(test_pb, parsed_json.value));
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+// WithSubmessages tests
+const with_submessages_init = @import(
+    "./json_data/with_submessages/instance.zig",
+).get;
+const with_submessages_camel_case_json = @embedFile(
+    "./json_data/with_submessages/camelCase.json",
+);
+const with_submessages_camel_case_enum_as_integer_json = @embedFile(
+    "./json_data/with_submessages/camelCase_enum_as_integer.json",
+);
+const with_submessages_snake_case_json = @embedFile(
+    "./json_data/with_submessages/snake_case.json",
+);
+
+test "JSON: encode WithSubmessages" {
+    const pb_instance = with_submessages_init();
+    const encoded = try pb_instance.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(compare_pb_jsons(encoded, with_submessages_camel_case_json));
+}
+
+test "JSON: decode WithSubmessages (from camelCase)" {
+    const pb_instance = with_submessages_init();
+
+    const decoded = try WithSubmessages.json_decode(
+        with_submessages_camel_case_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode WithSubmessages (from camelCase, enum as integer)" {
+    const pb_instance = with_submessages_init();
+
+    const decoded = try WithSubmessages.json_decode(
+        with_submessages_camel_case_enum_as_integer_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode WithSubmessages (from snake_case)" {
+    const pb_instance = with_submessages_init();
+
+    const decoded = try WithSubmessages.json_decode(
+        with_submessages_snake_case_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
 }
 
 // -----------
@@ -384,33 +414,33 @@ test "JSON: encode Packed" {
 }
 
 test "JSON: decode Packed (from camelCase)" {
-    const test_pb = try packed_init(ally);
-    defer test_pb.deinit();
+    const pb_instance = try packed_init(ally);
+    defer pb_instance.deinit();
 
-    const parsed_json = try Packed.json_decode(packed_camel_case_json, .{}, ally);
-    defer parsed_json.deinit();
+    const decoded = try Packed.json_decode(packed_camel_case_json, .{}, ally);
+    defer decoded.deinit();
 
-    try expect(compare_pb_structs(test_pb, parsed_json.value));
+    try expect(compare_pb_structs(pb_instance, decoded.value));
 }
 
 test "JSON: decode Packed (from snake_case)" {
-    const test_pb = try packed_init(ally);
-    defer test_pb.deinit();
+    const pb_instance = try packed_init(ally);
+    defer pb_instance.deinit();
 
-    const parsed_json = try Packed.json_decode(packed_snake_case_json, .{}, ally);
-    defer parsed_json.deinit();
+    const decoded = try Packed.json_decode(packed_snake_case_json, .{}, ally);
+    defer decoded.deinit();
 
-    try expect(compare_pb_structs(test_pb, parsed_json.value));
+    try expect(compare_pb_structs(pb_instance, decoded.value));
 }
 
 test "JSON: decode Packed (from mixed_case)" {
-    const test_pb = try packed_init(ally);
-    defer test_pb.deinit();
+    const pb_instance = try packed_init(ally);
+    defer pb_instance.deinit();
 
-    const parsed_json = try Packed.json_decode(packed_mixed_case_json, .{}, ally);
-    defer parsed_json.deinit();
+    const decoded = try Packed.json_decode(packed_mixed_case_json, .{}, ally);
+    defer decoded.deinit();
 
-    try expect(compare_pb_structs(test_pb, parsed_json.value));
+    try expect(compare_pb_structs(pb_instance, decoded.value));
 }
 
 // ------------------------------------------------
