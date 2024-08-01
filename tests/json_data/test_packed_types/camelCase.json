@@ -1,0 +1,28 @@
+{
+  "packedInt32": [],
+  "packedInt64": [],
+  "packedUint32": [],
+  "packedUint64": [],
+  "packedSint32": [],
+  "packedSint64": [],
+  "packedFixed32": [],
+  "packedFixed64": [],
+  "packedSfixed32": [],
+  "packedSfixed64": [],
+  "packedFloat": [
+    1e0,
+    "NaN",
+    "Infinity",
+    "-Infinity",
+    1e0
+  ],
+  "packedDouble": [
+    1e0,
+    "NaN",
+    "Infinity",
+    "-Infinity",
+    1e0
+  ],
+  "packedBool": [],
+  "packedEnum": []
+}

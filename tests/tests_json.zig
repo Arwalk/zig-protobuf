@@ -810,3 +810,40 @@ test "JSON: decode TestOneof2 (oneof=.Bytes)" {
 
     try expect(compare_pb_structs(pb_instance, decoded.value));
 }
+
+// ---------------------
+// TestPackedTypes tests
+// ---------------------
+const test_packed_types_init = @import(
+    "./json_data/test_packed_types/instance.zig",
+).get;
+const test_packed_types_camel_case_json = @embedFile(
+    "./json_data/test_packed_types/camelCase.json",
+);
+
+test "JSON: encode TestPackedTypes (repeated NaNs/infs)" {
+    const pb_instance = try test_packed_types_init(ally);
+    defer pb_instance.deinit();
+
+    const encoded = try pb_instance.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(compare_pb_jsons(encoded, test_packed_types_camel_case_json));
+}
+
+test "JSON: decode TestPackedTypes (repeated NaNs/infs)" {
+    const pb_instance = try test_packed_types_init(ally);
+    defer pb_instance.deinit();
+
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        test_packed_types_camel_case_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
