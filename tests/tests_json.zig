@@ -779,3 +779,34 @@ test "JSON: decode Value (.number_value=1.0)" {
 
     try expect(compare_pb_structs(pb_instance, decoded.value));
 }
+
+// ----------------
+// TestOneof2 tests
+// ----------------
+const test_oneof2_init = @import("./json_data/test_oneof2/instance.zig").get;
+const test_oneof2_camel_case_json = @embedFile("./json_data/test_oneof2/camelCase.json");
+
+test "JSON: encode TestOneof2 (oneof=.Bytes)" {
+    const pb_instance = test_oneof2_init();
+
+    const encoded = try pb_instance.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(compare_pb_jsons(encoded, test_oneof2_camel_case_json));
+}
+
+test "JSON: decode TestOneof2 (oneof=.Bytes)" {
+    const pb_instance = test_oneof2_init();
+
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        test_oneof2_camel_case_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}

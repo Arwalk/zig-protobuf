@@ -1,0 +1,10 @@
+{
+  "baz_int": 15,
+  "baz_string": "we're here to check if oneof=.Bytes will be serialized correctly",
+  "foo": {
+    "foo_bytes": "c29tZSBieXRlcyB0byBjaGVjayBpdA=="
+  },
+  "bar": {
+    "bar_int": 151515
+  }
+}
