@@ -133,6 +133,10 @@ fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
                                 @field(field1, field_info.name),
                                 @field(field2, field_info.name),
                             ),
+                            .Varint, .FixedInt => _compare_numerics(
+                                @field(field1, field_info.name),
+                                @field(field2, field_info.name),
+                            ),
                             else => std.meta.eql(
                                 @field(field1, field_info.name),
                                 @field(field2, field_info.name),
@@ -634,5 +638,144 @@ test "JSON: decode Bytes (from snake_case)" {
     try expect(compare_pb_structs(pb_instance, decoded.value));
 }
 
-// TODO: Test "repeated bytes" (MoreBytes instance for example)
-// TODO: Test when oneof value == Nan/Infinity/-Infinity
+// --------------
+// MoreBytes test
+// --------------
+const more_bytes_init = @import("./json_data/more_bytes/instance.zig").get;
+const more_bytes_camel_case_json = @embedFile("./json_data/more_bytes/camelCase.json");
+
+test "JSON: encode MoreBytes" {
+    const pb_instance = try more_bytes_init(ally);
+    defer pb_instance.deinit();
+
+    const encoded = try pb_instance.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(compare_pb_jsons(encoded, more_bytes_camel_case_json));
+}
+
+test "JSON: decode MoreBytes (from camelCase)" {
+    const pb_instance = try more_bytes_init(ally);
+    defer pb_instance.deinit();
+
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        more_bytes_camel_case_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+// -----------
+// Value tests
+// -----------
+const value_inits = @import("./json_data/value/instance.zig");
+const value_camel_case1_json = @embedFile("./json_data/value/camelCase1.json");
+const value_camel_case2_json = @embedFile("./json_data/value/camelCase2.json");
+const value_camel_case3_json = @embedFile("./json_data/value/camelCase3.json");
+const value_camel_case4_json = @embedFile("./json_data/value/camelCase4.json");
+
+test "JSON: encode Value (.number_value=NaN)" {
+    const pb_instance = value_inits.get1();
+
+    const encoded = try pb_instance.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(compare_pb_jsons(encoded, value_camel_case1_json));
+}
+
+test "JSON: encode Value (.number_value=-Infinity)" {
+    const pb_instance = value_inits.get2();
+
+    const encoded = try pb_instance.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(compare_pb_jsons(encoded, value_camel_case2_json));
+}
+
+test "JSON: encode Value (.number_value=Infinity)" {
+    const pb_instance = value_inits.get3();
+
+    const encoded = try pb_instance.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(compare_pb_jsons(encoded, value_camel_case3_json));
+}
+
+test "JSON: encode Value (.number_value=1.0)" {
+    const pb_instance = value_inits.get4();
+
+    const encoded = try pb_instance.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(compare_pb_jsons(encoded, value_camel_case4_json));
+}
+
+test "JSON: decode Value (.number_value=NaN)" {
+    const pb_instance = value_inits.get1();
+
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        value_camel_case1_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode Value (.number_value=-Infinity)" {
+    const pb_instance = value_inits.get2();
+
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        value_camel_case2_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode Value (.number_value=Infinity)" {
+    const pb_instance = value_inits.get3();
+
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        value_camel_case3_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode Value (.number_value=1.0)" {
+    const pb_instance = value_inits.get4();
+
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        value_camel_case4_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
