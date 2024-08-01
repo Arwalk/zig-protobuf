@@ -1192,10 +1192,14 @@ fn to_camel_case(not_camel_cased_string: []const u8) []const u8 {
     return camel_cased_string;
 }
 
-fn print_float(value: anytype, jws: anytype) !void {
+fn print_numeric(value: anytype, jws: anytype) !void {
     switch (@typeInfo(@TypeOf(value))) {
         .Float, .ComptimeFloat => {},
-        else => @compileError("Float expected"),
+        .Int, .ComptimeInt, .Enum, .Bool => {
+            try jws.write(value);
+            return;
+        },
+        else => @compileError("Float/integer expected but " ++ @typeName(@TypeOf(value)) ++ " given"),
     }
 
     if (std.math.isNan(value)) {
@@ -1207,6 +1211,27 @@ fn print_float(value: anytype, jws: anytype) !void {
     } else {
         try jws.write(value);
     }
+}
+
+fn print_bytes(value: anytype, jws: anytype) !void {
+    const size = base64.standard.Encoder.calcSize(
+        value.getSlice().len,
+    );
+
+    try jsonValueStartAssumeTypeOk(jws);
+    try jws.stream.writeByte('"');
+
+    var innerArrayList: *ArrayList(u8) = jws.stream.context;
+    try innerArrayList.ensureTotalCapacity(innerArrayList.capacity + size + 1);
+    const temp = innerArrayList.unusedCapacitySlice();
+    _ = base64.standard.Encoder.encode(
+        temp,
+        value.getSlice(),
+    );
+    innerArrayList.items.len += size;
+    try jws.stream.writeByte('"');
+
+    jws.next_punctuation = .comma;
 }
 
 fn jsonIndent(jws: anytype) !void {
@@ -1281,41 +1306,28 @@ fn stringify_struct_field(
     switch (field_descriptor.ftype) {
         .Bytes => {
             // ManagedString representing protobuf's "bytes" type
-
-            const size = base64.standard.Encoder.calcSize(
-                value.getSlice().len,
-            );
-
-            try jsonValueStartAssumeTypeOk(jws);
-            try jws.stream.writeByte('"');
-
-            var innerArrayList: *ArrayList(u8) = jws.stream.context;
-            try innerArrayList.ensureTotalCapacity(innerArrayList.capacity + size + 1);
-            const temp = innerArrayList.unusedCapacitySlice();
-            _ = base64.standard.Encoder.encode(
-                temp,
-                value.getSlice(),
-            );
-            innerArrayList.items.len += size;
-            try jws.stream.writeByte('"');
-
-            jws.next_punctuation = .comma;
+            try print_bytes(value, jws);
         },
-        .List, .PackedList => {
+        .List, .PackedList => |list_type| {
             // ArrayList
             const slice = value.items;
-            switch (@typeInfo(std.meta.Child(@TypeOf(slice)))) {
-                .Float, .ComptimeFloat => {
-                    try jws.beginArray();
-                    for (slice) |el| {
-                        try print_float(el, jws);
-                    }
-                    try jws.endArray();
-                },
-                else => try jws.write(&slice),
+            try jws.beginArray();
+            for (slice) |el| {
+                switch (list_type) {
+                    .Varint, .FixedInt => {
+                        try print_numeric(el, jws);
+                    },
+                    .Bytes => {
+                        try print_bytes(el, jws);
+                    },
+                    .String, .SubMessage => {
+                        try jws.write(el);
+                    },
+                }
             }
+            try jws.endArray();
         },
-        .OneOf => {
+        .OneOf => |oneof| {
             // Tagged union type
             const union_info = @typeInfo(@TypeOf(value)).Union;
             if (union_info.tag_type == null) {
@@ -1330,7 +1342,23 @@ fn stringify_struct_field(
                 )) {
                     const union_camel_case_name = comptime to_camel_case(union_field.name);
                     try jws.objectField(union_camel_case_name);
-                    try jws.write(@field(value, union_field.name));
+                    switch (@field(oneof._union_desc, union_field.name).ftype) {
+                        .Varint, .FixedInt => {
+                            try print_numeric(@field(value, union_field.name), jws);
+                        },
+                        .Bytes => {
+                            try print_bytes(@field(value, union_field.name), jws);
+                        },
+                        .String, .SubMessage => {
+                            try jws.write(@field(value, union_field.name));
+                        },
+                        .List, .PackedList => {
+                            @compileError("Repeated fields are not allowed in oneof");
+                        },
+                        .OneOf => {
+                            @compileError("one oneof inside another? really?");
+                        }
+                    }
                     break;
                 }
             } else unreachable;
@@ -1338,14 +1366,7 @@ fn stringify_struct_field(
             try jws.endObject();
         },
         .Varint, .FixedInt => {
-            switch (@typeInfo(@TypeOf(value))) {
-                .Float, .ComptimeFloat => {
-                    try print_float(value, jws);
-                },
-                else => {
-                    try jws.write(value);
-                },
-            }
+            try print_numeric(value, jws);
         },
         .SubMessage, .String => {
             // .SubMessage's (generated structs) and .String's
