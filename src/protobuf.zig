@@ -1025,6 +1025,23 @@ fn base64ErrorToJsonParseError(err: base64Errors) ParseFromValueError {
     };
 }
 
+fn parse_bytes(
+    allocator: Allocator,
+    source: anytype,
+    options: json.ParseOptions,
+) !ManagedString {
+    const temp_raw = try json.innerParse([]u8, allocator, source, options);
+    const size = base64.standard.Decoder.calcSizeForSlice(temp_raw) catch |err| {
+        return base64ErrorToJsonParseError(err);
+    };
+    const tempstring = try allocator.alloc(u8, size);
+    errdefer allocator.free(tempstring);
+    base64.standard.Decoder.decode(tempstring, temp_raw) catch |err| {
+        return base64ErrorToJsonParseError(err);
+    };
+    return ManagedString.move(tempstring, allocator);
+}
+
 fn parseStructField(
     comptime T: type,
     result: *T,
@@ -1037,34 +1054,39 @@ fn parseStructField(
         T._desc_table,
         fieldInfo.name,
     ).ftype) {
-        .List, .PackedList => list: {
+        .List, .PackedList => |list_type| list: {
             // repeated T -> ArrayList(T)
-            break :list @TypeOf(
-                @field(result, fieldInfo.name),
-            ).fromOwnedSlice(
-                allocator,
-                try json.innerParse(
-                    [](@typeInfo(fieldInfo.type.Slice).Pointer.child),
-                    allocator,
-                    source,
-                    options,
-                ),
-            );
+            switch (try source.peekNextTokenType()) {
+                .array_begin => {
+                    assert(.array_begin == try source.next());
+                    const child_type = @typeInfo(
+                        fieldInfo.type.Slice,
+                    ).Pointer.child;
+                    var array_list = ArrayList(child_type).init(allocator);
+                    while (true) {
+                        if (.array_end == try source.peekNextTokenType()) {
+                            _ = try source.next();
+                            break;
+                        }
+                        try array_list.ensureUnusedCapacity(1);
+                        array_list.appendAssumeCapacity(switch (list_type) {
+                            .Bytes => try parse_bytes(allocator, source, options),
+                            .Varint, .FixedInt, .SubMessage, .String => other: {
+                                break :other try json.innerParse(
+                                    child_type,
+                                    allocator,
+                                    source,
+                                    options,
+                                );
+                            },
+                        });
+                    }
+                    break :list array_list;
+                },
+                else => return error.UnexpectedToken,
+            }
         },
-        .Bytes => bytes: {
-            // "bytes" -> ManagedString
-            const temp_raw = try json.innerParse([]u8, allocator, source, options);
-            const size = base64.standard.Decoder.calcSizeForSlice(temp_raw) catch |err| {
-                return base64ErrorToJsonParseError(err);
-            };
-            const tempstring = try allocator.alloc(u8, size);
-            errdefer allocator.free(tempstring);
-            base64.standard.Decoder.decode(tempstring, temp_raw) catch |err| {
-                return base64ErrorToJsonParseError(err);
-            };
-            break :bytes ManagedString.move(tempstring, allocator);
-        },
-        .OneOf => oneof: {
+        .OneOf => |oneof| oneof: {
             // oneof -> union
             var union_value: switch (@typeInfo(
                 @TypeOf(@field(result.*, fieldInfo.name)),
@@ -1110,21 +1132,43 @@ fn parseStructField(
                     union_value = @unionInit(
                         union_type,
                         union_field.name,
-                        try json.innerParse(
-                            union_field.type,
-                            allocator,
-                            source,
-                            options,
-                        ),
+                        switch (@field(
+                            oneof._union_desc,
+                            union_field.name,
+                        ).ftype) {
+                            .Bytes => bytes: {
+                                break :bytes try parse_bytes(
+                                    allocator,
+                                    source,
+                                    options,
+                                );
+                            },
+                            .Varint, .FixedInt, .SubMessage, .String => other: {
+                                break :other try json.innerParse(
+                                    union_field.type,
+                                    allocator,
+                                    source,
+                                    options,
+                                );
+                            },
+                            .List, .PackedList => {
+                                @compileError("Repeated fields are not allowed in oneof");
+                            },
+                            .OneOf => {
+                                @compileError("one oneof inside another? really?");
+                            },
+                        },
                     );
-                    break;
+                    if (.object_end != try source.next()) {
+                        return error.UnexpectedToken;
+                    }
+                    break :oneof union_value;
                 }
             } else return error.UnknownField;
-            if (.object_end != try source.next()) {
-                return error.UnexpectedToken;
-            }
-
-            break :oneof union_value;
+        },
+        .Bytes => bytes: {
+            // "bytes" -> ManagedString
+            break :bytes try parse_bytes(allocator, source, options);
         },
         .Varint, .FixedInt, .SubMessage, .String => other: {
             // .SubMessage's (generated structs) and .String's
@@ -1357,7 +1401,7 @@ fn stringify_struct_field(
                         },
                         .OneOf => {
                             @compileError("one oneof inside another? really?");
-                        }
+                        },
                     }
                     break;
                 }

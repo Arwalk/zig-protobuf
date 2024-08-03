@@ -96,10 +96,9 @@ fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
                 if (field1.items.len != field2.items.len) return false;
                 for (field1.items, field2.items) |array1_el, array2_el| {
                     if (!switch (list_type) {
-                        .String => _compare_pb_strings(array1_el, array2_el),
-                        .SubMessage => compare_pb_structs(array1_el, array2_el),
+                        .String, .Bytes => _compare_pb_strings(array1_el, array2_el),
                         .Varint, .FixedInt => _compare_numerics(array1_el, array2_el),
-                        else => std.meta.eql(array1_el, array2_el),
+                        .SubMessage => compare_pb_structs(array1_el, array2_el),
                     }) return false;
                 }
             },
@@ -125,11 +124,7 @@ fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
                             @TypeOf(field1)._union_desc,
                             field_info.name,
                         ).ftype) {
-                            .String => _compare_pb_strings(
-                                @field(field1, field_info.name),
-                                @field(field2, field_info.name),
-                            ),
-                            .SubMessage => compare_pb_structs(
+                            .String, .Bytes => _compare_pb_strings(
                                 @field(field1, field_info.name),
                                 @field(field2, field_info.name),
                             ),
@@ -137,10 +132,11 @@ fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
                                 @field(field1, field_info.name),
                                 @field(field2, field_info.name),
                             ),
-                            else => std.meta.eql(
+                            .SubMessage => compare_pb_structs(
                                 @field(field1, field_info.name),
                                 @field(field2, field_info.name),
                             ),
+                            else => unreachable,
                         }) return false;
                     }
                 }
