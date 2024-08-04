@@ -175,6 +175,9 @@ fn compare_pb_jsons(encoded: []const u8, expected: []const u8) bool {
 // FixedSizes tests
 const fixed_sizes_init = @import("./json_data/fixed_sizes/instance.zig").get;
 const fixed_sizes_camel_case_json = @embedFile("./json_data/fixed_sizes/camelCase.json");
+const fixed_sizes_camel_case_1_json = @embedFile("./json_data/fixed_sizes/camelCase_1.json");
+const fixed_sizes_camel_case_2_json = @embedFile("./json_data/fixed_sizes/camelCase_2.json");
+const fixed_sizes_camel_case_3_json = @embedFile("./json_data/fixed_sizes/camelCase_3.json");
 
 test "JSON: encode FixedSizes" {
     const pb_instance = fixed_sizes_init();
@@ -192,6 +195,45 @@ test "JSON: decode FixedSizes (camelCase)" {
 
     const decoded = try @TypeOf(pb_instance).json_decode(
         fixed_sizes_camel_case_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode FixedSizes (from string 1)" {
+    const pb_instance = fixed_sizes_init();
+
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        fixed_sizes_camel_case_1_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode FixedSizes (from string 2)" {
+    const pb_instance = fixed_sizes_init();
+
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        fixed_sizes_camel_case_2_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode FixedSizes (from string 3)" {
+    const pb_instance = fixed_sizes_init();
+
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        fixed_sizes_camel_case_3_json,
         .{},
         ally,
     );
@@ -367,9 +409,11 @@ test "JSON: decode WithSubmessages (from snake_case)" {
 // Packed test
 // -----------
 const packed_init = @import("./json_data/packed/instance.zig").get;
+const packed_init2 = @import("./json_data/packed/instance.zig").get2;
 const packed_camel_case_json = @embedFile("./json_data/packed/camelCase.json");
 const packed_snake_case_json = @embedFile("./json_data/packed/snake_case.json");
 const packed_mixed_case_json = @embedFile("./json_data/packed/mixed_case.json");
+const packed_camel_case_1_json = @embedFile("./json_data/packed/camelCase_1.json");
 
 test "JSON: encode Packed" {
     const pb_instance = try packed_init(ally);
@@ -418,6 +462,20 @@ test "JSON: decode Packed (from mixed_case)" {
 
     const decoded = try @TypeOf(pb_instance).json_decode(
         packed_mixed_case_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode Packed (from stringified float/integers)" {
+    const pb_instance = try packed_init2(ally);
+    defer pb_instance.deinit();
+
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        packed_camel_case_1_json,
         .{},
         ally,
     );
@@ -675,6 +733,12 @@ const value_camel_case1_json = @embedFile("./json_data/value/camelCase1.json");
 const value_camel_case2_json = @embedFile("./json_data/value/camelCase2.json");
 const value_camel_case3_json = @embedFile("./json_data/value/camelCase3.json");
 const value_camel_case4_json = @embedFile("./json_data/value/camelCase4.json");
+const value_camel_case4_1_json = @embedFile("./json_data/value/camelCase4_1.json");
+const value_camel_case4_2_json = @embedFile("./json_data/value/camelCase4_2.json");
+const value_camel_case4_3_json = @embedFile("./json_data/value/camelCase4_3.json");
+const value_camel_case4_4_json = @embedFile("./json_data/value/camelCase4_4.json");
+const value_camel_case4_5_json = @embedFile("./json_data/value/camelCase4_5.json");
+const value_camel_case4_6_json = @embedFile("./json_data/value/camelCase4_6.json");
 
 test "JSON: encode Value (.number_value=NaN)" {
     const pb_instance = value_inits.get1();
@@ -768,6 +832,84 @@ test "JSON: decode Value (.number_value=1.0)" {
 
     const decoded = try @TypeOf(pb_instance).json_decode(
         value_camel_case4_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode Value (.number_value=1.0, from string 1)" {
+    const pb_instance = value_inits.get4();
+
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        value_camel_case4_1_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode Value (.number_value=1.0, from string 2)" {
+    const pb_instance = value_inits.get4();
+
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        value_camel_case4_2_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode Value (.number_value=1.0, from string 3)" {
+    const pb_instance = value_inits.get4();
+
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        value_camel_case4_3_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode Value (.number_value=1.0, from string 4)" {
+    const pb_instance = value_inits.get4();
+
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        value_camel_case4_4_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode Value (.number_value=1.0, from string 5)" {
+    const pb_instance = value_inits.get4();
+
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        value_camel_case4_5_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode Value (.number_value=1.0, from string 6)" {
+    const pb_instance = value_inits.get4();
+
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        value_camel_case4_6_json,
         .{},
         ally,
     );

@@ -49,3 +49,18 @@ pub fn get(allocator: Allocator) !Packed {
 
     return instance;
 }
+
+pub fn get2(allocator: Allocator) !Packed {
+    var instance = Packed.init(allocator);
+
+    try instance.int32_list.append(-1);
+    try instance.int32_list.append(2);
+    try instance.int32_list.append(3);
+
+    try instance.float_list.append(1.0);
+    try instance.float_list.append(-1_000.0);
+    try instance.float_list.append(std.math.nan(f32));
+    try instance.float_list.append(std.math.inf(f32));
+
+    return instance;
+}
