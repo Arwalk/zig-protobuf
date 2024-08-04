@@ -1,0 +1,21 @@
+{
+  "int32List": [
+    "-1",
+    "2",
+    "+3"
+  ],
+  "uint32List": [],
+  "sint32List": [],
+  "floatList": [
+    "1.0E-000",
+    "-1e+3",
+    "NaN",
+    "Infinity"
+  ],
+  "doubleList": [],
+  "int64List": [],
+  "sint64List": [],
+  "uint64List": [],
+  "boolList": [],
+  "enumList": []
+}
