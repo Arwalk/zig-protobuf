@@ -1,1 +1,1 @@
-./tests/json_data/**/*.json text eol=lf
+tests/json_data/**/*.json text eol=lf
