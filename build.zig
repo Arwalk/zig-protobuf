@@ -347,7 +347,7 @@ fn getProtocDownloadLink(allocator: std.mem.Allocator, version: []const u8) !?[]
 
     const arch: ?[]const u8 = switch (builtin.cpu.arch) {
         .powerpcle, .powerpc64le => "ppcle",
-        .aarch64, .aarch64_be, .aarch64_32 => "aarch_64",
+        .aarch64, .aarch64_be => "aarch_64",
         .s390x => "s390",
         .x86_64 => "x86_64",
         .x86 => "x86_32",
