@@ -980,7 +980,7 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) !T {
                 break try decode_data(T, v, field, &result, extracted_data, allocator);
             }
         } else {
-            std.log.debug("Unknown field received in {s} {any}\n", .{ @typeName(T), extracted_data });
+            std.log.debug("Unknown field received in {s} {any}\n", .{ @typeName(T), extracted_data.tag });
         }
     }
 
