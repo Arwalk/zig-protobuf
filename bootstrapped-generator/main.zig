@@ -49,15 +49,20 @@ const GenerationContext = struct {
             if (t.package) |package| {
                 try self.known_packages.put(package.getSlice(), FullName{ .buf = package.getSlice() });
             } else {
-                self.res.@"error" = pb.ManagedString{ .Owned = .{ .str = try std.fmt.allocPrint(allocator, "ERROR Package directive missing in {?s}\n", .{file.name.?.getSlice()}), .allocator = allocator } };
-                return;
+                
+                if (t.name) |packageName| {
+                    try self.known_packages.put(packageName.getSlice(), FullName{ .buf = packageName.getSlice() });
+                } else {
+                    self.res.@"error" = pb.ManagedString{ .Owned = .{ .str = try std.fmt.allocPrint(allocator, "ERROR Package directive missing in {?s}\n", .{file.name.?.getSlice()}), .allocator = allocator } };
+                    return;
+                }
             }
         }
 
         for (self.req.proto_file.items) |file| {
             const t: descriptor.FileDescriptorProto = file;
-
-            const name = FullName{ .buf = t.package.?.getSlice() };
+            const buf = if (t.package) |package| package.getSlice() else t.name.?.getSlice();
+            const name = FullName{ .buf = buf };
 
             try self.printFileDeclarations(name, file);
         }
@@ -113,7 +118,8 @@ const GenerationContext = struct {
             var importedPackages = std.StringHashMap(bool).init(allocator);
 
             for (self.req.proto_file.items) |file| {
-                if (name.eqlString(file.package.?.getSlice())) {
+                const pkgIdentifer = if (file.package) |p| p.getSlice() else file.name.?.getSlice();
+                if (name.eqlString(pkgIdentifer)) {
                     for (file.dependency.items) |dep| {
                         for (self.req.proto_file.items, 0..) |item, index| {
                             if (std.mem.eql(u8, dep.getSlice(), item.name.?.getSlice())) {
@@ -125,8 +131,8 @@ const GenerationContext = struct {
                                         is_public_dep = true;
                                     }
                                 }
-
-                                try importedPackages.put(item.package.?.getSlice(), is_public_dep);
+                                const keyForImport = if (file.package) |p| p.getSlice() else file.name.?.getSlice();
+                                try importedPackages.put(keyForImport, is_public_dep);
                             }
                         }
                     }
@@ -197,20 +203,25 @@ const GenerationContext = struct {
     }
 
     fn fieldTypeFqn(ctx: *Self, parentFqn: FullName, file: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto) !string {
+        const fileFullName = FullName{ .buf = file.name.?.getSlice() };
         if (field.type_name) |typeName| {
-            const fullTypeName = FullName{ .buf = typeName.getSlice()[1..] };
+            const pkgIdentifier = if (file.package) |p| p.getSlice() else file.name.?.getSlice();
+
+            const appendedTypeName = try fileFullName.append(allocator, typeName.getSlice()[1..]);
+
+            const fullTypeName = if (file.package) |_| FullName{ .buf = typeName.getSlice()[1..] } else appendedTypeName;
 
             if (fullTypeName.parent()) |parent| {
-                if (parent.eql(parentFqn)) {
+                if (parent.eql(parentFqn) or parent.eql(FullName{ .buf = pkgIdentifier })) {
                     return fullTypeName.name().buf;
                 }
-                if (parent.eql(FullName{ .buf = file.package.?.getSlice() })) {
+                if (parent.eql(FullName{ .buf = pkgIdentifier })) {
                     return fullTypeName.name().buf;
                 }
             }
 
             var parent: ?FullName = fullTypeName.parent();
-            const filePackage = FullName{ .buf = file.package.?.getSlice() };
+            const filePackage = FullName{ .buf = pkgIdentifier };
 
             // iterate parents until we find a parent that matches the known_packages
             while (parent != null) {
@@ -235,7 +246,7 @@ const GenerationContext = struct {
                 parent = parent.?.parent();
             }
 
-            std.debug.print("Unknown type: {s} from {s} in {?s}\n", .{ fullTypeName.buf, parentFqn.buf, file.package.?.getSlice() });
+            std.debug.print("Unknown type: {s} from {s} in {?s}\n", .{ fullTypeName.buf, parentFqn.buf, pkgIdentifier });
 
             return try ctx.escapeFqn(field.type_name.?.getSlice());
         }
