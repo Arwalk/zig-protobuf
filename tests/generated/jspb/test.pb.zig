@@ -181,7 +181,7 @@ pub const DefaultValues = struct {
         .int_field = fd(3, .{ .Varint = .Simple }),
         .enum_field = fd(4, .{ .Varint = .Simple }),
         .empty_field = fd(6, .String),
-        .bytes_field = fd(8, .String),
+        .bytes_field = fd(8, .Bytes),
     };
 
     pub const Enum = enum(i32) {
@@ -228,7 +228,7 @@ pub const TestClone = struct {
         .str = fd(1, .String),
         .simple1 = fd(3, .{ .SubMessage = {} }),
         .simple2 = fd(5, .{ .List = .{ .SubMessage = {} } }),
-        .bytes_field = fd(6, .String),
+        .bytes_field = fd(6, .Bytes),
         .unused = fd(7, .String),
     };
 
@@ -353,7 +353,7 @@ pub const TestEndsWithBytes = struct {
 
     pub const _desc_table = .{
         .value = fd(1, .{ .Varint = .Simple }),
-        .data = fd(2, .String),
+        .data = fd(2, .Bytes),
     };
 
     pub usingnamespace protobuf.MessageMixins(@This());

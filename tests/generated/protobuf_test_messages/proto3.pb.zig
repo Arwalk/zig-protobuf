@@ -187,7 +187,7 @@ pub const TestAllTypesProto3 = struct {
             .oneof_uint32 = fd(111, .{ .Varint = .Simple }),
             .oneof_nested_message = fd(112, .{ .SubMessage = {} }),
             .oneof_string = fd(113, .String),
-            .oneof_bytes = fd(114, .String),
+            .oneof_bytes = fd(114, .Bytes),
             .oneof_bool = fd(115, .{ .Varint = .Simple }),
             .oneof_uint64 = fd(116, .{ .Varint = .Simple }),
             .oneof_float = fd(117, .{ .FixedInt = .I32 }),
@@ -212,7 +212,7 @@ pub const TestAllTypesProto3 = struct {
         .optional_double = fd(12, .{ .FixedInt = .I64 }),
         .optional_bool = fd(13, .{ .Varint = .Simple }),
         .optional_string = fd(14, .String),
-        .optional_bytes = fd(15, .String),
+        .optional_bytes = fd(15, .Bytes),
         .optional_nested_message = fd(18, .{ .SubMessage = {} }),
         .optional_foreign_message = fd(19, .{ .SubMessage = {} }),
         .optional_nested_enum = fd(21, .{ .Varint = .Simple }),
@@ -234,7 +234,7 @@ pub const TestAllTypesProto3 = struct {
         .repeated_double = fd(42, .{ .PackedList = .{ .FixedInt = .I64 } }),
         .repeated_bool = fd(43, .{ .PackedList = .{ .Varint = .Simple } }),
         .repeated_string = fd(44, .{ .List = .String }),
-        .repeated_bytes = fd(45, .{ .List = .String }),
+        .repeated_bytes = fd(45, .{ .List = .Bytes }),
         .repeated_nested_message = fd(48, .{ .List = .{ .SubMessage = {} } }),
         .repeated_foreign_message = fd(49, .{ .List = .{ .SubMessage = {} } }),
         .repeated_nested_enum = fd(51, .{ .List = .{ .Varint = .Simple } }),
@@ -540,7 +540,7 @@ pub const TestAllTypesProto3 = struct {
 
         pub const _desc_table = .{
             .key = fd(1, .String),
-            .value = fd(2, .String),
+            .value = fd(2, .Bytes),
         };
 
         pub usingnamespace protobuf.MessageMixins(@This());

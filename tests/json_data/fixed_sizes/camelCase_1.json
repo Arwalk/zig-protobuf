@@ -1,0 +1,8 @@
+{
+  "sfixed64": 1,
+  "sfixed32": 2,
+  "fixed32": 3,
+  "fixed64": 4,
+  "double": "5",
+  "float": "6.0"
+}
