@@ -228,7 +228,7 @@ pub const TestAllTypes = struct {
             .oneof_uint32 = fd(111, .{ .Varint = .Simple }),
             .oneof_nested_message = fd(112, .{ .SubMessage = {} }),
             .oneof_string = fd(113, .String),
-            .oneof_bytes = fd(114, .String),
+            .oneof_bytes = fd(114, .Bytes),
         };
     };
 
@@ -247,7 +247,7 @@ pub const TestAllTypes = struct {
         .optional_double = fd(12, .{ .FixedInt = .I64 }),
         .optional_bool = fd(13, .{ .Varint = .Simple }),
         .optional_string = fd(14, .String),
-        .optional_bytes = fd(15, .String),
+        .optional_bytes = fd(15, .Bytes),
         .a = fd(17, .{ .Varint = .Simple }),
         .optional_nested_message = fd(18, .{ .SubMessage = {} }),
         .optional_foreign_message = fd(19, .{ .SubMessage = {} }),
@@ -270,7 +270,7 @@ pub const TestAllTypes = struct {
         .repeated_double = fd(42, .{ .List = .{ .FixedInt = .I64 } }),
         .repeated_bool = fd(43, .{ .List = .{ .Varint = .Simple } }),
         .repeated_string = fd(44, .{ .List = .String }),
-        .repeated_bytes = fd(45, .{ .List = .String }),
+        .repeated_bytes = fd(45, .{ .List = .Bytes }),
         .RepeatedGroup_a = fd(47, .{ .List = .{ .Varint = .Simple } }),
         .repeated_nested_message = fd(48, .{ .List = .{ .SubMessage = {} } }),
         .repeated_foreign_message = fd(49, .{ .List = .{ .SubMessage = {} } }),
@@ -293,7 +293,7 @@ pub const TestAllTypes = struct {
         .default_double = fd(72, .{ .FixedInt = .I64 }),
         .default_bool = fd(73, .{ .Varint = .Simple }),
         .default_string = fd(74, .String),
-        .default_bytes = fd(75, .String),
+        .default_bytes = fd(75, .Bytes),
         .default_nested_enum = fd(81, .{ .Varint = .Simple }),
         .default_foreign_enum = fd(82, .{ .Varint = .Simple }),
         .default_string_piece = fd(84, .String),
@@ -930,7 +930,7 @@ pub const TestExtremeDefaultValues = struct {
     replacement_string: ?ManagedString = ManagedString.static("${unknown}"),
 
     pub const _desc_table = .{
-        .escaped_bytes = fd(1, .String),
+        .escaped_bytes = fd(1, .Bytes),
         .large_uint32 = fd(2, .{ .Varint = .Simple }),
         .large_uint64 = fd(3, .{ .Varint = .Simple }),
         .small_int32 = fd(4, .{ .Varint = .Simple }),
@@ -953,7 +953,7 @@ pub const TestExtremeDefaultValues = struct {
         .nan_float = fd(19, .{ .FixedInt = .I32 }),
         .cpp_trigraph = fd(20, .String),
         .string_with_zero = fd(23, .String),
-        .bytes_with_zero = fd(24, .String),
+        .bytes_with_zero = fd(24, .Bytes),
         .string_piece_with_zero = fd(25, .String),
         .cord_with_zero = fd(26, .String),
         .replacement_string = fd(27, .String),
@@ -996,7 +996,7 @@ pub const OneBytes = struct {
     data: ?ManagedString = null,
 
     pub const _desc_table = .{
-        .data = fd(1, .String),
+        .data = fd(1, .Bytes),
     };
 
     pub usingnamespace protobuf.MessageMixins(@This());
@@ -1006,7 +1006,7 @@ pub const MoreBytes = struct {
     data: ArrayList(ManagedString),
 
     pub const _desc_table = .{
-        .data = fd(1, .{ .List = .String }),
+        .data = fd(1, .{ .List = .Bytes }),
     };
 
     pub usingnamespace protobuf.MessageMixins(@This());
@@ -1218,7 +1218,7 @@ pub const TestOneof2 = struct {
             .foo_string = fd(2, .String),
             .foo_cord = fd(3, .String),
             .foo_string_piece = fd(4, .String),
-            .foo_bytes = fd(5, .String),
+            .foo_bytes = fd(5, .Bytes),
             .foo_enum = fd(6, .{ .Varint = .Simple }),
             .foo_message = fd(7, .{ .SubMessage = {} }),
             .a = fd(9, .{ .Varint = .Simple }),
@@ -1255,12 +1255,12 @@ pub const TestOneof2 = struct {
             .bar_string = fd(13, .String),
             .bar_cord = fd(14, .String),
             .bar_string_piece = fd(15, .String),
-            .bar_bytes = fd(16, .String),
+            .bar_bytes = fd(16, .Bytes),
             .bar_enum = fd(17, .{ .Varint = .Simple }),
             .bar_string_with_empty_default = fd(20, .String),
             .bar_cord_with_empty_default = fd(21, .String),
             .bar_string_piece_with_empty_default = fd(22, .String),
-            .bar_bytes_with_empty_default = fd(23, .String),
+            .bar_bytes_with_empty_default = fd(23, .Bytes),
         };
     };
 
@@ -1638,7 +1638,7 @@ pub const TestHugeFieldNumbers = struct {
             .oneof_uint32 = fd(536870011, .{ .Varint = .Simple }),
             .oneof_test_all_types = fd(536870012, .{ .SubMessage = {} }),
             .oneof_string = fd(536870013, .String),
-            .oneof_bytes = fd(536870014, .String),
+            .oneof_bytes = fd(536870014, .Bytes),
         };
     };
 
@@ -1649,7 +1649,7 @@ pub const TestHugeFieldNumbers = struct {
         .packed_int32 = fd(536870003, .{ .PackedList = .{ .Varint = .Simple } }),
         .optional_enum = fd(536870004, .{ .Varint = .Simple }),
         .optional_string = fd(536870005, .String),
-        .optional_bytes = fd(536870006, .String),
+        .optional_bytes = fd(536870006, .Bytes),
         .optional_message = fd(536870007, .{ .SubMessage = {} }),
         .group_a = fd(536870009, .{ .Varint = .Simple }),
         .string_string_map = fd(536870010, .{ .List = .{ .SubMessage = {} } }),

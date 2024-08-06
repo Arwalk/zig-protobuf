@@ -3,6 +3,10 @@ const StructField = std.builtin.Type.StructField;
 const isIntegral = std.meta.trait.isIntegral;
 const Allocator = std.mem.Allocator;
 const testing = std.testing;
+const json = std.json;
+const base64 = std.base64;
+const base64Errors = std.base64.Error;
+const ParseFromValueError = std.json.ParseFromValueError;
 
 // common definitions
 
@@ -75,10 +79,27 @@ pub const ManagedString = union(ManagedStringTag) {
             else => {},
         }
     }
+
+    // This method is used by std.json
+    // internally for deserialization. DO NOT RENAME!
+    pub fn jsonParse(
+        allocator: Allocator,
+        source: anytype,
+        options: json.ParseOptions,
+    ) !ManagedString {
+        const string = try json.innerParse([]const u8, allocator, source, options);
+        return ManagedString.copy(string, allocator);
+    }
+
+    // This method is used by std.json
+    // internally for serialization. DO NOT RENAME!
+    pub fn jsonStringify(self: *const ManagedString, jws: anytype) !void {
+        try jws.write(self.getSlice());
+    }
 };
 
 /// Enum describing the different field types available.
-pub const FieldTypeTag = enum { Varint, FixedInt, SubMessage, String, List, PackedList, OneOf };
+pub const FieldTypeTag = enum { Varint, FixedInt, SubMessage, String, Bytes, List, PackedList, OneOf };
 
 /// Enum describing how much bits a FixedInt will use.
 pub const FixedSize = enum(u3) { I64 = 1, I32 = 5 };
@@ -87,6 +108,7 @@ pub const FixedSize = enum(u3) { I64 = 1, I32 = 5 };
 pub const ListTypeTag = enum {
     Varint,
     String,
+    Bytes,
     FixedInt,
     SubMessage,
 };
@@ -95,6 +117,7 @@ pub const ListTypeTag = enum {
 pub const ListType = union(ListTypeTag) {
     Varint: VarintType,
     String,
+    Bytes,
     FixedInt: FixedSize,
     SubMessage,
 };
@@ -105,6 +128,7 @@ pub const FieldType = union(FieldTypeTag) {
     FixedInt: FixedSize,
     SubMessage,
     String,
+    Bytes,
     List: ListType,
     PackedList: ListType,
     OneOf: type,
@@ -114,11 +138,11 @@ pub const FieldType = union(FieldTypeTag) {
         return switch (ftype) {
             .Varint => 0,
             .FixedInt => |size| @intFromEnum(size),
-            .String, .SubMessage, .PackedList => 2,
+            .String, .SubMessage, .PackedList, .Bytes => 2,
             .List => |inner| switch (inner) {
                 .Varint => 0,
                 .FixedInt => |size| @intFromEnum(size),
-                .String, .SubMessage => 2,
+                .String, .SubMessage, .Bytes => 2,
             },
             .OneOf => @compileError("Shouldn't pass a .OneOf field to this function here."),
         };
@@ -336,7 +360,7 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, c
                 try append_submessage(pb, value);
             }
         },
-        .String => {
+        .String, .Bytes => {
             if (!is_default_scalar_value or force_append) {
                 try append_tag(pb, field);
                 try append_const_bytes(pb, value);
@@ -350,7 +374,7 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, c
                 .Varint => |varint_type| {
                     try append_packed_list_of_varint(pb, value, field, varint_type);
                 },
-                .String => |varint_type| {
+                .String, .Bytes => |varint_type| {
                     // TODO: find examples about how to encode and decode packed strings. the documentation is ambiguous
                     try append_packed_list_of_strings(pb, value, varint_type);
                 },
@@ -368,7 +392,7 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, c
                 .SubMessage => {
                     try append_list_of_submessages(pb, field, value);
                 },
-                .String => {
+                .String, .Bytes => {
                     for (value.items) |item| {
                         try append_tag(pb, field);
                         try append_const_bytes(pb, item);
@@ -440,7 +464,7 @@ pub fn pb_init(comptime T: type, allocator: Allocator) T {
     var value: T = undefined;
     inline for (@typeInfo(T).Struct.fields) |field| {
         switch (@field(T._desc_table, field.name).ftype) {
-            .String, .Varint, .FixedInt => {
+            .String, .Varint, .FixedInt, .Bytes => {
                 if (field.default_value) |val| {
                     @field(value, field.name) = @as(*align(1) const field.type, @ptrCast(val)).*;
                 } else {
@@ -504,7 +528,7 @@ fn dupe_field(original: anytype, comptime field_name: []const u8, comptime ftype
 
             return list;
         },
-        .SubMessage, .String => {
+        .SubMessage, .String, .Bytes => {
             switch (@typeInfo(@TypeOf(@field(original, field_name)))) {
                 .Optional => {
                     if (@field(original, field_name)) |val| {
@@ -570,7 +594,7 @@ fn deinit_field(result: anytype, comptime field_name: []const u8, comptime ftype
         .PackedList => |_| {
             @field(result, field_name).deinit();
         },
-        .String => {
+        .String, .Bytes => {
             switch (@typeInfo(@TypeOf(@field(result, field_name)))) {
                 .Optional => {
                     if (@field(result, field_name)) |str| {
@@ -854,11 +878,11 @@ fn decode_value(comptime decoded_type: type, comptime ftype: FieldType, extracte
             .Slice => |slice| try pb_decode(decoded_type, slice, allocator),
             else => error.InvalidInput,
         },
-        .String => switch (extracted_data.data) {
+        .String, .Bytes => switch (extracted_data.data) {
             .Slice => |slice| try ManagedString.copy(slice, allocator),
             else => error.InvalidInput,
         },
-        else => {
+        .List, .PackedList, .OneOf => {
             std.log.warn("Invalid scalar type {any}\n", .{ftype});
             return error.InvalidInput;
         },
@@ -867,7 +891,7 @@ fn decode_value(comptime decoded_type: type, comptime ftype: FieldType, extracte
 
 fn decode_data(comptime T: type, comptime field_desc: FieldDescriptor, comptime field: StructField, result: *T, extracted_data: Extracted, allocator: Allocator) !void {
     switch (field_desc.ftype) {
-        .Varint, .FixedInt, .SubMessage, .String => {
+        .Varint, .FixedInt, .SubMessage, .String, .Bytes => {
             // first try to release the current value
             deinit_field(result, field.name, field_desc.ftype);
 
@@ -899,7 +923,7 @@ fn decode_data(comptime T: type, comptime field_desc: FieldDescriptor, comptime 
                     },
                     .RawValue => return error.InvalidInput,
                 },
-                .String => switch (extracted_data.data) {
+                .String, .Bytes => switch (extracted_data.data) {
                     .Slice => |slice| {
                         try @field(result, field.name).append(try ManagedString.copy(slice, allocator));
                     },
@@ -963,6 +987,442 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) !T {
     return result;
 }
 
+fn freeAllocated(allocator: Allocator, token: json.Token) void {
+    // Took from std.json source code since it was non-public one
+    switch (token) {
+        .allocated_number, .allocated_string => |slice| {
+            allocator.free(slice);
+        },
+        else => {},
+    }
+}
+
+fn fillDefaultStructValues(
+    comptime T: type,
+    r: *T,
+    fields_seen: *[@typeInfo(T).Struct.fields.len]bool,
+) !void {
+    // Took from std.json source code since it was non-public one
+    inline for (@typeInfo(T).Struct.fields, 0..) |field, i| {
+        if (!fields_seen[i]) {
+            if (field.default_value) |default_ptr| {
+                const default = @as(
+                    *align(1) const field.type,
+                    @ptrCast(default_ptr),
+                ).*;
+                @field(r, field.name) = default;
+            } else {
+                return error.MissingField;
+            }
+        }
+    }
+}
+
+fn base64ErrorToJsonParseError(err: base64Errors) ParseFromValueError {
+    return switch (err) {
+        base64Errors.NoSpaceLeft => ParseFromValueError.Overflow,
+        base64Errors.InvalidPadding, base64Errors.InvalidCharacter => ParseFromValueError.UnexpectedToken,
+    };
+}
+
+fn parse_bytes(
+    allocator: Allocator,
+    source: anytype,
+    options: json.ParseOptions,
+) !ManagedString {
+    const temp_raw = try json.innerParse([]u8, allocator, source, options);
+    const size = base64.standard.Decoder.calcSizeForSlice(temp_raw) catch |err| {
+        return base64ErrorToJsonParseError(err);
+    };
+    const tempstring = try allocator.alloc(u8, size);
+    errdefer allocator.free(tempstring);
+    base64.standard.Decoder.decode(tempstring, temp_raw) catch |err| {
+        return base64ErrorToJsonParseError(err);
+    };
+    return ManagedString.move(tempstring, allocator);
+}
+
+fn parseStructField(
+    comptime T: type,
+    result: *T,
+    comptime fieldInfo: StructField,
+    allocator: Allocator,
+    source: anytype,
+    options: json.ParseOptions,
+) !void {
+    @field(result.*, fieldInfo.name) = switch (@field(
+        T._desc_table,
+        fieldInfo.name,
+    ).ftype) {
+        .List, .PackedList => |list_type| list: {
+            // repeated T -> ArrayList(T)
+            switch (try source.peekNextTokenType()) {
+                .array_begin => {
+                    assert(.array_begin == try source.next());
+                    const child_type = @typeInfo(
+                        fieldInfo.type.Slice,
+                    ).Pointer.child;
+                    var array_list = ArrayList(child_type).init(allocator);
+                    while (true) {
+                        if (.array_end == try source.peekNextTokenType()) {
+                            _ = try source.next();
+                            break;
+                        }
+                        try array_list.ensureUnusedCapacity(1);
+                        array_list.appendAssumeCapacity(switch (list_type) {
+                            .Bytes => try parse_bytes(allocator, source, options),
+                            .Varint, .FixedInt, .SubMessage, .String => other: {
+                                break :other try json.innerParse(
+                                    child_type,
+                                    allocator,
+                                    source,
+                                    options,
+                                );
+                            },
+                        });
+                    }
+                    break :list array_list;
+                },
+                else => return error.UnexpectedToken,
+            }
+        },
+        .OneOf => |oneof| oneof: {
+            // oneof -> union
+            var union_value: switch (@typeInfo(
+                @TypeOf(@field(result.*, fieldInfo.name)),
+            )) {
+                .Union => @TypeOf(@field(result.*, fieldInfo.name)),
+                .Optional => |optional| optional.child,
+                else => unreachable,
+            } = undefined;
+
+            const union_type = @TypeOf(union_value);
+            const union_info = @typeInfo(union_type).Union;
+            if (union_info.tag_type == null) {
+                @compileError("Untagged unions are not supported here");
+            }
+
+            if (.object_begin != try source.next()) {
+                return error.UnexpectedToken;
+            }
+
+            var name_token: ?std.json.Token = try source.nextAllocMax(
+                allocator,
+                .alloc_if_needed,
+                options.max_value_len.?,
+            );
+            const field_name = switch (name_token.?) {
+                inline .string, .allocated_string => |slice| slice,
+                else => {
+                    return error.UnexpectedToken;
+                },
+            };
+
+            inline for (union_info.fields) |union_field| {
+                // snake_case comparison
+                var this_field = std.mem.eql(u8, union_field.name, field_name);
+                if (!this_field) {
+                    const union_camel_case_name = comptime to_camel_case(union_field.name);
+                    this_field = std.mem.eql(u8, union_camel_case_name, field_name);
+                }
+
+                if (this_field) {
+                    freeAllocated(allocator, name_token.?);
+                    name_token = null;
+                    union_value = @unionInit(
+                        union_type,
+                        union_field.name,
+                        switch (@field(
+                            oneof._union_desc,
+                            union_field.name,
+                        ).ftype) {
+                            .Bytes => bytes: {
+                                break :bytes try parse_bytes(
+                                    allocator,
+                                    source,
+                                    options,
+                                );
+                            },
+                            .Varint, .FixedInt, .SubMessage, .String => other: {
+                                break :other try json.innerParse(
+                                    union_field.type,
+                                    allocator,
+                                    source,
+                                    options,
+                                );
+                            },
+                            .List, .PackedList => {
+                                @compileError("Repeated fields are not allowed in oneof");
+                            },
+                            .OneOf => {
+                                @compileError("one oneof inside another? really?");
+                            },
+                        },
+                    );
+                    if (.object_end != try source.next()) {
+                        return error.UnexpectedToken;
+                    }
+                    break :oneof union_value;
+                }
+            } else return error.UnknownField;
+        },
+        .Bytes => bytes: {
+            // "bytes" -> ManagedString
+            break :bytes try parse_bytes(allocator, source, options);
+        },
+        .Varint, .FixedInt, .SubMessage, .String => other: {
+            // .SubMessage's (generated structs) and .String's
+            //   (ManagedString's) have its own jsonParse implementation
+            // Numeric types will be handled using default std.json parser
+            break :other try json.innerParse(
+                fieldInfo.type,
+                allocator,
+                source,
+                options,
+            );
+        },
+        // TODO: ATM there's no support for Timestamp, Duration
+        //   and some other protobuf types (see progress at
+        //   https://github.com/Arwalk/zig-protobuf/pull/49)
+        //   so it's better to see "switch must handle all possibilities"
+        //   compiler error here and then add JSON (de)serialization support
+        //   for them than hope that default std.json (de)serializer
+        //   will make all right by its own
+    };
+}
+
+pub fn pb_json_decode(
+    comptime T: type,
+    input: []const u8,
+    options: json.ParseOptions,
+    allocator: Allocator,
+) !std.json.Parsed(T) {
+    const parsed = try json.parseFromSlice(T, allocator, input, options);
+    return parsed;
+}
+
+pub fn pb_json_encode(
+    data: anytype,
+    options: json.StringifyOptions,
+    allocator: Allocator,
+) ![]u8 {
+    return try json.stringifyAlloc(allocator, data, options);
+}
+
+fn to_camel_case(not_camel_cased_string: []const u8) []const u8 {
+    comptime var capitalize_next_letter = false;
+    comptime var camel_cased_string: []const u8 = "";
+    comptime var i: usize = 0;
+
+    inline for (not_camel_cased_string) |char| {
+        if (char == '_') {
+            capitalize_next_letter = i > 0;
+        } else if (capitalize_next_letter) {
+            camel_cased_string = camel_cased_string ++ .{
+                comptime std.ascii.toUpper(char),
+            };
+            capitalize_next_letter = false;
+            i += 1;
+        } else {
+            camel_cased_string = camel_cased_string ++ .{char};
+            i += 1;
+        }
+    }
+
+    if (comptime std.ascii.isUpper(camel_cased_string[0])) {
+        camel_cased_string[0] = std.ascii.toLower(camel_cased_string[0]);
+    }
+
+    return camel_cased_string;
+}
+
+fn print_numeric(value: anytype, jws: anytype) !void {
+    switch (@typeInfo(@TypeOf(value))) {
+        .Float, .ComptimeFloat => {},
+        .Int, .ComptimeInt, .Enum, .Bool => {
+            try jws.write(value);
+            return;
+        },
+        else => @compileError("Float/integer expected but " ++ @typeName(@TypeOf(value)) ++ " given"),
+    }
+
+    if (std.math.isNan(value)) {
+        try jws.write("NaN");
+    } else if (std.math.isPositiveInf(value)) {
+        try jws.write("Infinity");
+    } else if (std.math.isNegativeInf(value)) {
+        try jws.write("-Infinity");
+    } else {
+        try jws.write(value);
+    }
+}
+
+fn print_bytes(value: anytype, jws: anytype) !void {
+    const size = base64.standard.Encoder.calcSize(
+        value.getSlice().len,
+    );
+
+    try jsonValueStartAssumeTypeOk(jws);
+    try jws.stream.writeByte('"');
+
+    var innerArrayList: *ArrayList(u8) = jws.stream.context;
+    try innerArrayList.ensureTotalCapacity(innerArrayList.capacity + size + 1);
+    const temp = innerArrayList.unusedCapacitySlice();
+    _ = base64.standard.Encoder.encode(
+        temp,
+        value.getSlice(),
+    );
+    innerArrayList.items.len += size;
+    try jws.stream.writeByte('"');
+
+    jws.next_punctuation = .comma;
+}
+
+fn jsonIndent(jws: anytype) !void {
+    var char: u8 = ' ';
+    const n_chars = switch (jws.options.whitespace) {
+        .minified => return,
+        .indent_1 => 1 * jws.indent_level,
+        .indent_2 => 2 * jws.indent_level,
+        .indent_3 => 3 * jws.indent_level,
+        .indent_4 => 4 * jws.indent_level,
+        .indent_8 => 8 * jws.indent_level,
+        .indent_tab => blk: {
+            char = '\t';
+            break :blk jws.indent_level;
+        },
+    };
+    try jws.stream.writeByte('\n');
+    try jws.stream.writeByteNTimes(char, n_chars);
+}
+
+const assert = std.debug.assert;
+
+fn jsonIsComplete(jws: anytype) bool {
+    return jws.indent_level == 0 and jws.next_punctuation == .comma;
+}
+
+fn jsonValueStartAssumeTypeOk(jws: anytype) !void {
+    assert(!jsonIsComplete(jws));
+    switch (jws.next_punctuation) {
+        .the_beginning => {
+            // No indentation for the very beginning.
+        },
+        .none => {
+            // First item in a container.
+            try jsonIndent(jws);
+        },
+        .comma => {
+            // Subsequent item in a container.
+            try jws.stream.writeByte(',');
+            try jsonIndent(jws);
+        },
+        .colon => {
+            try jws.stream.writeByte(':');
+            if (jws.options.whitespace != .minified) {
+                try jws.stream.writeByte(' ');
+            }
+        },
+    }
+}
+
+fn stringify_struct_field(
+    struct_field: anytype,
+    field_descriptor: FieldDescriptor,
+    jws: anytype,
+) !void {
+    var value: switch (@typeInfo(@TypeOf(struct_field))) {
+        .Optional => |optional| optional.child,
+        else => @TypeOf(struct_field),
+    } = undefined;
+
+    switch (@typeInfo(@TypeOf(struct_field))) {
+        .Optional => {
+            if (struct_field) |v| {
+                value = v;
+            } else return;
+        },
+        else => {
+            value = struct_field;
+        },
+    }
+
+    switch (field_descriptor.ftype) {
+        .Bytes => {
+            // ManagedString representing protobuf's "bytes" type
+            try print_bytes(value, jws);
+        },
+        .List, .PackedList => |list_type| {
+            // ArrayList
+            const slice = value.items;
+            try jws.beginArray();
+            for (slice) |el| {
+                switch (list_type) {
+                    .Varint, .FixedInt => {
+                        try print_numeric(el, jws);
+                    },
+                    .Bytes => {
+                        try print_bytes(el, jws);
+                    },
+                    .String, .SubMessage => {
+                        try jws.write(el);
+                    },
+                }
+            }
+            try jws.endArray();
+        },
+        .OneOf => |oneof| {
+            // Tagged union type
+            const union_info = @typeInfo(@TypeOf(value)).Union;
+            if (union_info.tag_type == null) {
+                @compileError("Untagged unions are not supported here");
+            }
+
+            try jws.beginObject();
+            inline for (union_info.fields) |union_field| {
+                if (value == @field(
+                    union_info.tag_type.?,
+                    union_field.name,
+                )) {
+                    const union_camel_case_name = comptime to_camel_case(union_field.name);
+                    try jws.objectField(union_camel_case_name);
+                    switch (@field(oneof._union_desc, union_field.name).ftype) {
+                        .Varint, .FixedInt => {
+                            try print_numeric(@field(value, union_field.name), jws);
+                        },
+                        .Bytes => {
+                            try print_bytes(@field(value, union_field.name), jws);
+                        },
+                        .String, .SubMessage => {
+                            try jws.write(@field(value, union_field.name));
+                        },
+                        .List, .PackedList => {
+                            @compileError("Repeated fields are not allowed in oneof");
+                        },
+                        .OneOf => {
+                            @compileError("one oneof inside another? really?");
+                        },
+                    }
+                    break;
+                }
+            } else unreachable;
+
+            try jws.endObject();
+        },
+        .Varint, .FixedInt => {
+            try print_numeric(value, jws);
+        },
+        .SubMessage, .String => {
+            // .SubMessage's (generated structs) and .String's
+            //   (ManagedString's) have its own jsonStringify implementation
+            // Numeric types will be handled using default std.json parser
+            try jws.write(value);
+        },
+        // NOTE: You better not to use *else* here, see todo comment
+        //   at the end of parseStructField function above
+    }
+}
+
 pub fn MessageMixins(comptime Self: type) type {
     return struct {
         pub fn encode(self: Self, allocator: Allocator) ![]u8 {
@@ -979,6 +1439,143 @@ pub fn MessageMixins(comptime Self: type) type {
         }
         pub fn dupe(self: Self, allocator: Allocator) !Self {
             return pb_dupe(Self, self, allocator);
+        }
+        pub fn json_decode(
+            input: []const u8,
+            options: json.ParseOptions,
+            allocator: Allocator,
+        ) !std.json.Parsed(Self) {
+            return pb_json_decode(Self, input, options, allocator);
+        }
+        pub fn json_encode(
+            self: Self,
+            options: json.StringifyOptions,
+            allocator: Allocator,
+        ) ![]const u8 {
+            return pb_json_encode(self, options, allocator);
+        }
+
+        // This method is used by std.json
+        // internally for deserialization. DO NOT RENAME!
+        pub fn jsonParse(
+            allocator: Allocator,
+            source: anytype,
+            options: json.ParseOptions,
+        ) !Self {
+            if (.object_begin != try source.next()) {
+                return error.UnexpectedToken;
+            }
+
+            // Mainly taken from 0.13.0's source code
+            var result: Self = undefined;
+            const structInfo = @typeInfo(Self).Struct;
+            var fields_seen = [_]bool{false} ** structInfo.fields.len;
+
+            while (true) {
+                var name_token: ?json.Token = try source.nextAllocMax(
+                    allocator,
+                    .alloc_if_needed,
+                    options.max_value_len.?,
+                );
+                const field_name = switch (name_token.?) {
+                    inline .string, .allocated_string => |slice| slice,
+                    .object_end => { // No more fields.
+                        break;
+                    },
+                    else => {
+                        return error.UnexpectedToken;
+                    },
+                };
+
+                inline for (structInfo.fields, 0..) |field, i| {
+                    if (field.is_comptime) {
+                        @compileError("comptime fields are not supported: " ++ @typeName(Self) ++ "." ++ field.name);
+                    }
+
+                    const yes1 = std.mem.eql(u8, field.name, field_name);
+                    const camel_case_name = comptime to_camel_case(field.name);
+                    var yes2: bool = undefined;
+                    if (comptime std.mem.eql(u8, field.name, camel_case_name)) {
+                        yes2 = false;
+                    } else {
+                        yes2 = std.mem.eql(u8, camel_case_name, field_name);
+                    }
+
+                    if (yes1 and yes2) {
+                        return error.UnexpectedToken;
+                    } else if (yes1 or yes2) {
+                        // Free the name token now in case we're using an
+                        // allocator that optimizes freeing the last
+                        // allocated object. (Recursing into innerParse()
+                        // might trigger more allocations.)
+                        freeAllocated(allocator, name_token.?);
+                        name_token = null;
+                        if (fields_seen[i]) {
+                            switch (options.duplicate_field_behavior) {
+                                .use_first => {
+                                    // Parse and ignore the redundant value.
+                                    // We don't want to skip the value,
+                                    // because we want type checking.
+                                    try parseStructField(
+                                        Self,
+                                        &result,
+                                        field,
+                                        allocator,
+                                        source,
+                                        options,
+                                    );
+                                    break;
+                                },
+                                .@"error" => return error.DuplicateField,
+                                .use_last => {},
+                            }
+                        }
+                        try parseStructField(
+                            Self,
+                            &result,
+                            field,
+                            allocator,
+                            source,
+                            options,
+                        );
+                        fields_seen[i] = true;
+                        break;
+                    }
+                } else {
+                    // Didn't match anything.
+                    freeAllocated(allocator, name_token.?);
+                    if (options.ignore_unknown_fields) {
+                        try source.skipValue();
+                    } else {
+                        return error.UnknownField;
+                    }
+                }
+            }
+            try fillDefaultStructValues(Self, &result, &fields_seen);
+            return result;
+        }
+
+        // This method is used by std.json
+        // internally for serialization. DO NOT RENAME!
+        pub fn jsonStringify(self: *const Self, jws: anytype) !void {
+            try jws.beginObject();
+
+            inline for (@typeInfo(Self).Struct.fields) |fieldInfo| {
+                const camel_case_name = comptime to_camel_case(fieldInfo.name);
+
+                if (switch (@typeInfo(fieldInfo.type)) {
+                    .Optional => @field(self, fieldInfo.name) != null,
+                    else => true,
+                }) try jws.objectField(camel_case_name);
+
+                try stringify_struct_field(
+                    @field(self, fieldInfo.name),
+                    @field(Self._desc_table, fieldInfo.name),
+                    jws,
+                );
+            }
+
+            try jws.endObject();
         }
     };
 }

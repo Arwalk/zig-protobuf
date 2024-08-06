@@ -81,3 +81,7 @@ message WithStrings {
 message WithRepeatedStrings {
   repeated string name = 1;
 }
+
+message WithBytes {
+  bytes byte_field = 1;
+}
