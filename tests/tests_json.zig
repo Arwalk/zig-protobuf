@@ -174,6 +174,9 @@ fn compare_pb_jsons(encoded: []const u8, expected: []const u8) bool {
 
 // FixedSizes tests
 const fixed_sizes_init = @import("./json_data/fixed_sizes/instance.zig").get;
+const fixed_sizes_omitted_fields_init = @import(
+    "./json_data/fixed_sizes/instance.zig",
+).get_with_omitted_fields;
 const fixed_sizes_camel_case_json = @embedFile("./json_data/fixed_sizes/camelCase.json");
 const fixed_sizes_camel_case_1_json = @embedFile("./json_data/fixed_sizes/camelCase_1.json");
 const fixed_sizes_camel_case_2_json = @embedFile("./json_data/fixed_sizes/camelCase_2.json");
@@ -181,6 +184,7 @@ const fixed_sizes_camel_case_3_json = @embedFile("./json_data/fixed_sizes/camelC
 
 test "JSON: encode FixedSizes" {
     const pb_instance = fixed_sizes_init();
+
     const encoded = try pb_instance.json_encode(
         .{ .whitespace = .indent_2 },
         ally,
@@ -188,6 +192,18 @@ test "JSON: encode FixedSizes" {
     defer ally.free(encoded);
 
     try expect(compare_pb_jsons(encoded, fixed_sizes_camel_case_json));
+}
+
+test "JSON: encode FixedSizes (with omitted fields)" {
+    const pb_instance = fixed_sizes_omitted_fields_init();
+
+    const encoded = try pb_instance.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(compare_pb_jsons(encoded, "{}"));
 }
 
 test "JSON: decode FixedSizes (camelCase)" {
@@ -198,6 +214,15 @@ test "JSON: decode FixedSizes (camelCase)" {
         .{},
         ally,
     );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode FixedSized (all fields are omitted)" {
+    const pb_instance = fixed_sizes_omitted_fields_init();
+
+    const decoded = try @TypeOf(pb_instance).json_decode("{}", .{}, ally);
     defer decoded.deinit();
 
     try expect(compare_pb_structs(pb_instance, decoded.value));
@@ -244,6 +269,9 @@ test "JSON: decode FixedSizes (from string 3)" {
 
 // RepeatedEnum tests
 const repeated_enum_init = @import("./json_data/repeated_enum/instance.zig").get;
+const repeated_enum_omitted_fields_init = @import(
+    "./json_data/repeated_enum/instance.zig",
+).get_with_omitted_fields;
 
 // Parsers accept both enum names and integer values
 // https://protobuf.dev/programming-guides/proto3/#json
@@ -268,6 +296,29 @@ test "JSON: encode RepeatedEnum" {
     defer ally.free(encoded);
 
     try expect(compare_pb_jsons(encoded, repeated_enum_camel_case1_json));
+}
+
+test "JSON: encode RepeatedEnum (omitted list in string)" {
+    const pb_instance = repeated_enum_omitted_fields_init(ally);
+    defer pb_instance.deinit();
+
+    const encoded = try pb_instance.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(compare_pb_jsons(encoded, "{}"));
+}
+
+test "JSON: decode RepeatedEnum (omitted list in string)" {
+    const pb_instance = repeated_enum_omitted_fields_init(ally);
+    defer pb_instance.deinit();
+
+    const decoded = try @TypeOf(pb_instance).json_decode("{}", .{}, ally);
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
 }
 
 test "JSON: decode RepeatedEnum (camelCase, variant 1)" {
@@ -314,6 +365,9 @@ test "JSON: decode RepeatedEnum (camelCase, variant 3)" {
 
 // WithStrings tests
 const with_strings_init = @import("./json_data/with_strings/instance.zig").get;
+const with_strings_omitted_fields_init = @import(
+    "./json_data/with_strings/instance.zig",
+).get_with_omitted_fields;
 const with_strings_camel_case_json = @embedFile("./json_data/with_strings/camelCase.json");
 
 test "JSON: encode WithStrings" {
@@ -326,6 +380,18 @@ test "JSON: encode WithStrings" {
     defer ally.free(encoded);
 
     try expect(compare_pb_jsons(encoded, with_strings_camel_case_json));
+}
+
+test "JSON: encode WithStrings (with omitted fields)" {
+    const pb_instance = with_strings_omitted_fields_init();
+
+    const encoded = try pb_instance.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(compare_pb_jsons(encoded, "{}"));
 }
 
 test "JSON: decode WithStrings" {
@@ -341,12 +407,31 @@ test "JSON: decode WithStrings" {
     try expect(compare_pb_structs(pb_instance, decoded.value));
 }
 
+test "JSON: decode WithStrings (with omitted fields)" {
+    const pb_instance = with_strings_omitted_fields_init();
+
+    const decoded = try @TypeOf(pb_instance).json_decode("{}", .{}, ally);
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
 // WithSubmessages tests
 const with_submessages_init = @import(
     "./json_data/with_submessages/instance.zig",
 ).get;
+const with_submessages_omitted_fields_init = @import(
+    "./json_data/with_submessages/instance.zig",
+).get_with_omitted_fields;
+const with_submessages_omitted_enum_field_init = @import(
+    "./json_data/with_submessages/instance.zig",
+).get_with_omitted_enum_field;
+
 const with_submessages_camel_case_json = @embedFile(
     "./json_data/with_submessages/camelCase.json",
+);
+const with_submessages_omitted_enum_field_json = @embedFile(
+    "./json_data/with_submessages/camelCase_omitted_enum_field.json",
 );
 const with_submessages_camel_case_enum_as_integer_json = @embedFile(
     "./json_data/with_submessages/camelCase_enum_as_integer.json",
@@ -364,6 +449,55 @@ test "JSON: encode WithSubmessages" {
     defer ally.free(encoded);
 
     try expect(compare_pb_jsons(encoded, with_submessages_camel_case_json));
+}
+
+test "JSON: encode WithSubmessages (omitted fields)" {
+    const pb_instance = with_submessages_omitted_fields_init();
+
+    const encoded = try pb_instance.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(compare_pb_jsons(encoded, "{}"));
+}
+
+test "JSON: encode WithSubmessages (omitted enum field)" {
+    const pb_instance = with_submessages_omitted_enum_field_init();
+
+    const encoded = try pb_instance.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(compare_pb_jsons(
+        encoded,
+        with_submessages_omitted_enum_field_json,
+    ));
+}
+
+test "JSON: decode WithSubmessages (omitted fields)" {
+    const pb_instance = with_submessages_omitted_fields_init();
+
+    const decoded = try @TypeOf(pb_instance).json_decode("{}", .{}, ally);
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode WithSubmessages (omitted enum field)" {
+    const pb_instance = with_submessages_omitted_enum_field_init();
+
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        with_submessages_omitted_enum_field_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
 }
 
 test "JSON: decode WithSubmessages (from camelCase)" {
@@ -651,26 +785,40 @@ test "JSON: decode OneofContainer (message_in_oneof) (from mixed_case2)" {
 // --------------
 // WithBytes test
 // --------------
-const bytes_init = @import("./json_data/with_bytes/instance.zig").get;
-const bytes_camel_case_json = @embedFile("json_data/with_bytes/camelCase.json");
-const bytes_snake_case_json = @embedFile("json_data/with_bytes/snake_case.json");
+const with_bytes_init = @import("./json_data/with_bytes/instance.zig").get;
+const with_bytes_omitted_fields_init = @import(
+    "./json_data/with_bytes/instance.zig",
+).get_with_omitted_fields;
+const with_bytes_camel_case_json = @embedFile("json_data/with_bytes/camelCase.json");
+const with_bytes_snake_case_json = @embedFile("json_data/with_bytes/snake_case.json");
 
-test "JSON: encode Bytes" {
-    const pb_instance = bytes_init();
+test "JSON: encode WithBytes" {
+    const pb_instance = with_bytes_init();
     const encoded = try pb_instance.json_encode(
         .{ .whitespace = .indent_2 },
         ally,
     );
     defer ally.free(encoded);
 
-    try expect(compare_pb_jsons(encoded, bytes_camel_case_json));
+    try expect(compare_pb_jsons(encoded, with_bytes_camel_case_json));
 }
 
-test "JSON: decode Bytes (from camelCase)" {
-    const pb_instance = bytes_init();
+test "JSON: encode WithBytes (with omitted fields)" {
+    const pb_instance = with_bytes_omitted_fields_init();
+    const encoded = try pb_instance.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(compare_pb_jsons(encoded, "{}"));
+}
+
+test "JSON: decode WithBytes (from camelCase)" {
+    const pb_instance = with_bytes_init();
 
     const decoded = try @TypeOf(pb_instance).json_decode(
-        bytes_camel_case_json,
+        with_bytes_camel_case_json,
         .{},
         ally,
     );
@@ -679,14 +827,23 @@ test "JSON: decode Bytes (from camelCase)" {
     try expect(compare_pb_structs(pb_instance, decoded.value));
 }
 
-test "JSON: decode Bytes (from snake_case)" {
-    const pb_instance = bytes_init();
+test "JSON: decode WithBytes (from snake_case)" {
+    const pb_instance = with_bytes_init();
 
     const decoded = try @TypeOf(pb_instance).json_decode(
-        bytes_snake_case_json,
+        with_bytes_snake_case_json,
         .{},
         ally,
     );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode WithBytes (with omitted fields)" {
+    const pb_instance = with_bytes_omitted_fields_init();
+
+    const decoded = try @TypeOf(pb_instance).json_decode("{}", .{}, ally);
     defer decoded.deinit();
 
     try expect(compare_pb_structs(pb_instance, decoded.value));
@@ -984,4 +1141,23 @@ test "JSON: decode TestPackedTypes (repeated NaNs/infs)" {
     defer decoded.deinit();
 
     try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+// --------------------
+// OptionalFields tests
+// --------------------
+const optional_fields_omitted_fields_init = @import(
+    "./json_data/optional_fields/instance.zig",
+).get_with_omitted_fields;
+
+test "JSON: encode OptionalFields (omitted fields)" {
+    const pb_instance = optional_fields_omitted_fields_init(ally);
+
+    const encoded = try pb_instance.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(compare_pb_jsons(encoded, "{}"));
 }

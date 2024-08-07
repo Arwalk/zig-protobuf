@@ -997,27 +997,6 @@ fn freeAllocated(allocator: Allocator, token: json.Token) void {
     }
 }
 
-fn fillDefaultStructValues(
-    comptime T: type,
-    r: *T,
-    fields_seen: *[@typeInfo(T).Struct.fields.len]bool,
-) !void {
-    // Took from std.json source code since it was non-public one
-    inline for (@typeInfo(T).Struct.fields, 0..) |field, i| {
-        if (!fields_seen[i]) {
-            if (field.default_value) |default_ptr| {
-                const default = @as(
-                    *align(1) const field.type,
-                    @ptrCast(default_ptr),
-                ).*;
-                @field(r, field.name) = default;
-            } else {
-                return error.MissingField;
-            }
-        }
-    }
-}
-
 fn base64ErrorToJsonParseError(err: base64Errors) ParseFromValueError {
     return switch (err) {
         base64Errors.NoSpaceLeft => ParseFromValueError.Overflow,
@@ -1236,6 +1215,15 @@ fn to_camel_case(not_camel_cased_string: []const u8) []const u8 {
     return camel_cased_string;
 }
 
+fn need_to_emit_numeric(value: anytype) bool {
+    return value != switch (@typeInfo(@TypeOf(value))) {
+        .Int, .ComptimeInt, .Float, .ComptimeFloat => @as(@TypeOf(value), 0),
+        .Enum => @as(@TypeOf(value), @enumFromInt(0)),
+        .Bool => false,
+        else => unreachable,
+    };
+}
+
 fn print_numeric(value: anytype, jws: anytype) !void {
     switch (@typeInfo(@TypeOf(value))) {
         .Float, .ComptimeFloat => {},
@@ -1243,7 +1231,7 @@ fn print_numeric(value: anytype, jws: anytype) !void {
             try jws.write(value);
             return;
         },
-        else => @compileError("Float/integer expected but " ++ @typeName(@TypeOf(value)) ++ " given"),
+        else => unreachable,
     }
 
     if (std.math.isNan(value)) {
@@ -1329,6 +1317,7 @@ fn jsonValueStartAssumeTypeOk(jws: anytype) !void {
 fn stringify_struct_field(
     struct_field: anytype,
     field_descriptor: FieldDescriptor,
+    field_name: []const u8,
     jws: anytype,
 ) !void {
     var value: switch (@typeInfo(@TypeOf(struct_field))) {
@@ -1350,11 +1339,19 @@ fn stringify_struct_field(
     switch (field_descriptor.ftype) {
         .Bytes => {
             // ManagedString representing protobuf's "bytes" type
-            try print_bytes(value, jws);
+            if (value.getSlice().len > 0) {
+                try jws.objectField(field_name);
+                try print_bytes(value, jws);
+            }
         },
         .List, .PackedList => |list_type| {
             // ArrayList
             const slice = value.items;
+            if (slice.len == 0) {
+                // TODO Optionally emit empty repeated fields
+                return;
+            }
+            try jws.objectField(field_name);
             try jws.beginArray();
             for (slice) |el| {
                 switch (list_type) {
@@ -1378,6 +1375,7 @@ fn stringify_struct_field(
                 @compileError("Untagged unions are not supported here");
             }
 
+            try jws.objectField(field_name);
             try jws.beginObject();
             inline for (union_info.fields) |union_field| {
                 if (value == @field(
@@ -1410,13 +1408,22 @@ fn stringify_struct_field(
             try jws.endObject();
         },
         .Varint, .FixedInt => {
-            try print_numeric(value, jws);
+            if (need_to_emit_numeric(value)) {
+                try jws.objectField(field_name);
+                try print_numeric(value, jws);
+            }
         },
-        .SubMessage, .String => {
-            // .SubMessage's (generated structs) and .String's
-            //   (ManagedString's) have its own jsonStringify implementation
-            // Numeric types will be handled using default std.json parser
+        // .SubMessage's (generated structs) and .String's
+        //   (ManagedString's) have its own jsonStringify implementation
+        .SubMessage => {
+            try jws.objectField(field_name);
             try jws.write(value);
+        },
+        .String => {
+            if (value.getSlice().len > 0) {
+                try jws.objectField(field_name);
+                try jws.write(value);
+            }
         },
         // NOTE: You better not to use *else* here, see todo comment
         //   at the end of parseStructField function above
@@ -1466,8 +1473,9 @@ pub fn MessageMixins(comptime Self: type) type {
                 return error.UnexpectedToken;
             }
 
-            // Mainly taken from 0.13.0's source code
-            var result: Self = undefined;
+            // Mainly taken from 0.13.0's source code,
+            // then there was a hell of a refactor
+            var result = Self.init(allocator);
             const structInfo = @typeInfo(Self).Struct;
             var fields_seen = [_]bool{false} ** structInfo.fields.len;
 
@@ -1551,7 +1559,6 @@ pub fn MessageMixins(comptime Self: type) type {
                     }
                 }
             }
-            try fillDefaultStructValues(Self, &result, &fields_seen);
             return result;
         }
 
@@ -1566,13 +1573,14 @@ pub fn MessageMixins(comptime Self: type) type {
                 if (switch (@typeInfo(fieldInfo.type)) {
                     .Optional => @field(self, fieldInfo.name) != null,
                     else => true,
-                }) try jws.objectField(camel_case_name);
-
-                try stringify_struct_field(
-                    @field(self, fieldInfo.name),
-                    @field(Self._desc_table, fieldInfo.name),
-                    jws,
-                );
+                }) {
+                    try stringify_struct_field(
+                        @field(self, fieldInfo.name),
+                        @field(Self._desc_table, fieldInfo.name),
+                        camel_case_name,
+                        jws,
+                    );
+                }
             }
 
             try jws.endObject();

@@ -12,3 +12,7 @@ pub fn get(allocator: Allocator) !RepeatedEnum {
 
     return RepeatedEnum{ .value = enum_array };
 }
+
+pub fn get_with_omitted_fields(allocator: Allocator) RepeatedEnum {
+    return RepeatedEnum.init(allocator);
+}
