@@ -997,27 +997,6 @@ fn freeAllocated(allocator: Allocator, token: json.Token) void {
     }
 }
 
-fn fillDefaultStructValues(
-    comptime T: type,
-    r: *T,
-    fields_seen: *[@typeInfo(T).Struct.fields.len]bool,
-) !void {
-    // Took from std.json source code since it was non-public one
-    inline for (@typeInfo(T).Struct.fields, 0..) |field, i| {
-        if (!fields_seen[i]) {
-            if (field.default_value) |default_ptr| {
-                const default = @as(
-                    *align(1) const field.type,
-                    @ptrCast(default_ptr),
-                ).*;
-                @field(r, field.name) = default;
-            } else {
-                return error.MissingField;
-            }
-        }
-    }
-}
-
 fn base64ErrorToJsonParseError(err: base64Errors) ParseFromValueError {
     return switch (err) {
         base64Errors.NoSpaceLeft => ParseFromValueError.Overflow,
@@ -1494,8 +1473,9 @@ pub fn MessageMixins(comptime Self: type) type {
                 return error.UnexpectedToken;
             }
 
-            // Mainly taken from 0.13.0's source code
-            var result: Self = undefined;
+            // Mainly taken from 0.13.0's source code,
+            // then there was a hell of a refactor
+            var result = Self.init(allocator);
             const structInfo = @typeInfo(Self).Struct;
             var fields_seen = [_]bool{false} ** structInfo.fields.len;
 
@@ -1579,7 +1559,6 @@ pub fn MessageMixins(comptime Self: type) type {
                     }
                 }
             }
-            try fillDefaultStructValues(Self, &result, &fields_seen);
             return result;
         }
 
