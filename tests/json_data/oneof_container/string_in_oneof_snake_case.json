@@ -1,6 +1,6 @@
 {
   "regular_field": "this field is always the same",
-  "enum_field": "UNSPECIFIED",
+  "enum_field": "SOMETHING",
   "some_oneof": {
     "string_in_oneof": "testing oneof field being the string"
   }
