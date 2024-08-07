@@ -131,7 +131,7 @@ const GenerationContext = struct {
                                         is_public_dep = true;
                                     }
                                 }
-                                const keyForImport = if (file.package) |p| p.getSlice() else file.name.?.getSlice();
+                                const keyForImport = if (item.package) |p| p.getSlice() else item.name.?.getSlice();
                                 try importedPackages.put(keyForImport, is_public_dep);
                             }
                         }
