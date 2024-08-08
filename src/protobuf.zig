@@ -10,7 +10,6 @@ const ParseFromValueError = std.json.ParseFromValueError;
 
 const log = std.log.scoped(.zig_protobuf);
 
-
 // common definitions
 
 const ArrayList = std.ArrayList;
