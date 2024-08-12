@@ -287,7 +287,7 @@ fn getProtocInstallDir(
     allocator: std.mem.Allocator,
     protoc_version: []const u8,
 ) ![]const u8 {
-    if (std.process.getEnvVarOwned(allocator, "PROTOC_PATH")) |protoc_path| {
+    if (std.process.getEnvVarOwned(allocator, "PROTOC_PATH") catch null) |protoc_path| {
         std.log.info("zig-protobuf: respecting PROTOC_PATH: {s}\n", .{ protoc_path });
         if (fileExists(protoc_path)) {
             // user has probably provided full path to protoc binary instead of proto_dir
@@ -299,7 +299,7 @@ fn getProtocInstallDir(
 
         std.log.err("zig-protobuf: cannot resolve a protoc provided via PROTOC_PATH env var ({s}), make sure the value is correct", .{protoc_path});
         std.process.exit(1);
-    } else |_| {}
+    }
 
     const base_cache_dir_rel = try std.fs.path.join(allocator, &.{ ".zig-cache", "zig-protobuf", "protoc" });
     try std.fs.cwd().makePath(base_cache_dir_rel);
