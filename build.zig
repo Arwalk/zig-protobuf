@@ -88,6 +88,12 @@ pub fn build(b: *std.Build) !void {
             .optimize = optimize,
         }),
         b.addTest(.{
+            .name = "json",
+            .root_source_file = b.path("tests/tests_json.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+        b.addTest(.{
             .name = "FullName",
             .root_source_file = b.path("bootstrapped-generator/FullName.zig"),
             .target = target,
@@ -281,6 +287,20 @@ fn getProtocInstallDir(
     allocator: std.mem.Allocator,
     protoc_version: []const u8,
 ) ![]const u8 {
+    if (std.process.getEnvVarOwned(allocator, "PROTOC_PATH") catch null) |protoc_path| {
+        std.log.info("zig-protobuf: respecting PROTOC_PATH: {s}\n", .{ protoc_path });
+        if (fileExists(protoc_path)) {
+            // user has probably provided full path to protoc binary instead of proto_dir
+            // also, if these fail and user explicitly provided custom path, we probably don't want to download stuff
+            const bin_dir = std.fs.path.dirname(protoc_path).?;
+            const real_proto_dir = std.fs.path.dirname(bin_dir).?;
+            return real_proto_dir;
+        }
+
+        std.log.err("zig-protobuf: cannot resolve a protoc provided via PROTOC_PATH env var ({s}), make sure the value is correct", .{protoc_path});
+        std.process.exit(1);
+    }
+
     const base_cache_dir_rel = try std.fs.path.join(allocator, &.{ ".zig-cache", "zig-protobuf", "protoc" });
     try std.fs.cwd().makePath(base_cache_dir_rel);
     const base_cache_dir = try std.fs.cwd().realpathAlloc(allocator, base_cache_dir_rel);

@@ -417,7 +417,8 @@ const GenerationContext = struct {
             .TYPE_FLOAT, .TYPE_SFIXED32, .TYPE_FIXED32 => ".{ .FixedInt = .I32 }",
             .TYPE_ENUM, .TYPE_UINT32, .TYPE_UINT64, .TYPE_BOOL, .TYPE_INT32, .TYPE_INT64 => ".{ .Varint = .Simple }",
             .TYPE_SINT32, .TYPE_SINT64 => ".{ .Varint = .ZigZagOptimized }",
-            .TYPE_STRING, .TYPE_BYTES => ".String",
+            .TYPE_STRING => ".String",
+            .TYPE_BYTES => ".Bytes",
             .TYPE_MESSAGE => ".{ .SubMessage = {} }",
             else => {
                 std.debug.print("Unrecognized type {}\n", .{field.type.?});

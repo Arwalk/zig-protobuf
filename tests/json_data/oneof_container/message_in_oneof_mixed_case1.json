@@ -1,0 +1,10 @@
+{
+  "regularField": "this field is always the same",
+  "enum_field": "UNSPECIFIED",
+  "someOneof": {
+    "message_in_oneof": {
+      "value": -17,
+      "str": "that's a string inside message_in_oneof"
+    }
+  }
+}

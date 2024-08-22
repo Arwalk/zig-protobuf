@@ -22,6 +22,12 @@ The latest version of the zig compiler used for this project is 0.13.0.
 
 This project is currently able to handle all scalar types for encoding, decoding, and generation through the plugin.
 
+## Branches
+
+There are 2 branches you can use for your development.
+
+* `master` is the branch with current developments, working with the latest stable release of zig.
+* `zig-master` is a branch that merges the developments in master, but works with the latest-ish master version of zig. 
 
 ## How to use
 

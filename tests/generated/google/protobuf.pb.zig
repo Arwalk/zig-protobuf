@@ -525,7 +525,7 @@ pub const UninterpretedOption = struct {
         .positive_int_value = fd(4, .{ .Varint = .Simple }),
         .negative_int_value = fd(5, .{ .Varint = .Simple }),
         .double_value = fd(6, .{ .FixedInt = .I64 }),
-        .string_value = fd(7, .String),
+        .string_value = fd(7, .Bytes),
         .aggregate_value = fd(8, .String),
     };
 
@@ -613,7 +613,7 @@ pub const Any = struct {
 
     pub const _desc_table = .{
         .type_url = fd(1, .String),
-        .value = fd(2, .String),
+        .value = fd(2, .Bytes),
     };
 
     pub usingnamespace protobuf.MessageMixins(@This());
@@ -809,7 +809,7 @@ pub const BytesValue = struct {
     value: ManagedString = .Empty,
 
     pub const _desc_table = .{
-        .value = fd(1, .String),
+        .value = fd(1, .Bytes),
     };
 
     pub usingnamespace protobuf.MessageMixins(@This());
