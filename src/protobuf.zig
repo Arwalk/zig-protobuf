@@ -8,6 +8,8 @@ const base64 = std.base64;
 const base64Errors = std.base64.Error;
 const ParseFromValueError = std.json.ParseFromValueError;
 
+const log = std.log.scoped(.zig_protobuf);
+
 // common definitions
 
 const ArrayList = std.ArrayList;
@@ -584,10 +586,13 @@ fn deinit_field(result: anytype, comptime field_name: []const u8, comptime ftype
             }
         },
         .List => |list_type| {
-            if (list_type == .SubMessage or list_type == .String) {
-                for (@field(result, field_name).items) |item| {
-                    item.deinit();
-                }
+            switch (list_type) {
+                .SubMessage, .String, .Bytes => {
+                    for (@field(result, field_name).items) |item| {
+                        item.deinit();
+                    }
+                },
+                .Varint, .FixedInt => {},
             }
             @field(result, field_name).deinit();
         },
@@ -883,7 +888,7 @@ fn decode_value(comptime decoded_type: type, comptime ftype: FieldType, extracte
             else => error.InvalidInput,
         },
         .List, .PackedList, .OneOf => {
-            std.log.warn("Invalid scalar type {any}\n", .{ftype});
+            log.err("Invalid scalar type {any}\n", .{ftype});
             return error.InvalidInput;
         },
     };
@@ -980,7 +985,7 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) !T {
                 break try decode_data(T, v, field, &result, extracted_data, allocator);
             }
         } else {
-            std.log.warn("Unknown field received in {s} {any}\n", .{ @typeName(T), extracted_data });
+            log.debug("Unknown field received in {s} {any}\n", .{ @typeName(T), extracted_data.tag });
         }
     }
 
