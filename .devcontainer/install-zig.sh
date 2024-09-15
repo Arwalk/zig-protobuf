@@ -35,7 +35,15 @@ rm -rf /usr/local/lib/zig
 # make sure /usr/local/lib/zig exists
 mkdir -p /usr/local/lib/zig
 # download binary, untar and ln into /usr/local/bin
-wget -c https://ziglang.org/builds/zig-linux-$(arch)-$ZIG_VERSION.tar.xz -O - | tar -xJ --strip-components=1 -C /usr/local/lib/zig
+
+ZIG_DOWNLOAD_URL=https://ziglang.org/download/$ZIG_VERSION/zig-linux-$(arch)-$ZIG_VERSION.tar.xz
+case $ZIG_VERSION in
+	*"+"*)
+	ZIG_DOWNLOAD_URL=https://ziglang.org/builds/zig-linux-$(arch)-$ZIG_VERSION.tar.xz
+	;;
+esac
+
+wget -c $ZIG_DOWNLOAD_URL -O - | tar -xJ --strip-components=1 -C /usr/local/lib/zig
 # make binary executable
 chmod +x /usr/local/lib/zig/zig
 # create symbolic link
