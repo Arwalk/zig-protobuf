@@ -189,3 +189,13 @@ pub const WithBytes = struct {
 
     pub usingnamespace protobuf.MessageMixins(@This());
 };
+
+pub const WithRepeatedBytes = struct {
+    byte_field: ArrayList(ManagedString),
+
+    pub const _desc_table = .{
+        .byte_field = fd(1, .{ .List = .Bytes }),
+    };
+
+    pub usingnamespace protobuf.MessageMixins(@This());
+};
