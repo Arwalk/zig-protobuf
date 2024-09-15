@@ -586,10 +586,13 @@ fn deinit_field(result: anytype, comptime field_name: []const u8, comptime ftype
             }
         },
         .List => |list_type| {
-            if (list_type == .SubMessage or list_type == .String or list_type == .Bytes) {
-                for (@field(result, field_name).items) |item| {
-                    item.deinit();
-                }
+            switch (list_type) {
+                .SubMessage, .String, .Bytes => {
+                    for (@field(result, field_name).items) |item| {
+                        item.deinit();
+                    }
+                },
+                .Varint, .FixedInt => {},
             }
             @field(result, field_name).deinit();
         },
