@@ -12,6 +12,6 @@ pub fn get() OneofContainer {
         .regular_field = ManagedString.static(
             "this field is always the same",
         ),
-        .enum_field = .UNSPECIFIED,
+        .enum_field = .SOMETHING,
     };
 }
