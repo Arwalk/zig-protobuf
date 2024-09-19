@@ -1004,7 +1004,7 @@ fn base64ErrorToJsonParseError(err: base64Errors) ParseFromValueError {
     };
 }
 
-fn parse_bytes(
+fn json_parse_bytes(
     allocator: Allocator,
     source: anytype,
     options: json.ParseOptions,
@@ -1049,7 +1049,7 @@ fn parseStructField(
                         }
                         try array_list.ensureUnusedCapacity(1);
                         array_list.appendAssumeCapacity(switch (list_type) {
-                            .Bytes => try parse_bytes(allocator, source, options),
+                            .Bytes => try json_parse_bytes(allocator, source, options),
                             .Varint, .FixedInt, .SubMessage, .String => other: {
                                 break :other try json.innerParse(
                                     child_type,
@@ -1116,7 +1116,7 @@ fn parseStructField(
                             union_field.name,
                         ).ftype) {
                             .Bytes => bytes: {
-                                break :bytes try parse_bytes(
+                                break :bytes try json_parse_bytes(
                                     allocator,
                                     source,
                                     options,
@@ -1147,7 +1147,7 @@ fn parseStructField(
         },
         .Bytes => bytes: {
             // "bytes" -> ManagedString
-            break :bytes try parse_bytes(allocator, source, options);
+            break :bytes try json_parse_bytes(allocator, source, options);
         },
         .Varint, .FixedInt, .SubMessage, .String => other: {
             // .SubMessage's (generated structs) and .String's
@@ -1215,7 +1215,7 @@ fn to_camel_case(not_camel_cased_string: []const u8) []const u8 {
     return camel_cased_string;
 }
 
-fn need_to_emit_numeric(value: anytype, field_info: StructField) bool {
+fn json_need_to_emit_numeric(value: anytype, field_info: StructField) bool {
     if (field_info.default_value) |v| {
         switch (@typeInfo(@TypeOf(value))) {
             .Int, .ComptimeInt, .Float, .ComptimeFloat, .Enum, .Bool => {
@@ -1244,7 +1244,7 @@ fn need_to_emit_numeric(value: anytype, field_info: StructField) bool {
     }
 }
 
-fn print_numeric(value: anytype, jws: anytype) !void {
+fn json_emit_numeric(value: anytype, jws: anytype) !void {
     switch (@typeInfo(@TypeOf(value))) {
         .Int, .ComptimeInt, .Enum, .Bool => {
             try jws.write(value);
@@ -1265,8 +1265,7 @@ fn print_numeric(value: anytype, jws: anytype) !void {
     }
 }
 
-fn need_to_emit_bytes_or_string(value: anytype, field_info: StructField) bool {
-    assert(@typeInfo(@TypeOf(value)) == .Union);
+fn json_need_to_emit_string_or_bytes(value: ManagedString, field_info: StructField) bool {
     if (field_info.default_value) |v| {
         const default_value = @as(
             *align(1) const field_info.type,
@@ -1293,7 +1292,7 @@ fn need_to_emit_bytes_or_string(value: anytype, field_info: StructField) bool {
     }
 }
 
-fn print_bytes(value: anytype, jws: anytype) !void {
+fn json_emit_bytes(value: anytype, jws: anytype) !void {
     const size = base64.standard.Encoder.calcSize(
         value.getSlice().len,
     );
@@ -1362,7 +1361,7 @@ fn jsonValueStartAssumeTypeOk(jws: anytype) !void {
     }
 }
 
-fn stringify_struct_field(
+fn json_stringify_struct_field(
     struct_obj: anytype,
     struct_field_info: StructField,
     field_name: []const u8,
@@ -1403,10 +1402,10 @@ fn stringify_struct_field(
             for (slice) |el| {
                 switch (list_type) {
                     .Varint, .FixedInt => {
-                        try print_numeric(el, jws);
+                        try json_emit_numeric(el, jws);
                     },
                     .Bytes => {
-                        try print_bytes(el, jws);
+                        try json_emit_bytes(el, jws);
                     },
                     .String, .SubMessage => {
                         try jws.write(el);
@@ -1433,10 +1432,10 @@ fn stringify_struct_field(
                     try jws.objectField(union_camel_case_name);
                     switch (@field(oneof._union_desc, union_field.name).ftype) {
                         .Varint, .FixedInt => {
-                            try print_numeric(@field(value, union_field.name), jws);
+                            try json_emit_numeric(@field(value, union_field.name), jws);
                         },
                         .Bytes => {
-                            try print_bytes(@field(value, union_field.name), jws);
+                            try json_emit_bytes(@field(value, union_field.name), jws);
                         },
                         .String, .SubMessage => {
                             try jws.write(@field(value, union_field.name));
@@ -1455,9 +1454,9 @@ fn stringify_struct_field(
             try jws.endObject();
         },
         .Varint, .FixedInt => {
-            if (need_to_emit_numeric(value, struct_field_info)) {
+            if (json_need_to_emit_numeric(value, struct_field_info)) {
                 try jws.objectField(field_name);
-                try print_numeric(value, jws);
+                try json_emit_numeric(value, jws);
             }
         },
         // .SubMessage's (generated structs) and .String's
@@ -1468,10 +1467,10 @@ fn stringify_struct_field(
         },
         .Bytes, .String => {
             // Both types are using ManagedString struct
-            if (need_to_emit_bytes_or_string(value, struct_field_info)) {
+            if (json_need_to_emit_string_or_bytes(value, struct_field_info)) {
                 try jws.objectField(field_name);
                 if (field_descriptor.ftype == .Bytes) {
-                    try print_bytes(value, jws);
+                    try json_emit_bytes(value, jws);
                 } else {
                     try jws.write(value);
                 }
@@ -1626,7 +1625,7 @@ pub fn MessageMixins(comptime Self: type) type {
                     .Optional => @field(self, fieldInfo.name) != null,
                     else => true,
                 }) {
-                    try stringify_struct_field(
+                    try json_stringify_struct_field(
                         self.*,
                         fieldInfo,
                         camel_case_name,
