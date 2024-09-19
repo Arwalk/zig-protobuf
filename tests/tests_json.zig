@@ -1161,3 +1161,61 @@ test "JSON: encode OptionalFields (omitted fields)" {
 
     try expect(compare_pb_jsons(encoded, "{}"));
 }
+
+// -------------------
+// DefaultValues tests
+// -------------------
+const default_values_inits = @import("./json_data/default_values/instance.zig");
+const default_values_camel_case_json = @embedFile(
+    "./json_data/default_values/camelCase.json",
+);
+
+test "JSON: encode DefaultValues (values are proto3 defaults but not proto2 defaults)" {
+    const pb_instance = default_values_inits.get();
+    defer pb_instance.deinit();
+
+    const encoded = try pb_instance.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(compare_pb_jsons(encoded, default_values_camel_case_json));
+}
+
+test "JSON: encode DefaultValues (using proto2 defaults)" {
+    const pb_instance = default_values_inits.get_with_omitted_fields();
+    defer pb_instance.deinit();
+
+    const encoded = try pb_instance.json_encode(
+        .{ .whitespace = .indent_2 },
+        ally,
+    );
+    defer ally.free(encoded);
+
+    try expect(compare_pb_jsons(encoded, "{}"));
+}
+
+test "JSON: decode DefaultValues (from empty object)" {
+    const pb_instance = default_values_inits.get_with_omitted_fields();
+    defer pb_instance.deinit();
+
+    const decoded = try @TypeOf(pb_instance).json_decode("{}", .{}, ally);
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode DefaultValues (using proto3 defaults)" {
+    const pb_instance = default_values_inits.get();
+    defer pb_instance.deinit();
+
+    const decoded = try @TypeOf(pb_instance).json_decode(
+        default_values_camel_case_json,
+        .{},
+        ally,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}

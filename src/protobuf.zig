@@ -1215,33 +1215,81 @@ fn to_camel_case(not_camel_cased_string: []const u8) []const u8 {
     return camel_cased_string;
 }
 
-fn need_to_emit_numeric(value: anytype) bool {
-    return value != switch (@typeInfo(@TypeOf(value))) {
-        .Int, .ComptimeInt, .Float, .ComptimeFloat => @as(@TypeOf(value), 0),
-        .Enum => @as(@TypeOf(value), @enumFromInt(0)),
-        .Bool => false,
-        else => unreachable,
-    };
+fn need_to_emit_numeric(value: anytype, field_info: StructField) bool {
+    if (field_info.default_value) |v| {
+        switch (@typeInfo(@TypeOf(value))) {
+            .Int, .ComptimeInt, .Float, .ComptimeFloat, .Enum, .Bool => {
+                return value != @as(
+                    *align(1) const field_info.type,
+                    @ptrCast(v),
+                ).*;
+            },
+            else => unreachable,
+        }
+    } else {
+        // https://protobuf.dev/programming-guides/proto3/#default
+        switch (@typeInfo(@TypeOf(value))) {
+            .Int, .ComptimeInt => {
+                return value != @as(@TypeOf(value), 0);
+            },
+            .Float, .ComptimeFloat => {
+                return !std.math.isPositiveZero(value);
+            },
+            .Enum => {
+                return value != @as(@TypeOf(value), @enumFromInt(0));
+            },
+            .Bool => return value,
+            else => unreachable,
+        }
+    }
 }
 
 fn print_numeric(value: anytype, jws: anytype) !void {
     switch (@typeInfo(@TypeOf(value))) {
-        .Float, .ComptimeFloat => {},
         .Int, .ComptimeInt, .Enum, .Bool => {
             try jws.write(value);
             return;
         },
+        .Float, .ComptimeFloat => {
+            if (std.math.isNan(value)) {
+                try jws.write("NaN");
+            } else if (std.math.isPositiveInf(value)) {
+                try jws.write("Infinity");
+            } else if (std.math.isNegativeInf(value)) {
+                try jws.write("-Infinity");
+            } else {
+                try jws.write(value);
+            }
+        },
         else => unreachable,
     }
+}
 
-    if (std.math.isNan(value)) {
-        try jws.write("NaN");
-    } else if (std.math.isPositiveInf(value)) {
-        try jws.write("Infinity");
-    } else if (std.math.isNegativeInf(value)) {
-        try jws.write("-Infinity");
+fn need_to_emit_bytes_or_string(value: anytype, field_info: StructField) bool {
+    assert(@typeInfo(@TypeOf(value)) == .Union);
+    if (field_info.default_value) |v| {
+        const default_value = @as(
+            *align(1) const field_info.type,
+            @ptrCast(v),
+        ).*;
+        switch (@typeInfo(@TypeOf(default_value))) {
+            .Optional => {
+                if (default_value) |d| {
+                    return !std.mem.eql(u8, value.getSlice(), d.getSlice());
+                } else return true;
+            },
+            .Union => {
+                return !std.mem.eql(
+                    u8,
+                    value.getSlice(),
+                    default_value.getSlice(),
+                );
+            },
+            else => unreachable,
+        }
     } else {
-        try jws.write(value);
+        // https://protobuf.dev/programming-guides/proto3/#default
+        return value.getSlice().len > 0;
     }
 }
 
@@ -1315,11 +1363,17 @@ fn jsonValueStartAssumeTypeOk(jws: anytype) !void {
 }
 
 fn stringify_struct_field(
-    struct_field: anytype,
-    field_descriptor: FieldDescriptor,
+    struct_obj: anytype,
+    struct_field_info: StructField,
     field_name: []const u8,
     jws: anytype,
 ) !void {
+    const struct_field = @field(struct_obj, struct_field_info.name);
+    const field_descriptor = @field(
+        @TypeOf(struct_obj)._desc_table,
+        struct_field_info.name,
+    );
+
     var value: switch (@typeInfo(@TypeOf(struct_field))) {
         .Optional => |optional| optional.child,
         else => @TypeOf(struct_field),
@@ -1329,7 +1383,7 @@ fn stringify_struct_field(
         .Optional => {
             if (struct_field) |v| {
                 value = v;
-            } else return;
+            } else unreachable;
         },
         else => {
             value = struct_field;
@@ -1337,13 +1391,6 @@ fn stringify_struct_field(
     }
 
     switch (field_descriptor.ftype) {
-        .Bytes => {
-            // ManagedString representing protobuf's "bytes" type
-            if (value.getSlice().len > 0) {
-                try jws.objectField(field_name);
-                try print_bytes(value, jws);
-            }
-        },
         .List, .PackedList => |list_type| {
             // ArrayList
             const slice = value.items;
@@ -1408,7 +1455,7 @@ fn stringify_struct_field(
             try jws.endObject();
         },
         .Varint, .FixedInt => {
-            if (need_to_emit_numeric(value)) {
+            if (need_to_emit_numeric(value, struct_field_info)) {
                 try jws.objectField(field_name);
                 try print_numeric(value, jws);
             }
@@ -1419,10 +1466,15 @@ fn stringify_struct_field(
             try jws.objectField(field_name);
             try jws.write(value);
         },
-        .String => {
-            if (value.getSlice().len > 0) {
+        .Bytes, .String => {
+            // Both types are using ManagedString struct
+            if (need_to_emit_bytes_or_string(value, struct_field_info)) {
                 try jws.objectField(field_name);
-                try jws.write(value);
+                if (field_descriptor.ftype == .Bytes) {
+                    try print_bytes(value, jws);
+                } else {
+                    try jws.write(value);
+                }
             }
         },
         // NOTE: You better not to use *else* here, see todo comment
@@ -1575,8 +1627,8 @@ pub fn MessageMixins(comptime Self: type) type {
                     else => true,
                 }) {
                     try stringify_struct_field(
-                        @field(self, fieldInfo.name),
-                        @field(Self._desc_table, fieldInfo.name),
+                        self.*,
+                        fieldInfo,
                         camel_case_name,
                         jws,
                     );
