@@ -16,6 +16,7 @@ const tests = @import("./generated/tests.pb.zig");
 const DefaultValues = @import("./generated/jspb/test.pb.zig").DefaultValues;
 const tests_oneof = @import("./generated/tests/oneof.pb.zig");
 const metrics = @import("./generated/opentelemetry/proto/metrics/v1.pb.zig");
+const selfref = @import("./generated/selfref.pb.zig");
 const pblogs = @import("./generated/opentelemetry/proto/logs/v1.pb.zig");
 
 pub fn printAllDecoded(input: []const u8) !void {
@@ -66,4 +67,11 @@ test "LogsData proto issue #84" {
 
     const bytes = try logsData.encode(std.testing.allocator); // <- compile error before
     defer std.testing.allocator.free(bytes);
+}
+
+const SelfRefNode = selfref.SelfRefNode;
+
+test "self ref test" {
+    const demo = try SelfRefNode.init(testing.allocator);
+    try testing.expectEqual(@as(i32, 0), demo.version);
 }
