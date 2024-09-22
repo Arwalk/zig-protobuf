@@ -15,6 +15,7 @@ const FieldType = protobuf.FieldType;
 const tests = @import("./generated/tests.pb.zig");
 const DefaultValues = @import("./generated/jspb/test.pb.zig").DefaultValues;
 const tests_oneof = @import("./generated/tests/oneof.pb.zig");
+const selfref = @import("./generated/selfref.pb.zig");
 
 pub fn printAllDecoded(input: []const u8) !void {
     var iterator = protobuf.WireDecoderIterator{ .input = input };
@@ -44,4 +45,11 @@ test "DefaultValuesDecode" {
     try testing.expectEqual(demo.enum_field.?, .E1);
     try testing.expectEqualSlices(u8, "", demo.empty_field.?.getSlice());
     try testing.expectEqualSlices(u8, "moo", demo.bytes_field.?.getSlice());
+}
+
+const SelfRefNode = selfref.SelfRefNode;
+
+test "self ref test" {
+    const demo = try SelfRefNode.init(testing.allocator);
+    try testing.expectEqual(@as(i32, 0), demo.version);
 }

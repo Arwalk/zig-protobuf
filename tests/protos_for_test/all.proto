@@ -9,6 +9,8 @@ import public "unittest.proto";
 import public "graphics.proto";
 import public "oneof.proto";
 import public "msg-long.proto";
+import public "oneofSelfRef.proto";
+import public "selfref.proto";
 
 enum TopLevelEnum {
   SE_ZERO = 0;
