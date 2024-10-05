@@ -7,6 +7,7 @@ const json = std.json;
 const base64 = std.base64;
 const base64Errors = std.base64.Error;
 const ParseFromValueError = std.json.ParseFromValueError;
+const hasFn = std.meta.hasFn;
 
 const log = std.log.scoped(.zig_protobuf);
 
@@ -22,6 +23,13 @@ const DecodingError = error{ NotEnoughData, InvalidInput };
 const UnionDecodingError = DecodingError || Allocator.Error;
 
 pub const ManagedStringTag = enum { Owned, Const, Empty };
+
+pub fn AllocatedStruct(T : type) type {
+    return struct {
+        allocator : Allocator,
+        v : *T
+    };
+}
 
 pub const AllocatedString = struct { allocator: Allocator, str: []const u8 };
 
@@ -99,6 +107,45 @@ pub const ManagedString = union(ManagedStringTag) {
         try jws.write(self.getSlice());
     }
 };
+
+pub const ManagedStructTag = enum {
+    Owned,
+    Managed
+};
+
+pub fn ManagedStruct(T: type) type {
+    return union(ManagedStructTag) {
+        Owned: AllocatedStruct(T),
+        Managed: *const T,
+
+        const Self = @This();
+
+        pub fn managed(p : *const T) ManagedStruct(T){
+            return ManagedStruct(T) {.Managed = p};
+        }
+
+        pub fn move(p: *T, allocator : Allocator) ManagedStruct(T) {
+            return ManagedStruct(T) { .Owned = AllocatedStruct(T) {.allocator =  allocator, .v = p} };
+        }
+
+        pub fn deinit(self: *Self) void {
+            switch (self) {
+                .Owned => |it| {
+                    it.allocator.free(it.v);
+                },
+                .Managed => {}
+            }
+        }
+
+        pub fn get(self: *const Self) *T {
+            return switch (self) {
+                .Owned => |it| it.v,
+                .Managed => self.Managed.*,
+                else => unreachable
+            };
+        }
+    };
+}
 
 /// Enum describing the different field types available.
 pub const FieldTypeTag = enum { Varint, FixedInt, SubMessage, String, Bytes, List, PackedList, OneOf };
@@ -449,19 +496,32 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, c
 /// Internal function that decodes the descriptor information and struct fields
 /// before passing them to the append function
 fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) Allocator.Error!void {
-    const field_list = @typeInfo(@TypeOf(data)).Struct.fields;
-    const data_type = @TypeOf(data);
+    const type_info_data = @typeInfo(@TypeOf(data));
+    const data_type = switch (type_info_data) {
+        .Union => |_|  // ManagedStruct case
+            @typeInfo(@TypeOf(data.Managed)).Pointer.child,
+        else => @TypeOf(data) 
+    };
+    const field_list = @typeInfo(data_type).Struct.fields;
 
     inline for (field_list) |field| {
-        switch (@typeInfo(field.type)) {
-            .Optional => {
-                if (@field(data, field.name)) |value| {
-                    try append(pb, @field(data_type._desc_table, field.name), value, true);
-                }
-            },
-            else => try append(pb, @field(data_type._desc_table, field.name), @field(data, field.name), false),
+        if (@typeInfo(field.type) == .Optional) {
+            const temp = if(hasFn(@TypeOf(data), "get")) 
+                data.get() else data;
+            if (@field(temp, field.name)) |value| {
+                try append(pb, @field(data_type._desc_table, field.name), value, true);
+            }
+        } else {
+            const value = if(hasFn(@TypeOf(data), "get")) 
+                data.get() else data;
+            
+            try internal_append(pb, data_type, field.name, value, false);
         }
     }
+}
+
+fn internal_append(pb: *ArrayList(u8), data_type : type, comptime field_name : []const u8, value : anytype, comptime force_append: bool) !void {
+    try append(pb, @field(data_type._desc_table, field_name), @field(value, field_name), force_append);
 }
 
 /// Public encoding function, meant to be embdedded in generated structs
