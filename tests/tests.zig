@@ -70,8 +70,30 @@ test "LogsData proto issue #84" {
 }
 
 const SelfRefNode = selfref.SelfRefNode;
+const ManagedStruct = protobuf.ManagedStruct;
+
+pub const SelfRefNode = struct {
+    version: i32 = 0,
+    node: ?ManagedStruct(SelfRefNode)= null,
+
+    pub const _desc_table = .{
+        .version = fd(1, .{ .Varint = .Simple }),
+        .node = fd(2, .{ .SubMessage = {} }),
+    };
+
+    pub usingnamespace protobuf.MessageMixins(@This());
+};
+
 
 test "self ref test" {
-    const demo = try SelfRefNode.init(testing.allocator);
+    var demo = SelfRefNode.init(testing.allocator);
+    var demo2 = SelfRefNode.init(testing.allocator);
+    demo2.version = 1;
+    demo.node = ManagedStruct(SelfRefNode).managed(&demo2);
+
     try testing.expectEqual(@as(i32, 0), demo.version);
+    const encoded = try demo.encode(testing.allocator);
+    try testing.expectEqualSlices(u8, "", encoded);
 }
+
+// TODO: check for cyclic structure
