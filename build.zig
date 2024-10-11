@@ -192,8 +192,8 @@ pub const RunProtocStep = struct {
         self.step.name = name;
     }
 
-    fn make(step: *Step, prog_node: std.Progress.Node) anyerror!void {
-        _ = prog_node;
+    fn make(step: *Step, make_option: Build.Step.MakeOptions) anyerror!void {
+        _ = make_option;
         const b = step.owner;
         const self: *RunProtocStep = @fieldParentPtr("step", step);
 
@@ -231,7 +231,7 @@ pub const RunProtocStep = struct {
                 std.debug.print("\n", .{});
             }
 
-            try step.evalChildProcess(argv.items);
+            _ = try step.evalChildProcess(argv.items);
         }
 
         { // run zig fmt <destination>
@@ -241,7 +241,7 @@ pub const RunProtocStep = struct {
             try argv.append("fmt");
             try argv.append(absolute_dest_dir);
 
-            try step.evalChildProcess(argv.items);
+            _ = try step.evalChildProcess(argv.items);
         }
     }
 };
@@ -288,7 +288,7 @@ fn getProtocInstallDir(
     protoc_version: []const u8,
 ) ![]const u8 {
     if (std.process.getEnvVarOwned(allocator, "PROTOC_PATH") catch null) |protoc_path| {
-        std.log.info("zig-protobuf: respecting PROTOC_PATH: {s}\n", .{ protoc_path });
+        std.log.info("zig-protobuf: respecting PROTOC_PATH: {s}\n", .{protoc_path});
         if (fileExists(protoc_path)) {
             // user has probably provided full path to protoc binary instead of proto_dir
             // also, if these fail and user explicitly provided custom path, we probably don't want to download stuff
@@ -361,7 +361,7 @@ fn getProtocDownloadLink(allocator: std.mem.Allocator, version: []const u8) !?[]
 
     const arch: ?[]const u8 = switch (builtin.cpu.arch) {
         .powerpcle, .powerpc64le => "ppcle",
-        .aarch64, .aarch64_be, .aarch64_32 => "aarch_64",
+        .aarch64, .aarch64_be => "aarch_64",
         .s390x => "s390",
         .x86_64 => "x86_64",
         .x86 => "x86_32",
