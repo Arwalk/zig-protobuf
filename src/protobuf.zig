@@ -658,6 +658,11 @@ fn decode_varint(comptime T: type, input: []const u8) DecodingError!DecodedVarin
     while (true) {
         if (index >= len) return error.NotEnoughData;
         const b = input[index];
+        if (shift >= @bitSizeOf(T)) {
+            // We are casting more bits than the type can handle
+            // It means the "@intCast(shift)" will throw a fatal error
+            return error.InvalidInput;
+        }
         value += (@as(T, input[index] & 0x7F)) << (@as(std.math.Log2Int(T), @intCast(shift)));
         index += 1;
         if (b >> 7 == 0) break;
@@ -1737,4 +1742,11 @@ test "zigzag i64 - encode" {
 
     try append_as_varint(&pb, @as(i64, -500), .ZigZagOptimized);
     try testing.expectEqualSlices(u8, input, pb.items);
+}
+
+test "incorrect data - decode" {
+    const input = "\xFF\xFF\xFF\xFF\xFF\x01";
+    const value = decode_varint(u32, input);
+
+    try testing.expectError(error.InvalidInput, value);
 }
