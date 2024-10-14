@@ -15,6 +15,7 @@ const FieldType = protobuf.FieldType;
 const tests = @import("./generated/tests.pb.zig");
 const DefaultValues = @import("./generated/jspb/test.pb.zig").DefaultValues;
 const tests_oneof = @import("./generated/tests/oneof.pb.zig");
+const selfref = @import("./generated/selfref.pb.zig");
 
 pub fn printAllDecoded(input: []const u8) !void {
     var iterator = protobuf.WireDecoderIterator{ .input = input };
@@ -45,3 +46,31 @@ test "DefaultValuesDecode" {
     try testing.expectEqualSlices(u8, "", demo.empty_field.?.getSlice());
     try testing.expectEqualSlices(u8, "moo", demo.bytes_field.?.getSlice());
 }
+
+const ManagedStruct = protobuf.ManagedStruct;
+
+pub const SelfRefNode = struct {
+    version: i32 = 0,
+    node: ?ManagedStruct(SelfRefNode)= null,
+
+    pub const _desc_table = .{
+        .version = fd(1, .{ .Varint = .Simple }),
+        .node = fd(2, .{ .SubMessage = {} }),
+    };
+
+    pub usingnamespace protobuf.MessageMixins(@This());
+};
+
+
+test "self ref test" {
+    var demo = SelfRefNode.init(testing.allocator);
+    var demo2 = SelfRefNode.init(testing.allocator);
+    demo2.version = 1;
+    demo.node = ManagedStruct(SelfRefNode).managed(&demo2);
+
+    try testing.expectEqual(@as(i32, 0), demo.version);
+    const encoded = try demo.encode(testing.allocator);
+    try testing.expectEqualSlices(u8, "", encoded);
+}
+
+// TODO: check for cyclic structure
