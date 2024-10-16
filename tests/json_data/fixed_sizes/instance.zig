@@ -10,3 +10,7 @@ pub fn get() FixedSizes {
         .float = 6.0,
     };
 }
+
+pub fn get_with_omitted_fields() FixedSizes {
+    return FixedSizes{};
+}
