@@ -13,6 +13,8 @@ const tests_oneof = @import("tests/oneof.pb.zig");
 const graphics = @import("graphics.pb.zig");
 /// import package tests.longs
 const tests_longs = @import("tests/longs.pb.zig");
+/// import package opentelemetry.proto.metrics.v1
+const opentelemetry_proto_metrics_v1 = @import("opentelemetry/proto/metrics/v1.pb.zig");
 /// import package protobuf_test_messages.proto3
 const protobuf_test_messages_proto3 = @import("protobuf_test_messages/proto3.pb.zig");
 /// import package unittest
