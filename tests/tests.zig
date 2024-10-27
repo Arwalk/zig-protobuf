@@ -15,6 +15,7 @@ const FieldType = protobuf.FieldType;
 const tests = @import("./generated/tests.pb.zig");
 const DefaultValues = @import("./generated/jspb/test.pb.zig").DefaultValues;
 const tests_oneof = @import("./generated/tests/oneof.pb.zig");
+const metrics = @import("./generated/opentelemetry/proto/metrics/v1.pb.zig");
 
 pub fn printAllDecoded(input: []const u8) !void {
     var iterator = protobuf.WireDecoderIterator{ .input = input };
@@ -44,4 +45,11 @@ test "DefaultValuesDecode" {
     try testing.expectEqual(demo.enum_field.?, .E1);
     try testing.expectEqualSlices(u8, "", demo.empty_field.?.getSlice());
     try testing.expectEqualSlices(u8, "moo", demo.bytes_field.?.getSlice());
+}
+
+test "issue #74" {
+    var item = metrics.MetricsData.init(testing.allocator);
+    var copy = try item.dupe(testing.allocator);
+    copy.deinit();
+    item.deinit();
 }
