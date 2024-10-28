@@ -826,9 +826,9 @@ fn decode_varint_value(comptime T: type, comptime varint_type: VarintType, raw: 
             },
             .Bool => raw != 0,
             .Enum => if ((raw >> 32) != 0)
-                        error.InvalidInput
-                    else
-                        @as(T, @enumFromInt(@as(i32, @bitCast(@as(u32, @intCast(raw)))))),
+                error.InvalidInput
+            else
+                @as(T, @enumFromInt(@as(i32, @bitCast(@as(u32, @intCast(raw)))))),
             else => @compileError("Invalid type " ++ @typeName(T) ++ " passed"),
         },
     };
@@ -1755,18 +1755,18 @@ test "incorrect data - decode" {
 }
 
 test "incorrect data - simple varint" {
-    const max_u64 = decode_varint_value(enum (i32) { a, b, c }, .Simple, (1 << 64) - 1);
-    const barely_too_big = decode_varint_value(enum (i32) { a, b, c }, .Simple, 1 << 32);
+    const max_u64 = decode_varint_value(enum(i32) { a, b, c }, .Simple, (1 << 64) - 1);
+    const barely_too_big = decode_varint_value(enum(i32) { a, b, c }, .Simple, 1 << 32);
 
     try std.testing.expectError(error.InvalidInput, max_u64);
     try std.testing.expectError(error.InvalidInput, barely_too_big);
 }
 
 test "correct data - simple varint" {
-    const enum_a = try decode_varint_value(enum (i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, (1 << 32) - 1);
-    const enum_b = try decode_varint_value(enum (i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, 0);
-    const enum_c = try decode_varint_value(enum (i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, 1);
-    const enum_d = try decode_varint_value(enum (i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, 2);
+    const enum_a = try decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, (1 << 32) - 1);
+    const enum_b = try decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, 0);
+    const enum_c = try decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, 1);
+    const enum_d = try decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, 2);
 
     try std.testing.expectEqual(.a, enum_a);
     try std.testing.expectEqual(.b, enum_b);
