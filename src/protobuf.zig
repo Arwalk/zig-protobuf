@@ -808,7 +808,7 @@ pub const WireDecoderIterator = struct {
 };
 
 /// Get a real varint of type T from a raw u64 data.
-fn decode_varint_value(comptime T: type, comptime varint_type: VarintType, raw: u64) !T {
+fn decode_varint_value(comptime T: type, comptime varint_type: VarintType, raw: u64) DecodingError!T {
     return switch (varint_type) {
         .ZigZagOptimized => switch (@typeInfo(T)) {
             .Int => {
@@ -825,7 +825,7 @@ fn decode_varint_value(comptime T: type, comptime varint_type: VarintType, raw: 
                 else => @compileError("Invalid type " ++ @typeName(T) ++ " passed"),
             },
             .Bool => raw != 0,
-            .Enum => if ((raw >> 32) != 0)
+            .Enum => if (raw > std.math.maxInt(u32))
                 error.InvalidInput
             else
                 @as(T, @enumFromInt(@as(i32, @bitCast(@as(u32, @intCast(raw)))))),
@@ -1755,6 +1755,12 @@ test "incorrect data - decode" {
 }
 
 test "incorrect data - simple varint" {
+    // Incorrectly serialized protobufs can place a varint with a decoded value
+    // greater than std.math.maxInt(u32) into the slot an enum is supposed to
+    // fill. Since this library represents a decoded varint as a u64 -- the max
+    // possible valid varint width -- that data can make its way deep into the
+    // decode_varint_value routine. This test checks that we handle such failures
+    // gracefully rather than panicking.
     const max_u64 = decode_varint_value(enum(i32) { a, b, c }, .Simple, (1 << 64) - 1);
     const barely_too_big = decode_varint_value(enum(i32) { a, b, c }, .Simple, 1 << 32);
 
