@@ -3,7 +3,6 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const Packed = @import("../../generated/tests.pb.zig").Packed;
 
-
 pub fn get(allocator: Allocator) !Packed {
     var instance = Packed.init(allocator);
 
