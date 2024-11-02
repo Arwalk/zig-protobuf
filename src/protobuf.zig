@@ -24,10 +24,10 @@ const UnionDecodingError = DecodingError || Allocator.Error;
 
 pub const ManagedStringTag = enum { Owned, Const, Empty };
 
-pub fn AllocatedStruct(T : type) type {
+pub fn AllocatedStruct(T: type) type {
     return struct {
-        allocator : Allocator,
-        v : *T,
+        allocator: Allocator,
+        v: *T,
 
         const Self = @This();
 
@@ -36,17 +36,12 @@ pub fn AllocatedStruct(T : type) type {
             self.allocator.destroy(self.v);
         }
 
-        pub fn init(allocator : Allocator) !Self {
-            const v = Self {
-                .allocator = allocator,
-                .v = try allocator.create(T)
-            };
+        pub fn init(allocator: Allocator) !Self {
+            const v = Self{ .allocator = allocator, .v = try allocator.create(T) };
             internal_init(T, v.v, allocator);
             return v;
         }
-
     };
-
 }
 
 pub const AllocatedString = struct { allocator: Allocator, str: []const u8 };
@@ -126,10 +121,7 @@ pub const ManagedString = union(ManagedStringTag) {
     }
 };
 
-pub const ManagedStructTag = enum {
-    Owned,
-    Managed
-};
+pub const ManagedStructTag = enum { Owned, Managed };
 
 pub fn ManagedStruct(T: type) type {
     return union(ManagedStructTag) {
@@ -141,12 +133,12 @@ pub fn ManagedStruct(T: type) type {
 
         const isZigProtobufManagedStruct = true;
 
-        pub fn managed(p : *T) ManagedStruct(T){
-            return ManagedStruct(T) {.Managed = p};
+        pub fn managed(p: *T) ManagedStruct(T) {
+            return ManagedStruct(T){ .Managed = p };
         }
 
-        pub fn move(p: *T, allocator : Allocator) ManagedStruct(T) {
-            return ManagedStruct(T) { .Owned = AllocatedStruct(T) {.allocator =  allocator, .v = p} };
+        pub fn move(p: *T, allocator: Allocator) ManagedStruct(T) {
+            return ManagedStruct(T){ .Owned = AllocatedStruct(T){ .allocator = allocator, .v = p } };
         }
 
         pub fn deinit(self: Self) void {
@@ -154,14 +146,12 @@ pub fn ManagedStruct(T: type) type {
                 .Owned => |it| {
                     it.deinit();
                 },
-                .Managed => {}
+                .Managed => {},
             }
         }
 
         pub fn init(allocator: Allocator) !Self {
-            return Self {
-                .Owned = try AllocatedStruct(T).init(allocator)
-            };
+            return Self{ .Owned = try AllocatedStruct(T).init(allocator) };
         }
 
         pub fn getConst(self: *const Self) *const T {
@@ -174,7 +164,7 @@ pub fn ManagedStruct(T: type) type {
         pub fn get(self: *Self) *T {
             return switch (self.*) {
                 .Managed => |it| it,
-                .Owned => |*it| it.v
+                .Owned => |*it| it.v,
             };
         }
     };
@@ -536,29 +526,33 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, c
 fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) Allocator.Error!void {
     const type_info_data = @typeInfo(@TypeOf(data));
     const data_type = switch (type_info_data) {
-        .Union => |_|  // ManagedStruct case
-            @typeInfo(@TypeOf(data.Managed)).Pointer.child,
-        else => @TypeOf(data) 
+        .Union => |_| // ManagedStruct case
+        @typeInfo(@TypeOf(data.Managed)).Pointer.child,
+        else => @TypeOf(data),
     };
     const field_list = @typeInfo(data_type).Struct.fields;
 
     inline for (field_list) |field| {
         if (@typeInfo(field.type) == .Optional) {
-            const temp = if(isZigProtobufManagedStruct(@TypeOf(data))) 
-                data.getConst() else data;
+            const temp = if (isZigProtobufManagedStruct(@TypeOf(data)))
+                data.getConst()
+            else
+                data;
             if (@field(temp, field.name)) |value| {
                 try append(pb, @field(data_type._desc_table, field.name), value, true);
             }
         } else {
-            const value = if(isZigProtobufManagedStruct(@TypeOf(data))) 
-                data.getConst() else data;
-            
+            const value = if (isZigProtobufManagedStruct(@TypeOf(data)))
+                data.getConst()
+            else
+                data;
+
             try internal_append(pb, data_type, field.name, value, false);
         }
     }
 }
 
-fn internal_append(pb: *ArrayList(u8), data_type : type, comptime field_name : []const u8, value : anytype, comptime force_append: bool) !void {
+fn internal_append(pb: *ArrayList(u8), data_type: type, comptime field_name: []const u8, value: anytype, comptime force_append: bool) !void {
     try append(pb, @field(data_type._desc_table, field_name), @field(value, field_name), force_append);
 }
 
@@ -612,7 +606,7 @@ inline fn internal_init(comptime T: type, value: *T, allocator: Allocator) void 
 /// Generic init function. Properly initialise any field required. Meant to be embedded in generated structs.
 pub fn pb_init(comptime T: type, allocator: Allocator) T {
     var value: T = undefined;
-    
+
     internal_init(T, &value, allocator);
 
     return value;
@@ -1146,11 +1140,11 @@ inline fn is_tag_known(comptime field_desc: FieldDescriptor, tag_to_check: Extra
     return false;
 }
 
-fn getRootType(T : type) type {
+fn getRootType(T: type) type {
     return switch (@typeInfo(T)) {
         .Struct => |_| T,
         .Union => |_| T.UnderlyingType,
-        else => @compileError("should only have a struct or union (managed struct) here")
+        else => @compileError("should only have a struct or union (managed struct) here"),
     };
 }
 
@@ -1161,19 +1155,15 @@ fn DecodingContext(T: type, rootType: type) type {
         const Self = @This();
 
         pub fn init(allocator: Allocator) !Self {
-            if(isZigProtobufManagedStruct(T)) {
-                return Self {.result = try T.init(allocator) };
-                
+            if (isZigProtobufManagedStruct(T)) {
+                return Self{ .result = try T.init(allocator) };
             } else {
-                return Self {
-                    .result = pb_init(T, allocator)
-                };
+                return Self{ .result = pb_init(T, allocator) };
             }
-        
         }
 
         pub fn getTarget(self: *Self) *rootType {
-            if(isZigProtobufManagedStruct(T)) {
+            if (isZigProtobufManagedStruct(T)) {
                 return self.result.get();
             } else {
                 return &self.result;
