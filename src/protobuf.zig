@@ -120,6 +120,8 @@ pub fn ManagedStruct(T: type) type {
 
         const Self = @This();
 
+        const isZigProtobufManagedStruct = true;
+
         pub fn managed(p : *const T) ManagedStruct(T){
             return ManagedStruct(T) {.Managed = p};
         }
@@ -129,8 +131,7 @@ pub fn ManagedStruct(T: type) type {
         }
 
         pub fn deinit(self: *Self) void {
-            const item : ManagedStruct(T) = self.*;
-            switch (item) {
+            switch (self.*) {
                 .Owned => |it| {
                     it.allocator.free(it.v);
                 },
@@ -139,13 +140,17 @@ pub fn ManagedStruct(T: type) type {
         }
 
         pub fn getConst(self: *const Self) *const T {
-            const item : ManagedStruct(T) = self.*;
-            return switch (item) {
+            return switch (self.*) {
                 .Managed => &self.Managed.*,
                 .Owned => |it| it.v,
             };
         }
     };
+}
+
+// this has to be inlined else managedStruct functions resolution breaks.
+inline fn isZigProtobufManagedStruct(T: type) bool {
+    return @hasDecl(T, "isZigProtobufManagedStruct");
 }
 
 /// Enum describing the different field types available.
@@ -507,13 +512,13 @@ fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) Allocator.Error!void {
 
     inline for (field_list) |field| {
         if (@typeInfo(field.type) == .Optional) {
-            const temp = if(hasFn(@TypeOf(data), "getConst")) 
+            const temp = if(isZigProtobufManagedStruct(@TypeOf(data))) 
                 data.getConst() else data;
             if (@field(temp, field.name)) |value| {
                 try append(pb, @field(data_type._desc_table, field.name), value, true);
             }
         } else {
-            const value = if(hasFn(@TypeOf(data), "getConst")) 
+            const value = if(isZigProtobufManagedStruct(@TypeOf(data))) 
                 data.getConst() else data;
             
             try internal_append(pb, data_type, field.name, value, false);
