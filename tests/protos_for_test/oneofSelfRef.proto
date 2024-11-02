@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package oneofselfref;
+
+message Result {
+  int32 version = 1;
+  Node node = 2;
+}
+
+message Node {
+  oneof node {
+    SubNode sub_node = 1;
+    string some_string = 2;
+  }
+}
+
+message SubNode {
+  Node sub = 1;
+  string another_string = 2;
+}

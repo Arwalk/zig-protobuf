@@ -23,6 +23,27 @@ const UnionDecodingError = DecodingError || Allocator.Error;
 
 pub const ManagedStringTag = enum { Owned, Const, Empty };
 
+/// This structure is used by ManagedStruct to hold a T allocated.
+fn AllocatedStruct(T: type) type {
+    return struct {
+        allocator: Allocator,
+        v: *T,
+
+        const Self = @This();
+
+        pub fn deinit(self: Self) void {
+            self.v.deinit();
+            self.allocator.destroy(self.v);
+        }
+
+        pub fn init(allocator: Allocator) !Self {
+            const v = Self{ .allocator = allocator, .v = try allocator.create(T) };
+            internal_init(T, v.v, allocator);
+            return v;
+        }
+    };
+}
+
 pub const AllocatedString = struct { allocator: Allocator, str: []const u8 };
 
 pub const ManagedString = union(ManagedStringTag) {
@@ -100,6 +121,69 @@ pub const ManagedString = union(ManagedStringTag) {
     }
 };
 
+pub const ManagedStructTag = enum { Owned, Borrowed };
+
+pub fn ManagedStruct(T: type) type {
+    return union(ManagedStructTag) {
+        const Self = @This();
+        const UnderlyingType = T;
+        const AllocatedType = AllocatedStruct(T);
+
+        Owned: AllocatedType,
+        Borrowed: *T,
+
+        /// This const's only purpose is to identify properly ManagedStructs.
+        const isZigProtobufManagedStruct = true;
+
+        /// Creates a ManagedStruct.Borrowed instance that has a pointer to an existing T, but do not take ownership of its memory.
+        ///
+        /// This means that a call to deinit on this instance will not free the memory associated with it. The original T's deinit() function must be called for that.
+        pub fn managed(p: *T) Self {
+            return Self{ .Borrowed = p };
+        }
+
+        /// Move the ownership of the pointer p and the allocator that allocated the T pointed by p to a new ManagedStruct.Owned instance.
+        ///
+        /// This means that a call to deinit on this instance will free the memory associated with it.
+        pub fn move(p: *T, allocator: Allocator) Self {
+            return Self{ .Owned = AllocatedType{ .allocator = allocator, .v = p } };
+        }
+
+        pub fn deinit(self: Self) void {
+            switch (self) {
+                .Owned => |it| {
+                    it.deinit();
+                },
+                .Borrowed => {},
+            }
+        }
+
+        /// Creates a new Managestruct.Owned instance using the allocator provided.
+        pub fn init(allocator: Allocator) !Self {
+            return Self{ .Owned = try AllocatedType.init(allocator) };
+        }
+
+        pub fn get(self: Self) T {
+            return switch (self) {
+                .Borrowed => self.Borrowed.*,
+                .Owned => |it| it.v.*,
+            };
+        }
+
+        pub fn getPointer(self: *Self) *T {
+            return switch (self.*) {
+                .Borrowed => |it| it,
+                .Owned => |*it| it.v,
+            };
+        }
+    };
+}
+
+// this has to be inlined else managedStruct functions resolution breaks.
+inline fn isZigProtobufManagedStruct(T: type) bool {
+    return @hasDecl(T, "isZigProtobufManagedStruct");
+}
+
 /// Enum describing the different field types available.
 pub const FieldTypeTag = enum { Varint, FixedInt, SubMessage, String, Bytes, List, PackedList, OneOf };
 
@@ -168,7 +252,7 @@ pub fn fd(comptime field_number: ?u32, comptime ftype: FieldType) FieldDescripto
 /// Appends an unsigned varint value.
 /// Awaits a u64 value as it's the biggest unsigned varint possible,
 // so anything can be cast to it by definition
-fn append_raw_varint(pb: *ArrayList(u8), value: u64) !void {
+fn append_raw_varint(pb: *ArrayList(u8), value: u64) Allocator.Error!void {
     var copy = value;
     while (copy > 0x7F) {
         try pb.append(0x80 + @as(u8, @intCast(copy & 0x7F)));
@@ -180,7 +264,7 @@ fn append_raw_varint(pb: *ArrayList(u8), value: u64) !void {
 /// Inserts a varint into the pb at start_index
 /// Mostly useful when inserting the size of a field after it has been
 /// Appended to the pb buffer.
-fn insert_raw_varint(pb: *ArrayList(u8), size: u64, start_index: usize) !void {
+fn insert_raw_varint(pb: *ArrayList(u8), size: u64, start_index: usize) Allocator.Error!void {
     if (size < 0x7F) {
         try pb.insert(start_index, @as(u8, @truncate(size)));
     } else {
@@ -197,7 +281,7 @@ fn insert_raw_varint(pb: *ArrayList(u8), size: u64, start_index: usize) !void {
 /// Appends a varint to the pb array.
 /// Mostly does the required transformations to use append_raw_varint
 /// after making the value some kind of unsigned value.
-fn append_as_varint(pb: *ArrayList(u8), int: anytype, comptime varint_type: VarintType) !void {
+fn append_as_varint(pb: *ArrayList(u8), int: anytype, comptime varint_type: VarintType) Allocator.Error!void {
     const type_of_val = @TypeOf(int);
     const bitsize = @bitSizeOf(type_of_val);
     const val: u64 = blk: {
@@ -220,7 +304,7 @@ fn append_as_varint(pb: *ArrayList(u8), int: anytype, comptime varint_type: Vari
 
 /// Append a value of any complex type that can be transfered as a varint
 /// Only serves as an indirection to manage Enum and Booleans properly.
-fn append_varint(pb: *ArrayList(u8), value: anytype, comptime varint_type: VarintType) !void {
+fn append_varint(pb: *ArrayList(u8), value: anytype, comptime varint_type: VarintType) Allocator.Error!void {
     switch (@typeInfo(@TypeOf(value))) {
         .Enum => try append_as_varint(pb, @as(i32, @intFromEnum(value)), varint_type),
         .Bool => try append_as_varint(pb, @as(u8, if (value) 1 else 0), varint_type),
@@ -230,7 +314,7 @@ fn append_varint(pb: *ArrayList(u8), value: anytype, comptime varint_type: Varin
 
 /// Appends a fixed size int to the pb buffer.
 /// Takes care of casting any signed/float value to an appropriate unsigned type
-fn append_fixed(pb: *ArrayList(u8), value: anytype) !void {
+fn append_fixed(pb: *ArrayList(u8), value: anytype) Allocator.Error!void {
     const bitsize = @bitSizeOf(@TypeOf(value));
 
     var as_unsigned_int = switch (@TypeOf(value)) {
@@ -249,7 +333,7 @@ fn append_fixed(pb: *ArrayList(u8), value: anytype) !void {
 
 /// Appends a submessage to the array.
 /// Recursively calls internal_pb_encode.
-fn append_submessage(pb: *ArrayList(u8), value: anytype) !void {
+fn append_submessage(pb: *ArrayList(u8), value: anytype) Allocator.Error!void {
     const len_index = pb.items.len;
     try internal_pb_encode(pb, value);
     const size_encoded = pb.items.len - len_index;
@@ -257,14 +341,14 @@ fn append_submessage(pb: *ArrayList(u8), value: anytype) !void {
 }
 
 /// Simple appending of a list of bytes.
-fn append_const_bytes(pb: *ArrayList(u8), value: ManagedString) !void {
+fn append_const_bytes(pb: *ArrayList(u8), value: ManagedString) Allocator.Error!void {
     const slice = value.getSlice();
     try append_as_varint(pb, slice.len, .Simple);
     try pb.appendSlice(slice);
 }
 
 /// simple appending of a list of fixed-size data.
-fn append_packed_list_of_fixed(pb: *ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) !void {
+fn append_packed_list_of_fixed(pb: *ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) Allocator.Error!void {
     if (value_list.items.len > 0) {
         // first append the tag for the field descriptor
         try append_tag(pb, field);
@@ -282,7 +366,7 @@ fn append_packed_list_of_fixed(pb: *ArrayList(u8), comptime field: FieldDescript
 }
 
 /// Appends a list of varint to the pb buffer.
-fn append_packed_list_of_varint(pb: *ArrayList(u8), value_list: anytype, comptime field: FieldDescriptor, comptime varint_type: VarintType) !void {
+fn append_packed_list_of_varint(pb: *ArrayList(u8), value_list: anytype, comptime field: FieldDescriptor, comptime varint_type: VarintType) Allocator.Error!void {
     if (value_list.items.len > 0) {
         try append_tag(pb, field);
         const len_index = pb.items.len;
@@ -295,7 +379,7 @@ fn append_packed_list_of_varint(pb: *ArrayList(u8), value_list: anytype, comptim
 }
 
 /// Appends a list of submessages to the pb_buffer. Sequentially, prepending the tag of each message.
-fn append_list_of_submessages(pb: *ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) !void {
+fn append_list_of_submessages(pb: *ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) Allocator.Error!void {
     for (value_list.items) |item| {
         try append_tag(pb, field);
         try append_submessage(pb, item);
@@ -303,7 +387,7 @@ fn append_list_of_submessages(pb: *ArrayList(u8), comptime field: FieldDescripto
 }
 
 /// Appends a packed list of string to the pb_buffer.
-fn append_packed_list_of_strings(pb: *ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) !void {
+fn append_packed_list_of_strings(pb: *ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) Allocator.Error!void {
     if (value_list.items.len > 0) {
         try append_tag(pb, field);
 
@@ -317,7 +401,7 @@ fn append_packed_list_of_strings(pb: *ArrayList(u8), comptime field: FieldDescri
 }
 
 /// Appends the full tag of the field in the pb buffer, if there is any.
-fn append_tag(pb: *ArrayList(u8), comptime field: FieldDescriptor) !void {
+fn append_tag(pb: *ArrayList(u8), comptime field: FieldDescriptor) Allocator.Error!void {
     const tag_value = (field.field_number.? << 3) | field.ftype.get_wirevalue();
     try append_varint(pb, tag_value, .Simple);
 }
@@ -328,7 +412,7 @@ fn append_tag(pb: *ArrayList(u8), comptime field: FieldDescriptor) !void {
 /// force_append is set to true if the field needs to be appended regardless of having the default value.
 ///   it is used when an optional int/bool with value zero need to be encoded. usually value==0 are not written, but optionals
 ///   require its presence to differentiate 0 from "null"
-fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, comptime force_append: bool) !void {
+fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, comptime force_append: bool) Allocator.Error!void {
 
     // TODO: review semantics of default-value in regards to wire protocol
     const is_default_scalar_value = switch (@typeInfo(@TypeOf(value))) {
@@ -422,19 +506,37 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, c
 
 /// Internal function that decodes the descriptor information and struct fields
 /// before passing them to the append function
-fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) !void {
-    const field_list = @typeInfo(@TypeOf(data)).Struct.fields;
-    const data_type = @TypeOf(data);
+fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) Allocator.Error!void {
+    const type_info_data = @typeInfo(@TypeOf(data));
+    const data_type = switch (type_info_data) {
+        .Union => |_| // ManagedStruct case
+        @typeInfo(@TypeOf(data.Borrowed)).Pointer.child,
+        else => @TypeOf(data),
+    };
+    const field_list = @typeInfo(data_type).Struct.fields;
 
     inline for (field_list) |field| {
         if (@typeInfo(field.type) == .Optional) {
-            if (@field(data, field.name)) |value| {
+            const temp = if (isZigProtobufManagedStruct(@TypeOf(data)))
+                data.get()
+            else
+                data;
+            if (@field(temp, field.name)) |value| {
                 try append(pb, @field(data_type._desc_table, field.name), value, true);
             }
         } else {
-            try append(pb, @field(data_type._desc_table, field.name), @field(data, field.name), false);
+            const value = if (isZigProtobufManagedStruct(@TypeOf(data)))
+                data.get()
+            else
+                data;
+
+            try internal_append(pb, data_type, field.name, value, false);
         }
     }
+}
+
+fn internal_append(pb: *ArrayList(u8), data_type: type, comptime field_name: []const u8, value: anytype, comptime force_append: bool) !void {
+    try append(pb, @field(data_type._desc_table, field_name), @field(value, field_name), force_append);
 }
 
 /// Public encoding function, meant to be embdedded in generated structs
@@ -461,9 +563,7 @@ fn get_field_default_value(comptime for_type: anytype) for_type {
     };
 }
 
-/// Generic init function. Properly initialise any field required. Meant to be embedded in generated structs.
-pub fn pb_init(comptime T: type, allocator: Allocator) T {
-    var value: T = undefined;
+inline fn internal_init(comptime T: type, value: *T, allocator: Allocator) void {
     inline for (@typeInfo(T).Struct.fields) |field| {
         switch (@field(T._desc_table, field.name).ftype) {
             .String, .Varint, .FixedInt, .Bytes => {
@@ -484,6 +584,13 @@ pub fn pb_init(comptime T: type, allocator: Allocator) T {
             },
         }
     }
+}
+
+/// Generic init function. Properly initialise any field required. Meant to be embedded in generated structs.
+pub fn pb_init(comptime T: type, allocator: Allocator) T {
+    var value: T = undefined;
+
+    internal_init(T, &value, allocator);
 
     return value;
 }
@@ -577,7 +684,7 @@ fn deinit_field(result: anytype, comptime field_name: []const u8, comptime ftype
         .SubMessage => {
             switch (@typeInfo(@TypeOf(@field(result, field_name)))) {
                 .Optional => {
-                    if (@field(result, field_name)) |submessage| {
+                    if (@field(result, field_name)) |*submessage| {
                         submessage.deinit();
                     }
                 },
@@ -979,25 +1086,57 @@ inline fn is_tag_known(comptime field_desc: FieldDescriptor, tag_to_check: Extra
     return false;
 }
 
+fn getRootType(T: type) type {
+    return if (isZigProtobufManagedStruct(T))
+        T.UnderlyingType
+    else
+        return T;
+}
+
+fn DecodingContext(T: type) type {
+    return struct {
+        result: T,
+
+        const Self = @This();
+        const rootType = getRootType(T);
+
+        pub fn init(allocator: Allocator) !Self {
+            return if (isZigProtobufManagedStruct(T))
+                Self{ .result = try T.init(allocator) }
+            else
+                Self{ .result = pb_init(T, allocator) };
+        }
+
+        pub fn getTarget(self: *Self) *rootType {
+            return if (isZigProtobufManagedStruct(T))
+                self.result.getPointer()
+            else
+                return &self.result;
+        }
+    };
+}
+
 /// public decoding function meant to be embedded in message structures
 /// Iterates over the input and try to fill the resulting structure accordingly.
-pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) !T {
-    var result = pb_init(T, allocator);
+pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) UnionDecodingError!T {
+    const ContextType = DecodingContext(T);
+    var context = try ContextType.init(allocator);
 
     var iterator = WireDecoderIterator{ .input = input };
 
     while (try iterator.next()) |extracted_data| {
-        inline for (@typeInfo(T).Struct.fields) |field| {
-            const v = @field(T._desc_table, field.name);
+        const rootType = getRootType(T);
+        inline for (@typeInfo(rootType).Struct.fields) |field| {
+            const v = @field(rootType._desc_table, field.name);
             if (is_tag_known(v, extracted_data)) {
-                break try decode_data(T, v, field, &result, extracted_data, allocator);
+                break try decode_data(rootType, v, field, context.getTarget(), extracted_data, allocator);
             }
         } else {
             log.debug("Unknown field received in {s} {any}\n", .{ @typeName(T), extracted_data.tag });
         }
     }
 
-    return result;
+    return context.result;
 }
 
 fn freeAllocated(allocator: Allocator, token: json.Token) void {
