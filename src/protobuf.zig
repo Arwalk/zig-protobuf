@@ -27,8 +27,16 @@ pub const ManagedStringTag = enum { Owned, Const, Empty };
 pub fn AllocatedStruct(T : type) type {
     return struct {
         allocator : Allocator,
-        v : *T
+        v : *T,
+
+        const Self = @This();
+
+        pub fn deinit(self: Self) void {
+            self.v.deinit();
+        }
+
     };
+
 }
 
 pub const AllocatedString = struct { allocator: Allocator, str: []const u8 };
@@ -116,13 +124,13 @@ pub const ManagedStructTag = enum {
 pub fn ManagedStruct(T: type) type {
     return union(ManagedStructTag) {
         Owned: AllocatedStruct(T),
-        Managed: *const T,
+        Managed: *T,
 
         const Self = @This();
 
         const isZigProtobufManagedStruct = true;
 
-        pub fn managed(p : *const T) ManagedStruct(T){
+        pub fn managed(p : *T) ManagedStruct(T){
             return ManagedStruct(T) {.Managed = p};
         }
 
@@ -130,10 +138,10 @@ pub fn ManagedStruct(T: type) type {
             return ManagedStruct(T) { .Owned = AllocatedStruct(T) {.allocator =  allocator, .v = p} };
         }
 
-        pub fn deinit(self: *Self) void {
-            switch (self.*) {
+        pub fn deinit(self: Self) void {
+            switch (self) {
                 .Owned => |it| {
-                    it.allocator.free(it.v);
+                    it.deinit();
                 },
                 .Managed => {}
             }
@@ -673,7 +681,7 @@ fn deinit_field(result: anytype, comptime field_name: []const u8, comptime ftype
         .SubMessage => {
             switch (@typeInfo(@TypeOf(@field(result, field_name)))) {
                 .Optional => {
-                    if (@field(result, field_name)) |submessage| {
+                    if (@field(result, field_name)) |*submessage| {
                         submessage.deinit();
                     }
                 },

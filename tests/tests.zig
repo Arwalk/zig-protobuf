@@ -90,12 +90,16 @@ test "self ref test" {
     var demo2 = SelfRefNode.init(testing.allocator);
     demo2.version = 1;
     demo.node = ManagedStruct(SelfRefNode).managed(&demo2);
+    defer demo.deinit();
 
     try testing.expectEqual(@as(i32, 0), demo.version);
     const encoded = try demo.encode(testing.allocator);
     defer testing.allocator.free(encoded);
 
     try testing.expectEqualSlices(u8, &[_]u8{0x12, 0x02, 0x08, 0x01}, encoded);
+
+    //const decoded = try SelfRefNode.decode(encoded, testing.allocator);
+    //defer decoded.deinit();
 }
 
 // TODO: check for cyclic structure
