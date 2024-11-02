@@ -1150,11 +1150,10 @@ inline fn is_tag_known(comptime field_desc: FieldDescriptor, tag_to_check: Extra
 }
 
 fn getRootType(T: type) type {
-    if (isZigProtobufManagedStruct(T)) {
-        return T.UnderlyingType;
-    } else {
+    return if (isZigProtobufManagedStruct(T))
+        T.UnderlyingType
+    else
         return T;
-    }
 }
 
 fn DecodingContext(T: type) type {
@@ -1165,19 +1164,17 @@ fn DecodingContext(T: type) type {
         const rootType = getRootType(T);
 
         pub fn init(allocator: Allocator) !Self {
-            if (isZigProtobufManagedStruct(T)) {
-                return Self{ .result = try T.init(allocator) };
-            } else {
-                return Self{ .result = pb_init(T, allocator) };
-            }
+            return if (isZigProtobufManagedStruct(T))
+                Self{ .result = try T.init(allocator) }
+            else
+                Self{ .result = pb_init(T, allocator) };
         }
 
         pub fn getTarget(self: *Self) *rootType {
-            if (isZigProtobufManagedStruct(T)) {
-                return self.result.getPointer();
-            } else {
+            return if (isZigProtobufManagedStruct(T))
+                self.result.getPointer()
+            else
                 return &self.result;
-            }
         }
     };
 }

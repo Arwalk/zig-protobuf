@@ -69,7 +69,7 @@ test "LogsData proto issue #84" {
     defer std.testing.allocator.free(bytes);
 }
 
-const SelfRefNode = selfref.SelfRefNode;
+//const SelfRefNode = selfref.SelfRefNode;
 const ManagedStruct = protobuf.ManagedStruct;
 
 pub const SelfRefNode = struct {
