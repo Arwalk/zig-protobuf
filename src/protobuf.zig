@@ -129,7 +129,8 @@ pub fn ManagedStruct(T: type) type {
         }
 
         pub fn deinit(self: *Self) void {
-            switch (self) {
+            const item : ManagedStruct(T) = self.*;
+            switch (item) {
                 .Owned => |it| {
                     it.allocator.free(it.v);
                 },
@@ -137,11 +138,11 @@ pub fn ManagedStruct(T: type) type {
             }
         }
 
-        pub fn get(self: *const Self) *T {
-            return switch (self) {
+        pub fn getConst(self: *const Self) *const T {
+            const item : ManagedStruct(T) = self.*;
+            return switch (item) {
+                .Managed => &self.Managed.*,
                 .Owned => |it| it.v,
-                .Managed => self.Managed.*,
-                else => unreachable
             };
         }
     };
@@ -506,14 +507,14 @@ fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) Allocator.Error!void {
 
     inline for (field_list) |field| {
         if (@typeInfo(field.type) == .Optional) {
-            const temp = if(hasFn(@TypeOf(data), "get")) 
-                data.get() else data;
+            const temp = if(hasFn(@TypeOf(data), "getConst")) 
+                data.getConst() else data;
             if (@field(temp, field.name)) |value| {
                 try append(pb, @field(data_type._desc_table, field.name), value, true);
             }
         } else {
-            const value = if(hasFn(@TypeOf(data), "get")) 
-                data.get() else data;
+            const value = if(hasFn(@TypeOf(data), "getConst")) 
+                data.getConst() else data;
             
             try internal_append(pb, data_type, field.name, value, false);
         }
