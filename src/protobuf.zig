@@ -7,7 +7,6 @@ const json = std.json;
 const base64 = std.base64;
 const base64Errors = std.base64.Error;
 const ParseFromValueError = std.json.ParseFromValueError;
-const hasFn = std.meta.hasFn;
 
 const log = std.log.scoped(.zig_protobuf);
 
@@ -24,7 +23,8 @@ const UnionDecodingError = DecodingError || Allocator.Error;
 
 pub const ManagedStringTag = enum { Owned, Const, Empty };
 
-pub fn AllocatedStruct(T: type) type {
+/// This structure is used by ManagedStruct to hold a T allocated.
+fn AllocatedStruct(T: type) type {
     return struct {
         allocator: Allocator,
         v: *T,
@@ -121,24 +121,32 @@ pub const ManagedString = union(ManagedStringTag) {
     }
 };
 
-pub const ManagedStructTag = enum { Owned, Managed };
+pub const ManagedStructTag = enum { Owned, Borrowed };
 
 pub fn ManagedStruct(T: type) type {
     return union(ManagedStructTag) {
-        Owned: AllocatedStruct(T),
-        Managed: *T,
-
         const Self = @This();
         const UnderlyingType = T;
+        const AllocatedType = AllocatedStruct(T);
 
+        Owned: AllocatedType,
+        Borrowed: *T,
+
+        /// This const's only purpose is to identify properly ManagedStructs.
         const isZigProtobufManagedStruct = true;
 
-        pub fn managed(p: *T) ManagedStruct(T) {
-            return ManagedStruct(T){ .Managed = p };
+        /// Creates a ManagedStruct.Borrowed instance that has a pointer to an existing T, but do not take ownership of its memory.
+        ///
+        /// This means that a call to deinit on this instance will not free the memory associated with it. The original T's deinit() function must be called for that.
+        pub fn managed(p: *T) Self {
+            return Self{ .Borrowed = p };
         }
 
-        pub fn move(p: *T, allocator: Allocator) ManagedStruct(T) {
-            return ManagedStruct(T){ .Owned = AllocatedStruct(T){ .allocator = allocator, .v = p } };
+        /// Move the ownership of the pointer p and the allocator that allocated the T pointed by p to a new ManagedStruct.Owned instance.
+        ///
+        /// This means that a call to deinit on this instance will free the memory associated with it.
+        pub fn move(p: *T, allocator: Allocator) Self {
+            return Self{ .Owned = AllocatedType{ .allocator = allocator, .v = p } };
         }
 
         pub fn deinit(self: Self) void {
@@ -146,24 +154,25 @@ pub fn ManagedStruct(T: type) type {
                 .Owned => |it| {
                     it.deinit();
                 },
-                .Managed => {},
+                .Borrowed => {},
             }
         }
 
+        /// Creates a new Managestruct.Owned instance using the allocator provided.
         pub fn init(allocator: Allocator) !Self {
-            return Self{ .Owned = try AllocatedStruct(T).init(allocator) };
+            return Self{ .Owned = try AllocatedType.init(allocator) };
         }
 
-        pub fn getConst(self: *const Self) *const T {
-            return switch (self.*) {
-                .Managed => &self.Managed.*,
-                .Owned => |it| it.v,
+        pub fn get(self: Self) T {
+            return switch (self) {
+                .Borrowed => self.Borrowed.*,
+                .Owned => |it| it.v.*,
             };
         }
 
-        pub fn get(self: *Self) *T {
+        pub fn getPointer(self: *Self) *T {
             return switch (self.*) {
-                .Managed => |it| it,
+                .Borrowed => |it| it,
                 .Owned => |*it| it.v,
             };
         }
@@ -527,7 +536,7 @@ fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) Allocator.Error!void {
     const type_info_data = @typeInfo(@TypeOf(data));
     const data_type = switch (type_info_data) {
         .Union => |_| // ManagedStruct case
-        @typeInfo(@TypeOf(data.Managed)).Pointer.child,
+        @typeInfo(@TypeOf(data.Borrowed)).Pointer.child,
         else => @TypeOf(data),
     };
     const field_list = @typeInfo(data_type).Struct.fields;
@@ -535,7 +544,7 @@ fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) Allocator.Error!void {
     inline for (field_list) |field| {
         if (@typeInfo(field.type) == .Optional) {
             const temp = if (isZigProtobufManagedStruct(@TypeOf(data)))
-                data.getConst()
+                data.get()
             else
                 data;
             if (@field(temp, field.name)) |value| {
@@ -543,7 +552,7 @@ fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) Allocator.Error!void {
             }
         } else {
             const value = if (isZigProtobufManagedStruct(@TypeOf(data)))
-                data.getConst()
+                data.get()
             else
                 data;
 
@@ -1141,18 +1150,19 @@ inline fn is_tag_known(comptime field_desc: FieldDescriptor, tag_to_check: Extra
 }
 
 fn getRootType(T: type) type {
-    return switch (@typeInfo(T)) {
-        .Struct => |_| T,
-        .Union => |_| T.UnderlyingType,
-        else => @compileError("should only have a struct or union (managed struct) here"),
-    };
+    if (isZigProtobufManagedStruct(T)) {
+        return T.UnderlyingType;
+    } else {
+        return T;
+    }
 }
 
-fn DecodingContext(T: type, rootType: type) type {
+fn DecodingContext(T: type) type {
     return struct {
         result: T,
 
         const Self = @This();
+        const rootType = getRootType(T);
 
         pub fn init(allocator: Allocator) !Self {
             if (isZigProtobufManagedStruct(T)) {
@@ -1164,7 +1174,7 @@ fn DecodingContext(T: type, rootType: type) type {
 
         pub fn getTarget(self: *Self) *rootType {
             if (isZigProtobufManagedStruct(T)) {
-                return self.result.get();
+                return self.result.getPointer();
             } else {
                 return &self.result;
             }
@@ -1175,7 +1185,7 @@ fn DecodingContext(T: type, rootType: type) type {
 /// public decoding function meant to be embedded in message structures
 /// Iterates over the input and try to fill the resulting structure accordingly.
 pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) UnionDecodingError!T {
-    const ContextType = DecodingContext(T, getRootType(T));
+    const ContextType = DecodingContext(T);
     var context = try ContextType.init(allocator);
 
     var iterator = WireDecoderIterator{ .input = input };

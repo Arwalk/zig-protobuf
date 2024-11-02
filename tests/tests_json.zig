@@ -985,3 +985,11 @@ test "JSON: decode TestPackedTypes (repeated NaNs/infs)" {
 
     try expect(compare_pb_structs(pb_instance, decoded.value));
 }
+
+test "JSON: decode selfref structs" {
+    // TODO
+}
+
+test "JSON: encode selfref structs" {
+    // TODO
+}
