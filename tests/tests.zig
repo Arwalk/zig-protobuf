@@ -98,8 +98,10 @@ test "self ref test" {
 
     try testing.expectEqualSlices(u8, &[_]u8{0x12, 0x02, 0x08, 0x01}, encoded);
 
-    //const decoded = try SelfRefNode.decode(encoded, testing.allocator);
-    //defer decoded.deinit();
+    const decoded = try SelfRefNode.decode(encoded, testing.allocator);
+    defer decoded.deinit();
+
+    try testing.expectEqual(@as(i32, 1), decoded.node.?.getConst().*.version);
 }
 
 // TODO: check for cyclic structure
