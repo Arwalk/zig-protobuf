@@ -101,7 +101,7 @@ test "self ref test" {
     const decoded = try SelfRefNode.decode(encoded, testing.allocator);
     defer decoded.deinit();
 
-    try testing.expectEqual(@as(i32, 1), decoded.node.?.getConst().*.version);
+    try testing.expectEqual(@as(i32, 1), decoded.node.?.get().version);
 }
 
 // TODO: check for cyclic structure
