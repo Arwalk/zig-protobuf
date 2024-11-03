@@ -1222,7 +1222,7 @@ pub fn pb_json_encode(
     return try json.stringifyAlloc(allocator, data, options);
 }
 
-fn to_camel_case(not_camel_cased_string: []const u8) []const u8 {
+fn to_camel_case(comptime not_camel_cased_string: []const u8) []const u8 {
     comptime var capitalize_next_letter = false;
     comptime var camel_cased_string: []const u8 = "";
     comptime var i: usize = 0;
@@ -1248,6 +1248,11 @@ fn to_camel_case(not_camel_cased_string: []const u8) []const u8 {
     }
 
     return camel_cased_string;
+}
+
+test "to_camel_case" {
+    try std.testing.expectEqualStrings("helloWorld", to_camel_case("hello_world"));
+    try std.testing.expectEqualStrings("helloWorld", to_camel_case("_hello_world"));
 }
 
 fn print_numeric(value: anytype, jws: anytype) !void {
@@ -1592,6 +1597,26 @@ pub fn MessageMixins(comptime Self: type) type {
             try jws.endObject();
         }
     };
+}
+
+test "json decode" {
+    const myType = struct {
+        a: i32 = 0,
+        b: ManagedString = .Empty,
+
+        pub const _desc_table = .{
+            .a = fd(1, .{ .FixedInt = .I32 }),
+            .b = fd(2, .String),
+        };
+
+        pub usingnamespace MessageMixins(@This());
+    };
+
+    const s = try MessageMixins(myType).json_decode("{\"a\": 1, \"b\": \"Hello World\"}", .{}, std.testing.allocator);
+    defer s.deinit();
+
+    try std.testing.expectEqual(s.value.a, 1);
+    try std.testing.expectEqualStrings(s.value.b.getSlice(), "Hello World");
 }
 
 test "get varint" {
