@@ -1243,7 +1243,8 @@ fn to_camel_case(not_camel_cased_string: []const u8) []const u8 {
     }
 
     if (comptime std.ascii.isUpper(camel_cased_string[0])) {
-        camel_cased_string[0] = std.ascii.toLower(camel_cased_string[0]);
+        const lower = [_]u8{std.ascii.toLower(camel_cased_string[0])};
+        return lower[0..1] ++ camel_cased_string[1..];
     }
 
     return camel_cased_string;
