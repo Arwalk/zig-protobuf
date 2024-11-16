@@ -207,7 +207,7 @@ fn append_as_varint(pb: *ArrayList(u8), int: anytype, comptime varint_type: Vari
                     break :blk @as(u64, @intCast((int >> (bitsize - 1)) ^ (int << 1)));
                 },
                 .Simple => {
-                    break :blk @as(std.meta.Int(.unsigned, bitsize), @bitCast(int));
+                    break :blk @bitCast(@as(i64, @intCast(int)));
                 },
             }
         } else {
@@ -821,7 +821,8 @@ fn decode_varint_value(comptime T: type, comptime varint_type: VarintType, raw: 
         .Simple => switch (@typeInfo(T)) {
             .Int => switch (T) {
                 u8, u16, u32, u64 => @as(T, @intCast(raw)),
-                i32, i64 => @as(T, @bitCast(@as(std.meta.Int(.unsigned, @bitSizeOf(T)), @truncate(raw)))),
+                i64 => @as(T, @bitCast(raw)),
+                i32 => std.math.cast(i32, @as(i64, @bitCast(raw))) orelse error.InvalidInput,
                 else => @compileError("Invalid type " ++ @typeName(T) ++ " passed"),
             },
             .Bool => raw != 0,
