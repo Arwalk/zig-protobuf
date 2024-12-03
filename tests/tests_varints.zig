@@ -378,14 +378,8 @@ test "basic decoding" {
 }
 
 test "DemoWithAllVarint" {
-    var demo = tests.DemoWithAllVarint{ .sint32 = -1, .sint64 = -1, .uint32 = 150, .uint64 = 150, .a_bool = true, .a_enum = tests.DemoWithAllVarint.DemoEnum.AndAnother, .pos_int32 = 1, .pos_int64 = 2, .neg_int32 = -1, .neg_int64 = -2 };
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
-    // 0x08 , 0x96, 0x01
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x01, 0x10, 0x01, 0x18, 0x96, 0x01, 0x20, 0x96, 0x01, 0x28, 0x01, 0x30, 0x02, 0x38, 0x01, 0x40, 0x02, 0x48, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0x50, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01 }, obtained);
-
-    const decoded = try tests.DemoWithAllVarint.decode(obtained, testing.allocator);
-    try testing.expectEqual(demo, decoded);
+    const demo = tests.DemoWithAllVarint{ .sint32 = -1, .sint64 = -1, .uint32 = 150, .uint64 = 150, .a_bool = true, .a_enum = tests.DemoWithAllVarint.DemoEnum.AndAnother, .pos_int32 = 1, .pos_int64 = 2, .neg_int32 = -1, .neg_int64 = -2 };
+    try check(demo, "08011001189601209601280130023801400248ffffffffffffffffff0150feffffffffffffffff01");
 }
 
 test "basic encoding with negative numbers" {
@@ -394,7 +388,61 @@ test "basic encoding with negative numbers" {
     defer demo.deinit();
     defer testing.allocator.free(obtained);
     // 0x08
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x03, 0x10, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F }, obtained);
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x03, 0x10, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  0xFF, 0xFF, 0xFF, 0xFF, 0x01 }, obtained);
     const decoded = try tests.WithNegativeIntegers.decode(obtained, testing.allocator);
     try testing.expectEqual(demo, decoded);
+}
+
+fn check(object: anytype, expected: []const u8) !void {
+    defer object.deinit();
+
+    const obtained = try object.encode(testing.allocator);
+    defer testing.allocator.free(obtained);
+    const buffer = try testing.allocator.alloc(u8, expected.len);
+    defer testing.allocator.free(buffer);
+    const bytes = try std.fmt.hexToBytes(buffer, expected);
+
+    try testing.expectEqualSlices(u8, bytes, obtained);
+    const decoded = try @TypeOf(object).decode(obtained, testing.allocator);
+    try testing.expectEqual(object, decoded);
+}
+
+test "sint32, sint64, uint32, uint64 all to 1" {
+    const demo = tests.DemoWithAllVarint{ .sint32 = 1, .sint64 = 1, .uint32 = 1, .uint64 = 1 };
+    try check(demo, "0802100218012001");
+}
+
+test "sint32, sint64 to -1" {
+    const demo = tests.DemoWithAllVarint{ .sint32 = -1, .sint64 = -1 };
+    try check(demo, "08011001");
+}
+
+test "sint32, sint64, uint32, uint64 to their max value" {
+    const demo = tests.DemoWithAllVarint{ .sint32 = 0x7FFFFFFF, .sint64 = 0x7FFFFFFFFFFFFFFF, .uint32 = 0xFFFFFFFF, .uint64 = 0xFFFFFFFFFFFFFFFF };
+    try check(demo, "08feffffff0f10feffffffffffffffff0118ffffffff0f20ffffffffffffffffff01");
+}
+
+test "sint32, sint64 to their min value" {
+    const demo = tests.DemoWithAllVarint{ .sint32 = -2147483648, .sint64 = -9223372036854775808 };
+    try check(demo, "08feffffff0f10feffffffffffffffff0118ffffffff0f20ffffffffffffffffff01");
+}
+
+test "int32, int64 to their low boundaries (-1, 1)" {
+    const demo = tests.DemoWithAllVarint{
+        .pos_int32 = 1,
+        .pos_int64 = 1,
+        .neg_int32 = -1,
+        .neg_int64 = -1,
+    };
+    try check(demo, "3801400148ffffffffffffffffff0150ffffffffffffffffff01");
+}
+
+test "int32, int64 to their high boundaries (maxneg, maxpos)" {
+    const demo = tests.DemoWithAllVarint{
+        .pos_int32 = 0x7FFFFFFF,
+        .pos_int64 = 0x7FFFFFFFFFFFFFFF,
+        .neg_int32 = -2147483648,
+        .neg_int64 = -9223372036854775808,
+    };
+    try check(demo, "38ffffffff0740ffffffffffffffff7f4880808080f8ffffffff015080808080808080808001");
 }
