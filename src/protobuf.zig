@@ -194,17 +194,42 @@ fn insert_raw_varint(pb: *ArrayList(u8), size: u64, start_index: usize) Allocato
     }
 }
 
+fn encode_zig_zag(int: anytype) u64 {
+    const type_of_val = @TypeOf(int);
+    const to_int64 : i64 = switch (type_of_val) {
+        i32 => @intCast(int),
+        i64 => int,
+        else => @compileError("should not be here"),
+    };
+    const calc = (to_int64 << 1) ^ (to_int64 >> 63);
+    return @bitCast(calc);    
+}
+
+test "encode zig zag test" {
+    try testing.expectEqual(@as(u64, 0),encode_zig_zag(@as(i32, 0)));
+    try testing.expectEqual(@as(u64, 1),encode_zig_zag(@as(i32, -1)));
+    try testing.expectEqual(@as(u64, 2),encode_zig_zag(@as(i32, 1)));
+    try testing.expectEqual(@as(u64, 0xfffffffe),encode_zig_zag(@as(i32, std.math.maxInt(i32))));
+    try testing.expectEqual(@as(u64, 0xffffffff),encode_zig_zag(@as(i32, std.math.minInt(i32))));
+
+
+    try testing.expectEqual(@as(u64, 0),encode_zig_zag(@as(i64, 0)));
+    try testing.expectEqual(@as(u64, 1),encode_zig_zag(@as(i64, -1)));
+    try testing.expectEqual(@as(u64, 2),encode_zig_zag(@as(i64, 1)));
+    try testing.expectEqual(@as(u64, 0xfffffffffffffffe),encode_zig_zag(@as(i64, std.math.maxInt(i64))));
+    try testing.expectEqual(@as(u64, 0xffffffffffffffff),encode_zig_zag(@as(i64, std.math.minInt(i64))));
+}
+
 /// Appends a varint to the pb array.
 /// Mostly does the required transformations to use append_raw_varint
 /// after making the value some kind of unsigned value.
 fn append_as_varint(pb: *ArrayList(u8), int: anytype, comptime varint_type: VarintType) Allocator.Error!void {
     const type_of_val = @TypeOf(int);
-    const bitsize = @bitSizeOf(type_of_val);
     const val: u64 = blk: {
         if (@typeInfo(type_of_val).Int.signedness == .signed) {
             switch (varint_type) {
                 .ZigZagOptimized => {
-                    break :blk @as(u64, @intCast((int >> (bitsize - 1)) ^ (int << 1)));
+                    break :blk encode_zig_zag(int);
                 },
                 .Simple => {
                     break :blk @bitCast(@as(i64, @intCast(int)));
