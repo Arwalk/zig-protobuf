@@ -10,7 +10,7 @@ const allocator = std.heap.page_allocator;
 
 const string = []const u8;
 
-pub const std_options = .{ .log_scope_levels = &[_]std.log.ScopeLevel{.{ .level = .warn, .scope = .zig_protobuf }} };
+pub const std_options: std.Options = .{ .log_scope_levels = &[_]std.log.ScopeLevel{.{ .level = .warn, .scope = .zig_protobuf }} };
 
 pub fn main() !void {
     const stdin = &std.io.getStdIn();
