@@ -168,7 +168,7 @@ pub fn fd(comptime field_number: ?u32, comptime ftype: FieldType) FieldDescripto
 /// Appends an unsigned varint value.
 /// Awaits a u64 value as it's the biggest unsigned varint possible,
 // so anything can be cast to it by definition
-fn append_raw_varint(pb: *ArrayList(u8), value: u64) !void {
+fn append_raw_varint(pb: *ArrayList(u8), value: u64) Allocator.Error!void {
     var copy = value;
     while (copy > 0x7F) {
         try pb.append(0x80 + @as(u8, @intCast(copy & 0x7F)));
@@ -180,7 +180,7 @@ fn append_raw_varint(pb: *ArrayList(u8), value: u64) !void {
 /// Inserts a varint into the pb at start_index
 /// Mostly useful when inserting the size of a field after it has been
 /// Appended to the pb buffer.
-fn insert_raw_varint(pb: *ArrayList(u8), size: u64, start_index: usize) !void {
+fn insert_raw_varint(pb: *ArrayList(u8), size: u64, start_index: usize) Allocator.Error!void {
     if (size < 0x7F) {
         try pb.insert(start_index, @as(u8, @truncate(size)));
     } else {
@@ -197,7 +197,7 @@ fn insert_raw_varint(pb: *ArrayList(u8), size: u64, start_index: usize) !void {
 /// Appends a varint to the pb array.
 /// Mostly does the required transformations to use append_raw_varint
 /// after making the value some kind of unsigned value.
-fn append_as_varint(pb: *ArrayList(u8), int: anytype, comptime varint_type: VarintType) !void {
+fn append_as_varint(pb: *ArrayList(u8), int: anytype, comptime varint_type: VarintType) Allocator.Error!void {
     const type_of_val = @TypeOf(int);
     const bitsize = @bitSizeOf(type_of_val);
     const val: u64 = blk: {
@@ -220,7 +220,7 @@ fn append_as_varint(pb: *ArrayList(u8), int: anytype, comptime varint_type: Vari
 
 /// Append a value of any complex type that can be transfered as a varint
 /// Only serves as an indirection to manage Enum and Booleans properly.
-fn append_varint(pb: *ArrayList(u8), value: anytype, comptime varint_type: VarintType) !void {
+fn append_varint(pb: *ArrayList(u8), value: anytype, comptime varint_type: VarintType) Allocator.Error!void {
     switch (@typeInfo(@TypeOf(value))) {
         .@"enum" => try append_as_varint(pb, @as(i32, @intFromEnum(value)), varint_type),
         .bool => try append_as_varint(pb, @as(u8, if (value) 1 else 0), varint_type),
@@ -230,7 +230,7 @@ fn append_varint(pb: *ArrayList(u8), value: anytype, comptime varint_type: Varin
 
 /// Appends a fixed size int to the pb buffer.
 /// Takes care of casting any signed/float value to an appropriate unsigned type
-fn append_fixed(pb: *ArrayList(u8), value: anytype) !void {
+fn append_fixed(pb: *ArrayList(u8), value: anytype) Allocator.Error!void {
     const bitsize = @bitSizeOf(@TypeOf(value));
 
     var as_unsigned_int = switch (@TypeOf(value)) {
@@ -249,7 +249,7 @@ fn append_fixed(pb: *ArrayList(u8), value: anytype) !void {
 
 /// Appends a submessage to the array.
 /// Recursively calls internal_pb_encode.
-fn append_submessage(pb: *ArrayList(u8), value: anytype) !void {
+fn append_submessage(pb: *ArrayList(u8), value: anytype) Allocator.Error!void {
     const len_index = pb.items.len;
     try internal_pb_encode(pb, value);
     const size_encoded = pb.items.len - len_index;
@@ -257,14 +257,14 @@ fn append_submessage(pb: *ArrayList(u8), value: anytype) !void {
 }
 
 /// Simple appending of a list of bytes.
-fn append_const_bytes(pb: *ArrayList(u8), value: ManagedString) !void {
+fn append_const_bytes(pb: *ArrayList(u8), value: ManagedString) Allocator.Error!void {
     const slice = value.getSlice();
     try append_as_varint(pb, slice.len, .Simple);
     try pb.appendSlice(slice);
 }
 
 /// simple appending of a list of fixed-size data.
-fn append_packed_list_of_fixed(pb: *ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) !void {
+fn append_packed_list_of_fixed(pb: *ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) Allocator.Error!void {
     if (value_list.items.len > 0) {
         // first append the tag for the field descriptor
         try append_tag(pb, field);
@@ -282,7 +282,7 @@ fn append_packed_list_of_fixed(pb: *ArrayList(u8), comptime field: FieldDescript
 }
 
 /// Appends a list of varint to the pb buffer.
-fn append_packed_list_of_varint(pb: *ArrayList(u8), value_list: anytype, comptime field: FieldDescriptor, comptime varint_type: VarintType) !void {
+fn append_packed_list_of_varint(pb: *ArrayList(u8), value_list: anytype, comptime field: FieldDescriptor, comptime varint_type: VarintType) Allocator.Error!void {
     if (value_list.items.len > 0) {
         try append_tag(pb, field);
         const len_index = pb.items.len;
@@ -295,7 +295,7 @@ fn append_packed_list_of_varint(pb: *ArrayList(u8), value_list: anytype, comptim
 }
 
 /// Appends a list of submessages to the pb_buffer. Sequentially, prepending the tag of each message.
-fn append_list_of_submessages(pb: *ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) !void {
+fn append_list_of_submessages(pb: *ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) Allocator.Error!void {
     for (value_list.items) |item| {
         try append_tag(pb, field);
         try append_submessage(pb, item);
@@ -303,7 +303,7 @@ fn append_list_of_submessages(pb: *ArrayList(u8), comptime field: FieldDescripto
 }
 
 /// Appends a packed list of string to the pb_buffer.
-fn append_packed_list_of_strings(pb: *ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) !void {
+fn append_packed_list_of_strings(pb: *ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) Allocator.Error!void {
     if (value_list.items.len > 0) {
         try append_tag(pb, field);
 
@@ -317,7 +317,7 @@ fn append_packed_list_of_strings(pb: *ArrayList(u8), comptime field: FieldDescri
 }
 
 /// Appends the full tag of the field in the pb buffer, if there is any.
-fn append_tag(pb: *ArrayList(u8), comptime field: FieldDescriptor) !void {
+fn append_tag(pb: *ArrayList(u8), comptime field: FieldDescriptor) Allocator.Error!void {
     const tag_value = (field.field_number.? << 3) | field.ftype.get_wirevalue();
     try append_varint(pb, tag_value, .Simple);
 }
@@ -328,7 +328,7 @@ fn append_tag(pb: *ArrayList(u8), comptime field: FieldDescriptor) !void {
 /// force_append is set to true if the field needs to be appended regardless of having the default value.
 ///   it is used when an optional int/bool with value zero need to be encoded. usually value==0 are not written, but optionals
 ///   require its presence to differentiate 0 from "null"
-fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, comptime force_append: bool) !void {
+fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, comptime force_append: bool) Allocator.Error!void {
 
     // TODO: review semantics of default-value in regards to wire protocol
     const is_default_scalar_value = switch (@typeInfo(@TypeOf(value))) {
@@ -422,7 +422,7 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, c
 
 /// Internal function that decodes the descriptor information and struct fields
 /// before passing them to the append function
-fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) !void {
+fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) Allocator.Error!void {
     const field_list = @typeInfo(@TypeOf(data)).@"struct".fields;
     const data_type = @TypeOf(data);
 
@@ -438,7 +438,7 @@ fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) !void {
 }
 
 /// Public encoding function, meant to be embdedded in generated structs
-pub fn pb_encode(data: anytype, allocator: Allocator) ![]u8 {
+pub fn pb_encode(data: anytype, allocator: Allocator) Allocator.Error![]u8 {
     var pb = ArrayList(u8).init(allocator);
     errdefer pb.deinit();
 
