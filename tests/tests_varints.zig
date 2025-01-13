@@ -388,7 +388,7 @@ test "basic encoding with negative numbers" {
     defer demo.deinit();
     defer testing.allocator.free(obtained);
     // 0x08
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x03, 0x10, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  0xFF, 0xFF, 0xFF, 0xFF, 0x01 }, obtained);
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x03, 0x10, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01 }, obtained);
     const decoded = try tests.WithNegativeIntegers.decode(obtained, testing.allocator);
     try testing.expectEqual(demo, decoded);
 }

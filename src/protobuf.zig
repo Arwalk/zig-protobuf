@@ -196,28 +196,27 @@ fn insert_raw_varint(pb: *ArrayList(u8), size: u64, start_index: usize) Allocato
 
 fn encode_zig_zag(int: anytype) u64 {
     const type_of_val = @TypeOf(int);
-    const to_int64 : i64 = switch (type_of_val) {
+    const to_int64: i64 = switch (type_of_val) {
         i32 => @intCast(int),
         i64 => int,
         else => @compileError("should not be here"),
     };
     const calc = (to_int64 << 1) ^ (to_int64 >> 63);
-    return @bitCast(calc);    
+    return @bitCast(calc);
 }
 
 test "encode zig zag test" {
-    try testing.expectEqual(@as(u64, 0),encode_zig_zag(@as(i32, 0)));
-    try testing.expectEqual(@as(u64, 1),encode_zig_zag(@as(i32, -1)));
-    try testing.expectEqual(@as(u64, 2),encode_zig_zag(@as(i32, 1)));
-    try testing.expectEqual(@as(u64, 0xfffffffe),encode_zig_zag(@as(i32, std.math.maxInt(i32))));
-    try testing.expectEqual(@as(u64, 0xffffffff),encode_zig_zag(@as(i32, std.math.minInt(i32))));
+    try testing.expectEqual(@as(u64, 0), encode_zig_zag(@as(i32, 0)));
+    try testing.expectEqual(@as(u64, 1), encode_zig_zag(@as(i32, -1)));
+    try testing.expectEqual(@as(u64, 2), encode_zig_zag(@as(i32, 1)));
+    try testing.expectEqual(@as(u64, 0xfffffffe), encode_zig_zag(@as(i32, std.math.maxInt(i32))));
+    try testing.expectEqual(@as(u64, 0xffffffff), encode_zig_zag(@as(i32, std.math.minInt(i32))));
 
-
-    try testing.expectEqual(@as(u64, 0),encode_zig_zag(@as(i64, 0)));
-    try testing.expectEqual(@as(u64, 1),encode_zig_zag(@as(i64, -1)));
-    try testing.expectEqual(@as(u64, 2),encode_zig_zag(@as(i64, 1)));
-    try testing.expectEqual(@as(u64, 0xfffffffffffffffe),encode_zig_zag(@as(i64, std.math.maxInt(i64))));
-    try testing.expectEqual(@as(u64, 0xffffffffffffffff),encode_zig_zag(@as(i64, std.math.minInt(i64))));
+    try testing.expectEqual(@as(u64, 0), encode_zig_zag(@as(i64, 0)));
+    try testing.expectEqual(@as(u64, 1), encode_zig_zag(@as(i64, -1)));
+    try testing.expectEqual(@as(u64, 2), encode_zig_zag(@as(i64, 1)));
+    try testing.expectEqual(@as(u64, 0xfffffffffffffffe), encode_zig_zag(@as(i64, std.math.maxInt(i64))));
+    try testing.expectEqual(@as(u64, 0xffffffffffffffff), encode_zig_zag(@as(i64, std.math.minInt(i64))));
 }
 
 /// Appends a varint to the pb array.
@@ -836,11 +835,11 @@ fn decode_zig_zag(comptime T: type, raw: u64) DecodingError!T {
     comptime {
         switch (T) {
             i32, i64 => {},
-            else => @compileError("should only pass i32 or i64 here")
+            else => @compileError("should only pass i32 or i64 here"),
         }
     }
 
-    const v : T = block: {
+    const v: T = block: {
         var v = raw >> 1;
         if (raw & 0x1 != 0) {
             v = v ^ (~@as(u64, 0));
@@ -856,17 +855,16 @@ fn decode_zig_zag(comptime T: type, raw: u64) DecodingError!T {
 
 test "decode zig zag test" {
     try testing.expectEqual(@as(i32, 0), decode_zig_zag(i32, 0));
-    try testing.expectEqual(@as(i32, -1),decode_zig_zag(i32, 1));
-    try testing.expectEqual(@as(i32, 1),decode_zig_zag(i32, 2));
-    try testing.expectEqual(@as(i32, std.math.maxInt(i32)),decode_zig_zag(i32, 0xfffffffe));
-    try testing.expectEqual(@as(i32, std.math.minInt(i32)),decode_zig_zag(i32, 0xffffffff));
+    try testing.expectEqual(@as(i32, -1), decode_zig_zag(i32, 1));
+    try testing.expectEqual(@as(i32, 1), decode_zig_zag(i32, 2));
+    try testing.expectEqual(@as(i32, std.math.maxInt(i32)), decode_zig_zag(i32, 0xfffffffe));
+    try testing.expectEqual(@as(i32, std.math.minInt(i32)), decode_zig_zag(i32, 0xffffffff));
 
-
-    try testing.expectEqual(@as(i64, 0),decode_zig_zag(i64, 0));
-    try testing.expectEqual(@as(i64, -1),decode_zig_zag(i64, 1));
-    try testing.expectEqual(@as(i64, 1),decode_zig_zag(i64, 2));
-    try testing.expectEqual(@as(i64, std.math.maxInt(i64)),decode_zig_zag(i64, 0xfffffffffffffffe));
-    try testing.expectEqual(@as(i64, std.math.minInt(i64)),decode_zig_zag(i64, 0xffffffffffffffff));
+    try testing.expectEqual(@as(i64, 0), decode_zig_zag(i64, 0));
+    try testing.expectEqual(@as(i64, -1), decode_zig_zag(i64, 1));
+    try testing.expectEqual(@as(i64, 1), decode_zig_zag(i64, 2));
+    try testing.expectEqual(@as(i64, std.math.maxInt(i64)), decode_zig_zag(i64, 0xfffffffffffffffe));
+    try testing.expectEqual(@as(i64, std.math.minInt(i64)), decode_zig_zag(i64, 0xffffffffffffffff));
 }
 
 /// Get a real varint of type T from a raw u64 data.
@@ -886,7 +884,7 @@ fn decode_varint_value(comptime T: type, comptime varint_type: VarintType, raw: 
             },
             .Bool => raw != 0,
             .Enum => block: {
-                const as_u32 : u32 = std.math.cast(u32, raw) orelse return DecodingError.InvalidInput;
+                const as_u32: u32 = std.math.cast(u32, raw) orelse return DecodingError.InvalidInput;
                 break :block std.meta.intToEnum(T, @as(i32, @bitCast(as_u32))) catch DecodingError.InvalidInput;
             },
             else => @compileError("Invalid type " ++ @typeName(T) ++ " passed"),

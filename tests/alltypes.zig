@@ -93,8 +93,8 @@ test "msg-longs.proto" {
     try testing.expectEqual(@as(i64, 9223372036854775807), decoded.int64_field_max);
     try testing.expectEqual(@as(i64, -9223372036854775808), decoded.sfixed64_field_min);
     try testing.expectEqual(@as(i64, 9223372036854775807), decoded.sfixed64_field_max);
-    // try testing.expectEqual(@as(i64, -9223372036854775808), decoded.sint64_field_min);
-    // try testing.expectEqual(@as(i64, 9223372036854775807), decoded.sint64_field_max);
+    try testing.expectEqual(@as(i64, -9223372036854775808), decoded.sint64_field_min);
+    try testing.expectEqual(@as(i64, 9223372036854775807), decoded.sint64_field_max);
     try testing.expectEqual(@as(u64, 0), decoded.uint64_field_min);
     try testing.expectEqual(@as(u64, 18446744073709551615), decoded.uint64_field_max);
 }
