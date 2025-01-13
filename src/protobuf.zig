@@ -832,15 +832,49 @@ pub const WireDecoderIterator = struct {
     }
 };
 
+fn decode_zig_zag(comptime T: type, raw: u64) DecodingError!T {
+    comptime {
+        switch (T) {
+            i32, i64 => {},
+            else => @compileError("should only pass i32 or i64 here")
+        }
+    }
+
+    const v : T = block: {
+        var v = raw >> 1;
+        if (raw & 0x1 != 0) {
+            v = v ^ (~@as(u64, 0));
+        }
+
+        const bitcasted: i64 = @as(i64, @bitCast(v));
+
+        break :block std.math.cast(T, bitcasted) orelse return DecodingError.InvalidInput;
+    };
+
+    return v;
+}
+
+test "decode zig zag test" {
+    try testing.expectEqual(@as(i32, 0), decode_zig_zag(i32, 0));
+    try testing.expectEqual(@as(i32, -1),decode_zig_zag(i32, 1));
+    try testing.expectEqual(@as(i32, 1),decode_zig_zag(i32, 2));
+    try testing.expectEqual(@as(i32, std.math.maxInt(i32)),decode_zig_zag(i32, 0xfffffffe));
+    try testing.expectEqual(@as(i32, std.math.minInt(i32)),decode_zig_zag(i32, 0xffffffff));
+
+
+    try testing.expectEqual(@as(i64, 0),decode_zig_zag(i64, 0));
+    try testing.expectEqual(@as(i64, -1),decode_zig_zag(i64, 1));
+    try testing.expectEqual(@as(i64, 1),decode_zig_zag(i64, 2));
+    try testing.expectEqual(@as(i64, std.math.maxInt(i64)),decode_zig_zag(i64, 0xfffffffffffffffe));
+    try testing.expectEqual(@as(i64, std.math.minInt(i64)),decode_zig_zag(i64, 0xffffffffffffffff));
+}
+
 /// Get a real varint of type T from a raw u64 data.
 fn decode_varint_value(comptime T: type, comptime varint_type: VarintType, raw: u64) DecodingError!T {
     return switch (varint_type) {
         .ZigZagOptimized => switch (@typeInfo(T)) {
-            .Int => {
-                const t = @as(T, @bitCast(@as(std.meta.Int(.unsigned, @bitSizeOf(T)), @truncate(raw))));
-                return @as(T, @intCast((t >> 1) ^ (-(t & 1))));
-            },
-            .Enum => @as(T, @enumFromInt(@as(i32, @intCast((@as(i64, @intCast(raw)) >> 1) ^ (-(@as(i64, @intCast(raw)) & 1)))))),
+            .Int => decode_zig_zag(T, raw),
+            .Enum => std.meta.intToEnum(T, decode_zig_zag(i32, raw)) catch DecodingError.InvalidInput, // should never happen, enums are int32 simple?
             else => @compileError("Invalid type passed"),
         },
         .Simple => switch (@typeInfo(T)) {
@@ -851,10 +885,10 @@ fn decode_varint_value(comptime T: type, comptime varint_type: VarintType, raw: 
                 else => @compileError("Invalid type " ++ @typeName(T) ++ " passed"),
             },
             .Bool => raw != 0,
-            .Enum => if (raw > std.math.maxInt(u32))
-                error.InvalidInput
-            else
-                @as(T, @enumFromInt(@as(i32, @bitCast(@as(u32, @intCast(raw)))))),
+            .Enum => block: {
+                const as_u32 : u32 = std.math.cast(u32, raw) orelse return DecodingError.InvalidInput;
+                break :block std.meta.intToEnum(T, @as(i32, @bitCast(as_u32))) catch DecodingError.InvalidInput;
+            },
             else => @compileError("Invalid type " ++ @typeName(T) ++ " passed"),
         },
     };
@@ -1804,4 +1838,9 @@ test "correct data - simple varint" {
     try std.testing.expectEqual(.b, enum_b);
     try std.testing.expectEqual(.c, enum_c);
     try std.testing.expectEqual(.d, enum_d);
+}
+
+test "invalid enum values" {
+    try std.testing.expectError(DecodingError.InvalidInput, decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, (1 << 64) - 1));
+    try std.testing.expectError(DecodingError.InvalidInput, decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, 4));
 }

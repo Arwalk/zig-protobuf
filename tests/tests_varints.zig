@@ -417,10 +417,10 @@ test "sint32, sint64 to -1" {
     try check(demo, "08011001");
 }
 
-//test "sint32, sint64, uint32, uint64 to their max value" {
-//    const demo = tests.DemoWithAllVarint{ .sint32 = std.math.maxInt(i32), .sint64 = std.math.maxInt(i64), .uint32 = std.math.maxInt(u32), .uint64 = std.math.maxInt(u64) };
-//    try check(demo, "08feffffff0f10feffffffffffffffff0118ffffffff0f20ffffffffffffffffff01");
-//}
+test "sint32, sint64, uint32, uint64 to their max value" {
+    const demo = tests.DemoWithAllVarint{ .sint32 = std.math.maxInt(i32), .sint64 = std.math.maxInt(i64), .uint32 = std.math.maxInt(u32), .uint64 = std.math.maxInt(u64) };
+    try check(demo, "08feffffff0f10feffffffffffffffff0118ffffffff0f20ffffffffffffffffff01");
+}
 
 test "sint32, sint64 to their min value" {
     const demo = tests.DemoWithAllVarint{ .sint32 = std.math.minInt(i32), .sint64 = std.math.minInt(i64) };
