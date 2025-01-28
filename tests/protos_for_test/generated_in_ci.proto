@@ -37,6 +37,9 @@ message DemoWithAllVarint {
       SomeValue = 0;
       SomeOther = 1;
       AndAnother = 2;
+      Negative = -1;
+      MaxNeg = -2147483648;
+      Max = 2147483647;
     };
 
     sint32 sint32 = 1;
