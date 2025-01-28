@@ -23,6 +23,27 @@ const UnionDecodingError = DecodingError || Allocator.Error;
 
 pub const ManagedStringTag = enum { Owned, Const, Empty };
 
+/// This structure is used by ManagedStruct to hold a T allocated.
+fn AllocatedStruct(T: type) type {
+    return struct {
+        allocator: Allocator,
+        v: *T,
+
+        const Self = @This();
+
+        pub fn deinit(self: Self) void {
+            self.v.deinit();
+            self.allocator.destroy(self.v);
+        }
+
+        pub fn init(allocator: Allocator) !Self {
+            const v = Self{ .allocator = allocator, .v = try allocator.create(T) };
+            internal_init(T, v.v, allocator);
+            return v;
+        }
+    };
+}
+
 pub const AllocatedString = struct { allocator: Allocator, str: []const u8 };
 
 pub const ManagedString = union(ManagedStringTag) {
@@ -99,6 +120,69 @@ pub const ManagedString = union(ManagedStringTag) {
         try jws.write(self.getSlice());
     }
 };
+
+pub const ManagedStructTag = enum { Owned, Borrowed };
+
+pub fn ManagedStruct(T: type) type {
+    return union(ManagedStructTag) {
+        const Self = @This();
+        const UnderlyingType = T;
+        const AllocatedType = AllocatedStruct(T);
+
+        Owned: AllocatedType,
+        Borrowed: *T,
+
+        /// This const's only purpose is to identify properly ManagedStructs.
+        const isZigProtobufManagedStruct = true;
+
+        /// Creates a ManagedStruct.Borrowed instance that has a pointer to an existing T, but do not take ownership of its memory.
+        ///
+        /// This means that a call to deinit on this instance will not free the memory associated with it. The original T's deinit() function must be called for that.
+        pub fn managed(p: *T) Self {
+            return Self{ .Borrowed = p };
+        }
+
+        /// Move the ownership of the pointer p and the allocator that allocated the T pointed by p to a new ManagedStruct.Owned instance.
+        ///
+        /// This means that a call to deinit on this instance will free the memory associated with it.
+        pub fn move(p: *T, allocator: Allocator) Self {
+            return Self{ .Owned = AllocatedType{ .allocator = allocator, .v = p } };
+        }
+
+        pub fn deinit(self: Self) void {
+            switch (self) {
+                .Owned => |it| {
+                    it.deinit();
+                },
+                .Borrowed => {},
+            }
+        }
+
+        /// Creates a new Managestruct.Owned instance using the allocator provided.
+        pub fn init(allocator: Allocator) !Self {
+            return Self{ .Owned = try AllocatedType.init(allocator) };
+        }
+
+        pub fn get(self: Self) T {
+            return switch (self) {
+                .Borrowed => self.Borrowed.*,
+                .Owned => |it| it.v.*,
+            };
+        }
+
+        pub fn getPointer(self: *Self) *T {
+            return switch (self.*) {
+                .Borrowed => |it| it,
+                .Owned => |*it| it.v,
+            };
+        }
+    };
+}
+
+// this has to be inlined else managedStruct functions resolution breaks.
+inline fn isZigProtobufManagedStruct(T: type) bool {
+    return @hasDecl(T, "isZigProtobufManagedStruct");
+}
 
 /// Enum describing the different field types available.
 pub const FieldTypeTag = enum { Varint, FixedInt, SubMessage, String, Bytes, List, PackedList, OneOf };
@@ -447,18 +531,36 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, c
 /// Internal function that decodes the descriptor information and struct fields
 /// before passing them to the append function
 fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) Allocator.Error!void {
-    const field_list = @typeInfo(@TypeOf(data)).Struct.fields;
-    const data_type = @TypeOf(data);
+    const type_info_data = @typeInfo(@TypeOf(data));
+    const data_type = switch (type_info_data) {
+        .Union => |_| // ManagedStruct case
+        @typeInfo(@TypeOf(data.Borrowed)).Pointer.child,
+        else => @TypeOf(data),
+    };
+    const field_list = @typeInfo(data_type).Struct.fields;
 
     inline for (field_list) |field| {
         if (@typeInfo(field.type) == .Optional) {
-            if (@field(data, field.name)) |value| {
+            const temp = if (isZigProtobufManagedStruct(@TypeOf(data)))
+                data.get()
+            else
+                data;
+            if (@field(temp, field.name)) |value| {
                 try append(pb, @field(data_type._desc_table, field.name), value, true);
             }
         } else {
-            try append(pb, @field(data_type._desc_table, field.name), @field(data, field.name), false);
+            const value = if (isZigProtobufManagedStruct(@TypeOf(data)))
+                data.get()
+            else
+                data;
+
+            try internal_append(pb, data_type, field.name, value, false);
         }
     }
+}
+
+fn internal_append(pb: *ArrayList(u8), data_type: type, comptime field_name: []const u8, value: anytype, comptime force_append: bool) !void {
+    try append(pb, @field(data_type._desc_table, field_name), @field(value, field_name), force_append);
 }
 
 /// Public encoding function, meant to be embdedded in generated structs
@@ -485,9 +587,7 @@ fn get_field_default_value(comptime for_type: anytype) for_type {
     };
 }
 
-/// Generic init function. Properly initialise any field required. Meant to be embedded in generated structs.
-pub fn pb_init(comptime T: type, allocator: Allocator) T {
-    var value: T = undefined;
+inline fn internal_init(comptime T: type, value: *T, allocator: Allocator) void {
     inline for (@typeInfo(T).Struct.fields) |field| {
         switch (@field(T._desc_table, field.name).ftype) {
             .String, .Varint, .FixedInt, .Bytes => {
@@ -508,6 +608,13 @@ pub fn pb_init(comptime T: type, allocator: Allocator) T {
             },
         }
     }
+}
+
+/// Generic init function. Properly initialise any field required. Meant to be embedded in generated structs.
+pub fn pb_init(comptime T: type, allocator: Allocator) T {
+    var value: T = undefined;
+
+    internal_init(T, &value, allocator);
 
     return value;
 }
@@ -601,7 +708,7 @@ fn deinit_field(result: anytype, comptime field_name: []const u8, comptime ftype
         .SubMessage => {
             switch (@typeInfo(@TypeOf(@field(result, field_name)))) {
                 .Optional => {
-                    if (@field(result, field_name)) |submessage| {
+                    if (@field(result, field_name)) |*submessage| {
                         submessage.deinit();
                     }
                 },
@@ -1037,25 +1144,57 @@ inline fn is_tag_known(comptime field_desc: FieldDescriptor, tag_to_check: Extra
     return false;
 }
 
+fn getRootType(T: type) type {
+    return if (isZigProtobufManagedStruct(T))
+        T.UnderlyingType
+    else
+        return T;
+}
+
+fn DecodingContext(T: type) type {
+    return struct {
+        result: T,
+
+        const Self = @This();
+        const rootType = getRootType(T);
+
+        pub fn init(allocator: Allocator) !Self {
+            return if (isZigProtobufManagedStruct(T))
+                Self{ .result = try T.init(allocator) }
+            else
+                Self{ .result = pb_init(T, allocator) };
+        }
+
+        pub fn getTarget(self: *Self) *rootType {
+            return if (isZigProtobufManagedStruct(T))
+                self.result.getPointer()
+            else
+                return &self.result;
+        }
+    };
+}
+
 /// public decoding function meant to be embedded in message structures
 /// Iterates over the input and try to fill the resulting structure accordingly.
-pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) !T {
-    var result = pb_init(T, allocator);
+pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) UnionDecodingError!T {
+    const ContextType = DecodingContext(T);
+    var context = try ContextType.init(allocator);
 
     var iterator = WireDecoderIterator{ .input = input };
 
     while (try iterator.next()) |extracted_data| {
-        inline for (@typeInfo(T).Struct.fields) |field| {
-            const v = @field(T._desc_table, field.name);
+        const rootType = getRootType(T);
+        inline for (@typeInfo(rootType).Struct.fields) |field| {
+            const v = @field(rootType._desc_table, field.name);
             if (is_tag_known(v, extracted_data)) {
-                break try decode_data(T, v, field, &result, extracted_data, allocator);
+                break try decode_data(rootType, v, field, context.getTarget(), extracted_data, allocator);
             }
         } else {
             log.debug("Unknown field received in {s} {any}\n", .{ @typeName(T), extracted_data.tag });
         }
     }
 
-    return result;
+    return context.result;
 }
 
 fn freeAllocated(allocator: Allocator, token: json.Token) void {
