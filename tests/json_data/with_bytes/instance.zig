@@ -9,3 +9,7 @@ pub fn get() WithBytes {
         ),
     };
 }
+
+pub fn get_with_omitted_fields() WithBytes {
+    return WithBytes{ .byte_field = .Empty };
+}
