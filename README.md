@@ -38,6 +38,7 @@ There are 2 branches you can use for your development.
 1. Use the `protobuf` module. In your `build.zig`'s build function, add the dependency as module before
 `b.installArtifact(exe)`.
     ```zig
+    pub fn build(b: *std.Build) !void {
         // first create a build for the dependency
         const protobuf_dep = b.dependency("protobuf", .{
             .target = target,
@@ -46,6 +47,7 @@ There are 2 branches you can use for your development.
 
         // and lastly use the dependency as a module
         exe.root_module.addImport("protobuf", protobuf_dep.module("protobuf"));
+    }
     ```
 
 ## Generating .zig files out of .proto definitions
