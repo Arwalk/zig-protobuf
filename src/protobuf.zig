@@ -491,8 +491,8 @@ pub fn pb_init(comptime T: type, allocator: Allocator) T {
     inline for (@typeInfo(T).@"struct".fields) |field| {
         switch (@field(T._desc_table, field.name).ftype) {
             .String, .Varint, .FixedInt, .Bytes => {
-                if (field.default_value) |val| {
-                    @field(value, field.name) = @as(*align(1) const field.type, @ptrCast(val)).*;
+                if (field.defaultValue()) |val| {
+                    @field(value, field.name) = val;
                 } else {
                     @field(value, field.name) = get_field_default_value(field.type);
                 }
@@ -1076,11 +1076,7 @@ fn fillDefaultStructValues(
     // Took from std.json source code since it was non-public one
     inline for (@typeInfo(T).@"struct".fields, 0..) |field, i| {
         if (!fields_seen[i]) {
-            if (field.default_value) |default_ptr| {
-                const default = @as(
-                    *align(1) const field.type,
-                    @ptrCast(default_ptr),
-                ).*;
+            if (field.defaultValue()) |default| {
                 @field(r, field.name) = default;
             } else {
                 return error.MissingField;
