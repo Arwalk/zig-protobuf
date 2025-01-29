@@ -514,7 +514,7 @@ pub fn pb_init(comptime T: type, allocator: Allocator) T {
 
 /// Generic function to deeply duplicate a message using a new allocator.
 /// The original parameter is constant
-pub fn pb_dupe(comptime T: type, original: T, allocator: Allocator) !T {
+pub fn pb_dupe(comptime T: type, original: T, allocator: Allocator) Allocator.Error!T {
     var result: T = undefined;
 
     inline for (@typeInfo(T).Struct.fields) |field| {
