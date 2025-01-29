@@ -1072,7 +1072,7 @@ fn fillDefaultStructValues(
     comptime T: type,
     r: *T,
     fields_seen: *[@typeInfo(T).Struct.fields.len]bool,
-) !void {
+) error{MissingField}!void {
     // Took from std.json source code since it was non-public one
     inline for (@typeInfo(T).Struct.fields, 0..) |field, i| {
         if (!fields_seen[i]) {
