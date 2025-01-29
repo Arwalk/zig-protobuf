@@ -960,7 +960,7 @@ fn decode_value(comptime decoded_type: type, comptime ftype: FieldType, extracte
     };
 }
 
-fn decode_data(comptime T: type, comptime field_desc: FieldDescriptor, comptime field: StructField, result: *T, extracted_data: Extracted, allocator: Allocator) !void {
+fn decode_data(comptime T: type, comptime field_desc: FieldDescriptor, comptime field: StructField, result: *T, extracted_data: Extracted, allocator: Allocator) UnionDecodingError!void {
     switch (field_desc.ftype) {
         .Varint, .FixedInt, .SubMessage, .String, .Bytes => {
             // first try to release the current value
