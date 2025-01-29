@@ -935,7 +935,7 @@ fn decode_packed_list(slice: []const u8, comptime list_type: ListType, comptime 
 }
 
 /// decode_value receives
-fn decode_value(comptime decoded_type: type, comptime ftype: FieldType, extracted_data: Extracted, allocator: Allocator) !decoded_type {
+fn decode_value(comptime decoded_type: type, comptime ftype: FieldType, extracted_data: Extracted, allocator: Allocator) UnionDecodingError!decoded_type {
     return switch (ftype) {
         .Varint => |varint_type| switch (extracted_data.data) {
             .RawValue => |value| try decode_varint_value(decoded_type, varint_type, value),
