@@ -31,7 +31,7 @@ pub const ManagedString = union(ManagedStringTag) {
     Empty,
 
     /// copies the provided string using the allocator. the `src` parameter should be freed by the caller
-    pub fn copy(str: []const u8, allocator: Allocator) !ManagedString {
+    pub fn copy(str: []const u8, allocator: Allocator) Allocator.Error!ManagedString {
         return ManagedString{ .Owned = AllocatedString{ .str = try allocator.dupe(u8, str), .allocator = allocator } };
     }
 
@@ -62,7 +62,7 @@ pub const ManagedString = union(ManagedStringTag) {
         }
     }
 
-    pub fn dupe(self: ManagedString, allocator: Allocator) !ManagedString {
+    pub fn dupe(self: ManagedString, allocator: Allocator) Allocator.Error!ManagedString {
         switch (self) {
             .Owned => |alloc_str| if (alloc_str.str.len == 0) {
                 return .Empty;
