@@ -1039,7 +1039,7 @@ inline fn is_tag_known(comptime field_desc: FieldDescriptor, tag_to_check: Extra
 
 /// public decoding function meant to be embedded in message structures
 /// Iterates over the input and try to fill the resulting structure accordingly.
-pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) !T {
+pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) UnionDecodingError!T {
     var result = pb_init(T, allocator);
 
     var iterator = WireDecoderIterator{ .input = input };
