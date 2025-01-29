@@ -743,7 +743,7 @@ fn VarintDecoderIterator(comptime T: type, comptime varint_type: VarintType) typ
         input: []const u8,
         current_index: usize = 0,
 
-        fn next(self: *Self) !?T {
+        fn next(self: *Self) DecodingError!?T {
             if (self.current_index < self.input.len) {
                 const raw_value = try decode_varint(u64, self.input[self.current_index..]);
                 defer self.current_index += raw_value.size;
