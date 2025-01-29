@@ -1496,7 +1496,7 @@ fn stringify_struct_field(
 
 pub fn MessageMixins(comptime Self: type) type {
     return struct {
-        pub fn encode(self: Self, allocator: Allocator) ![]u8 {
+        pub fn encode(self: Self, allocator: Allocator) Allocator.Error![]u8 {
             return pb_encode(self, allocator);
         }
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!Self {
@@ -1508,7 +1508,7 @@ pub fn MessageMixins(comptime Self: type) type {
         pub fn deinit(self: Self) void {
             return pb_deinit(self);
         }
-        pub fn dupe(self: Self, allocator: Allocator) !Self {
+        pub fn dupe(self: Self, allocator: Allocator) Allocator.Error!Self {
             return pb_dupe(Self, self, allocator);
         }
         pub fn json_decode(
