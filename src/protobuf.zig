@@ -760,7 +760,7 @@ const LengthDelimitedDecoderIterator = struct {
     input: []const u8,
     current_index: usize = 0,
 
-    fn next(self: *Self) !?[]const u8 {
+    fn next(self: *Self) DecodingError!?[]const u8 {
         if (self.current_index < self.input.len) {
             const size = try decode_varint(u64, self.input[self.current_index..]);
             self.current_index += size.size;
