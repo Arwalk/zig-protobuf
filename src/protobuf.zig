@@ -225,17 +225,18 @@ test "encode zig zag test" {
 fn append_as_varint(pb: *ArrayList(u8), int: anytype, comptime varint_type: VarintType) Allocator.Error!void {
     const type_of_val = @TypeOf(int);
     const val: u64 = blk: {
-        if (@typeInfo(type_of_val).Int.signedness == .signed) {
-            switch (varint_type) {
-                .ZigZagOptimized => {
-                    break :blk encode_zig_zag(int);
-                },
-                .Simple => {
-                    break :blk @bitCast(@as(i64, @intCast(int)));
-                },
-            }
-        } else {
-            break :blk @as(u64, @intCast(int));
+        switch (@typeInfo(type_of_val).Int.signedness) {
+            .signed => {
+                switch (varint_type) {
+                    .ZigZagOptimized => {
+                        break :blk encode_zig_zag(int);
+                    },
+                    .Simple => {
+                        break :blk @bitCast(@as(i64, @intCast(int)));
+                    },
+                }
+            },
+            .unsigned => break :blk @as(u64, @intCast(int)),
         }
     };
 
