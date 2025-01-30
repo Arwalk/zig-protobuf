@@ -535,14 +535,17 @@ fn dupe_field(original: anytype, comptime field_name: []const u8, comptime ftype
         .List => |list_type| {
             const capacity = @field(original, field_name).items.len;
             var list = try @TypeOf(@field(original, field_name)).initCapacity(allocator, capacity);
-            if (list_type == .SubMessage or list_type == .String) {
-                for (@field(original, field_name).items) |item| {
-                    try list.append(try item.dupe(allocator));
-                }
-            } else {
-                for (@field(original, field_name).items) |item| {
-                    try list.append(item);
-                }
+            switch (list_type) {
+                .SubMessage, .String => {
+                    for (@field(original, field_name).items) |item| {
+                        try list.append(try item.dupe(allocator));
+                    }
+                },
+                .Varint, .Bytes, .FixedInt => {
+                    for (@field(original, field_name).items) |item| {
+                        try list.append(item);
+                    }
+                },
             }
             return list;
         },
