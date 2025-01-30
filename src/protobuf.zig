@@ -944,19 +944,19 @@ fn decode_value(comptime decoded_type: type, comptime ftype: FieldType, extracte
     return switch (ftype) {
         .Varint => |varint_type| switch (extracted_data.data) {
             .RawValue => |value| try decode_varint_value(decoded_type, varint_type, value),
-            else => error.InvalidInput,
+            .Slice => error.InvalidInput,
         },
         .FixedInt => switch (extracted_data.data) {
             .RawValue => |value| decode_fixed_value(decoded_type, value),
-            else => error.InvalidInput,
+            .Slice => error.InvalidInput,
         },
         .SubMessage => switch (extracted_data.data) {
             .Slice => |slice| try pb_decode(decoded_type, slice, allocator),
-            else => error.InvalidInput,
+            .RawValue => error.InvalidInput,
         },
         .String, .Bytes => switch (extracted_data.data) {
             .Slice => |slice| try ManagedString.copy(slice, allocator),
-            else => error.InvalidInput,
+            .RawValue => error.InvalidInput,
         },
         .List, .PackedList, .OneOf => {
             log.err("Invalid scalar type {any}\n", .{ftype});
