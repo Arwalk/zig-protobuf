@@ -31,7 +31,7 @@ pub const ManagedString = union(ManagedStringTag) {
     Empty,
 
     /// copies the provided string using the allocator. the `src` parameter should be freed by the caller
-    pub fn copy(str: []const u8, allocator: Allocator) !ManagedString {
+    pub fn copy(str: []const u8, allocator: Allocator) Allocator.Error!ManagedString {
         return ManagedString{ .Owned = AllocatedString{ .str = try allocator.dupe(u8, str), .allocator = allocator } };
     }
 
@@ -62,7 +62,7 @@ pub const ManagedString = union(ManagedStringTag) {
         }
     }
 
-    pub fn dupe(self: ManagedString, allocator: Allocator) !ManagedString {
+    pub fn dupe(self: ManagedString, allocator: Allocator) Allocator.Error!ManagedString {
         switch (self) {
             .Owned => |alloc_str| if (alloc_str.str.len == 0) {
                 return .Empty;
@@ -514,7 +514,7 @@ pub fn pb_init(comptime T: type, allocator: Allocator) T {
 
 /// Generic function to deeply duplicate a message using a new allocator.
 /// The original parameter is constant
-pub fn pb_dupe(comptime T: type, original: T, allocator: Allocator) !T {
+pub fn pb_dupe(comptime T: type, original: T, allocator: Allocator) Allocator.Error!T {
     var result: T = undefined;
 
     inline for (@typeInfo(T).@"struct".fields) |field| {
@@ -743,7 +743,7 @@ fn VarintDecoderIterator(comptime T: type, comptime varint_type: VarintType) typ
         input: []const u8,
         current_index: usize = 0,
 
-        fn next(self: *Self) !?T {
+        fn next(self: *Self) DecodingError!?T {
             if (self.current_index < self.input.len) {
                 const raw_value = try decode_varint(u64, self.input[self.current_index..]);
                 defer self.current_index += raw_value.size;
@@ -760,7 +760,7 @@ const LengthDelimitedDecoderIterator = struct {
     input: []const u8,
     current_index: usize = 0,
 
-    fn next(self: *Self) !?[]const u8 {
+    fn next(self: *Self) DecodingError!?[]const u8 {
         if (self.current_index < self.input.len) {
             const size = try decode_varint(u64, self.input[self.current_index..]);
             self.current_index += size.size;
@@ -935,7 +935,7 @@ fn decode_packed_list(slice: []const u8, comptime list_type: ListType, comptime 
 }
 
 /// decode_value receives
-fn decode_value(comptime decoded_type: type, comptime ftype: FieldType, extracted_data: Extracted, allocator: Allocator) !decoded_type {
+fn decode_value(comptime decoded_type: type, comptime ftype: FieldType, extracted_data: Extracted, allocator: Allocator) UnionDecodingError!decoded_type {
     return switch (ftype) {
         .Varint => |varint_type| switch (extracted_data.data) {
             .RawValue => |value| try decode_varint_value(decoded_type, varint_type, value),
@@ -960,7 +960,7 @@ fn decode_value(comptime decoded_type: type, comptime ftype: FieldType, extracte
     };
 }
 
-fn decode_data(comptime T: type, comptime field_desc: FieldDescriptor, comptime field: StructField, result: *T, extracted_data: Extracted, allocator: Allocator) !void {
+fn decode_data(comptime T: type, comptime field_desc: FieldDescriptor, comptime field: StructField, result: *T, extracted_data: Extracted, allocator: Allocator) UnionDecodingError!void {
     switch (field_desc.ftype) {
         .Varint, .FixedInt, .SubMessage, .String, .Bytes => {
             // first try to release the current value
@@ -1039,7 +1039,7 @@ inline fn is_tag_known(comptime field_desc: FieldDescriptor, tag_to_check: Extra
 
 /// public decoding function meant to be embedded in message structures
 /// Iterates over the input and try to fill the resulting structure accordingly.
-pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) !T {
+pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) UnionDecodingError!T {
     var result = pb_init(T, allocator);
 
     var iterator = WireDecoderIterator{ .input = input };
@@ -1072,7 +1072,7 @@ fn fillDefaultStructValues(
     comptime T: type,
     r: *T,
     fields_seen: *[@typeInfo(T).@"struct".fields.len]bool,
-) !void {
+) error{MissingField}!void {
     // Took from std.json source code since it was non-public one
     inline for (@typeInfo(T).@"struct".fields, 0..) |field, i| {
         if (!fields_seen[i]) {
@@ -1492,7 +1492,7 @@ fn stringify_struct_field(
 
 pub fn MessageMixins(comptime Self: type) type {
     return struct {
-        pub fn encode(self: Self, allocator: Allocator) ![]u8 {
+        pub fn encode(self: Self, allocator: Allocator) Allocator.Error![]u8 {
             return pb_encode(self, allocator);
         }
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!Self {
@@ -1504,7 +1504,7 @@ pub fn MessageMixins(comptime Self: type) type {
         pub fn deinit(self: Self) void {
             return pb_deinit(self);
         }
-        pub fn dupe(self: Self, allocator: Allocator) !Self {
+        pub fn dupe(self: Self, allocator: Allocator) Allocator.Error!Self {
             return pb_dupe(Self, self, allocator);
         }
         pub fn json_decode(
