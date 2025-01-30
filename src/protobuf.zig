@@ -452,12 +452,13 @@ fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) Allocator.Error!void {
     const data_type = @TypeOf(data);
 
     inline for (field_list) |field| {
-        if (@typeInfo(field.type) == .Optional) {
-            if (@field(data, field.name)) |value| {
-                try append(pb, @field(data_type._desc_table, field.name), value, true);
-            }
-        } else {
-            try append(pb, @field(data_type._desc_table, field.name), @field(data, field.name), false);
+        switch (@typeInfo(field.type)) {
+            .Optional => {
+                if (@field(data, field.name)) |value| {
+                    try append(pb, @field(data_type._desc_table, field.name), value, true);
+                }
+            },
+            else => try append(pb, @field(data_type._desc_table, field.name), @field(data, field.name), false),
         }
     }
 }
