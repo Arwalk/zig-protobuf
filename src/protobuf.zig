@@ -78,7 +78,7 @@ pub const ManagedString = union(ManagedStringTag) {
             .Owned => |alloc_str| {
                 alloc_str.allocator.free(alloc_str.str);
             },
-            else => {},
+            .Const, .Empty => {},
         }
     }
 
