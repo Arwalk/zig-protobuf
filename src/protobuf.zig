@@ -933,7 +933,7 @@ fn decode_packed_list(slice: []const u8, comptime list_type: ListType, comptime 
                 try array.append(try ManagedString.copy(value, allocator));
             }
         },
-        else =>
+        .Bytes, .SubMessage =>
         // submessages are not suitable for packed lists yet, but the wire message can be malformed
         return error.InvalidInput,
     }
