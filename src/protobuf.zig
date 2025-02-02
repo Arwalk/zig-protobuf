@@ -249,7 +249,8 @@ fn append_varint(pb: *ArrayList(u8), value: anytype, comptime varint_type: Varin
     switch (@typeInfo(@TypeOf(value))) {
         .Enum => try append_as_varint(pb, @as(i32, @intFromEnum(value)), varint_type),
         .Bool => try append_as_varint(pb, @as(u8, if (value) 1 else 0), varint_type),
-        else => try append_as_varint(pb, value, varint_type),
+        .Int => try append_as_varint(pb, value, varint_type),
+        else => @compileError("Should not pass a value of type " ++ @typeInfo(@TypeOf(value)) ++ "here"),
     }
 }
 
