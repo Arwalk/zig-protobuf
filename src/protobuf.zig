@@ -78,7 +78,7 @@ pub const ManagedString = union(ManagedStringTag) {
             .Owned => |alloc_str| {
                 alloc_str.allocator.free(alloc_str.str);
             },
-            else => {},
+            .Const, .Empty => {},
         }
     }
 
@@ -225,17 +225,18 @@ test "encode zig zag test" {
 fn append_as_varint(pb: *ArrayList(u8), int: anytype, comptime varint_type: VarintType) Allocator.Error!void {
     const type_of_val = @TypeOf(int);
     const val: u64 = blk: {
-        if (@typeInfo(type_of_val).int.signedness == .signed) {
-            switch (varint_type) {
-                .ZigZagOptimized => {
-                    break :blk encode_zig_zag(int);
-                },
-                .Simple => {
-                    break :blk @bitCast(@as(i64, @intCast(int)));
-                },
-            }
-        } else {
-            break :blk @as(u64, @intCast(int));
+        switch (@typeInfo(type_of_val).int.signedness) {
+            .signed => {
+                switch (varint_type) {
+                    .ZigZagOptimized => {
+                        break :blk encode_zig_zag(int);
+                    },
+                    .Simple => {
+                        break :blk @bitCast(@as(i64, @intCast(int)));
+                    },
+                }
+            },
+            .unsigned => break :blk @as(u64, @intCast(int)),
         }
     };
 
@@ -248,7 +249,8 @@ fn append_varint(pb: *ArrayList(u8), value: anytype, comptime varint_type: Varin
     switch (@typeInfo(@TypeOf(value))) {
         .@"enum" => try append_as_varint(pb, @as(i32, @intFromEnum(value)), varint_type),
         .bool => try append_as_varint(pb, @as(u8, if (value) 1 else 0), varint_type),
-        else => try append_as_varint(pb, value, varint_type),
+        .int => try append_as_varint(pb, value, varint_type),
+        else => @compileError("Should not pass a value of type " ++ @typeInfo(@TypeOf(value)) ++ "here"),
     }
 }
 
@@ -451,12 +453,13 @@ fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) Allocator.Error!void {
     const data_type = @TypeOf(data);
 
     inline for (field_list) |field| {
-        if (@typeInfo(field.type) == .optional) {
-            if (@field(data, field.name)) |value| {
-                try append(pb, @field(data_type._desc_table, field.name), value, true);
-            }
-        } else {
-            try append(pb, @field(data_type._desc_table, field.name), @field(data, field.name), false);
+        switch (@typeInfo(field.type)) {
+            .optional => {
+                if (@field(data, field.name)) |value| {
+                    try append(pb, @field(data_type._desc_table, field.name), value, true);
+                }
+            },
+            else => try append(pb, @field(data_type._desc_table, field.name), @field(data, field.name), false),
         }
     }
 }
@@ -533,14 +536,17 @@ fn dupe_field(original: anytype, comptime field_name: []const u8, comptime ftype
         .List => |list_type| {
             const capacity = @field(original, field_name).items.len;
             var list = try @TypeOf(@field(original, field_name)).initCapacity(allocator, capacity);
-            if (list_type == .SubMessage or list_type == .String) {
-                for (@field(original, field_name).items) |item| {
-                    try list.append(try item.dupe(allocator));
-                }
-            } else {
-                for (@field(original, field_name).items) |item| {
-                    try list.append(item);
-                }
+            switch (list_type) {
+                .SubMessage, .String => {
+                    for (@field(original, field_name).items) |item| {
+                        try list.append(try item.dupe(allocator));
+                    }
+                },
+                .Varint, .Bytes, .FixedInt => {
+                    for (@field(original, field_name).items) |item| {
+                        try list.append(item);
+                    }
+                },
             }
             return list;
         },
@@ -928,7 +934,7 @@ fn decode_packed_list(slice: []const u8, comptime list_type: ListType, comptime 
                 try array.append(try ManagedString.copy(value, allocator));
             }
         },
-        else =>
+        .Bytes, .SubMessage =>
         // submessages are not suitable for packed lists yet, but the wire message can be malformed
         return error.InvalidInput,
     }
@@ -939,19 +945,19 @@ fn decode_value(comptime decoded_type: type, comptime ftype: FieldType, extracte
     return switch (ftype) {
         .Varint => |varint_type| switch (extracted_data.data) {
             .RawValue => |value| try decode_varint_value(decoded_type, varint_type, value),
-            else => error.InvalidInput,
+            .Slice => error.InvalidInput,
         },
         .FixedInt => switch (extracted_data.data) {
             .RawValue => |value| decode_fixed_value(decoded_type, value),
-            else => error.InvalidInput,
+            .Slice => error.InvalidInput,
         },
         .SubMessage => switch (extracted_data.data) {
             .Slice => |slice| try pb_decode(decoded_type, slice, allocator),
-            else => error.InvalidInput,
+            .RawValue => error.InvalidInput,
         },
         .String, .Bytes => switch (extracted_data.data) {
             .Slice => |slice| try ManagedString.copy(slice, allocator),
-            else => error.InvalidInput,
+            .RawValue => error.InvalidInput,
         },
         .List, .PackedList, .OneOf => {
             log.err("Invalid scalar type {any}\n", .{ftype});

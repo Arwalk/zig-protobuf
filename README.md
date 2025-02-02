@@ -32,21 +32,11 @@ There are 2 branches you can use for your development.
 ## How to use
 
 1. Add `protobuf` to your `build.zig.zon`.  
-    ```zig
-    .{
-        .name = "my_project",
-        .version = "0.0.1",
-        .paths = .{""},
-        .dependencies = .{
-            .protobuf = .{
-                .url = "https://github.com/Arwalk/zig-protobuf/archive/<some-commit-sha>.tar.gz",
-                .hash = "12ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-                // leave the hash as is, the build system will tell you which hash to put here based on your commit
-            },
-        },
-    }
+    ```sh
+    zig fetch --save "git+https://github.com/Arwalk/zig-protobuf#v2.0.0"
     ```
-1. Use the `protobuf` module   
+1. Use the `protobuf` module. In your `build.zig`'s build function, add the dependency as module before
+`b.installArtifact(exe)`.
     ```zig
     pub fn build(b: *std.Build) !void {
         // first create a build for the dependency
@@ -59,7 +49,6 @@ There are 2 branches you can use for your development.
         exe.root_module.addImport("protobuf", protobuf_dep.module("protobuf"));
     }
     ```
-
 
 ## Generating .zig files out of .proto definitions
 
