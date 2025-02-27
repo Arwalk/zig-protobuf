@@ -7,6 +7,7 @@ const ArrayList = std.ArrayList;
 const protobuf = @import("protobuf");
 const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
+const ManagedStruct = protobuf.ManagedStruct;
 /// import package tests.oneof
 const tests_oneof = @import("tests/oneof.pb.zig");
 /// import package graphics
@@ -18,9 +19,13 @@ const opentelemetry_proto_metrics_v1 = @import("opentelemetry/proto/metrics/v1.p
 /// import package opentelemetry.proto.logs.v1
 const opentelemetry_proto_logs_v1 = @import("opentelemetry/proto/logs/v1.pb.zig");
 /// import package protobuf_test_messages.proto3
-const protobuf_test_messages_proto3 = @import("protobuf_test_messages/proto3.pb.zig");
+pub const protobuf_test_messages_proto3 = @import("protobuf_test_messages/proto3.pb.zig");
 /// import package unittest
-const unittest = @import("unittest.pb.zig");
+pub const unittest = @import("unittest.pb.zig");
+/// import package selfref
+const selfref = @import("selfref.pb.zig");
+/// import package oneofselfref
+const oneofselfref = @import("oneofselfref.pb.zig");
 /// import package jspb.test
 pub const jspb_test = @import("jspb/test.pb.zig");
 /// import package vector_tile

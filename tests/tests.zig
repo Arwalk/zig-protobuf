@@ -69,20 +69,20 @@ test "LogsData proto issue #84" {
     defer std.testing.allocator.free(bytes);
 }
 
-//const SelfRefNode = selfref.SelfRefNode;
+const SelfRefNode = selfref.SelfRefNode;
 const ManagedStruct = protobuf.ManagedStruct;
 
-pub const SelfRefNode = struct {
-    version: i32 = 0,
-    node: ?ManagedStruct(SelfRefNode)= null,
-
-    pub const _desc_table = .{
-        .version = fd(1, .{ .Varint = .Simple }),
-        .node = fd(2, .{ .SubMessage = {} }),
-    };
-
-    pub usingnamespace protobuf.MessageMixins(@This());
-};
+//pub const SelfRefNode = struct {
+//    version: i32 = 0,
+//    node: ?ManagedStruct(SelfRefNode)= null,
+//
+//    pub const _desc_table = .{
+//        .version = fd(1, .{ .Varint = .Simple }),
+//        .node = fd(2, .{ .SubMessage = {} }),
+//    };
+//
+//    pub usingnamespace protobuf.MessageMixins(@This());
+//};
 
 
 test "self ref test" {

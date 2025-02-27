@@ -7,6 +7,7 @@ const ArrayList = std.ArrayList;
 const protobuf = @import("protobuf");
 const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
+const ManagedStruct = protobuf.ManagedStruct;
 /// import package opentelemetry.proto.common.v1
 const opentelemetry_proto_common_v1 = @import("../common/v1.pb.zig");
 

@@ -7,10 +7,11 @@ const ArrayList = std.ArrayList;
 const protobuf = @import("protobuf");
 const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
+const ManagedStruct = protobuf.ManagedStruct;
 
 pub const SelfRefNode = struct {
     version: i32 = 0,
-    node: ?SelfRefNode = null,
+    node: ?ManagedStruct(SelfRefNode) = null,
 
     pub const _desc_table = .{
         .version = fd(1, .{ .Varint = .Simple }),

@@ -11,8 +11,8 @@ import public "oneof.proto";
 import public "msg-long.proto";
 import public "opentelemetry/proto/metrics/v1/metrics.proto";
 import public "opentelemetry/proto/logs/v1/logs.proto";
-//import public "oneofSelfRef.proto";
-//import public "selfref.proto";
+import public "oneofSelfRef.proto";
+import public "selfref.proto";
 
 enum TopLevelEnum {
   SE_ZERO = 0;

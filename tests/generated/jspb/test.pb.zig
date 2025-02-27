@@ -7,6 +7,7 @@ const ArrayList = std.ArrayList;
 const protobuf = @import("protobuf");
 const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
+const ManagedStruct = protobuf.ManagedStruct;
 /// import package google.protobuf
 const google_protobuf = @import("../google/protobuf.pb.zig");
 
@@ -370,7 +371,7 @@ pub const TestMapFieldsNoBinary = struct {
     map_int32_string: ArrayList(MapInt32StringEntry),
     map_int64_string: ArrayList(MapInt64StringEntry),
     map_bool_string: ArrayList(MapBoolStringEntry),
-    test_map_fields: ?TestMapFieldsNoBinary = null,
+    test_map_fields: ?ManagedStruct(TestMapFieldsNoBinary) = null,
     map_string_testmapfields: ArrayList(MapStringTestmapfieldsEntry),
 
     pub const _desc_table = .{
