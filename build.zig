@@ -122,6 +122,14 @@ pub fn build(b: *std.Build) !void {
                 .optimize = optimize,
             }),
         }),
+        b.addTest(.{
+            .name = "Benchmark",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/benchmarks.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        }),
     };
 
     const convertStep = RunProtocStep.create(b, b, target, .{
@@ -136,10 +144,14 @@ pub fn build(b: *std.Build) !void {
         .include_directories = &.{"tests/protos_for_test"},
     });
 
+    const zbench_module = b.dependency("zbench", .{ .target = target, .optimize = optimize }).module("zbench");
+
     for (tests) |test_item| {
         if (!std.mem.eql(u8, "protobuf", test_item.name)) {
             test_item.root_module.addImport("protobuf", module);
         }
+        test_item.root_module.addImport("protobuf", module);
+        test_item.root_module.addImport("zbench", zbench_module);
 
         // This creates a build step. It will be visible in the `zig build --help` menu,
         // and can be selected like this: `zig build test`
