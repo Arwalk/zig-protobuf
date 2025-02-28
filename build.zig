@@ -122,14 +122,6 @@ pub fn build(b: *std.Build) !void {
                 .optimize = optimize,
             }),
         }),
-        b.addTest(.{
-            .name = "Benchmark",
-            .root_module = b.createModule(.{
-                .root_source_file = b.path("tests/benchmarks.zig"),
-                .target = target,
-                .optimize = optimize,
-            }),
-        }),
     };
 
     const convertStep = RunProtocStep.create(b, b, target, .{
@@ -144,14 +136,11 @@ pub fn build(b: *std.Build) !void {
         .include_directories = &.{"tests/protos_for_test"},
     });
 
-    const zbench_module = b.dependency("zbench", .{ .target = target, .optimize = optimize }).module("zbench");
-
     for (tests) |test_item| {
         if (!std.mem.eql(u8, "protobuf", test_item.name)) {
             test_item.root_module.addImport("protobuf", module);
         }
         test_item.root_module.addImport("protobuf", module);
-        test_item.root_module.addImport("zbench", zbench_module);
 
         // This creates a build step. It will be visible in the `zig build --help` menu,
         // and can be selected like this: `zig build test`
@@ -178,6 +167,30 @@ pub fn build(b: *std.Build) !void {
     });
 
     bootstrap.dependOn(&bootstrapConversion.step);
+
+    const zbench_module = b.dependency("zbench", .{ .target = target, .optimize = optimize }).module("zbench");
+
+    const benchmark_step = b.step("benchmark", "Run benchmarks");
+    benchmark_step.dependOn(&convertStep.step);
+
+    const benchmark_exe = b.addExecutable(.{
+        .name = "benchmark",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("benchmark/benchmarks.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    benchmark_exe.root_module.addImport("zbench", zbench_module);
+    benchmark_exe.root_module.addImport("protobuf", module);
+    benchmark_step.dependOn(&b.addRunArtifact(benchmark_exe).step);
+
+    const convertForBenchmarkStep = RunProtocStep.create(b, b, target, .{
+        .destination_directory = b.path("benchmark/generated"),
+        .source_files = &.{ "tests/protos_for_test/opentelemetry/proto/metrics/v1/metrics.proto", "tests/protos_for_test/opentelemetry/proto/common/v1/common.proto" },
+        .include_directories = &.{"tests/protos_for_test"},
+    });
+    benchmark_exe.step.dependOn(&convertForBenchmarkStep.step);
 }
 
 pub const RunProtocStep = struct {
