@@ -556,13 +556,9 @@ fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) Allocator.Error!void {
             else
                 data;
 
-            try internal_append(pb, data_type, field.name, value, false);
+            try append(pb, @field(data_type._desc_table, field.name), @field(value, field.name), false);
         }
     }
-}
-
-fn internal_append(pb: *ArrayList(u8), data_type: type, comptime field_name: []const u8, value: anytype, comptime force_append: bool) !void {
-    try append(pb, @field(data_type._desc_table, field_name), @field(value, field_name), force_append);
 }
 
 /// Public encoding function, meant to be embdedded in generated structs
