@@ -1156,34 +1156,25 @@ fn getRootType(T: type) type {
         return T;
 }
 
-fn DecodingContext(T: type) type {
-    return struct {
-        result: T,
-
-        const Self = @This();
-        const rootType = getRootType(T);
-
-        pub fn init(allocator: Allocator) !Self {
-            return if (isZigProtobufManagedStruct(T))
-                Self{ .result = try T.init(allocator) }
-            else
-                Self{ .result = pb_init(T, allocator) };
-        }
-
-        pub fn getTarget(self: *Self) *rootType {
-            return if (isZigProtobufManagedStruct(T))
-                self.result.getPointer()
-            else
-                return &self.result;
-        }
-    };
+fn initForDecode(T: type, allocator: Allocator) !T {
+    return if (isZigProtobufManagedStruct(T))
+        try T.init(allocator)
+    else
+        pb_init(T, allocator);
 }
+
+fn getTarget(T: type, instance: *T) *getRootType(T) {
+    return if (isZigProtobufManagedStruct(T))
+        instance.getPointer()
+    else
+        instance;
+}
+
 
 /// public decoding function meant to be embedded in message structures
 /// Iterates over the input and try to fill the resulting structure accordingly.
 pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) UnionDecodingError!T {
-    const ContextType = DecodingContext(T);
-    var context = try ContextType.init(allocator);
+    var result = try initForDecode(T, allocator);
 
     var iterator = WireDecoderIterator{ .input = input };
 
@@ -1192,14 +1183,14 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) Unio
         inline for (@typeInfo(rootType).Struct.fields) |field| {
             const v = @field(rootType._desc_table, field.name);
             if (is_tag_known(v, extracted_data)) {
-                break try decode_data(rootType, v, field, context.getTarget(), extracted_data, allocator);
+                break try decode_data(rootType, v, field, getTarget(T, &result), extracted_data, allocator);
             }
         } else {
             log.debug("Unknown field received in {s} {any}\n", .{ @typeName(T), extracted_data.tag });
         }
     }
 
-    return context.result;
+    return result;
 }
 
 fn freeAllocated(allocator: Allocator, token: json.Token) void {
