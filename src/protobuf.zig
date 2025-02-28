@@ -530,6 +530,7 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, c
     }
 }
 
+
 /// Internal function that decodes the descriptor information and struct fields
 /// before passing them to the append function
 fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) Allocator.Error!void {
@@ -543,19 +544,12 @@ fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) Allocator.Error!void {
 
     inline for (field_list) |field| {
         if (@typeInfo(field.type) == .Optional) {
-            const temp = if (isZigProtobufManagedStruct(@TypeOf(data)))
-                data.get()
-            else
-                data;
+            const temp = getValue(@TypeOf(data), data);
             if (@field(temp, field.name)) |value| {
                 try append(pb, @field(data_type._desc_table, field.name), value, true);
             }
         } else {
-            const value = if (isZigProtobufManagedStruct(@TypeOf(data)))
-                data.get()
-            else
-                data;
-
+            const value = getValue(@TypeOf(data), data);
             try append(pb, @field(data_type._desc_table, field.name), @field(value, field.name), false);
         }
     }
@@ -1159,9 +1153,16 @@ fn initForDecode(T: type, allocator: Allocator) !T {
         pb_init(T, allocator);
 }
 
-fn getTarget(T: type, instance: *T) *getRootType(T) {
+fn getPointer(T: type, instance: *T) *getRootType(T) {
     return if (isZigProtobufManagedStruct(T))
         instance.getPointer()
+    else
+        instance;
+}
+
+fn getValue(T: type, instance: T) getRootType(T) {
+    return if (isZigProtobufManagedStruct(T))
+        instance.get()
     else
         instance;
 }
@@ -1179,7 +1180,7 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) Unio
         inline for (@typeInfo(rootType).Struct.fields) |field| {
             const v = @field(rootType._desc_table, field.name);
             if (is_tag_known(v, extracted_data)) {
-                break try decode_data(rootType, v, field, getTarget(T, &result), extracted_data, allocator);
+                break try decode_data(rootType, v, field, getPointer(T, &result), extracted_data, allocator);
             }
         } else {
             log.debug("Unknown field received in {s} {any}\n", .{ @typeName(T), extracted_data.tag });
