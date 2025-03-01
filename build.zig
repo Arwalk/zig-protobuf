@@ -191,6 +191,7 @@ pub fn build(b: *std.Build) !void {
     });
     benchmark_exe.step.dependOn(&convertForBenchmarkStep.step);
 
+    benchmark_exe.step.dependOn(test_step);
     // Add the generate_dataset step and executable
     const generate_dataset_step = b.step("generate-dataset", "Generate benchmark dataset");
 
