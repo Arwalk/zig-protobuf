@@ -133,7 +133,7 @@ pub fn generateRandomExponentialHistogramDataPoint(allocator: std.mem.Allocator)
     return point;
 }
 
-const DATASET_SIZE = 100;
+const DATASET_SIZE = 10;
 const OUTPUT_FILENAME = "test.data";
 
 pub fn main() !void {

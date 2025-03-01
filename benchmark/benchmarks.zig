@@ -44,6 +44,7 @@ fn loadFixedDataset(allocator: std.mem.Allocator) !?DataSet {
     var reader: std.Io.Reader = .fixed(buffer);
 
     const data = try benchmark_data.BenchmarkData.decode(&reader, allocator);
+
     if (data.histogram_points.items.len == 0) {
         std.debug.print("Dataset contains no histogram points\n", .{});
         return null;
@@ -81,8 +82,8 @@ pub fn main() !void {
     var bench = zbench.Benchmark.init(arena_allocator, .{});
     defer bench.deinit();
 
-    try bench.add("encoding benchmark", bench_encode, .{ .iterations = 100000 });
-    try bench.add("decoding benchmark", bench_decode, .{ .iterations = 100000 });
+    try bench.add("encoding benchmark", bench_encode, .{});
+    try bench.add("decoding benchmark", bench_decode, .{});
 
     var buf: [1024]u8 = undefined;
     var stderr = std.fs.File.stderr().writer(&buf);
