@@ -1,0 +1,8 @@
+syntax = "proto3";
+package benchmark;
+
+import "opentelemetry/proto/metrics/v1/metrics.proto";
+
+message BenchmarkData {
+  repeated opentelemetry.proto.metrics.v1.ExponentialHistogramDataPoint histogram_points = 1;
+} 
