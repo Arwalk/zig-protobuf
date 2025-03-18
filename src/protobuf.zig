@@ -606,8 +606,18 @@ fn hasManagedStruct(T: type) bool {
                         },
                         .OneOf => |oneof_type| {
                             for (@typeInfo(oneof_type).Union.fields) |union_field| {
-                                if (hasManagedStruct(union_field.type)) {
-                                    break :blk true;
+                                switch (@typeInfo(union_field.type)) {
+                                    .Struct => {
+                                        if (hasManagedStruct(union_field.type)) {
+                                            break :blk true;
+                                        }
+                                    },
+                                    .Union => {
+                                        if (isZigProtobufManagedStruct(union_field.type)) {
+                                            break :blk true;
+                                        }
+                                    },
+                                    else => {},
                                 }
                             }
                         },
