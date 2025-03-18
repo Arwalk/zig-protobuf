@@ -57,6 +57,7 @@ test "issue #74" {
 }
 
 //test "LogsData proto issue #84" {
+//    @setEvalBranchQuota(10000);
 //    var logsData = pblogs.LogsData.init(std.testing.allocator);
 //    defer logsData.deinit();
 //
@@ -64,25 +65,13 @@ test "issue #74" {
 //    defer rl.deinit();
 //
 //    try logsData.resource_logs.append(rl);
-
+//
 //    const bytes = try logsData.encode(std.testing.allocator); // <- compile error before
 //    defer std.testing.allocator.free(bytes);
 //}
 
 const SelfRefNode = selfref.SelfRefNode;
 const ManagedStruct = protobuf.ManagedStruct;
-
-//pub const SelfRefNode = struct {
-//    version: i32 = 0,
-//    node: ?ManagedStruct(SelfRefNode)= null,
-//
-//    pub const _desc_table = .{
-//        .version = fd(1, .{ .Varint = .Simple }),
-//        .node = fd(2, .{ .SubMessage = {} }),
-//    };
-//
-//    pub usingnamespace protobuf.MessageMixins(@This());
-//};
 
 test "self ref test" {
     var demo = SelfRefNode.init(testing.allocator);
@@ -109,10 +98,10 @@ test "self ref test" {
     try testing.expectEqual(@as(i32, 1), decoded.node.?.get().version);
 }
 
-//test "self ref test with cycle, should fail" {
-//    var demo = SelfRefNode.init(testing.allocator);
-//    demo.node = ManagedStruct(SelfRefNode).managed(&demo);
-//    defer demo.deinit();
-//
-//    try testing.expectError(protobuf.EncodingError.CycleInSelfReferencingMessage, demo.encode(testing.allocator));
-//}
+test "self ref test with cycle, should fail" {
+    var demo = SelfRefNode.init(testing.allocator);
+    demo.node = ManagedStruct(SelfRefNode).managed(&demo);
+    defer demo.deinit();
+
+    try testing.expectError(protobuf.EncodingError.CycleInSelfReferencingMessage, demo.encode(testing.allocator));
+}

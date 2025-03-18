@@ -186,6 +186,13 @@ pub fn ManagedStruct(T: type) type {
                 .Owned => |*it| it.v,
             };
         }
+
+        pub fn getConstPointer(self: *const Self) *const T {
+            return switch (self.*) {
+                .Borrowed => |it| it,
+                .Owned => |*it| it.v,
+            };
+        }
     };
 }
 
@@ -633,23 +640,64 @@ test "hasManagedStruct" {
     try testing.expect(!hasManagedStruct(i32));
 }
 
-fn internalCheckForCycle(data: anytype, visited: *ArrayList(*const anyopaque)) EncodingError!void {
-    _ = data;
-    _ = visited;
+fn internalCheckForCycle(data: anytype, visited: *ArrayList(*const anyopaque)) UnionEncodingError!void {
+    const current: *const anyopaque = @ptrCast(&data);
+    for (visited.items) |item| {
+        if (item == current) {
+            return error.CycleInSelfReferencingMessage;
+        }
+    }
+    try visited.append(current);
+
+    if (isZigProtobufManagedStruct(@TypeOf(data))) {
+        const casted: *const anyopaque = @ptrCast(data.getConstPointer());
+
+        for (visited.items) |item| {
+            if (item == casted) {
+                return error.CycleInSelfReferencingMessage;
+            }
+        }
+
+        try visited.append(casted);
+
+        return internalCheckForCycle(data.get(), visited);
+    }
+
+    const type_info = @typeInfo(@TypeOf(@TypeOf(data)._desc_table));
+    inline for (type_info.Struct.fields) |field| {
+        const desc: FieldDescriptor = @field(@TypeOf(data)._desc_table, field.name);
+        switch (desc.ftype) {
+            .SubMessage => {
+                if (@field(data, field.name)) |submessage| {
+                    try internalCheckForCycle(submessage, visited);
+                }
+            },
+            .List, .PackedList => |list_type| {
+                switch (list_type) {
+                    .SubMessage => {
+                        const list_data = @field(data, field.name);
+                        for (list_data.items) |item| {
+                            try internalCheckForCycle(item, visited);
+                        }
+                    },
+                    else => {},
+                }
+            },
+            else => {},
+        }
+    }
 }
 
-fn checkForCycle(data: anytype) EncodingError!void {
-    var visited = ArrayList(*const anyopaque).init(std.heap.page_allocator);
+fn checkForCycle(data: anytype, allocator: Allocator) UnionEncodingError!void {
+    var visited = ArrayList(*const anyopaque).init(allocator);
     defer visited.deinit();
-
     try internalCheckForCycle(data, &visited);
 }
 
 /// Public encoding function, meant to be embdedded in generated structs
 pub fn pb_encode(data: anytype, allocator: Allocator) UnionEncodingError![]u8 {
     if (comptime hasManagedStruct(@TypeOf(data))) {
-        //@compileLog("hasManagedStruct = true : " ++ @typeName(@TypeOf(data)));
-        //try checkForCycle(data);
+        try checkForCycle(data, allocator);
     }
 
     var pb = ArrayList(u8).init(allocator);
