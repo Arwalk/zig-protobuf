@@ -564,8 +564,94 @@ fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) Allocator.Error!void {
     }
 }
 
+fn hasManagedStruct(T: type) bool {
+    return comptime blk: {
+        const rootType = switch (@typeInfo(T)) {
+            .Optional => |opt| opt.child,
+            else => T,
+        };
+        const type_info: std.builtin.Type = @typeInfo(rootType);
+
+        switch (type_info) {
+            .Union => {
+                break :blk isZigProtobufManagedStruct(rootType);
+            },
+            .Struct => {
+                for (type_info.Struct.fields) |field| {
+                    const desc: FieldDescriptor = @field(rootType._desc_table, field.name);
+                    switch (desc.ftype) {
+                        .SubMessage => {
+                            if (hasManagedStruct(field.type)) {
+                                break :blk true;
+                            }
+                        },
+                        .List, .PackedList => |list_type| {
+                            switch (list_type) {
+                                .SubMessage => {
+                                    const item_type = @typeInfo(field.type).Struct.fields[0].type;
+                                    const child_type = @typeInfo(item_type).Pointer.child;
+                                    if (hasManagedStruct(child_type)) {
+                                        break :blk true;
+                                    }
+                                },
+                                else => {},
+                            }
+                        },
+                        .OneOf => |oneof_type| {
+                            for (@typeInfo(oneof_type).Union.fields) |union_field| {
+                                if (hasManagedStruct(union_field.type)) {
+                                    break :blk true;
+                                }
+                            }
+                        },
+                        else => {},
+                    }
+                }
+                break :blk false;
+            },
+            else => {
+                break :blk false;
+            },
+        }
+    };
+}
+
+pub const SelfRefNodeForTest = struct {
+    version: i32 = 0,
+    node: ?ManagedStruct(SelfRefNodeForTest) = null,
+
+    pub const _desc_table = .{
+        .version = fd(1, .{ .Varint = .Simple }),
+        .node = fd(2, .{ .SubMessage = {} }),
+    };
+
+    pub usingnamespace MessageMixins(@This());
+};
+
+test "hasManagedStruct" {
+    try testing.expect(hasManagedStruct(SelfRefNodeForTest));
+    try testing.expect(!hasManagedStruct(i32));
+}
+
+fn internalCheckForCycle(data: anytype, visited: *ArrayList(*const anyopaque)) EncodingError!void {
+    _ = data;
+    _ = visited;
+}
+
+fn checkForCycle(data: anytype) EncodingError!void {
+    var visited = ArrayList(*const anyopaque).init(std.heap.page_allocator);
+    defer visited.deinit();
+
+    try internalCheckForCycle(data, &visited);
+}
+
 /// Public encoding function, meant to be embdedded in generated structs
-pub fn pb_encode(data: anytype, allocator: Allocator) Allocator.Error![]u8 {
+pub fn pb_encode(data: anytype, allocator: Allocator) UnionEncodingError![]u8 {
+    if (comptime hasManagedStruct(@TypeOf(data))) {
+        //@compileLog("hasManagedStruct = true : " ++ @typeName(@TypeOf(data)));
+        //try checkForCycle(data);
+    }
+
     var pb = ArrayList(u8).init(allocator);
     errdefer pb.deinit();
 
@@ -1630,9 +1716,15 @@ fn stringify_struct_field(
     }
 }
 
+pub const EncodingError = error{
+    CycleInSelfReferencingMessage,
+};
+
+pub const UnionEncodingError = EncodingError || Allocator.Error;
+
 pub fn MessageMixins(comptime Self: type) type {
     return struct {
-        pub fn encode(self: Self, allocator: Allocator) Allocator.Error![]u8 {
+        pub fn encode(self: Self, allocator: Allocator) UnionEncodingError![]u8 {
             return pb_encode(self, allocator);
         }
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!Self {

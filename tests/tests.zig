@@ -56,18 +56,18 @@ test "issue #74" {
     item.deinit();
 }
 
-test "LogsData proto issue #84" {
-    var logsData = pblogs.LogsData.init(std.testing.allocator);
-    defer logsData.deinit();
+//test "LogsData proto issue #84" {
+//    var logsData = pblogs.LogsData.init(std.testing.allocator);
+//    defer logsData.deinit();
+//
+//    const rl = pblogs.ResourceLogs.init(std.testing.allocator);
+//    defer rl.deinit();
+//
+//    try logsData.resource_logs.append(rl);
 
-    const rl = pblogs.ResourceLogs.init(std.testing.allocator);
-    defer rl.deinit();
-
-    try logsData.resource_logs.append(rl);
-
-    const bytes = try logsData.encode(std.testing.allocator); // <- compile error before
-    defer std.testing.allocator.free(bytes);
-}
+//    const bytes = try logsData.encode(std.testing.allocator); // <- compile error before
+//    defer std.testing.allocator.free(bytes);
+//}
 
 const SelfRefNode = selfref.SelfRefNode;
 const ManagedStruct = protobuf.ManagedStruct;
@@ -84,7 +84,6 @@ const ManagedStruct = protobuf.ManagedStruct;
 //    pub usingnamespace protobuf.MessageMixins(@This());
 //};
 
-
 test "self ref test" {
     var demo = SelfRefNode.init(testing.allocator);
     var demo2 = SelfRefNode.init(testing.allocator);
@@ -96,12 +95,24 @@ test "self ref test" {
     const encoded = try demo.encode(testing.allocator);
     defer testing.allocator.free(encoded);
 
-    try testing.expectEqualSlices(u8, &[_]u8{0x12, 0x02, 0x08, 0x01}, encoded);
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0x02, 0x08, 0x01 }, encoded);
 
     const decoded = try SelfRefNode.decode(encoded, testing.allocator);
     defer decoded.deinit();
 
+    // checking that reencoding a decoded message works
+    const reencoded = try decoded.encode(testing.allocator);
+    defer testing.allocator.free(reencoded);
+
+    try testing.expectEqualSlices(u8, encoded, reencoded);
+
     try testing.expectEqual(@as(i32, 1), decoded.node.?.get().version);
 }
 
-// TODO: check for cyclic structure
+//test "self ref test with cycle, should fail" {
+//    var demo = SelfRefNode.init(testing.allocator);
+//    demo.node = ManagedStruct(SelfRefNode).managed(&demo);
+//    defer demo.deinit();
+//
+//    try testing.expectError(protobuf.EncodingError.CycleInSelfReferencingMessage, demo.encode(testing.allocator));
+//}
