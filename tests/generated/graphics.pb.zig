@@ -7,6 +7,7 @@ const ArrayList = std.ArrayList;
 const protobuf = @import("protobuf");
 const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
+const ManagedStruct = protobuf.ManagedStruct;
 
 pub const InventoryItem = struct {
     slot: i32 = 0,

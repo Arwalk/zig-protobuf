@@ -42,9 +42,21 @@ const GenerationContext = struct {
     /// map of "package.fully.qualified.names" to output string lists
     output_lists: std.StringHashMap(std.ArrayList([]const u8)) = std.StringHashMap(std.ArrayList([]const u8)).init(allocator),
 
+    /// map of message names to their dependencies
+    message_deps: std.StringHashMap(std.StringHashMap(bool)) = std.StringHashMap(std.StringHashMap(bool)).init(allocator),
+
     const Self = @This();
 
     pub fn processRequest(self: *Self) !void {
+        defer {
+            // Clean up message dependencies
+            var it = self.message_deps.iterator();
+            while (it.next()) |entry| {
+                entry.value_ptr.deinit();
+            }
+            self.message_deps.deinit();
+        }
+
         for (self.req.proto_file.items) |file| {
             const t: descriptor.FileDescriptorProto = file;
 
@@ -108,6 +120,7 @@ const GenerationContext = struct {
                 \\const protobuf = @import("protobuf");
                 \\const ManagedString = protobuf.ManagedString;
                 \\const fd = protobuf.fd;
+                \\const ManagedStruct = protobuf.ManagedStruct;
                 \\
             , .{name.buf}));
 
@@ -309,7 +322,27 @@ const GenerationContext = struct {
             if (!is_union) {
                 // look for optional types
                 switch (t) {
-                    .TYPE_MESSAGE => prefix = "?",
+                    .TYPE_MESSAGE => {
+                        // Check if the field type is self-referential
+                        if (field.type_name) |type_name| {
+                            const raw_type = type_name.getSlice();
+                            const dep_name = raw_type[1..]; // Remove leading dot
+                            const last_dot = std.mem.lastIndexOf(u8, dep_name, ".");
+                            const simple_name = if (last_dot) |idx| dep_name[idx + 1..] else dep_name;
+                            
+                            // Get the current message name from fqn
+                            const current_msg = fqn.name().buf;
+                            
+                            if (std.mem.eql(u8, simple_name, current_msg)) {
+                                prefix = "?ManagedStruct(";
+                                postfix = ")";
+                            } else {
+                                prefix = "?";
+                            }
+                        } else {
+                            prefix = "?";
+                        }
+                    },
                     else => if (ctx.isOptional(file, field)) {
                         prefix = "?";
                     },
@@ -577,6 +610,73 @@ const GenerationContext = struct {
                 \\
             , .{}));
         }
+    }
+
+    /// Analyzes message dependencies to detect self-referential messages
+    fn analyzeMessageDependencies(self: *Self, fqn: FullName, message: descriptor.DescriptorProto) !bool {
+        const message_name = message.name.?.getSlice();
+        const full_message_name = fqn.buf;  // Use package name directly
+        var deps = std.StringHashMap(bool).init(allocator);
+
+        // Check fields for message types
+        for (message.field.items) |field| {
+            if (field.type) |t| {
+                if (t == .TYPE_MESSAGE) {
+                    if (field.type_name) |type_name| {
+                        const raw_type = type_name.getSlice();
+                        const dep_name = raw_type[1..]; // Remove leading dot
+                        try deps.put(dep_name, true);
+
+                        // Check for direct self-reference by comparing the last part of the type name
+                        const last_dot = std.mem.lastIndexOf(u8, dep_name, ".");
+                        const simple_name = if (last_dot) |idx| dep_name[idx + 1..] else dep_name;
+                        
+                        if (std.mem.eql(u8, simple_name, message_name)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Store dependencies for this message
+        try self.message_deps.put(full_message_name, deps);
+
+        // Check if this message is self-referential (directly or indirectly)
+        var visited = std.StringHashMap(bool).init(allocator);
+        defer visited.deinit();
+        return self.isMessageSelfReferential(full_message_name, &visited);
+    }
+
+    /// Recursively checks if a message is self-referential
+    fn isMessageSelfReferential(self: *Self, message_name: string, visited: *std.StringHashMap(bool)) bool {
+        if (visited.get(message_name)) |_| {
+            return true; // Found a cycle
+        }
+
+        if (self.message_deps.get(message_name)) |deps| {
+            var it = deps.iterator();
+            visited.put(message_name, true) catch return false;
+            defer _ = visited.remove(message_name);
+
+            while (it.next()) |dep| {
+                const last_dot = std.mem.lastIndexOf(u8, dep.key_ptr.*, ".");
+                const simple_name = if (last_dot) |idx| dep.key_ptr.*[idx + 1..] else dep.key_ptr.*;
+                const last_dot_msg = std.mem.lastIndexOf(u8, message_name, ".");
+                const msg_simple_name = if (last_dot_msg) |idx| message_name[idx + 1..] else message_name;
+
+                // Check for self-reference by comparing simple names
+                if (std.mem.eql(u8, simple_name, msg_simple_name)) {
+                    return true;
+                }
+                // Also check for indirect cycles
+                if (self.isMessageSelfReferential(dep.key_ptr.*, visited)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 };
 
