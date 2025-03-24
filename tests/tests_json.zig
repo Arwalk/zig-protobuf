@@ -20,10 +20,10 @@ fn _compare_pb_strings(value1: ManagedString, value2: @TypeOf(value1)) bool {
 
 fn _compare_numerics(value1: anytype, value2: @TypeOf(value1)) bool {
     switch (@typeInfo(@TypeOf(value1))) {
-        .Int, .ComptimeInt, .Enum, .Bool => {
+        .int, .comptime_int, .@"enum", .bool => {
             return value1 == value2;
         },
-        .Float, .ComptimeFloat => {
+        .float, .comptime_float => {
             if (std.math.isNan(value1)) {
                 return std.math.isNan(value2);
             }
@@ -45,7 +45,7 @@ fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
         const field_type = @TypeOf(@field(value1, structInfo.name));
 
         var field1: switch (@typeInfo(field_type)) {
-            .Optional => |optional| optional.child,
+            .optional => |optional| optional.child,
             else => field_type,
         } = undefined;
         var field2: @TypeOf(field1) = undefined;
@@ -57,7 +57,7 @@ fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
         //        requied (for those .? is applied)
         var are_optionals_equal: ?bool = null;
         switch (@typeInfo(field_type)) {
-            .Optional => {
+            .optional => {
                 if (@field(
                     value1,
                     structInfo.name,
@@ -104,8 +104,8 @@ fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
             },
             .OneOf => {
                 const union_info = switch (@typeInfo(@TypeOf(field1))) {
-                    .Union => |u| u,
-                    else => @compileError("Oneof should have .Union type"),
+                    .@"union" => |u| u,
+                    else => @compileError("Oneof should have .@\"union\" type"),
                 };
                 if (union_info.tag_type == null) {
                     @compileError("There should be no such thing as untagged unions");
