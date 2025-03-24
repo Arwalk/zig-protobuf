@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package selfref;
+
+message SelfRefNode {
+  int32 version = 1;
+  SelfRefNode node = 2;
+}

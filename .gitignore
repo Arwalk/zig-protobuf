@@ -12,3 +12,4 @@ protocol
 tests/.generated
 debug
 .zig-cache
+.specstory/*

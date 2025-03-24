@@ -7,6 +7,7 @@ const ArrayList = std.ArrayList;
 const protobuf = @import("protobuf");
 const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
+const ManagedStruct = protobuf.ManagedStruct;
 
 pub const ForeignEnum = enum(i32) {
     FOREIGN_FOO = 4,
@@ -323,10 +324,10 @@ pub const TestAllTypes = struct {
 };
 
 pub const NestedTestAllTypes = struct {
-    child: ?NestedTestAllTypes = null,
+    child: ?ManagedStruct(NestedTestAllTypes) = null,
     payload: ?TestAllTypes = null,
     repeated_child: ArrayList(NestedTestAllTypes),
-    lazy_child: ?NestedTestAllTypes = null,
+    lazy_child: ?ManagedStruct(NestedTestAllTypes) = null,
     eager_child: ?TestAllTypes = null,
 
     pub const _desc_table = .{
@@ -587,7 +588,7 @@ pub const TestRequiredMessage = struct {
 };
 
 pub const TestNestedRequiredForeign = struct {
-    child: ?TestNestedRequiredForeign = null,
+    child: ?ManagedStruct(TestNestedRequiredForeign) = null,
     payload: ?TestRequiredForeign = null,
     dummy: ?i32 = null,
 
@@ -667,7 +668,7 @@ pub const TestReallyLargeTagNumber = struct {
 };
 
 pub const TestRecursiveMessage = struct {
-    a: ?TestRecursiveMessage = null,
+    a: ?ManagedStruct(TestRecursiveMessage) = null,
     i: ?i32 = null,
 
     pub const _desc_table = .{
@@ -1955,7 +1956,7 @@ pub const TestVerifyBigFieldNumberUint32 = struct {
         optional_uint32_2: ?u32 = null,
         optional_uint32_63: ?u32 = null,
         optional_uint32_64: ?u32 = null,
-        optional_nested: ?TestVerifyBigFieldNumberUint32.Nested = null,
+        optional_nested: ?ManagedStruct(TestVerifyBigFieldNumberUint32.Nested) = null,
         repeated_nested: ArrayList(TestVerifyBigFieldNumberUint32.Nested),
 
         pub const _desc_table = .{
