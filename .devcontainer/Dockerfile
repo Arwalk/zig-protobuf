@@ -3,6 +3,6 @@ RUN git config --global core.autocrlf input
 
 ADD . .
 
-RUN bash ./install-zig.sh 0.13.0
+RUN bash ./install-zig.sh 0.14.0-dev.2851+b074fb7dd
 
 ENV AGREE=true

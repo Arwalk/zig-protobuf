@@ -192,8 +192,8 @@ pub const RunProtocStep = struct {
         self.step.name = name;
     }
 
-    fn make(step: *Step, prog_node: std.Progress.Node) anyerror!void {
-        _ = prog_node;
+    fn make(step: *Step, make_opt: std.Build.Step.MakeOptions) anyerror!void {
+        _ = make_opt;
         const b = step.owner;
         const self: *RunProtocStep = @fieldParentPtr("step", step);
 
@@ -231,7 +231,7 @@ pub const RunProtocStep = struct {
                 std.debug.print("\n", .{});
             }
 
-            try step.evalChildProcess(argv.items);
+            _ = try step.evalChildProcess(argv.items);
         }
 
         { // run zig fmt <destination>
@@ -241,7 +241,7 @@ pub const RunProtocStep = struct {
             try argv.append("fmt");
             try argv.append(absolute_dest_dir);
 
-            try step.evalChildProcess(argv.items);
+            _ = try step.evalChildProcess(argv.items);
         }
     }
 };
@@ -361,7 +361,7 @@ fn getProtocDownloadLink(allocator: std.mem.Allocator, version: []const u8) !?[]
 
     const arch: ?[]const u8 = switch (builtin.cpu.arch) {
         .powerpcle, .powerpc64le => "ppcle",
-        .aarch64, .aarch64_be, .aarch64_32 => "aarch_64",
+        .aarch64, .aarch64_be => "aarch_64",
         .s390x => "s390",
         .x86_64 => "x86_64",
         .x86 => "x86_32",
