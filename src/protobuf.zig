@@ -546,7 +546,7 @@ fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) Allocator.Error!void {
     const type_info_data = @typeInfo(@TypeOf(data));
     const data_type = switch (type_info_data) {
         .@"union" => |_| // ManagedStruct case
-        @typeInfo(@TypeOf(data.Borrowed)).@"pointer".child,
+        @typeInfo(@TypeOf(data.Borrowed)).pointer.child,
         else => @TypeOf(data),
     };
     const field_list = @typeInfo(data_type).@"struct".fields;
