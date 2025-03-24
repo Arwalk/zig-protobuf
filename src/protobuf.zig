@@ -573,6 +573,7 @@ fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) Allocator.Error!void {
 
 fn hasManagedStruct(T: type) bool {
     return comptime blk: {
+        @setEvalBranchQuota(10000);
         const rootType = switch (@typeInfo(T)) {
             .Optional => |opt| opt.child,
             else => T,
@@ -645,7 +646,7 @@ pub const SelfRefNodeForTest = struct {
     pub usingnamespace MessageMixins(@This());
 };
 
-test "hasManagedStruct" {
+test "hasManagedStruct with self-referencing struct" {
     try testing.expect(hasManagedStruct(SelfRefNodeForTest));
     try testing.expect(!hasManagedStruct(i32));
 }

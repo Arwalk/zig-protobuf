@@ -56,18 +56,7 @@ test "issue #74" {
     item.deinit();
 }
 
-test "LogsData proto issue #84" {
-    var logsData = pblogs.LogsData.init(std.testing.allocator);
-    defer logsData.deinit();
 
-    const rl = pblogs.ResourceLogs.init(std.testing.allocator);
-    defer rl.deinit();
-
-    try logsData.resource_logs.append(rl);
-
-    const bytes = try logsData.encode(std.testing.allocator); // <- compile error before
-    defer std.testing.allocator.free(bytes);
-}
 
 const SelfRefNode = selfref.SelfRefNode;
 const ManagedStruct = protobuf.ManagedStruct;

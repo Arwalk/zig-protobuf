@@ -99,6 +99,12 @@ pub fn build(b: *std.Build) !void {
             .target = target,
             .optimize = optimize,
         }),
+        b.addTest(.{
+            .name = "specific_test",
+            .root_source_file = b.path("tests/specific_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     };
 
     const convertStep = RunProtocStep.create(b, b, target, .{
