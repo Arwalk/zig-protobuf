@@ -800,7 +800,7 @@ pub const WireDecoderIterator = struct {
                     };
                 },
                 1 => blk: { // 64BIT
-                    if (state.current_index + 8 >= state.input.len) return error.NotEnoughData;
+                    if (state.current_index + 8 > state.input.len) return error.NotEnoughData;
                     const value = ExtractedData{ .RawValue = decode_fixed(u64, state.input[state.current_index .. state.current_index + 8]) };
                     state.current_index += 8;
                     break :blk value;
