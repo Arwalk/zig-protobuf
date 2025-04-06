@@ -499,7 +499,7 @@ fn ensureCanUnzipFiles(allocator: std.mem.Allocator) void {
         .argv = &.{"unzip"},
         .cwd = sdkPath("/"),
     }) catch { // e.g. FileNotFound
-        std.log.err("zig-protobuf: error: 'unzip' failed. Is curl not installed?", .{});
+        std.log.err("zig-protobuf: error: 'unzip' failed. Is unzip not installed?", .{});
         std.process.exit(1);
     };
     defer {
@@ -507,7 +507,7 @@ fn ensureCanUnzipFiles(allocator: std.mem.Allocator) void {
         allocator.free(result.stdout);
     }
     if (result.term.Exited != 0) {
-        std.log.err("zig-protobuf: error: 'unzip' failed. Is curl not installed?", .{});
+        std.log.err("zig-protobuf: error: 'unzip' failed. Is unzip not installed?", .{});
         std.process.exit(1);
     }
 }
