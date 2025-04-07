@@ -288,7 +288,7 @@ fn getProtocInstallDir(
     protoc_version: []const u8,
 ) ![]const u8 {
     if (std.process.getEnvVarOwned(allocator, "PROTOC_PATH") catch null) |protoc_path| {
-        std.log.info("zig-protobuf: respecting PROTOC_PATH: {s}\n", .{ protoc_path });
+        std.log.info("zig-protobuf: respecting PROTOC_PATH: {s}\n", .{protoc_path});
         if (fileExists(protoc_path)) {
             // user has probably provided full path to protoc binary instead of proto_dir
             // also, if these fail and user explicitly provided custom path, we probably don't want to download stuff
@@ -462,12 +462,16 @@ fn downloadFile(allocator: std.mem.Allocator, target_file: []const u8, url: []co
 }
 
 fn unzipFile(allocator: std.mem.Allocator, file: []const u8, target_directory: []const u8) !void {
-    std.debug.print("decompressing {s}..\n", .{file});
-
-    var child = std.process.Child.init(
-        &.{ "unzip", "-o", file, "-d", target_directory },
-        allocator,
-    );
+    var child = switch (builtin.os.tag) {
+        .windows => std.process.Child.init(
+            &.{ "powershell", "-Command", "Expand-Archive -Force -Path", file, "-DestinationPath", target_directory },
+            allocator,
+        ),
+        else => std.process.Child.init(
+            &.{ "unzip", "-o", file, "-d", target_directory },
+            allocator,
+        ),
+    };
     child.cwd = sdkPath("/");
     child.stderr = std.io.getStdErr();
     child.stdout = std.io.getStdOut();
@@ -494,21 +498,26 @@ fn ensureCanDownloadFiles(allocator: std.mem.Allocator) void {
 }
 
 fn ensureCanUnzipFiles(allocator: std.mem.Allocator) void {
-    const result = std.process.Child.run(.{
-        .allocator = allocator,
-        .argv = &.{"unzip"},
-        .cwd = sdkPath("/"),
-    }) catch { // e.g. FileNotFound
-        std.log.err("zig-protobuf: error: 'unzip' failed. Is unzip not installed?", .{});
-        std.process.exit(1);
-    };
-    defer {
-        allocator.free(result.stderr);
-        allocator.free(result.stdout);
-    }
-    if (result.term.Exited != 0) {
-        std.log.err("zig-protobuf: error: 'unzip' failed. Is unzip not installed?", .{});
-        std.process.exit(1);
+    switch (builtin.os.tag) {
+        .windows => {},
+        else => {
+            const result = std.process.Child.run(.{
+                .allocator = allocator,
+                .argv = &.{"unzip"},
+                .cwd = sdkPath("/"),
+            }) catch { // e.g. FileNotFound
+                std.log.err("zig-protobuf: error: 'unzip' failed. Is unzip not installed?", .{});
+                std.process.exit(1);
+            };
+            defer {
+                allocator.free(result.stderr);
+                allocator.free(result.stdout);
+            }
+            if (result.term.Exited != 0) {
+                std.log.err("zig-protobuf: error: 'unzip' failed. Is unzip not installed?", .{});
+                std.process.exit(1);
+            }
+        },
     }
 }
 
