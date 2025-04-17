@@ -602,7 +602,7 @@ const GenerationContext = struct {
 
             try ctx.generateEnums(list, messageFqn, file, m.enum_type);
             try ctx.generateMessages(list, messageFqn, file, m.nested_type);
-            const mixed_builtins =
+            const message_mixins =
                 \\
                 \\    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
                 \\        return protobuf.pb_encode(self, allocator);
@@ -636,9 +636,12 @@ const GenerationContext = struct {
                 \\    pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
                 \\        try protobuf.jsonStringifyT(@This(), self, jws);
                 \\    }
-                \\};
             ;
-            try list.append(mixed_builtins);
+            try list.append(message_mixins);
+            try list.append(
+                \\};
+                \\
+            );
         }
     }
 
