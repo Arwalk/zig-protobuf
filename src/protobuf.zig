@@ -19,7 +19,7 @@ const VarintType = enum { Simple, ZigZagOptimized };
 
 const DecodingError = error{ NotEnoughData, InvalidInput };
 
-const UnionDecodingError = DecodingError || Allocator.Error;
+pub const UnionDecodingError = DecodingError || Allocator.Error;
 
 pub const ManagedStringTag = enum { Owned, Const, Empty };
 
@@ -1669,122 +1669,130 @@ pub fn MessageMixins(comptime Self: type) type {
             source: anytype,
             options: json.ParseOptions,
         ) !Self {
-            if (.object_begin != try source.next()) {
-                return error.UnexpectedToken;
-            }
-
-            // Mainly taken from 0.13.0's source code
-            var result: Self = undefined;
-            const structInfo = @typeInfo(Self).@"struct";
-            var fields_seen = [_]bool{false} ** structInfo.fields.len;
-
-            while (true) {
-                var name_token: ?json.Token = try source.nextAllocMax(
-                    allocator,
-                    .alloc_if_needed,
-                    options.max_value_len.?,
-                );
-                const field_name = switch (name_token.?) {
-                    inline .string, .allocated_string => |slice| slice,
-                    .object_end => { // No more fields.
-                        break;
-                    },
-                    else => {
-                        return error.UnexpectedToken;
-                    },
-                };
-
-                inline for (structInfo.fields, 0..) |field, i| {
-                    if (field.is_comptime) {
-                        @compileError("comptime fields are not supported: " ++ @typeName(Self) ++ "." ++ field.name);
-                    }
-
-                    const yes1 = std.mem.eql(u8, field.name, field_name);
-                    const camel_case_name = comptime to_camel_case(field.name);
-                    var yes2: bool = undefined;
-                    if (comptime std.mem.eql(u8, field.name, camel_case_name)) {
-                        yes2 = false;
-                    } else {
-                        yes2 = std.mem.eql(u8, camel_case_name, field_name);
-                    }
-
-                    if (yes1 and yes2) {
-                        return error.UnexpectedToken;
-                    } else if (yes1 or yes2) {
-                        // Free the name token now in case we're using an
-                        // allocator that optimizes freeing the last
-                        // allocated object. (Recursing into innerParse()
-                        // might trigger more allocations.)
-                        freeAllocated(allocator, name_token.?);
-                        name_token = null;
-                        if (fields_seen[i]) {
-                            switch (options.duplicate_field_behavior) {
-                                .use_first => {
-                                    // Parse and ignore the redundant value.
-                                    // We don't want to skip the value,
-                                    // because we want type checking.
-                                    try parseStructField(
-                                        Self,
-                                        &result,
-                                        field,
-                                        allocator,
-                                        source,
-                                        options,
-                                    );
-                                    break;
-                                },
-                                .@"error" => return error.DuplicateField,
-                                .use_last => {},
-                            }
-                        }
-                        try parseStructField(
-                            Self,
-                            &result,
-                            field,
-                            allocator,
-                            source,
-                            options,
-                        );
-                        fields_seen[i] = true;
-                        break;
-                    }
-                } else {
-                    // Didn't match anything.
-                    freeAllocated(allocator, name_token.?);
-                    if (options.ignore_unknown_fields) {
-                        try source.skipValue();
-                    } else {
-                        return error.UnknownField;
-                    }
-                }
-            }
-            try fillDefaultStructValues(Self, &result, &fields_seen);
-            return result;
+            try jsonParseT(Self, allocator, source, options);
         }
 
         // This method is used by std.json
         // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const Self, jws: anytype) !void {
-            try jws.beginObject();
-
-            inline for (@typeInfo(Self).@"struct".fields) |fieldInfo| {
-                const camel_case_name = comptime to_camel_case(fieldInfo.name);
-
-                if (switch (@typeInfo(fieldInfo.type)) {
-                    .optional => @field(self, fieldInfo.name) != null,
-                    else => true,
-                }) try jws.objectField(camel_case_name);
-
-                try stringify_struct_field(
-                    @field(self, fieldInfo.name),
-                    @field(Self._desc_table, fieldInfo.name),
-                    jws,
-                );
-            }
-
-            try jws.endObject();
+            try jsonStringifyT(Self, self, jws);
         }
     };
+}
+
+pub fn jsonParseT(T: type, allocator: Allocator, source: anytype, options: json.ParseOptions) !T {
+    if (.object_begin != try source.next()) {
+        return error.UnexpectedToken;
+    }
+
+    // Mainly taken from 0.13.0's source code
+    var result: T = undefined;
+    const structInfo = @typeInfo(T).@"struct";
+    var fields_seen = [_]bool{false} ** structInfo.fields.len;
+
+    while (true) {
+        var name_token: ?json.Token = try source.nextAllocMax(
+            allocator,
+            .alloc_if_needed,
+            options.max_value_len.?,
+        );
+        const field_name = switch (name_token.?) {
+            inline .string, .allocated_string => |slice| slice,
+            .object_end => { // No more fields.
+                break;
+            },
+            else => {
+                return error.UnexpectedToken;
+            },
+        };
+
+        inline for (structInfo.fields, 0..) |field, i| {
+            if (field.is_comptime) {
+                @compileError("comptime fields are not supported: " ++ @typeName(T) ++ "." ++ field.name);
+            }
+
+            const yes1 = std.mem.eql(u8, field.name, field_name);
+            const camel_case_name = comptime to_camel_case(field.name);
+            var yes2: bool = undefined;
+            if (comptime std.mem.eql(u8, field.name, camel_case_name)) {
+                yes2 = false;
+            } else {
+                yes2 = std.mem.eql(u8, camel_case_name, field_name);
+            }
+
+            if (yes1 and yes2) {
+                return error.UnexpectedToken;
+            } else if (yes1 or yes2) {
+                // Free the name token now in case we're using an
+                // allocator that optimizes freeing the last
+                // allocated object. (Recursing into innerParse()
+                // might trigger more allocations.)
+                freeAllocated(allocator, name_token.?);
+                name_token = null;
+                if (fields_seen[i]) {
+                    switch (options.duplicate_field_behavior) {
+                        .use_first => {
+                            // Parse and ignore the redundant value.
+                            // We don't want to skip the value,
+                            // because we want type checking.
+                            try parseStructField(
+                                T,
+                                &result,
+                                field,
+                                allocator,
+                                source,
+                                options,
+                            );
+                            break;
+                        },
+                        .@"error" => return error.DuplicateField,
+                        .use_last => {},
+                    }
+                }
+                try parseStructField(
+                    T,
+                    &result,
+                    field,
+                    allocator,
+                    source,
+                    options,
+                );
+                fields_seen[i] = true;
+                break;
+            }
+        } else {
+            // Didn't match anything.
+            freeAllocated(allocator, name_token.?);
+            if (options.ignore_unknown_fields) {
+                try source.skipValue();
+            } else {
+                return error.UnknownField;
+            }
+        }
+    }
+    try fillDefaultStructValues(T, &result, &fields_seen);
+    return result;
+}
+
+pub fn jsonStringifyT(T: type, self: *const T, jws: anytype) !void {
+    try jws.beginObject();
+
+    inline for (@typeInfo(T).@"struct".fields) |fieldInfo| {
+        const camel_case_name = comptime to_camel_case(fieldInfo.name);
+
+        if (switch (@typeInfo(fieldInfo.type)) {
+            .optional => @field(self, fieldInfo.name) != null,
+            else => true,
+        }) try jws.objectField(camel_case_name);
+
+        try stringify_struct_field(
+            @field(self, fieldInfo.name),
+            @field(T._desc_table, fieldInfo.name),
+            jws,
+        );
+    }
+
+    try jws.endObject();
 }
 
 test "get varint" {

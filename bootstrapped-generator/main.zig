@@ -328,11 +328,11 @@ const GenerationContext = struct {
                             const raw_type = type_name.getSlice();
                             const dep_name = raw_type[1..]; // Remove leading dot
                             const last_dot = std.mem.lastIndexOf(u8, dep_name, ".");
-                            const simple_name = if (last_dot) |idx| dep_name[idx + 1..] else dep_name;
-                            
+                            const simple_name = if (last_dot) |idx| dep_name[idx + 1 ..] else dep_name;
+
                             // Get the current message name from fqn
                             const current_msg = fqn.name().buf;
-                            
+
                             if (std.mem.eql(u8, simple_name, current_msg)) {
                                 prefix = "?ManagedStruct(";
                                 postfix = ")";
@@ -602,20 +602,50 @@ const GenerationContext = struct {
 
             try ctx.generateEnums(list, messageFqn, file, m.enum_type);
             try ctx.generateMessages(list, messageFqn, file, m.nested_type);
-
-            try list.append(try std.fmt.allocPrint(allocator,
+            const mixed_builtins =
                 \\
-                \\    pub usingnamespace protobuf.MessageMixins(@This());
-                \\}};
+                \\    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
+                \\        return protobuf.pb_encode(self, allocator);
+                \\    }
+                \\    pub fn decode(input: []const u8, allocator: Allocator) protobuf.UnionDecodingError!@This() {
+                \\        return protobuf.pb_decode(@This(), input, allocator);
+                \\    }
+                \\    pub fn init(allocator: Allocator) @This() {
+                \\        return protobuf.pb_init(@This(), allocator);
+                \\    }
+                \\    pub fn deinit(self: @This()) void {
+                \\        return protobuf.pb_deinit(self);
+                \\    }
+                \\    pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
+                \\        return protobuf.pb_dupe(@This(), self, allocator);
+                \\    }
+                \\    pub fn json_decode(input: []const u8, options: protobuf.json.ParseOptions, allocator: Allocator) !std.json.Parsed(@This()) {
+                \\        return protobuf.pb_json_decode(@This(), input, options, allocator);
+                \\    }
+                \\    pub fn json_encode(self: @This(), options: protobuf.json.StringifyOptions, allocator: Allocator) ![]const u8 {
+                \\        return protobuf.pb_json_encode(self, options, allocator);
+                \\    }
+                \\    // This method is used by std.json
+                \\    // internally for deserialization. DO NOT RENAME!
+                \\    pub fn jsonParse(allocator: Allocator, source: anytype, options: protobuf.json.ParseOptions) !@This() {
+                \\        try protobuf.jsonParseT(@This(), allocator, source, options);
+                \\    }
                 \\
-            , .{}));
+                \\    // This method is used by std.json
+                \\    // internally for serialization. DO NOT RENAME!
+                \\    pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
+                \\        try protobuf.jsonStringifyT(@This(), self, jws);
+                \\    }
+                \\};
+            ;
+            try list.append(mixed_builtins);
         }
     }
 
     /// Analyzes message dependencies to detect self-referential messages
     fn analyzeMessageDependencies(self: *Self, fqn: FullName, message: descriptor.DescriptorProto) !bool {
         const message_name = message.name.?.getSlice();
-        const full_message_name = fqn.buf;  // Use package name directly
+        const full_message_name = fqn.buf; // Use package name directly
         var deps = std.StringHashMap(bool).init(allocator);
 
         // Check fields for message types
@@ -629,8 +659,8 @@ const GenerationContext = struct {
 
                         // Check for direct self-reference by comparing the last part of the type name
                         const last_dot = std.mem.lastIndexOf(u8, dep_name, ".");
-                        const simple_name = if (last_dot) |idx| dep_name[idx + 1..] else dep_name;
-                        
+                        const simple_name = if (last_dot) |idx| dep_name[idx + 1 ..] else dep_name;
+
                         if (std.mem.eql(u8, simple_name, message_name)) {
                             return true;
                         }
@@ -661,9 +691,9 @@ const GenerationContext = struct {
 
             while (it.next()) |dep| {
                 const last_dot = std.mem.lastIndexOf(u8, dep.key_ptr.*, ".");
-                const simple_name = if (last_dot) |idx| dep.key_ptr.*[idx + 1..] else dep.key_ptr.*;
+                const simple_name = if (last_dot) |idx| dep.key_ptr.*[idx + 1 ..] else dep.key_ptr.*;
                 const last_dot_msg = std.mem.lastIndexOf(u8, message_name, ".");
-                const msg_simple_name = if (last_dot_msg) |idx| message_name[idx + 1..] else message_name;
+                const msg_simple_name = if (last_dot_msg) |idx| message_name[idx + 1 ..] else message_name;
 
                 // Check for self-reference by comparing simple names
                 if (std.mem.eql(u8, simple_name, msg_simple_name)) {
