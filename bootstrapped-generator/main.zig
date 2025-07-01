@@ -606,13 +606,46 @@ const GenerationContext = struct {
 
             try ctx.generateEnums(list, messageFqn, file, m.enum_type);
             try ctx.generateMessages(list, messageFqn, file, m.nested_type);
-
-            try list.append(try std.fmt.allocPrint(allocator,
+            const message_mixins =
                 \\
-                \\    pub usingnamespace protobuf.MessageMixins(@This());
-                \\}};
+                \\    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
+                \\        return protobuf.pb_encode(self, allocator);
+                \\    }
+                \\    pub fn decode(input: []const u8, allocator: Allocator) protobuf.UnionDecodingError!@This() {
+                \\        return protobuf.pb_decode(@This(), input, allocator);
+                \\    }
+                \\    pub fn init(allocator: Allocator) @This() {
+                \\        return protobuf.pb_init(@This(), allocator);
+                \\    }
+                \\    pub fn deinit(self: @This()) void {
+                \\        return protobuf.pb_deinit(self);
+                \\    }
+                \\    pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
+                \\        return protobuf.pb_dupe(@This(), self, allocator);
+                \\    }
+                \\    pub fn json_decode(input: []const u8, options: protobuf.json.ParseOptions, allocator: Allocator) !std.json.Parsed(@This()) {
+                \\        return protobuf.pb_json_decode(@This(), input, options, allocator);
+                \\    }
+                \\    pub fn json_encode(self: @This(), options: protobuf.json.StringifyOptions, allocator: Allocator) ![]const u8 {
+                \\        return protobuf.pb_json_encode(self, options, allocator);
+                \\    }
+                \\    // This method is used by std.json
+                \\    // internally for deserialization. DO NOT RENAME!
+                \\    pub fn jsonParse(allocator: Allocator, source: anytype, options: protobuf.json.ParseOptions) !@This() {
+                \\        try protobuf.jsonParseT(@This(), allocator, source, options);
+                \\    }
                 \\
-            , .{}));
+                \\    // This method is used by std.json
+                \\    // internally for serialization. DO NOT RENAME!
+                \\    pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
+                \\        try protobuf.jsonStringifyT(@This(), self, jws);
+                \\    }
+            ;
+            try list.append(message_mixins);
+            try list.append(
+                \\};
+                \\
+            );
         }
     }
 
