@@ -84,7 +84,6 @@ const ManagedStruct = protobuf.ManagedStruct;
 //    pub usingnamespace protobuf.MessageMixins(@This());
 //};
 
-
 test "self ref test" {
     var demo = SelfRefNode.init(testing.allocator);
     var demo2 = SelfRefNode.init(testing.allocator);
@@ -96,7 +95,7 @@ test "self ref test" {
     const encoded = try demo.encode(testing.allocator);
     defer testing.allocator.free(encoded);
 
-    try testing.expectEqualSlices(u8, &[_]u8{0x12, 0x02, 0x08, 0x01}, encoded);
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0x02, 0x08, 0x01 }, encoded);
 
     const decoded = try SelfRefNode.decode(encoded, testing.allocator);
     defer decoded.deinit();

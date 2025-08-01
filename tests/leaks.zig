@@ -27,12 +27,10 @@ test "leak in allocated string" {
 
 test "leak in list of allocated bytes" {
     var my_bytes = std.ArrayList(protobuf.ManagedString).init(testing.allocator);
-    try my_bytes.append(protobuf.ManagedString {
-        .Const = "abcdef"
-    });
+    try my_bytes.append(protobuf.ManagedString{ .Const = "abcdef" });
     defer my_bytes.deinit();
 
-    var msg = tests.WithRepeatedBytes {
+    var msg = tests.WithRepeatedBytes{
         .byte_field = my_bytes,
     };
 
