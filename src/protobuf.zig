@@ -3,7 +3,6 @@ const StructField = std.builtin.Type.StructField;
 const isIntegral = std.meta.trait.isIntegral;
 const Allocator = std.mem.Allocator;
 const testing = std.testing;
-const json = std.json;
 const base64 = std.base64;
 const base64Errors = std.base64.Error;
 const ParseFromValueError = std.json.ParseFromValueError;
@@ -17,11 +16,12 @@ const ArrayList = std.ArrayList;
 /// Type of encoding for a Varint value.
 const VarintType = enum { Simple, ZigZagOptimized };
 
-const DecodingError = error{ NotEnoughData, InvalidInput };
+pub const DecodingError = error{ NotEnoughData, InvalidInput };
 
-const UnionDecodingError = DecodingError || Allocator.Error;
+pub const UnionDecodingError = DecodingError || Allocator.Error;
 
 pub const ManagedStringTag = enum { Owned, Const, Empty };
+pub const json = std.json;
 
 /// This structure is used by ManagedStruct to hold a T allocated.
 fn AllocatedStruct(T: type) type {
