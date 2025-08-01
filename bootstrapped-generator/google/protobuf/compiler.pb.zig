@@ -7,6 +7,7 @@ const ArrayList = std.ArrayList;
 const protobuf = @import("protobuf");
 const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
+const ManagedStruct = protobuf.ManagedStruct;
 /// import package google.protobuf
 const google_protobuf = @import("../protobuf.pb.zig");
 
@@ -45,7 +46,7 @@ pub const CodeGeneratorRequest = struct {
 pub const CodeGeneratorResponse = struct {
     @"error": ?ManagedString = null,
     supported_features: ?u64 = null,
-    file: ArrayList(File),
+    file: ArrayList(CodeGeneratorResponse.File),
 
     pub const _desc_table = .{
         .@"error" = fd(1, .String),

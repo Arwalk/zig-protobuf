@@ -10,7 +10,7 @@ const fd = protobuf.fd;
 const ManagedStruct = protobuf.ManagedStruct;
 
 pub const Tile = struct {
-    layers: ArrayList(Layer),
+    layers: ArrayList(Tile.Layer),
 
     pub const _desc_table = .{
         .layers = fd(3, .{ .List = .{ .SubMessage = {} } }),

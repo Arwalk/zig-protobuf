@@ -85,8 +85,8 @@ pub const SpecialCases = struct {
 pub const OptionalFields = struct {
     a_string: ?ManagedString = null,
     a_bool: bool,
-    a_nested_message: ?Nested = null,
-    a_repeated_message: ArrayList(Nested),
+    a_nested_message: ?OptionalFields.Nested = null,
+    a_repeated_message: ArrayList(OptionalFields.Nested),
     a_repeated_string: ArrayList(ManagedString),
 
     pub const _desc_table = .{
@@ -127,8 +127,8 @@ pub const HasExtensions = struct {
 pub const Complex = struct {
     a_string: ManagedString,
     an_out_of_order_bool: bool,
-    a_nested_message: ?Nested = null,
-    a_repeated_message: ArrayList(Nested),
+    a_nested_message: ?Complex.Nested = null,
+    a_repeated_message: ArrayList(Complex.Nested),
     a_repeated_string: ArrayList(ManagedString),
 
     pub const _desc_table = .{
@@ -172,7 +172,7 @@ pub const DefaultValues = struct {
     string_field: ?ManagedString = ManagedString.static("default<>'\"abc"),
     bool_field: ?bool = true,
     int_field: ?i64 = 11,
-    enum_field: ?Enum = .E1,
+    enum_field: ?DefaultValues.Enum = .E1,
     empty_field: ?ManagedString = .Empty,
     bytes_field: ?ManagedString = ManagedString.static("moo"),
 
@@ -361,18 +361,18 @@ pub const TestEndsWithBytes = struct {
 };
 
 pub const TestMapFieldsNoBinary = struct {
-    map_string_string: ArrayList(MapStringStringEntry),
-    map_string_int32: ArrayList(MapStringInt32Entry),
-    map_string_int64: ArrayList(MapStringInt64Entry),
-    map_string_bool: ArrayList(MapStringBoolEntry),
-    map_string_double: ArrayList(MapStringDoubleEntry),
-    map_string_enum: ArrayList(MapStringEnumEntry),
-    map_string_msg: ArrayList(MapStringMsgEntry),
-    map_int32_string: ArrayList(MapInt32StringEntry),
-    map_int64_string: ArrayList(MapInt64StringEntry),
-    map_bool_string: ArrayList(MapBoolStringEntry),
+    map_string_string: ArrayList(TestMapFieldsNoBinary.MapStringStringEntry),
+    map_string_int32: ArrayList(TestMapFieldsNoBinary.MapStringInt32Entry),
+    map_string_int64: ArrayList(TestMapFieldsNoBinary.MapStringInt64Entry),
+    map_string_bool: ArrayList(TestMapFieldsNoBinary.MapStringBoolEntry),
+    map_string_double: ArrayList(TestMapFieldsNoBinary.MapStringDoubleEntry),
+    map_string_enum: ArrayList(TestMapFieldsNoBinary.MapStringEnumEntry),
+    map_string_msg: ArrayList(TestMapFieldsNoBinary.MapStringMsgEntry),
+    map_int32_string: ArrayList(TestMapFieldsNoBinary.MapInt32StringEntry),
+    map_int64_string: ArrayList(TestMapFieldsNoBinary.MapInt64StringEntry),
+    map_bool_string: ArrayList(TestMapFieldsNoBinary.MapBoolStringEntry),
     test_map_fields: ?ManagedStruct(TestMapFieldsNoBinary) = null,
-    map_string_testmapfields: ArrayList(MapStringTestmapfieldsEntry),
+    map_string_testmapfields: ArrayList(TestMapFieldsNoBinary.MapStringTestmapfieldsEntry),
 
     pub const _desc_table = .{
         .map_string_string = fd(1, .{ .List = .{ .SubMessage = {} } }),

@@ -233,8 +233,8 @@ pub const ExponentialHistogramDataPoint = struct {
     sum: ?f64 = null,
     scale: i32 = 0,
     zero_count: u64 = 0,
-    positive: ?Buckets = null,
-    negative: ?Buckets = null,
+    positive: ?ExponentialHistogramDataPoint.Buckets = null,
+    negative: ?ExponentialHistogramDataPoint.Buckets = null,
     flags: u32 = 0,
     exemplars: ArrayList(Exemplar),
     min: ?f64 = null,
@@ -279,7 +279,7 @@ pub const SummaryDataPoint = struct {
     time_unix_nano: u64 = 0,
     count: u64 = 0,
     sum: f64 = 0,
-    quantile_values: ArrayList(ValueAtQuantile),
+    quantile_values: ArrayList(SummaryDataPoint.ValueAtQuantile),
     flags: u32 = 0,
 
     pub const _desc_table = .{

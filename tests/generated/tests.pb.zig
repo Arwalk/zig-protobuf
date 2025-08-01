@@ -59,7 +59,7 @@ pub const TopLevelEnum = enum(i32) {
 };
 
 pub const WithEnum = struct {
-    value: SomeEnum = @enumFromInt(0),
+    value: WithEnum.SomeEnum = @enumFromInt(0),
 
     pub const _desc_table = .{
         .value = fd(1, .{ .Varint = .Simple }),
@@ -77,7 +77,7 @@ pub const WithEnum = struct {
 };
 
 pub const WithEnumShadow = struct {
-    value: SomeEnum = @enumFromInt(0),
+    value: WithEnumShadow.SomeEnum = @enumFromInt(0),
 
     pub const _desc_table = .{
         .value = fd(1, .{ .Varint = .Simple }),

@@ -59,10 +59,10 @@ pub const DescriptorProto = struct {
     extension: ArrayList(FieldDescriptorProto),
     nested_type: ArrayList(DescriptorProto),
     enum_type: ArrayList(EnumDescriptorProto),
-    extension_range: ArrayList(ExtensionRange),
+    extension_range: ArrayList(DescriptorProto.ExtensionRange),
     oneof_decl: ArrayList(OneofDescriptorProto),
     options: ?MessageOptions = null,
-    reserved_range: ArrayList(ReservedRange),
+    reserved_range: ArrayList(DescriptorProto.ReservedRange),
     reserved_name: ArrayList(ManagedString),
 
     pub const _desc_table = .{
@@ -109,8 +109,8 @@ pub const DescriptorProto = struct {
 
 pub const ExtensionRangeOptions = struct {
     uninterpreted_option: ArrayList(UninterpretedOption),
-    declaration: ArrayList(Declaration),
-    verification: ?VerificationState = .UNVERIFIED,
+    declaration: ArrayList(ExtensionRangeOptions.Declaration),
+    verification: ?ExtensionRangeOptions.VerificationState = .UNVERIFIED,
 
     pub const _desc_table = .{
         .uninterpreted_option = fd(999, .{ .List = .{ .SubMessage = {} } }),
@@ -150,8 +150,8 @@ pub const ExtensionRangeOptions = struct {
 pub const FieldDescriptorProto = struct {
     name: ?ManagedString = null,
     number: ?i32 = null,
-    label: ?Label = null,
-    type: ?Type = null,
+    label: ?FieldDescriptorProto.Label = null,
+    type: ?FieldDescriptorProto.Type = null,
     type_name: ?ManagedString = null,
     extendee: ?ManagedString = null,
     default_value: ?ManagedString = null,
@@ -222,7 +222,7 @@ pub const EnumDescriptorProto = struct {
     name: ?ManagedString = null,
     value: ArrayList(EnumValueDescriptorProto),
     options: ?EnumOptions = null,
-    reserved_range: ArrayList(EnumReservedRange),
+    reserved_range: ArrayList(EnumDescriptorProto.EnumReservedRange),
     reserved_name: ArrayList(ManagedString),
 
     pub const _desc_table = .{
@@ -302,7 +302,7 @@ pub const FileOptions = struct {
     java_multiple_files: ?bool = false,
     java_generate_equals_and_hash: ?bool = null,
     java_string_check_utf8: ?bool = false,
-    optimize_for: ?OptimizeMode = .SPEED,
+    optimize_for: ?FileOptions.OptimizeMode = .SPEED,
     go_package: ?ManagedString = null,
     cc_generic_services: ?bool = false,
     java_generic_services: ?bool = false,
@@ -374,17 +374,17 @@ pub const MessageOptions = struct {
 };
 
 pub const FieldOptions = struct {
-    ctype: ?CType = .STRING,
+    ctype: ?FieldOptions.CType = .STRING,
     @"packed": ?bool = null,
-    jstype: ?JSType = .JS_NORMAL,
+    jstype: ?FieldOptions.JSType = .JS_NORMAL,
     lazy: ?bool = false,
     unverified_lazy: ?bool = false,
     deprecated: ?bool = false,
     weak: ?bool = false,
     debug_redact: ?bool = false,
-    retention: ?OptionRetention = null,
-    target: ?OptionTargetType = null,
-    targets: ArrayList(OptionTargetType),
+    retention: ?FieldOptions.OptionRetention = null,
+    target: ?FieldOptions.OptionTargetType = null,
+    targets: ArrayList(FieldOptions.OptionTargetType),
     uninterpreted_option: ArrayList(UninterpretedOption),
 
     pub const _desc_table = .{
@@ -492,7 +492,7 @@ pub const ServiceOptions = struct {
 
 pub const MethodOptions = struct {
     deprecated: ?bool = false,
-    idempotency_level: ?IdempotencyLevel = .IDEMPOTENCY_UNKNOWN,
+    idempotency_level: ?MethodOptions.IdempotencyLevel = .IDEMPOTENCY_UNKNOWN,
     uninterpreted_option: ArrayList(UninterpretedOption),
 
     pub const _desc_table = .{
@@ -512,7 +512,7 @@ pub const MethodOptions = struct {
 };
 
 pub const UninterpretedOption = struct {
-    name: ArrayList(NamePart),
+    name: ArrayList(UninterpretedOption.NamePart),
     identifier_value: ?ManagedString = null,
     positive_int_value: ?u64 = null,
     negative_int_value: ?i64 = null,
@@ -546,7 +546,7 @@ pub const UninterpretedOption = struct {
 };
 
 pub const SourceCodeInfo = struct {
-    location: ArrayList(Location),
+    location: ArrayList(SourceCodeInfo.Location),
 
     pub const _desc_table = .{
         .location = fd(1, .{ .List = .{ .SubMessage = {} } }),
@@ -574,7 +574,7 @@ pub const SourceCodeInfo = struct {
 };
 
 pub const GeneratedCodeInfo = struct {
-    annotation: ArrayList(Annotation),
+    annotation: ArrayList(GeneratedCodeInfo.Annotation),
 
     pub const _desc_table = .{
         .annotation = fd(1, .{ .List = .{ .SubMessage = {} } }),
@@ -585,7 +585,7 @@ pub const GeneratedCodeInfo = struct {
         source_file: ?ManagedString = null,
         begin: ?i32 = null,
         end: ?i32 = null,
-        semantic: ?Semantic = null,
+        semantic: ?GeneratedCodeInfo.Annotation.Semantic = null,
 
         pub const _desc_table = .{
             .path = fd(1, .{ .PackedList = .{ .Varint = .Simple } }),
@@ -648,7 +648,7 @@ pub const NullValue = enum(i32) {
 };
 
 pub const Struct = struct {
-    fields: ArrayList(FieldsEntry),
+    fields: ArrayList(Struct.FieldsEntry),
 
     pub const _desc_table = .{
         .fields = fd(1, .{ .List = .{ .SubMessage = {} } }),

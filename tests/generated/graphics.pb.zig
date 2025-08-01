@@ -82,7 +82,7 @@ pub const Index = struct {
     grh: ArrayList(i32),
     offset_x: i32 = 0,
     offset_y: i32 = 0,
-    animations: ArrayList(AnimationsEntry),
+    animations: ArrayList(Index.AnimationsEntry),
     name: ManagedString = .Empty,
 
     pub const _desc_table = .{
@@ -196,8 +196,8 @@ pub const Npc = struct {
     max_mana: i32 = 0,
     min_strenght: i32 = 0,
     max_strenght: i32 = 0,
-    skills: ArrayList(SkillsEntry),
-    abilities: ArrayList(AbilitiesEntry),
+    skills: ArrayList(Npc.SkillsEntry),
+    abilities: ArrayList(Npc.AbilitiesEntry),
     visual: ?Character = null,
 
     pub const _desc_table = .{
