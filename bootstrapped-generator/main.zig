@@ -13,11 +13,9 @@ const string = []const u8;
 pub const std_options: std.Options = .{ .log_scope_levels = &[_]std.log.ScopeLevel{.{ .level = .warn, .scope = .zig_protobuf }} };
 
 pub fn main() !void {
-    // Read the contents (up to 10MB)
-    const buffer_size = 1024 * 1024 * 10;
-
-    const stdin_f = std.fs.File.stdin();
-    const file_buffer = try stdin_f.readToEndAlloc(allocator, buffer_size);
+    var stdin_buf: [4096]u8 = undefined;
+    var stdin = std.fs.File.stdin().reader(&stdin_buf);
+    const file_buffer = try stdin.interface.allocRemaining(allocator, .unlimited);
     defer allocator.free(file_buffer);
 
     const request: plugin.CodeGeneratorRequest = try plugin.CodeGeneratorRequest.decode(file_buffer, allocator);
