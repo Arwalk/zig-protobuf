@@ -42,7 +42,7 @@ pub const FileDescriptorSet = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -120,7 +120,7 @@ pub const FileDescriptorProto = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -203,7 +203,7 @@ pub const DescriptorProto = struct {
         }
         pub fn json_encode(
             self: @This(),
-            options: json.StringifyOptions,
+            options: json.Stringify.Options,
             allocator: Allocator,
         ) ![]const u8 {
             return protobuf.pb_json_encode(self, options, allocator);
@@ -259,7 +259,7 @@ pub const DescriptorProto = struct {
         }
         pub fn json_encode(
             self: @This(),
-            options: json.StringifyOptions,
+            options: json.Stringify.Options,
             allocator: Allocator,
         ) ![]const u8 {
             return protobuf.pb_json_encode(self, options, allocator);
@@ -306,7 +306,7 @@ pub const DescriptorProto = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -387,7 +387,7 @@ pub const ExtensionRangeOptions = struct {
         }
         pub fn json_encode(
             self: @This(),
-            options: json.StringifyOptions,
+            options: json.Stringify.Options,
             allocator: Allocator,
         ) ![]const u8 {
             return protobuf.pb_json_encode(self, options, allocator);
@@ -434,7 +434,7 @@ pub const ExtensionRangeOptions = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -537,7 +537,7 @@ pub const FieldDescriptorProto = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -593,7 +593,7 @@ pub const OneofDescriptorProto = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -664,7 +664,7 @@ pub const EnumDescriptorProto = struct {
         }
         pub fn json_encode(
             self: @This(),
-            options: json.StringifyOptions,
+            options: json.Stringify.Options,
             allocator: Allocator,
         ) ![]const u8 {
             return protobuf.pb_json_encode(self, options, allocator);
@@ -711,7 +711,7 @@ pub const EnumDescriptorProto = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -769,7 +769,7 @@ pub const EnumValueDescriptorProto = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -827,7 +827,7 @@ pub const ServiceDescriptorProto = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -891,7 +891,7 @@ pub const MethodDescriptorProto = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -992,7 +992,7 @@ pub const FileOptions = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -1056,7 +1056,7 @@ pub const MessageOptions = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -1167,7 +1167,7 @@ pub const FieldOptions = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -1221,7 +1221,7 @@ pub const OneofOptions = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -1281,7 +1281,7 @@ pub const EnumOptions = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -1337,7 +1337,7 @@ pub const EnumValueOptions = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -1393,7 +1393,7 @@ pub const ServiceOptions = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -1458,7 +1458,7 @@ pub const MethodOptions = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -1533,7 +1533,7 @@ pub const UninterpretedOption = struct {
         }
         pub fn json_encode(
             self: @This(),
-            options: json.StringifyOptions,
+            options: json.Stringify.Options,
             allocator: Allocator,
         ) ![]const u8 {
             return protobuf.pb_json_encode(self, options, allocator);
@@ -1580,7 +1580,7 @@ pub const UninterpretedOption = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -1649,7 +1649,7 @@ pub const SourceCodeInfo = struct {
         }
         pub fn json_encode(
             self: @This(),
-            options: json.StringifyOptions,
+            options: json.Stringify.Options,
             allocator: Allocator,
         ) ![]const u8 {
             return protobuf.pb_json_encode(self, options, allocator);
@@ -1696,7 +1696,7 @@ pub const SourceCodeInfo = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -1772,7 +1772,7 @@ pub const GeneratedCodeInfo = struct {
         }
         pub fn json_encode(
             self: @This(),
-            options: json.StringifyOptions,
+            options: json.Stringify.Options,
             allocator: Allocator,
         ) ![]const u8 {
             return protobuf.pb_json_encode(self, options, allocator);
@@ -1819,7 +1819,7 @@ pub const GeneratedCodeInfo = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -1875,7 +1875,7 @@ pub const Any = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -1931,7 +1931,7 @@ pub const Duration = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -1985,7 +1985,7 @@ pub const FieldMask = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -2053,7 +2053,7 @@ pub const Struct = struct {
         }
         pub fn json_encode(
             self: @This(),
-            options: json.StringifyOptions,
+            options: json.Stringify.Options,
             allocator: Allocator,
         ) ![]const u8 {
             return protobuf.pb_json_encode(self, options, allocator);
@@ -2100,7 +2100,7 @@ pub const Struct = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -2179,7 +2179,7 @@ pub const Value = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -2233,7 +2233,7 @@ pub const ListValue = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -2289,7 +2289,7 @@ pub const Timestamp = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -2343,7 +2343,7 @@ pub const DoubleValue = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -2397,7 +2397,7 @@ pub const FloatValue = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -2451,7 +2451,7 @@ pub const Int64Value = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -2505,7 +2505,7 @@ pub const UInt64Value = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -2559,7 +2559,7 @@ pub const Int32Value = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -2613,7 +2613,7 @@ pub const UInt32Value = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -2667,7 +2667,7 @@ pub const BoolValue = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -2721,7 +2721,7 @@ pub const StringValue = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -2775,7 +2775,7 @@ pub const BytesValue = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);

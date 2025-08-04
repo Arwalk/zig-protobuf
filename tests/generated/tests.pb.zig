@@ -74,7 +74,7 @@ pub const FixedSizes = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -143,7 +143,7 @@ pub const WithEnum = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -204,7 +204,7 @@ pub const WithEnumShadow = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -258,7 +258,7 @@ pub const RepeatedEnum = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -330,7 +330,7 @@ pub const Packed = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -402,7 +402,7 @@ pub const UnPacked = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -456,7 +456,7 @@ pub const WithSubmessages = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -510,7 +510,7 @@ pub const WithStrings = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -564,7 +564,7 @@ pub const WithRepeatedStrings = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -618,7 +618,7 @@ pub const WithBytes = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);
@@ -672,7 +672,7 @@ pub const WithRepeatedBytes = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);

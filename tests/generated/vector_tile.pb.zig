@@ -69,7 +69,7 @@ pub const Tile = struct {
         }
         pub fn json_encode(
             self: @This(),
-            options: json.StringifyOptions,
+            options: json.Stringify.Options,
             allocator: Allocator,
         ) ![]const u8 {
             return protobuf.pb_json_encode(self, options, allocator);
@@ -129,7 +129,7 @@ pub const Tile = struct {
         }
         pub fn json_encode(
             self: @This(),
-            options: json.StringifyOptions,
+            options: json.Stringify.Options,
             allocator: Allocator,
         ) ![]const u8 {
             return protobuf.pb_json_encode(self, options, allocator);
@@ -193,7 +193,7 @@ pub const Tile = struct {
         }
         pub fn json_encode(
             self: @This(),
-            options: json.StringifyOptions,
+            options: json.Stringify.Options,
             allocator: Allocator,
         ) ![]const u8 {
             return protobuf.pb_json_encode(self, options, allocator);
@@ -240,7 +240,7 @@ pub const Tile = struct {
     }
     pub fn json_encode(
         self: @This(),
-        options: json.StringifyOptions,
+        options: json.Stringify.Options,
         allocator: Allocator,
     ) ![]const u8 {
         return protobuf.pb_json_encode(self, options, allocator);

@@ -1410,10 +1410,16 @@ pub fn pb_json_decode(
 
 pub fn pb_json_encode(
     data: anytype,
-    options: json.StringifyOptions,
+    options: json.Stringify.Options,
     allocator: Allocator,
 ) ![]u8 {
-    return try json.stringifyAlloc(allocator, data, options);
+    var buf_writer: std.Io.Writer.Allocating = .init(allocator);
+    var stringify: json.Stringify = .{
+        .writer = &buf_writer.writer,
+        .options = options,
+    };
+    try stringify.write(data);
+    return buf_writer.toOwnedSlice();
 }
 
 fn to_camel_case(not_camel_cased_string: []const u8) []const u8 {
@@ -1470,17 +1476,16 @@ fn print_bytes(value: anytype, jws: anytype) !void {
     );
 
     try jsonValueStartAssumeTypeOk(jws);
-    try jws.stream.writeByte('"');
+    try jws.writer.writeByte('"');
 
-    var innerArrayList: *ArrayList(u8) = jws.stream.context;
-    try innerArrayList.ensureTotalCapacity(innerArrayList.capacity + size + 1);
-    const temp = innerArrayList.unusedCapacitySlice();
+    try jws.writer.flush();
+    const temp = try jws.writer.writableSlice(size);
+    std.debug.assert(temp.len >= size);
     _ = base64.standard.Encoder.encode(
         temp,
         value.getSlice(),
     );
-    innerArrayList.items.len += size;
-    try jws.stream.writeByte('"');
+    try jws.writer.writeByte('"');
 
     jws.next_punctuation = .comma;
 }
@@ -1499,8 +1504,9 @@ fn jsonIndent(jws: anytype) !void {
             break :blk jws.indent_level;
         },
     };
-    try jws.stream.writeByte('\n');
-    try jws.stream.writeByteNTimes(char, n_chars);
+
+    try jws.writer.writeByte('\n');
+    try jws.writer.splatByteAll(char, n_chars);
 }
 
 const assert = std.debug.assert;
@@ -1521,13 +1527,13 @@ fn jsonValueStartAssumeTypeOk(jws: anytype) !void {
         },
         .comma => {
             // Subsequent item in a container.
-            try jws.stream.writeByte(',');
+            try jws.writer.writeByte(',');
             try jsonIndent(jws);
         },
         .colon => {
-            try jws.stream.writeByte(':');
+            try jws.writer.writeByte(':');
             if (jws.options.whitespace != .minified) {
-                try jws.stream.writeByte(' ');
+                try jws.writer.writeByte(' ');
             }
         },
     }
@@ -1771,7 +1777,7 @@ pub fn MessageMixins(comptime Self: type) type {
         }
         pub fn json_encode(
             self: Self,
-            options: json.StringifyOptions,
+            options: json.Stringify.Options,
             allocator: Allocator,
         ) ![]const u8 {
             return pb_json_encode(self, options, allocator);

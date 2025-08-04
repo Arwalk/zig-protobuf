@@ -13,12 +13,11 @@ const string = []const u8;
 pub const std_options: std.Options = .{ .log_scope_levels = &[_]std.log.ScopeLevel{.{ .level = .warn, .scope = .zig_protobuf }} };
 
 pub fn main() !void {
-    const stdin = &std.io.getStdIn();
-
     // Read the contents (up to 10MB)
     const buffer_size = 1024 * 1024 * 10;
 
-    const file_buffer = try stdin.readToEndAlloc(allocator, buffer_size);
+    const stdin_f = std.fs.File.stdin();
+    const file_buffer = try stdin_f.readToEndAlloc(allocator, buffer_size);
     defer allocator.free(file_buffer);
 
     const request: plugin.CodeGeneratorRequest = try plugin.CodeGeneratorRequest.decode(file_buffer, allocator);
@@ -27,9 +26,11 @@ pub fn main() !void {
 
     try ctx.processRequest();
 
-    const stdout = &std.io.getStdOut();
+    var std_buffer: [4096]u8 = undefined;
+    var stdout = std.fs.File.stdout().writer(&std_buffer);
     const r = try ctx.res.encode(allocator);
-    _ = try stdout.write(r);
+    try stdout.interface.writeAll(r);
+    try stdout.interface.flush();
 }
 
 const GenerationContext = struct {
@@ -63,7 +64,14 @@ const GenerationContext = struct {
             if (t.package) |package| {
                 try self.known_packages.put(package.getSlice(), FullName{ .buf = package.getSlice() });
             } else {
-                self.res.@"error" = pb.ManagedString{ .Owned = .{ .str = try std.fmt.allocPrint(allocator, "ERROR Package directive missing in {?s}\n", .{file.name.?.getSlice()}), .allocator = allocator } };
+                self.res.@"error" = pb.ManagedString{ .Owned = .{
+                    .str = try std.fmt.allocPrint(
+                        allocator,
+                        "ERROR Package directive missing in {s}\n",
+                        .{file.name.?.getSlice()},
+                    ),
+                    .allocator = allocator,
+                } };
                 return;
             }
         }
@@ -90,7 +98,7 @@ const GenerationContext = struct {
     }
 
     fn fileNameFromPackage(self: *Self, package: string) !string {
-        return try std.fmt.allocPrint(allocator, "{?s}.pb.zig", .{try self.packageNameToOutputFileName(package)});
+        return try std.fmt.allocPrint(allocator, "{s}.pb.zig", .{try self.packageNameToOutputFileName(package)});
     }
 
     fn packageNameToOutputFileName(_: *Self, n: string) !string {
@@ -153,7 +161,7 @@ const GenerationContext = struct {
             var it = importedPackages.iterator();
             while (it.next()) |package| {
                 if (!std.mem.eql(u8, package.key_ptr.*, name.buf)) {
-                    try list.append(try std.fmt.allocPrint(allocator, "/// import package {?s}\n", .{package.key_ptr.*}));
+                    try list.append(try std.fmt.allocPrint(allocator, "/// import package {s}\n", .{package.key_ptr.*}));
 
                     const optional_pub_directive: []const u8 = if (package.value_ptr.*) "pub const" else "const";
 
@@ -184,7 +192,13 @@ const GenerationContext = struct {
         try self.generateMessages(list, fqn, file, file.message_type);
     }
 
-    fn generateEnums(ctx: *Self, list: *std.ArrayList(string), fqn: FullName, file: descriptor.FileDescriptorProto, enums: std.ArrayList(descriptor.EnumDescriptorProto)) !void {
+    fn generateEnums(
+        ctx: *Self,
+        list: *std.ArrayList(string),
+        fqn: FullName,
+        file: descriptor.FileDescriptorProto,
+        enums: std.ArrayList(descriptor.EnumDescriptorProto),
+    ) !void {
         _ = ctx;
         _ = file;
         _ = fqn;
@@ -192,10 +206,18 @@ const GenerationContext = struct {
         for (enums.items) |theEnum| {
             const e: descriptor.EnumDescriptorProto = theEnum;
 
-            try list.append(try std.fmt.allocPrint(allocator, "\npub const {?s} = enum(i32) {{\n", .{e.name.?.getSlice()}));
+            try list.append(try std.fmt.allocPrint(
+                allocator,
+                "\npub const {s} = enum(i32) {{\n",
+                .{e.name.?.getSlice()},
+            ));
 
             for (e.value.items) |elem| {
-                try list.append(try std.fmt.allocPrint(allocator, "   {?s} = {},\n", .{ elem.name.?.getSlice(), elem.number orelse 0 }));
+                try list.append(try std.fmt.allocPrint(
+                    allocator,
+                    "   {s} = {d},\n",
+                    .{ elem.name.?.getSlice(), elem.number orelse 0 },
+                ));
             }
 
             try list.append("    _,\n};\n\n");
@@ -208,7 +230,7 @@ const GenerationContext = struct {
 
     fn escapeName(name: string) !string {
         if (std.zig.Token.keywords.get(name) != null)
-            return try std.fmt.allocPrint(allocator, "@\"{?s}\"", .{name})
+            return try std.fmt.allocPrint(allocator, "@\"{s}\"", .{name})
         else
             return name;
     }
@@ -256,7 +278,10 @@ const GenerationContext = struct {
                 parent = parent.?.parent();
             }
 
-            std.debug.print("Unknown type: {s} from {s} in {?s}\n", .{ fullTypeName.buf, parentFqn.buf, file.package.?.getSlice() });
+            std.debug.print(
+                "Unknown type: {s} from {s} in {s}\n",
+                .{ fullTypeName.buf, parentFqn.buf, file.package.?.getSlice() },
+            );
 
             return try ctx.escapeFqn(field.type_name.?.getSlice());
         }
@@ -498,12 +523,22 @@ const GenerationContext = struct {
         return count;
     }
 
-    fn generateMessages(ctx: *Self, list: *std.ArrayList(string), fqn: FullName, file: descriptor.FileDescriptorProto, messages: std.ArrayList(descriptor.DescriptorProto)) !void {
+    fn generateMessages(
+        ctx: *Self,
+        list: *std.ArrayList(string),
+        fqn: FullName,
+        file: descriptor.FileDescriptorProto,
+        messages: std.ArrayList(descriptor.DescriptorProto),
+    ) !void {
         for (messages.items) |message| {
             const m: descriptor.DescriptorProto = message;
             const messageFqn = try fqn.append(allocator, m.name.?.getSlice());
 
-            try list.append(try std.fmt.allocPrint(allocator, "\npub const {?s} = struct {{\n", .{m.name.?.getSlice()}));
+            try list.append(try std.fmt.allocPrint(
+                allocator,
+                "\npub const {s} = struct {{\n",
+                .{m.name.?.getSlice()},
+            ));
 
             // append all fields that are not part of a oneof
             for (m.field.items) |f| {
@@ -517,7 +552,11 @@ const GenerationContext = struct {
                 const union_element_count = ctx.amountOfElementsInOneofUnion(m, @as(i32, @intCast(i)));
                 if (union_element_count > 1) {
                     const oneof_name = oneof.name.?.getSlice();
-                    try list.append(try std.fmt.allocPrint(allocator, "    {s}: ?{s}_union,\n", .{ try escapeName(oneof_name), oneof_name }));
+                    try list.append(try std.fmt.allocPrint(
+                        allocator,
+                        "    {s}: ?{s}_union,\n",
+                        .{ try escapeName(oneof_name), oneof_name },
+                    ));
                 }
             }
 
@@ -538,7 +577,7 @@ const GenerationContext = struct {
                         const f: descriptor.FieldDescriptorProto = field;
                         if (f.oneof_index orelse -1 == @as(i32, @intCast(i))) {
                             const name = try ctx.getFieldName(f);
-                            try list.append(try std.fmt.allocPrint(allocator, "      {?s},\n", .{name}));
+                            try list.append(try std.fmt.allocPrint(allocator, "      {s},\n", .{name}));
                         }
                     }
 
@@ -553,7 +592,7 @@ const GenerationContext = struct {
                         if (f.oneof_index orelse -1 == @as(i32, @intCast(i))) {
                             const name = try ctx.getFieldName(f);
                             const typeStr = try ctx.getFieldType(messageFqn, file, f, true);
-                            try list.append(try std.fmt.allocPrint(allocator, "      {?s}: {?s},\n", .{ name, typeStr }));
+                            try list.append(try std.fmt.allocPrint(allocator, "      {s}: {s},\n", .{ name, typeStr }));
                         }
                     }
 
@@ -635,7 +674,7 @@ const GenerationContext = struct {
                 \\    }}
                 \\    pub fn json_encode(
                 \\        self: @This(),
-                \\        options: json.StringifyOptions,
+                \\        options: json.Stringify.Options,
                 \\        allocator: Allocator,
                 \\    ) ![]const u8 {{
                 \\        return protobuf.pb_json_encode(self, options, allocator);
