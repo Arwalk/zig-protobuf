@@ -1413,13 +1413,7 @@ pub fn pb_json_encode(
     options: json.Stringify.Options,
     allocator: Allocator,
 ) ![]u8 {
-    var buf_writer: std.Io.Writer.Allocating = .init(allocator);
-    var stringify: json.Stringify = .{
-        .writer = &buf_writer.writer,
-        .options = options,
-    };
-    try stringify.write(data);
-    return buf_writer.toOwnedSlice();
+    return std.json.Stringify.valueAlloc(allocator, data, options);
 }
 
 fn to_camel_case(not_camel_cased_string: []const u8) []const u8 {
