@@ -9,34 +9,21 @@ const LazyPath = std.Build.LazyPath;
 const PROTOC_VERSION = "23.4";
 
 pub fn build(b: *std.Build) !void {
-    // Standard target options allows the person running `zig build` to choose
-    // what target to build for. Here we do not override the defaults, which
-    // means any target is allowed, and the default is native. Other options
-    // for restricting supported target set are available.
     const target = b.standardTargetOptions(.{});
-
-    // Standard optimization options allow the person running `zig build` to select
-    // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall. Here we do not
-    // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
-    const lib = b.addStaticLibrary(.{
-        .name = "zig-protobuf",
-        // In this case the main source file is merely a path, however, in more
-        // complicated build scripts, this could be a generated file.
+    const mod = b.addModule("protobuf", .{
         .root_source_file = b.path("src/protobuf.zig"),
         .target = target,
         .optimize = optimize,
     });
 
-    // This declares intent for the library to be installed into the standard
-    // location when the user invokes the "install" step (the default step when
-    // running `zig build`).
-    b.installArtifact(lib);
-
-    const module = b.addModule("protobuf", .{
-        .root_source_file = b.path("src/protobuf.zig"),
+    const lib = b.addLibrary(.{
+        .name = "zig-protobuf",
+        .root_module = mod,
+        .linkage = .static,
     });
+    b.installArtifact(lib);
 
     const exe = buildGenerator(b, .{
         .target = target,
@@ -53,51 +40,63 @@ pub fn build(b: *std.Build) !void {
     const tests = [_]*std.Build.Step.Compile{
         b.addTest(.{
             .name = "protobuf",
-            .root_source_file = b.path("src/protobuf.zig"),
-            .target = target,
-            .optimize = optimize,
+            .root_module = mod,
         }),
         b.addTest(.{
             .name = "tests",
-            .root_source_file = b.path("tests/tests.zig"),
-            .target = target,
-            .optimize = optimize,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/tests.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
         }),
         b.addTest(.{
             .name = "alltypes",
-            .root_source_file = b.path("tests/alltypes.zig"),
-            .target = target,
-            .optimize = optimize,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/alltypes.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
         }),
         b.addTest(.{
             .name = "integration",
-            .root_source_file = b.path("tests/integration.zig"),
-            .target = target,
-            .optimize = optimize,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/integration.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
         }),
         b.addTest(.{
             .name = "fixedsizes",
-            .root_source_file = b.path("tests/tests_fixedsizes.zig"),
-            .target = target,
-            .optimize = optimize,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/tests_fixedsizes.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
         }),
         b.addTest(.{
             .name = "varints",
-            .root_source_file = b.path("tests/tests_varints.zig"),
-            .target = target,
-            .optimize = optimize,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/tests_varints.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
         }),
         b.addTest(.{
             .name = "json",
-            .root_source_file = b.path("tests/tests_json.zig"),
-            .target = target,
-            .optimize = optimize,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/tests_json.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
         }),
         b.addTest(.{
             .name = "FullName",
-            .root_source_file = b.path("bootstrapped-generator/FullName.zig"),
-            .target = target,
-            .optimize = optimize,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("bootstrapped-generator/FullName.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
         }),
     };
 
@@ -114,7 +113,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     for (tests) |test_item| {
-        test_item.root_module.addImport("protobuf", module);
+        test_item.root_module.addImport("protobuf", mod);
 
         // This creates a build step. It will be visible in the `zig build --help` menu,
         // and can be selected like this: `zig build test`
@@ -254,19 +253,20 @@ pub const GenOptions = struct {
 pub fn buildGenerator(b: *std.Build, opt: GenOptions) *std.Build.Step.Compile {
     const exe = b.addExecutable(.{
         .name = "protoc-gen-zig",
-        // In this case the main source file is merely a path, however, in more
-        // complicated build scripts, this could be a generated file.
-        .root_source_file = b.path("bootstrapped-generator/main.zig"),
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("bootstrapped-generator/main.zig"),
+            .target = opt.target,
+            .optimize = opt.optimize,
+        }),
+    });
+
+    const mod = b.createModule(.{
+        .root_source_file = b.path("src/protobuf.zig"),
         .target = opt.target,
         .optimize = opt.optimize,
     });
 
-    const module = b.addModule("protobuf", .{
-        .root_source_file = b.path("src/protobuf.zig"),
-    });
-
-    exe.root_module.addImport("protobuf", module);
-
+    exe.root_module.addImport("protobuf", mod);
     b.installArtifact(exe);
 
     return exe;
@@ -456,8 +456,8 @@ fn downloadFile(allocator: std.mem.Allocator, target_file: []const u8, url: []co
     else
         std.process.Child.init(&.{ "curl", "-L", "-o", target_file, url }, allocator);
     child.cwd = sdkPath("/");
-    child.stderr = std.io.getStdErr();
-    child.stdout = std.io.getStdOut();
+    child.stderr = std.fs.File.stderr();
+    child.stdout = std.fs.File.stdout();
     _ = try child.spawnAndWait();
 }
 
@@ -473,8 +473,8 @@ fn unzipFile(allocator: std.mem.Allocator, file: []const u8, target_directory: [
         ),
     };
     child.cwd = sdkPath("/");
-    child.stderr = std.io.getStdErr();
-    child.stdout = std.io.getStdOut();
+    child.stderr = std.fs.File.stderr();
+    child.stdout = std.fs.File.stdout();
     _ = try child.spawnAndWait();
 }
 
