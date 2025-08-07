@@ -1745,56 +1745,6 @@ pub fn pb_jsonStringify(Self: type, self: *const Self, jws: anytype) !void {
     try jws.endObject();
 }
 
-pub fn MessageMixins(comptime Self: type) type {
-    return struct {
-        pub fn encode(self: Self, allocator: Allocator) Allocator.Error![]u8 {
-            return pb_encode(self, allocator);
-        }
-        pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!Self {
-            return pb_decode(Self, input, allocator);
-        }
-        pub fn init(allocator: Allocator) Self {
-            return pb_init(Self, allocator);
-        }
-        pub fn deinit(self: Self) void {
-            return pb_deinit(self);
-        }
-        pub fn dupe(self: Self, allocator: Allocator) Allocator.Error!Self {
-            return pb_dupe(Self, self, allocator);
-        }
-        pub fn json_decode(
-            input: []const u8,
-            options: json.ParseOptions,
-            allocator: Allocator,
-        ) !std.json.Parsed(Self) {
-            return pb_json_decode(Self, input, options, allocator);
-        }
-        pub fn json_encode(
-            self: Self,
-            options: json.Stringify.Options,
-            allocator: Allocator,
-        ) ![]const u8 {
-            return pb_json_encode(self, options, allocator);
-        }
-
-        // This method is used by std.json
-        // internally for deserialization. DO NOT RENAME!
-        pub fn jsonParse(
-            allocator: Allocator,
-            source: anytype,
-            options: json.ParseOptions,
-        ) !Self {
-            return pb_json_parse(Self, allocator, source, options);
-        }
-
-        // This method is used by std.json
-        // internally for serialization. DO NOT RENAME!
-        pub fn jsonStringify(self: *const Self, jws: anytype) !void {
-            return pb_jsonStringify(Self, self, jws);
-        }
-    };
-}
-
 test "get varint" {
     var pb = ArrayList(u8).init(testing.allocator);
     defer pb.deinit();
