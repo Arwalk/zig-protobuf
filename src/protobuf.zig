@@ -1465,20 +1465,14 @@ fn print_numeric(value: anytype, jws: anytype) !void {
 }
 
 fn print_bytes(value: anytype, jws: anytype) !void {
-    const size = base64.standard.Encoder.calcSize(
-        value.getSlice().len,
-    );
-
     try jsonValueStartAssumeTypeOk(jws);
     try jws.writer.writeByte('"');
 
-    try jws.writer.flush();
-    const temp = try jws.writer.writableSlice(size);
-    std.debug.assert(temp.len >= size);
-    _ = base64.standard.Encoder.encode(
-        temp,
+    try base64.standard.Encoder.encodeWriter(
+        jws.writer,
         value.getSlice(),
     );
+
     try jws.writer.writeByte('"');
 
     jws.next_punctuation = .comma;
