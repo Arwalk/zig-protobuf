@@ -11,6 +11,8 @@ const ManagedStruct = protobuf.ManagedStruct;
 const json = protobuf.json;
 const UnionDecodingError = protobuf.UnionDecodingError;
 
+// The protocol compiler can output a FileDescriptorSet containing the .proto
+// files it parses.
 pub const FileDescriptorSet = struct {
     file: ArrayList(FileDescriptorProto),
 
@@ -65,19 +67,34 @@ pub const FileDescriptorSet = struct {
     }
 };
 
+// Describes a complete .proto file.
 pub const FileDescriptorProto = struct {
     name: ?ManagedString = null,
     package: ?ManagedString = null,
+    // Names of files imported by this file.
     dependency: ArrayList(ManagedString),
+    // Indexes of the public imported files in the dependency list above.
     public_dependency: ArrayList(i32),
+    // Indexes of the weak imported files in the dependency list.
+    // For Google-internal migration only. Do not use.
     weak_dependency: ArrayList(i32),
+    // All top-level definitions in this file.
     message_type: ArrayList(DescriptorProto),
     enum_type: ArrayList(EnumDescriptorProto),
     service: ArrayList(ServiceDescriptorProto),
     extension: ArrayList(FieldDescriptorProto),
     options: ?FileOptions = null,
+    // This field contains optional information about the original source code.
+    // You may safely remove this entire field without harming runtime
+    // functionality of the descriptors -- the information is needed only by
+    // development tools.
     source_code_info: ?SourceCodeInfo = null,
+    // The syntax of the proto file.
+    // The supported values are "proto2", "proto3", and "editions".
+    //
+    // If `edition` is present, this value must be "editions".
     syntax: ?ManagedString = null,
+    // The edition of the proto file, which is an opaque string.
     edition: ?ManagedString = null,
 
     pub const _desc_table = .{
@@ -143,6 +160,7 @@ pub const FileDescriptorProto = struct {
     }
 };
 
+// Describes a message type.
 pub const DescriptorProto = struct {
     name: ?ManagedString = null,
     field: ArrayList(FieldDescriptorProto),
@@ -153,6 +171,8 @@ pub const DescriptorProto = struct {
     oneof_decl: ArrayList(OneofDescriptorProto),
     options: ?MessageOptions = null,
     reserved_range: ArrayList(DescriptorProto.ReservedRange),
+    // Reserved field names, which may not be used by fields in the same message.
+    // A given name may only be reserved once.
     reserved_name: ArrayList(ManagedString),
 
     pub const _desc_table = .{
@@ -226,6 +246,9 @@ pub const DescriptorProto = struct {
         }
     };
 
+    // Range of reserved tag numbers. Reserved tag numbers may not be used by
+    // fields or extension ranges in the same message. Reserved ranges may
+    // not overlap.
     pub const ReservedRange = struct {
         start: ?i32 = null,
         end: ?i32 = null,
@@ -330,8 +353,16 @@ pub const DescriptorProto = struct {
 };
 
 pub const ExtensionRangeOptions = struct {
+    // The parser stores options it doesn't recognize here. See above.
     uninterpreted_option: ArrayList(UninterpretedOption),
+    // go/protobuf-stripping-extension-declarations
+    // Like Metadata, but we use a repeated field to hold all extension
+    // declarations. This should avoid the size increases of transforming a large
+    // extension range into small ranges in generated binaries.
     declaration: ArrayList(ExtensionRangeOptions.Declaration),
+    // The verification state of the range.
+    // TODO(b/278783756): flip the default to DECLARATION once all empty ranges
+    // are marked as UNVERIFIED.
     verification: ?ExtensionRangeOptions.VerificationState = .UNVERIFIED,
 
     pub const _desc_table = .{
@@ -340,18 +371,32 @@ pub const ExtensionRangeOptions = struct {
         .verification = fd(3, .{ .Varint = .Simple }),
     };
 
+    // The verification state of the extension range.
     pub const VerificationState = enum(i32) {
+        // All the extensions of the range must be declared.
         DECLARATION = 0,
         UNVERIFIED = 1,
         _,
     };
 
     pub const Declaration = struct {
+        // The extension number declared within the extension range.
         number: ?i32 = null,
+        // The fully-qualified name of the extension field. There must be a leading
+        // dot in front of the full name.
         full_name: ?ManagedString = null,
+        // The fully-qualified type name of the extension field. Unlike
+        // Metadata.type, Declaration.type must have a leading dot for messages
+        // and enums.
         type: ?ManagedString = null,
+        // Deprecated. Please use "repeated".
         is_repeated: ?bool = null,
+        // If true, indicates that the number is reserved in the extension range,
+        // and any extension field with the number will fail to compile. Set this
+        // when a declared extension field is deleted.
         reserved: ?bool = null,
+        // If true, indicates that the extension must be defined as repeated.
+        // Otherwise the extension must be defined as optional.
         repeated: ?bool = null,
 
         pub const _desc_table = .{
@@ -457,17 +502,58 @@ pub const ExtensionRangeOptions = struct {
     }
 };
 
+// Describes a field within a message.
 pub const FieldDescriptorProto = struct {
     name: ?ManagedString = null,
     number: ?i32 = null,
     label: ?FieldDescriptorProto.Label = null,
+    // If type_name is set, this need not be set.  If both this and type_name
+    // are set, this must be one of TYPE_ENUM, TYPE_MESSAGE or TYPE_GROUP.
     type: ?FieldDescriptorProto.Type = null,
+    // For message and enum types, this is the name of the type.  If the name
+    // starts with a '.', it is fully-qualified.  Otherwise, C++-like scoping
+    // rules are used to find the type (i.e. first the nested types within this
+    // message are searched, then within the parent, on up to the root
+    // namespace).
     type_name: ?ManagedString = null,
+    // For extensions, this is the name of the type being extended.  It is
+    // resolved in the same manner as type_name.
     extendee: ?ManagedString = null,
+    // For numeric types, contains the original text representation of the value.
+    // For booleans, "true" or "false".
+    // For strings, contains the default text contents (not escaped in any way).
+    // For bytes, contains the C escaped value.  All bytes >= 128 are escaped.
     default_value: ?ManagedString = null,
+    // If set, gives the index of a oneof in the containing type's oneof_decl
+    // list.  This field is a member of that oneof.
     oneof_index: ?i32 = null,
+    // JSON name of this field. The value is set by protocol compiler. If the
+    // user has set a "json_name" option on this field, that option's value
+    // will be used. Otherwise, it's deduced from the field's name by converting
+    // it to camelCase.
     json_name: ?ManagedString = null,
     options: ?FieldOptions = null,
+    // If true, this is a proto3 "optional". When a proto3 field is optional, it
+    // tracks presence regardless of field type.
+    //
+    // When proto3_optional is true, this field must be belong to a oneof to
+    // signal to old proto3 clients that presence is tracked for this field. This
+    // oneof is known as a "synthetic" oneof, and this field must be its sole
+    // member (each proto3 optional field gets its own synthetic oneof). Synthetic
+    // oneofs exist in the descriptor only, and do not generate any API. Synthetic
+    // oneofs must be ordered after all "real" oneofs.
+    //
+    // For message fields, proto3_optional doesn't create any semantic change,
+    // since non-repeated message fields always track presence. However it still
+    // indicates the semantic detail of whether the user wrote "optional" or not.
+    // This can be useful for round-tripping the .proto file. For consistency we
+    // give message fields a synthetic oneof also, even though it is not required
+    // to track presence. This is especially important because the parser can't
+    // tell if a field is a message or an enum, so it must always create a
+    // synthetic oneof.
+    //
+    // Proto2 optional fields do not set this flag, because they already indicate
+    // optional with `LABEL_OPTIONAL`.
     proto3_optional: ?bool = null,
 
     pub const _desc_table = .{
@@ -485,17 +571,28 @@ pub const FieldDescriptorProto = struct {
     };
 
     pub const Type = enum(i32) {
+        // 0 is reserved for errors.
+        // Order is weird for historical reasons.
         TYPE_DOUBLE = 1,
         TYPE_FLOAT = 2,
+        // Not ZigZag encoded.  Negative numbers take 10 bytes.  Use TYPE_SINT64 if
+        // negative values are likely.
         TYPE_INT64 = 3,
         TYPE_UINT64 = 4,
+        // Not ZigZag encoded.  Negative numbers take 10 bytes.  Use TYPE_SINT32 if
+        // negative values are likely.
         TYPE_INT32 = 5,
         TYPE_FIXED64 = 6,
         TYPE_FIXED32 = 7,
         TYPE_BOOL = 8,
         TYPE_STRING = 9,
+        // Tag-delimited aggregate.
+        // Group type is deprecated and not supported in proto3. However, Proto3
+        // implementations should still be able to parse the group wire format and
+        // treat group fields as unknown fields.
         TYPE_GROUP = 10,
         TYPE_MESSAGE = 11,
+        // New in version 2.
         TYPE_BYTES = 12,
         TYPE_UINT32 = 13,
         TYPE_ENUM = 14,
@@ -507,6 +604,7 @@ pub const FieldDescriptorProto = struct {
     };
 
     pub const Label = enum(i32) {
+        // 0 is reserved for errors
         LABEL_OPTIONAL = 1,
         LABEL_REQUIRED = 2,
         LABEL_REPEATED = 3,
@@ -560,6 +658,7 @@ pub const FieldDescriptorProto = struct {
     }
 };
 
+// Describes a oneof.
 pub const OneofDescriptorProto = struct {
     name: ?ManagedString = null,
     options: ?OneofOptions = null,
@@ -616,11 +715,17 @@ pub const OneofDescriptorProto = struct {
     }
 };
 
+// Describes an enum type.
 pub const EnumDescriptorProto = struct {
     name: ?ManagedString = null,
     value: ArrayList(EnumValueDescriptorProto),
     options: ?EnumOptions = null,
+    // Range of reserved numeric values. Reserved numeric values may not be used
+    // by enum values in the same enum declaration. Reserved ranges may not
+    // overlap.
     reserved_range: ArrayList(EnumDescriptorProto.EnumReservedRange),
+    // Reserved enum value names, which may not be reused. A given name may only
+    // be reserved once.
     reserved_name: ArrayList(ManagedString),
 
     pub const _desc_table = .{
@@ -631,6 +736,12 @@ pub const EnumDescriptorProto = struct {
         .reserved_name = fd(5, .{ .List = .String }),
     };
 
+    // Range of reserved numeric values. Reserved values may not be used by
+    // entries in the same enum. Reserved ranges may not overlap.
+    //
+    // Note that this is distinct from DescriptorProto.ReservedRange in that it
+    // is inclusive such that it can appropriately represent the entire int32
+    // domain.
     pub const EnumReservedRange = struct {
         start: ?i32 = null,
         end: ?i32 = null,
@@ -734,6 +845,7 @@ pub const EnumDescriptorProto = struct {
     }
 };
 
+// Describes a value within an enum.
 pub const EnumValueDescriptorProto = struct {
     name: ?ManagedString = null,
     number: ?i32 = null,
@@ -792,6 +904,7 @@ pub const EnumValueDescriptorProto = struct {
     }
 };
 
+// Describes a service.
 pub const ServiceDescriptorProto = struct {
     name: ?ManagedString = null,
     method: ArrayList(MethodDescriptorProto),
@@ -850,12 +963,17 @@ pub const ServiceDescriptorProto = struct {
     }
 };
 
+// Describes a method of a service.
 pub const MethodDescriptorProto = struct {
     name: ?ManagedString = null,
+    // Input and output type names.  These are resolved in the same way as
+    // FieldDescriptorProto.type_name, but must refer to a message type.
     input_type: ?ManagedString = null,
     output_type: ?ManagedString = null,
     options: ?MethodOptions = null,
+    // Identifies if client streams multiple client messages
     client_streaming: ?bool = false,
+    // Identifies if server streams multiple server messages
     server_streaming: ?bool = false,
 
     pub const _desc_table = .{
@@ -915,26 +1033,89 @@ pub const MethodDescriptorProto = struct {
 };
 
 pub const FileOptions = struct {
+    // Sets the Java package where classes generated from this .proto will be
+    // placed.  By default, the proto package is used, but this is often
+    // inappropriate because proto packages do not normally start with backwards
+    // domain names.
     java_package: ?ManagedString = null,
+    // Controls the name of the wrapper Java class generated for the .proto file.
+    // That class will always contain the .proto file's getDescriptor() method as
+    // well as any top-level extensions defined in the .proto file.
+    // If java_multiple_files is disabled, then all the other classes from the
+    // .proto file will be nested inside the single wrapper outer class.
     java_outer_classname: ?ManagedString = null,
+    // If enabled, then the Java code generator will generate a separate .java
+    // file for each top-level message, enum, and service defined in the .proto
+    // file.  Thus, these types will *not* be nested inside the wrapper class
+    // named by java_outer_classname.  However, the wrapper class will still be
+    // generated to contain the file's getDescriptor() method as well as any
+    // top-level extensions defined in the file.
     java_multiple_files: ?bool = false,
+    // This option does nothing.
     java_generate_equals_and_hash: ?bool = null,
+    // If set true, then the Java2 code generator will generate code that
+    // throws an exception whenever an attempt is made to assign a non-UTF-8
+    // byte sequence to a string field.
+    // Message reflection will do the same.
+    // However, an extension field still accepts non-UTF-8 byte sequences.
+    // This option has no effect on when used with the lite runtime.
     java_string_check_utf8: ?bool = false,
     optimize_for: ?FileOptions.OptimizeMode = .SPEED,
+    // Sets the Go package where structs generated from this .proto will be
+    // placed. If omitted, the Go package will be derived from the following:
+    //   - The basename of the package import path, if provided.
+    //   - Otherwise, the package statement in the .proto file, if present.
+    //   - Otherwise, the basename of the .proto file, without extension.
     go_package: ?ManagedString = null,
+    // Should generic services be generated in each language?  "Generic" services
+    // are not specific to any particular RPC system.  They are generated by the
+    // main code generators in each language (without additional plugins).
+    // Generic services were the only kind of service generation supported by
+    // early versions of google.protobuf.
+    //
+    // Generic services are now considered deprecated in favor of using plugins
+    // that generate code specific to your particular RPC system.  Therefore,
+    // these default to false.  Old code which depends on generic services should
+    // explicitly set them to true.
     cc_generic_services: ?bool = false,
     java_generic_services: ?bool = false,
     py_generic_services: ?bool = false,
     php_generic_services: ?bool = false,
+    // Is this file deprecated?
+    // Depending on the target platform, this can emit Deprecated annotations
+    // for everything in the file, or it will be completely ignored; in the very
+    // least, this is a formalization for deprecating files.
     deprecated: ?bool = false,
+    // Enables the use of arenas for the proto messages in this file. This applies
+    // only to generated classes for C++.
     cc_enable_arenas: ?bool = true,
+    // Sets the objective c class prefix which is prepended to all objective c
+    // generated classes from this .proto. There is no default.
     objc_class_prefix: ?ManagedString = null,
+    // Namespace for generated classes; defaults to the package.
     csharp_namespace: ?ManagedString = null,
+    // By default Swift generators will take the proto package and CamelCase it
+    // replacing '.' with underscore and use that to prefix the types/symbols
+    // defined. When this options is provided, they will use this value instead
+    // to prefix the types/symbols defined.
     swift_prefix: ?ManagedString = null,
+    // Sets the php class prefix which is prepended to all php generated classes
+    // from this .proto. Default is empty.
     php_class_prefix: ?ManagedString = null,
+    // Use this option to change the namespace of php generated classes. Default
+    // is empty. When this option is empty, the package name will be used for
+    // determining the namespace.
     php_namespace: ?ManagedString = null,
+    // Use this option to change the namespace of php generated metadata classes.
+    // Default is empty. When this option is empty, the proto file name will be
+    // used for determining the namespace.
     php_metadata_namespace: ?ManagedString = null,
+    // Use this option to change the package of ruby generated classes. Default
+    // is empty. When this option is not set, the package name will be used for
+    // determining the ruby package.
     ruby_package: ?ManagedString = null,
+    // The parser stores options it doesn't recognize here.
+    // See the documentation for the "Options" section above.
     uninterpreted_option: ArrayList(UninterpretedOption),
 
     pub const _desc_table = .{
@@ -961,8 +1142,10 @@ pub const FileOptions = struct {
         .uninterpreted_option = fd(999, .{ .List = .{ .SubMessage = {} } }),
     };
 
+    // Generated classes can be optimized for speed or code size.
     pub const OptimizeMode = enum(i32) {
         SPEED = 1,
+        // etc.
         CODE_SIZE = 2,
         LITE_RUNTIME = 3,
         _,
@@ -1016,11 +1199,68 @@ pub const FileOptions = struct {
 };
 
 pub const MessageOptions = struct {
+    // Set true to use the old proto1 MessageSet wire format for extensions.
+    // This is provided for backwards-compatibility with the MessageSet wire
+    // format.  You should not use this for any other reason:  It's less
+    // efficient, has fewer features, and is more complicated.
+    //
+    // The message must be defined exactly as follows:
+    //   message Foo {
+    //     option message_set_wire_format = true;
+    //     extensions 4 to max;
+    //   }
+    // Note that the message cannot have any defined fields; MessageSets only
+    // have extensions.
+    //
+    // All extensions of your type must be singular messages; e.g. they cannot
+    // be int32s, enums, or repeated messages.
+    //
+    // Because this is an option, the above two restrictions are not enforced by
+    // the protocol compiler.
     message_set_wire_format: ?bool = false,
+    // Disables the generation of the standard "descriptor()" accessor, which can
+    // conflict with a field of the same name.  This is meant to make migration
+    // from proto1 easier; new code should avoid fields named "descriptor".
     no_standard_descriptor_accessor: ?bool = false,
+    // Is this message deprecated?
+    // Depending on the target platform, this can emit Deprecated annotations
+    // for the message, or it will be completely ignored; in the very least,
+    // this is a formalization for deprecating messages.
     deprecated: ?bool = false,
+    // NOTE: Do not set the option in .proto files. Always use the maps syntax
+    // instead. The option should only be implicitly set by the proto compiler
+    // parser.
+    //
+    // Whether the message is an automatically generated map entry type for the
+    // maps field.
+    //
+    // For maps fields:
+    //     map<KeyType, ValueType> map_field = 1;
+    // The parsed descriptor looks like:
+    //     message MapFieldEntry {
+    //         option map_entry = true;
+    //         optional KeyType key = 1;
+    //         optional ValueType value = 2;
+    //     }
+    //     repeated MapFieldEntry map_field = 1;
+    //
+    // Implementations may choose not to generate the map_entry=true message, but
+    // use a native map in the target language to hold the keys and values.
+    // The reflection APIs in such implementations still need to work as
+    // if the field is a repeated message field.
     map_entry: ?bool = null,
+    // Enable the legacy handling of JSON field name conflicts.  This lowercases
+    // and strips underscored from the fields before comparison in proto3 only.
+    // The new behavior takes `json_name` into account and applies to proto2 as
+    // well.
+    //
+    // This should only be used as a temporary measure against broken builds due
+    // to the change in behavior for JSON field name conflicts.
+    //
+    // TODO(b/261750190) This is legacy behavior we plan to remove once downstream
+    // teams have had time to migrate.
     deprecated_legacy_json_field_conflicts: ?bool = null,
+    // The parser stores options it doesn't recognize here. See above.
     uninterpreted_option: ArrayList(UninterpretedOption),
 
     pub const _desc_table = .{
@@ -1080,17 +1320,80 @@ pub const MessageOptions = struct {
 };
 
 pub const FieldOptions = struct {
+    // The ctype option instructs the C++ code generator to use a different
+    // representation of the field than it normally would.  See the specific
+    // options below.  This option is only implemented to support use of
+    // [ctype=CORD] and [ctype=STRING] (the default) on non-repeated fields of
+    // type "bytes" in the open source release -- sorry, we'll try to include
+    // other types in a future version!
     ctype: ?FieldOptions.CType = .STRING,
+    // The packed option can be enabled for repeated primitive fields to enable
+    // a more efficient representation on the wire. Rather than repeatedly
+    // writing the tag and type for each element, the entire array is encoded as
+    // a single length-delimited blob. In proto3, only explicit setting it to
+    // false will avoid using packed encoding.
     @"packed": ?bool = null,
+    // The jstype option determines the JavaScript type used for values of the
+    // field.  The option is permitted only for 64 bit integral and fixed types
+    // (int64, uint64, sint64, fixed64, sfixed64).  A field with jstype JS_STRING
+    // is represented as JavaScript string, which avoids loss of precision that
+    // can happen when a large value is converted to a floating point JavaScript.
+    // Specifying JS_NUMBER for the jstype causes the generated JavaScript code to
+    // use the JavaScript "number" type.  The behavior of the default option
+    // JS_NORMAL is implementation dependent.
+    //
+    // This option is an enum to permit additional types to be added, e.g.
+    // goog.math.Integer.
     jstype: ?FieldOptions.JSType = .JS_NORMAL,
+    // Should this field be parsed lazily?  Lazy applies only to message-type
+    // fields.  It means that when the outer message is initially parsed, the
+    // inner message's contents will not be parsed but instead stored in encoded
+    // form.  The inner message will actually be parsed when it is first accessed.
+    //
+    // This is only a hint.  Implementations are free to choose whether to use
+    // eager or lazy parsing regardless of the value of this option.  However,
+    // setting this option true suggests that the protocol author believes that
+    // using lazy parsing on this field is worth the additional bookkeeping
+    // overhead typically needed to implement it.
+    //
+    // This option does not affect the public interface of any generated code;
+    // all method signatures remain the same.  Furthermore, thread-safety of the
+    // interface is not affected by this option; const methods remain safe to
+    // call from multiple threads concurrently, while non-const methods continue
+    // to require exclusive access.
+    //
+    // Note that implementations may choose not to check required fields within
+    // a lazy sub-message.  That is, calling IsInitialized() on the outer message
+    // may return true even if the inner message has missing required fields.
+    // This is necessary because otherwise the inner message would have to be
+    // parsed in order to perform the check, defeating the purpose of lazy
+    // parsing.  An implementation which chooses not to check required fields
+    // must be consistent about it.  That is, for any particular sub-message, the
+    // implementation must either *always* check its required fields, or *never*
+    // check its required fields, regardless of whether or not the message has
+    // been parsed.
+    //
+    // As of May 2022, lazy verifies the contents of the byte stream during
+    // parsing.  An invalid byte stream will cause the overall parsing to fail.
     lazy: ?bool = false,
+    // unverified_lazy does no correctness checks on the byte stream. This should
+    // only be used where lazy with verification is prohibitive for performance
+    // reasons.
     unverified_lazy: ?bool = false,
+    // Is this field deprecated?
+    // Depending on the target platform, this can emit Deprecated annotations
+    // for accessors, or it will be completely ignored; in the very least, this
+    // is a formalization for deprecating fields.
     deprecated: ?bool = false,
+    // For Google-internal migration only. Do not use.
     weak: ?bool = false,
+    // Indicate that the field value should not be printed out when using debug
+    // formats, e.g. when the field contains sensitive credentials.
     debug_redact: ?bool = false,
     retention: ?FieldOptions.OptionRetention = null,
     target: ?FieldOptions.OptionTargetType = null,
     targets: ArrayList(FieldOptions.OptionTargetType),
+    // The parser stores options it doesn't recognize here. See above.
     uninterpreted_option: ArrayList(UninterpretedOption),
 
     pub const _desc_table = .{
@@ -1109,19 +1412,32 @@ pub const FieldOptions = struct {
     };
 
     pub const CType = enum(i32) {
+        // Default mode.
         STRING = 0,
+        // The option [ctype=CORD] may be applied to a non-repeated field of type
+        // "bytes". It indicates that in C++, the data should be stored in a Cord
+        // instead of a string.  For very large strings, this may reduce memory
+        // fragmentation. It may also allow better performance when parsing from a
+        // Cord, or when parsing with aliasing enabled, as the parsed Cord may then
+        // alias the original buffer.
         CORD = 1,
         STRING_PIECE = 2,
         _,
     };
 
     pub const JSType = enum(i32) {
+        // Use the default type.
         JS_NORMAL = 0,
+        // Use JavaScript strings.
         JS_STRING = 1,
+        // Use JavaScript numbers.
         JS_NUMBER = 2,
         _,
     };
 
+    // If set to RETENTION_SOURCE, the option will be omitted from the binary.
+    // Note: as of January 2023, support for this is in progress and does not yet
+    // have an effect (b/264593489).
     pub const OptionRetention = enum(i32) {
         RETENTION_UNKNOWN = 0,
         RETENTION_RUNTIME = 1,
@@ -1129,6 +1445,10 @@ pub const FieldOptions = struct {
         _,
     };
 
+    // This indicates the types of entities that the field may apply to when used
+    // as an option. If it is unset, then the field may be freely used as an
+    // option on any kind of entity. Note: as of January 2023, support for this is
+    // in progress and does not yet have an effect (b/264593489).
     pub const OptionTargetType = enum(i32) {
         TARGET_TYPE_UNKNOWN = 0,
         TARGET_TYPE_FILE = 1,
@@ -1191,6 +1511,7 @@ pub const FieldOptions = struct {
 };
 
 pub const OneofOptions = struct {
+    // The parser stores options it doesn't recognize here. See above.
     uninterpreted_option: ArrayList(UninterpretedOption),
 
     pub const _desc_table = .{
@@ -1245,9 +1566,22 @@ pub const OneofOptions = struct {
 };
 
 pub const EnumOptions = struct {
+    // Set this option to true to allow mapping different tag names to the same
+    // value.
     allow_alias: ?bool = null,
+    // Is this enum deprecated?
+    // Depending on the target platform, this can emit Deprecated annotations
+    // for the enum, or it will be completely ignored; in the very least, this
+    // is a formalization for deprecating enums.
     deprecated: ?bool = false,
+    // Enable the legacy handling of JSON field name conflicts.  This lowercases
+    // and strips underscored from the fields before comparison in proto3 only.
+    // The new behavior takes `json_name` into account and applies to proto2 as
+    // well.
+    // TODO(b/261750190) Remove this legacy behavior once downstream teams have
+    // had time to migrate.
     deprecated_legacy_json_field_conflicts: ?bool = null,
+    // The parser stores options it doesn't recognize here. See above.
     uninterpreted_option: ArrayList(UninterpretedOption),
 
     pub const _desc_table = .{
@@ -1305,7 +1639,12 @@ pub const EnumOptions = struct {
 };
 
 pub const EnumValueOptions = struct {
+    // Is this enum value deprecated?
+    // Depending on the target platform, this can emit Deprecated annotations
+    // for the enum value, or it will be completely ignored; in the very least,
+    // this is a formalization for deprecating enum values.
     deprecated: ?bool = false,
+    // The parser stores options it doesn't recognize here. See above.
     uninterpreted_option: ArrayList(UninterpretedOption),
 
     pub const _desc_table = .{
@@ -1361,7 +1700,12 @@ pub const EnumValueOptions = struct {
 };
 
 pub const ServiceOptions = struct {
+    // Is this service deprecated?
+    // Depending on the target platform, this can emit Deprecated annotations
+    // for the service, or it will be completely ignored; in the very least,
+    // this is a formalization for deprecating services.
     deprecated: ?bool = false,
+    // The parser stores options it doesn't recognize here. See above.
     uninterpreted_option: ArrayList(UninterpretedOption),
 
     pub const _desc_table = .{
@@ -1417,8 +1761,13 @@ pub const ServiceOptions = struct {
 };
 
 pub const MethodOptions = struct {
+    // Is this method deprecated?
+    // Depending on the target platform, this can emit Deprecated annotations
+    // for the method, or it will be completely ignored; in the very least,
+    // this is a formalization for deprecating methods.
     deprecated: ?bool = false,
     idempotency_level: ?MethodOptions.IdempotencyLevel = .IDEMPOTENCY_UNKNOWN,
+    // The parser stores options it doesn't recognize here. See above.
     uninterpreted_option: ArrayList(UninterpretedOption),
 
     pub const _desc_table = .{
@@ -1427,6 +1776,9 @@ pub const MethodOptions = struct {
         .uninterpreted_option = fd(999, .{ .List = .{ .SubMessage = {} } }),
     };
 
+    // Is this method side-effect-free (or safe in HTTP parlance), or idempotent,
+    // or neither? HTTP based RPC implementation may choose GET verb for safe
+    // methods, and PUT verb for idempotent methods instead of the default POST.
     pub const IdempotencyLevel = enum(i32) {
         IDEMPOTENCY_UNKNOWN = 0,
         NO_SIDE_EFFECTS = 1,
@@ -1481,8 +1833,16 @@ pub const MethodOptions = struct {
     }
 };
 
+// A message representing a option the parser does not recognize. This only
+// appears in options protos created by the compiler::Parser class.
+// DescriptorPool resolves these when building Descriptor objects. Therefore,
+// options protos in descriptor objects (e.g. returned by Descriptor::options(),
+// or produced by Descriptor::CopyTo()) will never have UninterpretedOptions
+// in them.
 pub const UninterpretedOption = struct {
     name: ArrayList(UninterpretedOption.NamePart),
+    // The value of the uninterpreted option, in whatever type the tokenizer
+    // identified it as during parsing. Exactly one of these should be set.
     identifier_value: ?ManagedString = null,
     positive_int_value: ?u64 = null,
     negative_int_value: ?i64 = null,
@@ -1500,6 +1860,11 @@ pub const UninterpretedOption = struct {
         .aggregate_value = fd(8, .String),
     };
 
+    // The name of the uninterpreted option.  Each string represents a segment in
+    // a dot-separated name.  is_extension is true iff a segment represents an
+    // extension (denoted with parentheses in options specs in .proto files).
+    // E.g.,{ ["foo", false], ["bar.baz", true], ["moo", false] } represents
+    // "foo.(bar.baz).moo".
     pub const NamePart = struct {
         name_part: ManagedString,
         is_extension: bool,
@@ -1603,7 +1968,52 @@ pub const UninterpretedOption = struct {
     }
 };
 
+// Encapsulates information about the original source file from which a
+// FileDescriptorProto was generated.
 pub const SourceCodeInfo = struct {
+    // A Location identifies a piece of source code in a .proto file which
+    // corresponds to a particular definition.  This information is intended
+    // to be useful to IDEs, code indexers, documentation generators, and similar
+    // tools.
+    //
+    // For example, say we have a file like:
+    //   message Foo {
+    //     optional string foo = 1;
+    //   }
+    // Let's look at just the field definition:
+    //   optional string foo = 1;
+    //   ^       ^^     ^^  ^  ^^^
+    //   a       bc     de  f  ghi
+    // We have the following locations:
+    //   span   path               represents
+    //   [a,i)  [ 4, 0, 2, 0 ]     The whole field definition.
+    //   [a,b)  [ 4, 0, 2, 0, 4 ]  The label (optional).
+    //   [c,d)  [ 4, 0, 2, 0, 5 ]  The type (string).
+    //   [e,f)  [ 4, 0, 2, 0, 1 ]  The name (foo).
+    //   [g,h)  [ 4, 0, 2, 0, 3 ]  The number (1).
+    //
+    // Notes:
+    // - A location may refer to a repeated field itself (i.e. not to any
+    //   particular index within it).  This is used whenever a set of elements are
+    //   logically enclosed in a single code segment.  For example, an entire
+    //   extend block (possibly containing multiple extension definitions) will
+    //   have an outer location whose path refers to the "extensions" repeated
+    //   field without an index.
+    // - Multiple locations may have the same path.  This happens when a single
+    //   logical declaration is spread out across multiple places.  The most
+    //   obvious example is the "extend" block again -- there may be multiple
+    //   extend blocks in the same scope, each of which will have the same path.
+    // - A location's span is not always a subset of its parent's span.  For
+    //   example, the "extendee" of an extension declaration appears at the
+    //   beginning of the "extend" block and is shared by all extensions within
+    //   the block.
+    // - Just because a location's span is a subset of some other location's span
+    //   does not mean that it is a descendant.  For example, a "group" defines
+    //   both a type and a field in a single declaration.  Thus, the locations
+    //   corresponding to the type and field and their components will overlap.
+    // - Code which tries to interpret locations should probably be designed to
+    //   ignore those that it doesn't understand, as more types of locations could
+    //   be recorded in the future.
     location: ArrayList(SourceCodeInfo.Location),
 
     pub const _desc_table = .{
@@ -1611,8 +2021,83 @@ pub const SourceCodeInfo = struct {
     };
 
     pub const Location = struct {
+        // Identifies which part of the FileDescriptorProto was defined at this
+        // location.
+        //
+        // Each element is a field number or an index.  They form a path from
+        // the root FileDescriptorProto to the place where the definition occurs.
+        // For example, this path:
+        //   [ 4, 3, 2, 7, 1 ]
+        // refers to:
+        //   file.message_type(3)  // 4, 3
+        //       .field(7)         // 2, 7
+        //       .name()           // 1
+        // This is because FileDescriptorProto.message_type has field number 4:
+        //   repeated DescriptorProto message_type = 4;
+        // and DescriptorProto.field has field number 2:
+        //   repeated FieldDescriptorProto field = 2;
+        // and FieldDescriptorProto.name has field number 1:
+        //   optional string name = 1;
+        //
+        // Thus, the above path gives the location of a field name.  If we removed
+        // the last element:
+        //   [ 4, 3, 2, 7 ]
+        // this path refers to the whole field declaration (from the beginning
+        // of the label to the terminating semicolon).
         path: ArrayList(i32),
+        // Always has exactly three or four elements: start line, start column,
+        // end line (optional, otherwise assumed same as start line), end column.
+        // These are packed into a single field for efficiency.  Note that line
+        // and column numbers are zero-based -- typically you will want to add
+        // 1 to each before displaying to a user.
         span: ArrayList(i32),
+        // If this SourceCodeInfo represents a complete declaration, these are any
+        // comments appearing before and after the declaration which appear to be
+        // attached to the declaration.
+        //
+        // A series of line comments appearing on consecutive lines, with no other
+        // tokens appearing on those lines, will be treated as a single comment.
+        //
+        // leading_detached_comments will keep paragraphs of comments that appear
+        // before (but not connected to) the current element. Each paragraph,
+        // separated by empty lines, will be one comment element in the repeated
+        // field.
+        //
+        // Only the comment content is provided; comment markers (e.g. //) are
+        // stripped out.  For block comments, leading whitespace and an asterisk
+        // will be stripped from the beginning of each line other than the first.
+        // Newlines are included in the output.
+        //
+        // Examples:
+        //
+        //   optional int32 foo = 1;  // Comment attached to foo.
+        //   // Comment attached to bar.
+        //   optional int32 bar = 2;
+        //
+        //   optional string baz = 3;
+        //   // Comment attached to baz.
+        //   // Another line attached to baz.
+        //
+        //   // Comment attached to moo.
+        //   //
+        //   // Another line attached to moo.
+        //   optional double moo = 4;
+        //
+        //   // Detached comment for corge. This is not leading or trailing comments
+        //   // to moo or corge because there are blank lines separating it from
+        //   // both.
+        //
+        //   // Detached comment for corge paragraph 2.
+        //
+        //   optional string corge = 5;
+        //   /* Block comment attached
+        //    * to corge.  Leading asterisks
+        //    * will be removed. */
+        //   /* Block comment attached to
+        //    * grault. */
+        //   optional int32 grault = 6;
+        //
+        //   // ignored detached comments.
         leading_comments: ?ManagedString = null,
         trailing_comments: ?ManagedString = null,
         leading_detached_comments: ArrayList(ManagedString),
@@ -1719,7 +2204,12 @@ pub const SourceCodeInfo = struct {
     }
 };
 
+// Describes the relationship between generated code and its original source
+// file. A GeneratedCodeInfo message is associated with only one generated
+// source file, but may contain references to different source .proto files.
 pub const GeneratedCodeInfo = struct {
+    // An Annotation connects some span of text in generated code to an element
+    // of its generating .proto file.
     annotation: ArrayList(GeneratedCodeInfo.Annotation),
 
     pub const _desc_table = .{
@@ -1727,9 +2217,17 @@ pub const GeneratedCodeInfo = struct {
     };
 
     pub const Annotation = struct {
+        // Identifies the element in the original source .proto file. This field
+        // is formatted the same as SourceCodeInfo.Location.path.
         path: ArrayList(i32),
+        // Identifies the filesystem path to the original source .proto.
         source_file: ?ManagedString = null,
+        // Identifies the starting offset in bytes in the generated code
+        // that relates to the identified object.
         begin: ?i32 = null,
+        // Identifies the ending offset in bytes in the generated code that
+        // relates to the identified object. The end offset should be one past
+        // the last relevant byte (so the length of the text = end - begin).
         end: ?i32 = null,
         semantic: ?GeneratedCodeInfo.Annotation.Semantic = null,
 
@@ -1741,9 +2239,14 @@ pub const GeneratedCodeInfo = struct {
             .semantic = fd(5, .{ .Varint = .Simple }),
         };
 
+        // Represents the identified object's effect on the element in the original
+        // .proto file.
         pub const Semantic = enum(i32) {
+            // There is no effect or the effect is indescribable.
             NONE = 0,
+            // The element is set or otherwise mutated.
             SET = 1,
+            // An alias to the element is returned.
             ALIAS = 2,
             _,
         };
@@ -1842,8 +2345,121 @@ pub const GeneratedCodeInfo = struct {
     }
 };
 
+// `Any` contains an arbitrary serialized protocol buffer message along with a
+// URL that describes the type of the serialized message.
+//
+// Protobuf library provides support to pack/unpack Any values in the form
+// of utility functions or additional generated methods of the Any type.
+//
+// Example 1: Pack and unpack a message in C++.
+//
+//     Foo foo = ...;
+//     Any any;
+//     any.PackFrom(foo);
+//     ...
+//     if (any.UnpackTo(&foo)) {
+//       ...
+//     }
+//
+// Example 2: Pack and unpack a message in Java.
+//
+//     Foo foo = ...;
+//     Any any = Any.pack(foo);
+//     ...
+//     if (any.is(Foo.class)) {
+//       foo = any.unpack(Foo.class);
+//     }
+//     // or ...
+//     if (any.isSameTypeAs(Foo.getDefaultInstance())) {
+//       foo = any.unpack(Foo.getDefaultInstance());
+//     }
+//
+//  Example 3: Pack and unpack a message in Python.
+//
+//     foo = Foo(...)
+//     any = Any()
+//     any.Pack(foo)
+//     ...
+//     if any.Is(Foo.DESCRIPTOR):
+//       any.Unpack(foo)
+//       ...
+//
+//  Example 4: Pack and unpack a message in Go
+//
+//      foo := &pb.Foo{...}
+//      any, err := anypb.New(foo)
+//      if err != nil {
+//        ...
+//      }
+//      ...
+//      foo := &pb.Foo{}
+//      if err := any.UnmarshalTo(foo); err != nil {
+//        ...
+//      }
+//
+// The pack methods provided by protobuf library will by default use
+// 'type.googleapis.com/full.type.name' as the type URL and the unpack
+// methods only use the fully qualified type name after the last '/'
+// in the type URL, for example "foo.bar.com/x/y.z" will yield type
+// name "y.z".
+//
+// JSON
+// ====
+// The JSON representation of an `Any` value uses the regular
+// representation of the deserialized, embedded message, with an
+// additional field `@type` which contains the type URL. Example:
+//
+//     package google.profile;
+//     message Person {
+//       string first_name = 1;
+//       string last_name = 2;
+//     }
+//
+//     {
+//       "@type": "type.googleapis.com/google.profile.Person",
+//       "firstName": <string>,
+//       "lastName": <string>
+//     }
+//
+// If the embedded message type is well-known and has a custom JSON
+// representation, that representation will be embedded adding a field
+// `value` which holds the custom JSON in addition to the `@type`
+// field. Example (for message [google.protobuf.Duration][]):
+//
+//     {
+//       "@type": "type.googleapis.com/google.protobuf.Duration",
+//       "value": "1.212s"
+//     }
 pub const Any = struct {
+    // A URL/resource name that uniquely identifies the type of the serialized
+    // protocol buffer message. This string must contain at least
+    // one "/" character. The last segment of the URL's path must represent
+    // the fully qualified name of the type (as in
+    // `path/google.protobuf.Duration`). The name should be in a canonical form
+    // (e.g., leading "." is not accepted).
+    //
+    // In practice, teams usually precompile into the binary all types that they
+    // expect it to use in the context of Any. However, for URLs which use the
+    // scheme `http`, `https`, or no scheme, one can optionally set up a type
+    // server that maps type URLs to message definitions as follows:
+    //
+    // * If no scheme is provided, `https` is assumed.
+    // * An HTTP GET on the URL must yield a [google.protobuf.Type][]
+    //   value in binary format, or produce an error.
+    // * Applications are allowed to cache lookup results based on the
+    //   URL, or have them precompiled into a binary to avoid any
+    //   lookup. Therefore, binary compatibility needs to be preserved
+    //   on changes to types. (Use versioned type names to manage
+    //   breaking changes.)
+    //
+    // Note: this functionality is not currently available in the official
+    // protobuf release, and it is not used for type URLs beginning with
+    // type.googleapis.com.
+    //
+    // Schemes other than `http`, `https` (or the empty scheme) might be
+    // used with implementation specific semantics.
     type_url: ManagedString = .Empty,
+    // Must be a valid serialized protocol buffer of the above specified type.
     value: ManagedString = .Empty,
 
     pub const _desc_table = .{
@@ -1898,8 +2514,75 @@ pub const Any = struct {
     }
 };
 
+// A Duration represents a signed, fixed-length span of time represented
+// as a count of seconds and fractions of seconds at nanosecond
+// resolution. It is independent of any calendar and concepts like "day"
+// or "month". It is related to Timestamp in that the difference between
+// two Timestamp values is a Duration and it can be added or subtracted
+// from a Timestamp. Range is approximately +-10,000 years.
+//
+// # Examples
+//
+// Example 1: Compute Duration from two Timestamps in pseudo code.
+//
+//     Timestamp start = ...;
+//     Timestamp end = ...;
+//     Duration duration = ...;
+//
+//     duration.seconds = end.seconds - start.seconds;
+//     duration.nanos = end.nanos - start.nanos;
+//
+//     if (duration.seconds < 0 && duration.nanos > 0) {
+//       duration.seconds += 1;
+//       duration.nanos -= 1000000000;
+//     } else if (duration.seconds > 0 && duration.nanos < 0) {
+//       duration.seconds -= 1;
+//       duration.nanos += 1000000000;
+//     }
+//
+// Example 2: Compute Timestamp from Timestamp + Duration in pseudo code.
+//
+//     Timestamp start = ...;
+//     Duration duration = ...;
+//     Timestamp end = ...;
+//
+//     end.seconds = start.seconds + duration.seconds;
+//     end.nanos = start.nanos + duration.nanos;
+//
+//     if (end.nanos < 0) {
+//       end.seconds -= 1;
+//       end.nanos += 1000000000;
+//     } else if (end.nanos >= 1000000000) {
+//       end.seconds += 1;
+//       end.nanos -= 1000000000;
+//     }
+//
+// Example 3: Compute Duration from datetime.timedelta in Python.
+//
+//     td = datetime.timedelta(days=3, minutes=10)
+//     duration = Duration()
+//     duration.FromTimedelta(td)
+//
+// # JSON Mapping
+//
+// In JSON format, the Duration type is encoded as a string rather than an
+// object, where the string ends in the suffix "s" (indicating seconds) and
+// is preceded by the number of seconds, with nanoseconds expressed as
+// fractional seconds. For example, 3 seconds with 0 nanoseconds should be
+// encoded in JSON format as "3s", while 3 seconds and 1 nanosecond should
+// be expressed in JSON format as "3.000000001s", and 3 seconds and 1
+// microsecond should be expressed in JSON format as "3.000001s".
 pub const Duration = struct {
+    // Signed seconds of the span of time. Must be from -315,576,000,000
+    // to +315,576,000,000 inclusive. Note: these bounds are computed from:
+    // 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years
     seconds: i64 = 0,
+    // Signed fractions of a second at nanosecond resolution of the span
+    // of time. Durations less than one second are represented with a 0
+    // `seconds` field and a positive or negative `nanos` field. For durations
+    // of one second or more, a non-zero value for the `nanos` field must be
+    // of the same sign as the `seconds` field. Must be from -999,999,999
+    // to +999,999,999 inclusive.
     nanos: i32 = 0,
 
     pub const _desc_table = .{
@@ -1954,7 +2637,207 @@ pub const Duration = struct {
     }
 };
 
+// `FieldMask` represents a set of symbolic field paths, for example:
+//
+//     paths: "f.a"
+//     paths: "f.b.d"
+//
+// Here `f` represents a field in some root message, `a` and `b`
+// fields in the message found in `f`, and `d` a field found in the
+// message in `f.b`.
+//
+// Field masks are used to specify a subset of fields that should be
+// returned by a get operation or modified by an update operation.
+// Field masks also have a custom JSON encoding (see below).
+//
+// # Field Masks in Projections
+//
+// When used in the context of a projection, a response message or
+// sub-message is filtered by the API to only contain those fields as
+// specified in the mask. For example, if the mask in the previous
+// example is applied to a response message as follows:
+//
+//     f {
+//       a : 22
+//       b {
+//         d : 1
+//         x : 2
+//       }
+//       y : 13
+//     }
+//     z: 8
+//
+// The result will not contain specific values for fields x,y and z
+// (their value will be set to the default, and omitted in proto text
+// output):
+//
+//
+//     f {
+//       a : 22
+//       b {
+//         d : 1
+//       }
+//     }
+//
+// A repeated field is not allowed except at the last position of a
+// paths string.
+//
+// If a FieldMask object is not present in a get operation, the
+// operation applies to all fields (as if a FieldMask of all fields
+// had been specified).
+//
+// Note that a field mask does not necessarily apply to the
+// top-level response message. In case of a REST get operation, the
+// field mask applies directly to the response, but in case of a REST
+// list operation, the mask instead applies to each individual message
+// in the returned resource list. In case of a REST custom method,
+// other definitions may be used. Where the mask applies will be
+// clearly documented together with its declaration in the API.  In
+// any case, the effect on the returned resource/resources is required
+// behavior for APIs.
+//
+// # Field Masks in Update Operations
+//
+// A field mask in update operations specifies which fields of the
+// targeted resource are going to be updated. The API is required
+// to only change the values of the fields as specified in the mask
+// and leave the others untouched. If a resource is passed in to
+// describe the updated values, the API ignores the values of all
+// fields not covered by the mask.
+//
+// If a repeated field is specified for an update operation, new values will
+// be appended to the existing repeated field in the target resource. Note that
+// a repeated field is only allowed in the last position of a `paths` string.
+//
+// If a sub-message is specified in the last position of the field mask for an
+// update operation, then new value will be merged into the existing sub-message
+// in the target resource.
+//
+// For example, given the target message:
+//
+//     f {
+//       b {
+//         d: 1
+//         x: 2
+//       }
+//       c: [1]
+//     }
+//
+// And an update message:
+//
+//     f {
+//       b {
+//         d: 10
+//       }
+//       c: [2]
+//     }
+//
+// then if the field mask is:
+//
+//  paths: ["f.b", "f.c"]
+//
+// then the result will be:
+//
+//     f {
+//       b {
+//         d: 10
+//         x: 2
+//       }
+//       c: [1, 2]
+//     }
+//
+// An implementation may provide options to override this default behavior for
+// repeated and message fields.
+//
+// In order to reset a field's value to the default, the field must
+// be in the mask and set to the default value in the provided resource.
+// Hence, in order to reset all fields of a resource, provide a default
+// instance of the resource and set all fields in the mask, or do
+// not provide a mask as described below.
+//
+// If a field mask is not present on update, the operation applies to
+// all fields (as if a field mask of all fields has been specified).
+// Note that in the presence of schema evolution, this may mean that
+// fields the client does not know and has therefore not filled into
+// the request will be reset to their default. If this is unwanted
+// behavior, a specific service may require a client to always specify
+// a field mask, producing an error if not.
+//
+// As with get operations, the location of the resource which
+// describes the updated values in the request message depends on the
+// operation kind. In any case, the effect of the field mask is
+// required to be honored by the API.
+//
+// ## Considerations for HTTP REST
+//
+// The HTTP kind of an update operation which uses a field mask must
+// be set to PATCH instead of PUT in order to satisfy HTTP semantics
+// (PUT must only be used for full updates).
+//
+// # JSON Encoding of Field Masks
+//
+// In JSON, a field mask is encoded as a single string where paths are
+// separated by a comma. Fields name in each path are converted
+// to/from lower-camel naming conventions.
+//
+// As an example, consider the following message declarations:
+//
+//     message Profile {
+//       User user = 1;
+//       Photo photo = 2;
+//     }
+//     message User {
+//       string display_name = 1;
+//       string address = 2;
+//     }
+//
+// In proto a field mask for `Profile` may look as such:
+//
+//     mask {
+//       paths: "user.display_name"
+//       paths: "photo"
+//     }
+//
+// In JSON, the same mask is represented as below:
+//
+//     {
+//       mask: "user.displayName,photo"
+//     }
+//
+// # Field Masks and Oneof Fields
+//
+// Field masks treat fields in oneofs just as regular fields. Consider the
+// following message:
+//
+//     message SampleMessage {
+//       oneof test_oneof {
+//         string name = 4;
+//         SubMessage sub_message = 9;
+//       }
+//     }
+//
+// The field mask can be:
+//
+//     mask {
+//       paths: "name"
+//     }
+//
+// Or:
+//
+//     mask {
+//       paths: "sub_message"
+//     }
+//
+// Note that oneof type names ("test_oneof" in this case) cannot be used in
+// paths.
+//
+// ## Field Mask Verification
+//
+// The implementation of any API method which has a FieldMask type field in the
+// request should verify the included field paths, and return an
+// `INVALID_ARGUMENT` error if any path is unmappable.
 pub const FieldMask = struct {
+    // The set of field mask paths.
     paths: ArrayList(ManagedString),
 
     pub const _desc_table = .{
@@ -2008,12 +2891,26 @@ pub const FieldMask = struct {
     }
 };
 
+// `NullValue` is a singleton enumeration to represent the null value for the
+// `Value` type union.
+//
+// The JSON representation for `NullValue` is JSON `null`.
 pub const NullValue = enum(i32) {
+    // Null value.
     NULL_VALUE = 0,
     _,
 };
 
+// `Struct` represents a structured data value, consisting of fields
+// which map to dynamically typed values. In some languages, `Struct`
+// might be supported by a native representation. For example, in
+// scripting languages like JS a struct is represented as an
+// object. The details of that representation are described together
+// with the proto support for the language.
+//
+// The JSON representation for `Struct` is JSON object.
 pub const Struct = struct {
+    // Unordered map of dynamically typed values.
     fields: ArrayList(Struct.FieldsEntry),
 
     pub const _desc_table = .{
@@ -2123,7 +3020,14 @@ pub const Struct = struct {
     }
 };
 
+// `Value` represents a dynamically typed value which can be either
+// null, a number, a string, a boolean, a recursive struct value, or a
+// list of values. A producer of value is expected to set one of these
+// variants. Absence of any variant indicates an error.
+//
+// The JSON representation for `Value` is JSON value.
 pub const Value = struct {
+    // The kind of value.
     kind: ?kind_union,
 
     pub const _kind_case = enum {
@@ -2135,11 +3039,17 @@ pub const Value = struct {
         list_value,
     };
     pub const kind_union = union(_kind_case) {
+        // Represents a null value.
         null_value: NullValue,
+        // Represents a double value.
         number_value: f64,
+        // Represents a string value.
         string_value: ManagedString,
+        // Represents a boolean value.
         bool_value: bool,
+        // Represents a structured value.
         struct_value: Struct,
+        // Represents a repeated `Value`.
         list_value: ListValue,
         pub const _union_desc = .{
             .null_value = fd(1, .{ .Varint = .Simple }),
@@ -2202,7 +3112,11 @@ pub const Value = struct {
     }
 };
 
+// `ListValue` is a wrapper around a repeated field of values.
+//
+// The JSON representation for `ListValue` is JSON array.
 pub const ListValue = struct {
+    // Repeated field of dynamically typed values.
     values: ArrayList(Value),
 
     pub const _desc_table = .{
@@ -2256,8 +3170,104 @@ pub const ListValue = struct {
     }
 };
 
+// A Timestamp represents a point in time independent of any time zone or local
+// calendar, encoded as a count of seconds and fractions of seconds at
+// nanosecond resolution. The count is relative to an epoch at UTC midnight on
+// January 1, 1970, in the proleptic Gregorian calendar which extends the
+// Gregorian calendar backwards to year one.
+//
+// All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
+// second table is needed for interpretation, using a [24-hour linear
+// smear](https://developers.google.com/time/smear).
+//
+// The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
+// restricting to that range, we ensure that we can convert to and from [RFC
+// 3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
+//
+// # Examples
+//
+// Example 1: Compute Timestamp from POSIX `time()`.
+//
+//     Timestamp timestamp;
+//     timestamp.set_seconds(time(NULL));
+//     timestamp.set_nanos(0);
+//
+// Example 2: Compute Timestamp from POSIX `gettimeofday()`.
+//
+//     struct timeval tv;
+//     gettimeofday(&tv, NULL);
+//
+//     Timestamp timestamp;
+//     timestamp.set_seconds(tv.tv_sec);
+//     timestamp.set_nanos(tv.tv_usec * 1000);
+//
+// Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
+//
+//     FILETIME ft;
+//     GetSystemTimeAsFileTime(&ft);
+//     UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
+//
+//     // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
+//     // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
+//     Timestamp timestamp;
+//     timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
+//     timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
+//
+// Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
+//
+//     long millis = System.currentTimeMillis();
+//
+//     Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
+//         .setNanos((int) ((millis % 1000) * 1000000)).build();
+//
+// Example 5: Compute Timestamp from Java `Instant.now()`.
+//
+//     Instant now = Instant.now();
+//
+//     Timestamp timestamp =
+//         Timestamp.newBuilder().setSeconds(now.getEpochSecond())
+//             .setNanos(now.getNano()).build();
+//
+// Example 6: Compute Timestamp from current time in Python.
+//
+//     timestamp = Timestamp()
+//     timestamp.GetCurrentTime()
+//
+// # JSON Mapping
+//
+// In JSON format, the Timestamp type is encoded as a string in the
+// [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
+// format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
+// where {year} is always expressed using four digits while {month}, {day},
+// {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
+// seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
+// are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
+// is required. A proto3 JSON serializer should always use UTC (as indicated by
+// "Z") when printing the Timestamp type and a proto3 JSON parser should be
+// able to accept both UTC and other timezones (as indicated by an offset).
+//
+// For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
+// 01:30 UTC on January 15, 2017.
+//
+// In JavaScript, one can convert a Date object to this format using the
+// standard
+// [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
+// method. In Python, a standard `datetime.datetime` object can be converted
+// to this format using
+// [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
+// the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
+// the Joda Time's [`ISODateTimeFormat.dateTime()`](
+// http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
+// ) to obtain a formatter capable of generating timestamps in this format.
 pub const Timestamp = struct {
+    // Represents seconds of UTC time since Unix epoch
+    // 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
+    // 9999-12-31T23:59:59Z inclusive.
     seconds: i64 = 0,
+    // Non-negative fractions of a second at nanosecond resolution. Negative
+    // second values with fractions must still have non-negative nanos values
+    // that count forward in time. Must be from 0 to 999,999,999
+    // inclusive.
     nanos: i32 = 0,
 
     pub const _desc_table = .{
@@ -2312,7 +3322,11 @@ pub const Timestamp = struct {
     }
 };
 
+// Wrapper message for `double`.
+//
+// The JSON representation for `DoubleValue` is JSON number.
 pub const DoubleValue = struct {
+    // The double value.
     value: f64 = 0,
 
     pub const _desc_table = .{
@@ -2366,7 +3380,11 @@ pub const DoubleValue = struct {
     }
 };
 
+// Wrapper message for `float`.
+//
+// The JSON representation for `FloatValue` is JSON number.
 pub const FloatValue = struct {
+    // The float value.
     value: f32 = 0,
 
     pub const _desc_table = .{
@@ -2420,7 +3438,11 @@ pub const FloatValue = struct {
     }
 };
 
+// Wrapper message for `int64`.
+//
+// The JSON representation for `Int64Value` is JSON string.
 pub const Int64Value = struct {
+    // The int64 value.
     value: i64 = 0,
 
     pub const _desc_table = .{
@@ -2474,7 +3496,11 @@ pub const Int64Value = struct {
     }
 };
 
+// Wrapper message for `uint64`.
+//
+// The JSON representation for `UInt64Value` is JSON string.
 pub const UInt64Value = struct {
+    // The uint64 value.
     value: u64 = 0,
 
     pub const _desc_table = .{
@@ -2528,7 +3554,11 @@ pub const UInt64Value = struct {
     }
 };
 
+// Wrapper message for `int32`.
+//
+// The JSON representation for `Int32Value` is JSON number.
 pub const Int32Value = struct {
+    // The int32 value.
     value: i32 = 0,
 
     pub const _desc_table = .{
@@ -2582,7 +3612,11 @@ pub const Int32Value = struct {
     }
 };
 
+// Wrapper message for `uint32`.
+//
+// The JSON representation for `UInt32Value` is JSON number.
 pub const UInt32Value = struct {
+    // The uint32 value.
     value: u32 = 0,
 
     pub const _desc_table = .{
@@ -2636,7 +3670,11 @@ pub const UInt32Value = struct {
     }
 };
 
+// Wrapper message for `bool`.
+//
+// The JSON representation for `BoolValue` is JSON `true` and `false`.
 pub const BoolValue = struct {
+    // The bool value.
     value: bool = false,
 
     pub const _desc_table = .{
@@ -2690,7 +3728,11 @@ pub const BoolValue = struct {
     }
 };
 
+// Wrapper message for `string`.
+//
+// The JSON representation for `StringValue` is JSON string.
 pub const StringValue = struct {
+    // The string value.
     value: ManagedString = .Empty,
 
     pub const _desc_table = .{
@@ -2744,7 +3786,11 @@ pub const StringValue = struct {
     }
 };
 
+// Wrapper message for `bytes`.
+//
+// The JSON representation for `BytesValue` is JSON string.
 pub const BytesValue = struct {
+    // The bytes value.
     value: ManagedString = .Empty,
 
     pub const _desc_table = .{

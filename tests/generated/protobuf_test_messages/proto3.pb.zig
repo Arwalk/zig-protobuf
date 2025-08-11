@@ -20,7 +20,15 @@ pub const ForeignEnum = enum(i32) {
     _,
 };
 
+// This proto includes every type of field in both singular and repeated
+// forms.
+//
+// Also, crucially, all messages and enums in this file are eventually
+// submessages of this message.  So for example, a fuzz test of TestAllTypes
+// could trigger bugs that occur in any message type in this file.  We verify
+// this stays true in a unit test.
 pub const TestAllTypesProto3 = struct {
+    // Singular
     optional_int32: i32 = 0,
     optional_int64: i64 = 0,
     optional_uint32: u32 = 0,
@@ -43,6 +51,7 @@ pub const TestAllTypesProto3 = struct {
     optional_aliased_enum: TestAllTypesProto3.AliasedEnum = @enumFromInt(0),
     optional_string_piece: ManagedString = .Empty,
     optional_cord: ManagedString = .Empty,
+    // Repeated
     repeated_int32: ArrayList(i32),
     repeated_int64: ArrayList(i64),
     repeated_uint32: ArrayList(u32),
@@ -64,6 +73,7 @@ pub const TestAllTypesProto3 = struct {
     repeated_foreign_enum: ArrayList(ForeignEnum),
     repeated_string_piece: ArrayList(ManagedString),
     repeated_cord: ArrayList(ManagedString),
+    // Packed
     packed_int32: ArrayList(i32),
     packed_int64: ArrayList(i64),
     packed_uint32: ArrayList(u32),
@@ -78,6 +88,7 @@ pub const TestAllTypesProto3 = struct {
     packed_double: ArrayList(f64),
     packed_bool: ArrayList(bool),
     packed_nested_enum: ArrayList(TestAllTypesProto3.NestedEnum),
+    // Unpacked
     unpacked_int32: ArrayList(i32),
     unpacked_int64: ArrayList(i64),
     unpacked_uint32: ArrayList(u32),
@@ -92,6 +103,7 @@ pub const TestAllTypesProto3 = struct {
     unpacked_double: ArrayList(f64),
     unpacked_bool: ArrayList(bool),
     unpacked_nested_enum: ArrayList(TestAllTypesProto3.NestedEnum),
+    // Map
     map_int32_int32: ArrayList(TestAllTypesProto3.MapInt32Int32Entry),
     map_int64_int64: ArrayList(TestAllTypesProto3.MapInt64Int64Entry),
     map_uint32_uint32: ArrayList(TestAllTypesProto3.MapUint32Uint32Entry),
@@ -111,6 +123,7 @@ pub const TestAllTypesProto3 = struct {
     map_string_foreign_message: ArrayList(TestAllTypesProto3.MapStringForeignMessageEntry),
     map_string_nested_enum: ArrayList(TestAllTypesProto3.MapStringNestedEnumEntry),
     map_string_foreign_enum: ArrayList(TestAllTypesProto3.MapStringForeignEnumEntry),
+    // Well-known types
     optional_bool_wrapper: ?google_protobuf.BoolValue = null,
     optional_int32_wrapper: ?google_protobuf.Int32Value = null,
     optional_int64_wrapper: ?google_protobuf.Int64Value = null,
@@ -143,6 +156,8 @@ pub const TestAllTypesProto3 = struct {
     repeated_any: ArrayList(google_protobuf.Any),
     repeated_value: ArrayList(google_protobuf.Value),
     repeated_list_value: ArrayList(google_protobuf.ListValue),
+    // Test field-name-to-JSON-name convention.
+    // (protobuf says names can be any valid C/C++ identifier.)
     fieldname1: i32 = 0,
     field_name2: i32 = 0,
     _field_name3: i32 = 0,
@@ -355,6 +370,7 @@ pub const TestAllTypesProto3 = struct {
     pub const AliasedEnum = enum(i32) {
         ALIAS_FOO = 0,
         ALIAS_BAR = 1,
+        // ALIAS_BAZ = 2;
         MOO = 2,
         _,
     };

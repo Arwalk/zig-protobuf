@@ -188,6 +188,7 @@ pub const Simple1 = struct {
     }
 };
 
+// A message that differs from Simple1 only by name
 pub const Simple2 = struct {
     a_string: ManagedString,
     a_repeated_string: ArrayList(ManagedString),
@@ -246,6 +247,7 @@ pub const Simple2 = struct {
 
 pub const SpecialCases = struct {
     normal: ManagedString,
+    // Examples of Js reserved names that are converted to pb_<name>.
     default: ManagedString,
     function: ManagedString,
     @"var": ManagedString,
@@ -953,6 +955,29 @@ pub const CloneExtension = struct {
 };
 
 pub const TestGroup = struct {
+    // repeated group RepeatedGroup = 1 {
+    //   required string id = 1;
+    //   repeated bool some_bool = 2;
+    // }
+    // required group RequiredGroup = 2 {
+    //   required string id = 1;
+    // }
+    // optional group OptionalGroup = 3 {
+    //   required string id = 1;
+    // }
+    // optional group MessageInGroup = 4 {
+    //   message NestedMessage {
+    //     optional string id = 1;
+    //   }
+    //   required NestedMessage id = 1;
+    // }
+    // optional group EnumInGroup = 5 {
+    //   enum NestedEnum {
+    //     first = 0;
+    //     second = 1;
+    //   }
+    //   required NestedEnum id = 1;
+    // }
     id: ?ManagedString = null,
     required_simple: ?Simple2 = null,
     optional_simple: ?Simple2 = null,

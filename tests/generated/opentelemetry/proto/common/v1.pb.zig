@@ -11,7 +11,12 @@ const ManagedStruct = protobuf.ManagedStruct;
 const json = protobuf.json;
 const UnionDecodingError = protobuf.UnionDecodingError;
 
+// AnyValue is used to represent any type of attribute value. AnyValue may contain a
+// primitive value such as a string or integer or it may contain an arbitrary nested
+// object containing arrays, key-value lists and primitives.
 pub const AnyValue = struct {
+    // The value is one of the listed fields. It is valid for all values to be unspecified
+    // in which case this AnyValue is considered to be "empty".
     value: ?value_union,
 
     pub const _value_case = enum {
@@ -93,7 +98,10 @@ pub const AnyValue = struct {
     }
 };
 
+// ArrayValue is a list of AnyValue messages. We need ArrayValue as a message
+// since oneof in AnyValue does not allow repeated fields.
 pub const ArrayValue = struct {
+    // Array of values. The array may be empty (contain 0 elements).
     values: ArrayList(AnyValue),
 
     pub const _desc_table = .{
@@ -147,7 +155,16 @@ pub const ArrayValue = struct {
     }
 };
 
+// KeyValueList is a list of KeyValue messages. We need KeyValueList as a message
+// since `oneof` in AnyValue does not allow repeated fields. Everywhere else where we need
+// a list of KeyValue messages (e.g. in Span) we use `repeated KeyValue` directly to
+// avoid unnecessary extra wrapping (which slows down the protocol). The 2 approaches
+// are semantically equivalent.
 pub const KeyValueList = struct {
+    // A collection of key/value pairs of key-value pairs. The list may be empty (may
+    // contain 0 elements).
+    // The keys MUST be unique (it is not allowed to have more than one
+    // value with the same key).
     values: ArrayList(KeyValue),
 
     pub const _desc_table = .{
@@ -201,6 +218,8 @@ pub const KeyValueList = struct {
     }
 };
 
+// KeyValue is a key-value pair that is used to store Span attributes, Link
+// attributes, etc.
 pub const KeyValue = struct {
     key: ManagedString = .Empty,
     value: ?AnyValue = null,
@@ -257,9 +276,15 @@ pub const KeyValue = struct {
     }
 };
 
+// InstrumentationScope is a message representing the instrumentation scope information
+// such as the fully qualified name and version.
 pub const InstrumentationScope = struct {
+    // An empty instrumentation scope name means the name is unknown.
     name: ManagedString = .Empty,
     version: ManagedString = .Empty,
+    // Additional attributes that describe the scope. [Optional].
+    // Attribute keys MUST be unique (it is not allowed to have more than one
+    // attribute with the same key).
     attributes: ArrayList(KeyValue),
     dropped_attributes_count: u32 = 0,
 

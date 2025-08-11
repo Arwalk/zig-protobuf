@@ -183,11 +183,86 @@ const GenerationContext = struct {
         return std.mem.replaceOwned(u8, self.req.file_to_generate.allocator, resolvedRelativePath, "\\", "/");
     }
 
+    const SourceCodeInfo = struct {
+        fn appendComment(out_lines: *std.ArrayList(string), raw_comment: []const u8) !void {
+            var comment_lines = std.mem.splitScalar(u8, raw_comment, '\n');
+            var trailing_empties: usize = 0;
+            while (comment_lines.next()) |comment_line| {
+                if (comment_line.len == 0) {
+                    trailing_empties += 1;
+                } else {
+                    trailing_empties = 0;
+                }
+                try out_lines.append(try std.fmt.allocPrint(
+                    allocator,
+                    "//{s}\n",
+                    .{comment_line},
+                ));
+            }
+            for (0..trailing_empties) |_| {
+                const free_str = out_lines.pop().?;
+                allocator.free(free_str);
+            }
+        }
+
+        /// Get source code location of a message's field.
+        fn getFieldLocation(
+            file: descriptor.FileDescriptorProto,
+            root_path: []const i32,
+            field_number: i32,
+        ) ?descriptor.SourceCodeInfo.Location {
+            const sci = file.source_code_info orelse return null;
+
+            for (sci.location.items) |location| {
+                const path = location.path.items;
+
+                if (path.len != root_path.len + 1) continue;
+                if (!std.mem.eql(i32, root_path, path[0..root_path.len]))
+                    continue;
+
+                const rem_path = path[root_path.len..];
+
+                if (rem_path[0] != field_number) continue;
+
+                return location;
+            }
+
+            return null;
+        }
+
+        /// Get source code location of one value in a message's repeated field.
+        fn getRepeatedFieldLocation(
+            file: descriptor.FileDescriptorProto,
+            root_path: []const i32,
+            field_number: i32,
+            index: usize,
+        ) ?descriptor.SourceCodeInfo.Location {
+            const sci = file.source_code_info orelse return null;
+
+            for (sci.location.items) |location| {
+                const path = location.path.items;
+
+                if (path.len != root_path.len + 2) continue;
+                if (!std.mem.eql(i32, root_path, path[0..root_path.len]))
+                    continue;
+
+                const rem_path = path[root_path.len..];
+
+                if (rem_path[0] != field_number) continue;
+                if (rem_path[1] != index) continue;
+
+                return location;
+            }
+
+            return null;
+        }
+    };
+
     pub fn printFileDeclarations(self: *Self, fqn: FullName, file: descriptor.FileDescriptorProto) !void {
         const list = try self.getOutputList(fqn);
 
-        try self.generateEnums(list, fqn, file, file.enum_type);
-        try self.generateMessages(list, fqn, file, file.message_type);
+        try self.generateEnums(list, fqn, file, &.{}, file);
+        try self.generateMessages(list, fqn, file, &.{}, file);
     }
 
     fn generateEnums(
@@ -195,22 +270,63 @@ const GenerationContext = struct {
         list: *std.ArrayList(string),
         fqn: FullName,
         file: descriptor.FileDescriptorProto,
-        enums: std.ArrayList(descriptor.EnumDescriptorProto),
+        // Source code info path to `root` from `file`.
+        file_root_path: ?[]const i32,
+        // `DescriptorProto` or `FileDescriptorProto`containing enums.
+        root: anytype,
     ) !void {
         _ = ctx;
-        _ = file;
         _ = fqn;
+        const enum_field = if (comptime @TypeOf(root) == descriptor.FileDescriptorProto)
+            @field(descriptor.FileDescriptorProto._desc_table, "enum_type")
+        else if (comptime @TypeOf(root) == descriptor.DescriptorProto)
+            @field(descriptor.DescriptorProto._desc_table, "enum_type")
+        else {
+            @compileError(std.fmt.comptimePrint(
+                "invalid root type `{s}` passed to generateEnums",
+                .{@typeName(@TypeOf(root))},
+            ));
+        };
 
-        for (enums.items) |theEnum| {
+        // Enums cannot be a "generated" type in protobuf; must have source location.
+        std.debug.assert(file_root_path != null);
+
+        for (root.enum_type.items, 0..) |theEnum, enum_i| {
             const e: descriptor.EnumDescriptorProto = theEnum;
+
+            try list.append(&.{'\n'});
+
+            // All enum fields should have a source code location.
+            const e_loc = SourceCodeInfo.getRepeatedFieldLocation(
+                file,
+                file_root_path.?,
+                enum_field.field_number.?,
+                enum_i,
+            ).?;
+
+            if (e_loc.leading_comments) |leading_comments| {
+                try SourceCodeInfo.appendComment(list, leading_comments.getSlice());
+            }
 
             try list.append(try std.fmt.allocPrint(
                 allocator,
-                "\npub const {s} = enum(i32) {{\n",
+                "pub const {s} = enum(i32) {{\n",
                 .{e.name.?.getSlice()},
             ));
 
-            for (e.value.items) |elem| {
+            for (e.value.items, 0..) |elem, elem_i| {
+                const field_loc = SourceCodeInfo.getRepeatedFieldLocation(
+                    file,
+                    e_loc.path.items,
+                    2, // `value` field in enum descriptor
+                    elem_i,
+                );
+                if (field_loc) |fl| {
+                    if (fl.leading_comments) |leading_comments| {
+                        try SourceCodeInfo.appendComment(list, leading_comments.getSlice());
+                    }
+                }
+
                 try list.append(try std.fmt.allocPrint(
                     allocator,
                     "   {s} = {d},\n",
@@ -526,21 +642,64 @@ const GenerationContext = struct {
         list: *std.ArrayList(string),
         fqn: FullName,
         file: descriptor.FileDescriptorProto,
-        messages: std.ArrayList(descriptor.DescriptorProto),
+        // Source code info path to `root` from `file`.
+        file_root_path: ?[]const i32,
+        // `DescriptorProto` or `FileDescriptorProto` containing messages.
+        root: anytype,
     ) !void {
-        for (messages.items) |message| {
+        const messages, const message_field = if (comptime @TypeOf(root) == descriptor.FileDescriptorProto)
+            .{ root.message_type, @field(descriptor.FileDescriptorProto._desc_table, "message_type") }
+        else if (comptime @TypeOf(root) == descriptor.DescriptorProto)
+            .{ root.nested_type, @field(descriptor.DescriptorProto._desc_table, "nested_type") }
+        else {
+            @compileError(std.fmt.comptimePrint(
+                "invalid root type `{s}` passed to generateMessages",
+                .{@typeName(@TypeOf(root))},
+            ));
+        };
+
+        for (messages.items, 0..) |message, message_i| {
             const m: descriptor.DescriptorProto = message;
             const messageFqn = try fqn.append(allocator, m.name.?.getSlice());
 
+            try list.append(&.{'\n'});
+
+            const m_loc = b: {
+                break :b SourceCodeInfo.getRepeatedFieldLocation(
+                    file,
+                    file_root_path orelse break :b null,
+                    message_field.field_number.?,
+                    message_i,
+                );
+            };
+            if (m_loc) |loc| {
+                if (loc.leading_comments) |leading_comments| {
+                    try SourceCodeInfo.appendComment(list, leading_comments.getSlice());
+                }
+            }
+
             try list.append(try std.fmt.allocPrint(
                 allocator,
-                "\npub const {s} = struct {{\n",
+                "pub const {s} = struct {{\n",
                 .{m.name.?.getSlice()},
             ));
 
             // append all fields that are not part of a oneof
-            for (m.field.items) |f| {
+            for (m.field.items, 0..) |f, f_i| {
                 if (f.oneof_index == null or ctx.amountOfElementsInOneofUnion(m, f.oneof_index) == 1) {
+                    add_comment: {
+                        const loc = m_loc orelse break :add_comment;
+                        const f_loc = SourceCodeInfo.getRepeatedFieldLocation(
+                            file,
+                            loc.path.items,
+                            2, // `field` field in message descriptor
+                            f_i,
+                        ) orelse break :add_comment;
+                        if (f_loc.leading_comments) |leading_comments| {
+                            try SourceCodeInfo.appendComment(list, leading_comments.getSlice());
+                        }
+                    }
+
                     try ctx.generateFieldDeclaration(list, messageFqn, file, m, f, false);
                 }
             }
@@ -549,6 +708,19 @@ const GenerationContext = struct {
             for (m.oneof_decl.items, 0..) |oneof, i| {
                 const union_element_count = ctx.amountOfElementsInOneofUnion(m, @as(i32, @intCast(i)));
                 if (union_element_count > 1) {
+                    add_comment: {
+                        const loc = m_loc orelse break :add_comment;
+                        const oneof_loc = SourceCodeInfo.getRepeatedFieldLocation(
+                            file,
+                            loc.path.items,
+                            8, // `oneof_decl` field in message descriptor
+                            i,
+                        ) orelse break :add_comment;
+                        if (oneof_loc.leading_comments) |leading_comments| {
+                            try SourceCodeInfo.appendComment(list, leading_comments.getSlice());
+                        }
+                    }
+
                     const oneof_name = oneof.name.?.getSlice();
                     try list.append(try std.fmt.allocPrint(
                         allocator,
@@ -585,9 +757,22 @@ const GenerationContext = struct {
                         \\
                     , .{ oneof_name, oneof_name }));
 
-                    for (m.field.items) |field| {
+                    for (m.field.items, 0..) |field, field_i| {
                         const f: descriptor.FieldDescriptorProto = field;
                         if (f.oneof_index orelse -1 == @as(i32, @intCast(i))) {
+                            add_comment: {
+                                const loc = m_loc orelse break :add_comment;
+                                const f_loc = SourceCodeInfo.getRepeatedFieldLocation(
+                                    file,
+                                    loc.path.items,
+                                    2, // `field` field in message descriptor
+                                    field_i,
+                                ) orelse break :add_comment;
+                                if (f_loc.leading_comments) |leading_comments| {
+                                    try SourceCodeInfo.appendComment(list, leading_comments.getSlice());
+                                }
+                            }
+
                             const name = try ctx.getFieldName(f);
                             const typeStr = try ctx.getFieldType(messageFqn, file, f, true);
                             try list.append(try std.fmt.allocPrint(allocator, "      {s}: {s},\n", .{ name, typeStr }));
@@ -643,8 +828,13 @@ const GenerationContext = struct {
                 \\
             );
 
-            try ctx.generateEnums(list, messageFqn, file, m.enum_type);
-            try ctx.generateMessages(list, messageFqn, file, m.nested_type);
+            // All non-generated (e.g. not `map` field type) enums and messages
+            // have a source code location. Any generated submessage types won't
+            // have further submessages/enums.
+            if (m_loc) |loc| {
+                try ctx.generateEnums(list, messageFqn, file, loc.path.items, m);
+                try ctx.generateMessages(list, messageFqn, file, loc.path.items, m);
+            }
 
             try list.append(try std.fmt.allocPrint(allocator,
                 \\
