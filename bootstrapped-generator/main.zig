@@ -195,7 +195,7 @@ const GenerationContext = struct {
                 }
                 try out_lines.append(try std.fmt.allocPrint(
                     allocator,
-                    "\n//{s}",
+                    "//{s}\n",
                     .{comment_line},
                 ));
             }
@@ -271,7 +271,7 @@ const GenerationContext = struct {
         fqn: FullName,
         file: descriptor.FileDescriptorProto,
         // Source code info path to `root` from `file`.
-        file_root_path: []const i32,
+        file_root_path: ?[]const i32,
         // `DescriptorProto` or `FileDescriptorProto`containing enums.
         root: anytype,
     ) !void {
@@ -288,13 +288,18 @@ const GenerationContext = struct {
             ));
         };
 
+        // Enums cannot be a "generated" type in protobuf; must have source location.
+        std.debug.assert(file_root_path != null);
+
         for (root.enum_type.items, 0..) |theEnum, enum_i| {
             const e: descriptor.EnumDescriptorProto = theEnum;
+
+            try list.append(&.{'\n'});
 
             // All enum fields should have a source code location.
             const e_loc = SourceCodeInfo.getRepeatedFieldLocation(
                 file,
-                file_root_path,
+                file_root_path.?,
                 enum_field.field_number.?,
                 enum_i,
             ).?;
@@ -305,7 +310,7 @@ const GenerationContext = struct {
 
             try list.append(try std.fmt.allocPrint(
                 allocator,
-                "\npub const {s} = enum(i32) {{",
+                "pub const {s} = enum(i32) {{\n",
                 .{e.name.?.getSlice()},
             ));
 
@@ -324,12 +329,12 @@ const GenerationContext = struct {
 
                 try list.append(try std.fmt.allocPrint(
                     allocator,
-                    "\n   {s} = {d},",
+                    "   {s} = {d},\n",
                     .{ elem.name.?.getSlice(), elem.number orelse 0 },
                 ));
             }
 
-            try list.append("\n    _,\n};\n\n");
+            try list.append("    _,\n};\n\n");
         }
     }
 
@@ -638,7 +643,7 @@ const GenerationContext = struct {
         fqn: FullName,
         file: descriptor.FileDescriptorProto,
         // Source code info path to `root` from `file`.
-        file_root_path: []const i32,
+        file_root_path: ?[]const i32,
         // `DescriptorProto` or `FileDescriptorProto` containing messages.
         root: anytype,
     ) !void {
@@ -657,12 +662,16 @@ const GenerationContext = struct {
             const m: descriptor.DescriptorProto = message;
             const messageFqn = try fqn.append(allocator, m.name.?.getSlice());
 
-            const m_loc = SourceCodeInfo.getRepeatedFieldLocation(
-                file,
-                file_root_path,
-                message_field.field_number.?,
-                message_i,
-            );
+            try list.append(&.{'\n'});
+
+            const m_loc = b: {
+                break :b SourceCodeInfo.getRepeatedFieldLocation(
+                    file,
+                    file_root_path orelse break :b null,
+                    message_field.field_number.?,
+                    message_i,
+                );
+            };
             if (m_loc) |loc| {
                 if (loc.leading_comments) |leading_comments| {
                     try SourceCodeInfo.appendComment(list, leading_comments.getSlice());
@@ -671,13 +680,26 @@ const GenerationContext = struct {
 
             try list.append(try std.fmt.allocPrint(
                 allocator,
-                "\npub const {s} = struct {{\n",
+                "pub const {s} = struct {{\n",
                 .{m.name.?.getSlice()},
             ));
 
             // append all fields that are not part of a oneof
-            for (m.field.items) |f| {
+            for (m.field.items, 0..) |f, f_i| {
                 if (f.oneof_index == null or ctx.amountOfElementsInOneofUnion(m, f.oneof_index) == 1) {
+                    add_comment: {
+                        const loc = m_loc orelse break :add_comment;
+                        const f_loc = SourceCodeInfo.getRepeatedFieldLocation(
+                            file,
+                            loc.path.items,
+                            2, // `field` field in message descriptor
+                            f_i,
+                        ) orelse break :add_comment;
+                        if (f_loc.leading_comments) |leading_comments| {
+                            try SourceCodeInfo.appendComment(list, leading_comments.getSlice());
+                        }
+                    }
+
                     try ctx.generateFieldDeclaration(list, messageFqn, file, m, f, false);
                 }
             }
@@ -686,6 +708,19 @@ const GenerationContext = struct {
             for (m.oneof_decl.items, 0..) |oneof, i| {
                 const union_element_count = ctx.amountOfElementsInOneofUnion(m, @as(i32, @intCast(i)));
                 if (union_element_count > 1) {
+                    add_comment: {
+                        const loc = m_loc orelse break :add_comment;
+                        const oneof_loc = SourceCodeInfo.getRepeatedFieldLocation(
+                            file,
+                            loc.path.items,
+                            8, // `oneof_decl` field in message descriptor
+                            i,
+                        ) orelse break :add_comment;
+                        if (oneof_loc.leading_comments) |leading_comments| {
+                            try SourceCodeInfo.appendComment(list, leading_comments.getSlice());
+                        }
+                    }
+
                     const oneof_name = oneof.name.?.getSlice();
                     try list.append(try std.fmt.allocPrint(
                         allocator,
@@ -722,9 +757,22 @@ const GenerationContext = struct {
                         \\
                     , .{ oneof_name, oneof_name }));
 
-                    for (m.field.items) |field| {
+                    for (m.field.items, 0..) |field, field_i| {
                         const f: descriptor.FieldDescriptorProto = field;
                         if (f.oneof_index orelse -1 == @as(i32, @intCast(i))) {
+                            add_comment: {
+                                const loc = m_loc orelse break :add_comment;
+                                const f_loc = SourceCodeInfo.getRepeatedFieldLocation(
+                                    file,
+                                    loc.path.items,
+                                    2, // `field` field in message descriptor
+                                    field_i,
+                                ) orelse break :add_comment;
+                                if (f_loc.leading_comments) |leading_comments| {
+                                    try SourceCodeInfo.appendComment(list, leading_comments.getSlice());
+                                }
+                            }
+
                             const name = try ctx.getFieldName(f);
                             const typeStr = try ctx.getFieldType(messageFqn, file, f, true);
                             try list.append(try std.fmt.allocPrint(allocator, "      {s}: {s},\n", .{ name, typeStr }));

@@ -73,6 +73,11 @@ pub const LogRecordFlags = enum(i32) {
 // When new fields are added into this message, the OTLP request MUST be updated
 // as well.
 pub const LogsData = struct {
+    // An array of ResourceLogs.
+    // For data coming from a single resource this array will typically contain
+    // one element. Intermediary nodes that receive data from multiple origins
+    // typically batch the data before forwarding further and in that case this
+    // array will contain multiple elements.
     resource_logs: ArrayList(ResourceLogs),
 
     pub const _desc_table = .{
@@ -128,8 +133,16 @@ pub const LogsData = struct {
 
 // A collection of ScopeLogs from a Resource.
 pub const ResourceLogs = struct {
+    // The resource for the logs in this message.
+    // If this field is not set then resource info is unknown.
     resource: ?opentelemetry_proto_resource_v1.Resource = null,
+    // A list of ScopeLogs that originate from a resource.
     scope_logs: ArrayList(ScopeLogs),
+    // The Schema URL, if known. This is the identifier of the Schema that the resource data
+    // is recorded in. To learn more about Schema URL see
+    // https://opentelemetry.io/docs/specs/otel/schemas/#schema-url
+    // This schema_url applies to the data in the "resource" field. It does not apply
+    // to the data in the "scope_logs" field which have their own schema_url field.
     schema_url: ManagedString = .Empty,
 
     pub const _desc_table = .{
@@ -187,8 +200,16 @@ pub const ResourceLogs = struct {
 
 // A collection of Logs produced by a Scope.
 pub const ScopeLogs = struct {
+    // The instrumentation scope information for the logs in this message.
+    // Semantically when InstrumentationScope isn't set, it is equivalent with
+    // an empty instrumentation scope name (unknown).
     scope: ?opentelemetry_proto_common_v1.InstrumentationScope = null,
+    // A list of log records.
     log_records: ArrayList(LogRecord),
+    // The Schema URL, if known. This is the identifier of the Schema that the log data
+    // is recorded in. To learn more about Schema URL see
+    // https://opentelemetry.io/docs/specs/otel/schemas/#schema-url
+    // This schema_url applies to all logs in the "logs" field.
     schema_url: ManagedString = .Empty,
 
     pub const _desc_table = .{
@@ -247,15 +268,71 @@ pub const ScopeLogs = struct {
 // A log record according to OpenTelemetry Log Data Model:
 // https://github.com/open-telemetry/oteps/blob/main/text/logs/0097-log-data-model.md
 pub const LogRecord = struct {
+    // time_unix_nano is the time when the event occurred.
+    // Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January 1970.
+    // Value of 0 indicates unknown or missing timestamp.
     time_unix_nano: u64 = 0,
+    // Time when the event was observed by the collection system.
+    // For events that originate in OpenTelemetry (e.g. using OpenTelemetry Logging SDK)
+    // this timestamp is typically set at the generation time and is equal to Timestamp.
+    // For events originating externally and collected by OpenTelemetry (e.g. using
+    // Collector) this is the time when OpenTelemetry's code observed the event measured
+    // by the clock of the OpenTelemetry code. This field MUST be set once the event is
+    // observed by OpenTelemetry.
+    //
+    // For converting OpenTelemetry log data to formats that support only one timestamp or
+    // when receiving OpenTelemetry log data by recipients that support only one timestamp
+    // internally the following logic is recommended:
+    //   - Use time_unix_nano if it is present, otherwise use observed_time_unix_nano.
+    //
+    // Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January 1970.
+    // Value of 0 indicates unknown or missing timestamp.
     observed_time_unix_nano: u64 = 0,
+    // Numerical value of the severity, normalized to values described in Log Data Model.
+    // [Optional].
     severity_number: SeverityNumber = @enumFromInt(0),
+    // The severity text (also known as log level). The original string representation as
+    // it is known at the source. [Optional].
     severity_text: ManagedString = .Empty,
+    // A value containing the body of the log record. Can be for example a human-readable
+    // string message (including multi-line) describing the event in a free form or it can
+    // be a structured data composed of arrays and maps of other values. [Optional].
     body: ?opentelemetry_proto_common_v1.AnyValue = null,
+    // Additional attributes that describe the specific event occurrence. [Optional].
+    // Attribute keys MUST be unique (it is not allowed to have more than one
+    // attribute with the same key).
     attributes: ArrayList(opentelemetry_proto_common_v1.KeyValue),
     dropped_attributes_count: u32 = 0,
+    // Flags, a bit field. 8 least significant bits are the trace flags as
+    // defined in W3C Trace Context specification. 24 most significant bits are reserved
+    // and must be set to 0. Readers must not assume that 24 most significant bits
+    // will be zero and must correctly mask the bits when reading 8-bit trace flag (use
+    // flags & LOG_RECORD_FLAGS_TRACE_FLAGS_MASK). [Optional].
     flags: u32 = 0,
+    // A unique identifier for a trace. All logs from the same trace share
+    // the same `trace_id`. The ID is a 16-byte array. An ID with all zeroes OR
+    // of length other than 16 bytes is considered invalid (empty string in OTLP/JSON
+    // is zero-length and thus is also invalid).
+    //
+    // This field is optional.
+    //
+    // The receivers SHOULD assume that the log record is not associated with a
+    // trace if any of the following is true:
+    //   - the field is not present,
+    //   - the field contains an invalid value.
     trace_id: ManagedString = .Empty,
+    // A unique identifier for a span within a trace, assigned when the span
+    // is created. The ID is an 8-byte array. An ID with all zeroes OR of length
+    // other than 8 bytes is considered invalid (empty string in OTLP/JSON
+    // is zero-length and thus is also invalid).
+    //
+    // This field is optional. If the sender specifies a valid span_id then it SHOULD also
+    // specify a valid trace_id.
+    //
+    // The receivers SHOULD assume that the log record is not associated with a
+    // span if any of the following is true:
+    //   - the field is not present,
+    //   - the field contains an invalid value.
     span_id: ManagedString = .Empty,
 
     pub const _desc_table = .{

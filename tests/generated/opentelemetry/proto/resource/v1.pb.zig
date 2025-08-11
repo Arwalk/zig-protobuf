@@ -15,7 +15,12 @@ const opentelemetry_proto_common_v1 = @import("../common/v1.pb.zig");
 
 // Resource information.
 pub const Resource = struct {
+    // Set of attributes that describe the resource.
+    // Attribute keys MUST be unique (it is not allowed to have more than one
+    // attribute with the same key).
     attributes: ArrayList(opentelemetry_proto_common_v1.KeyValue),
+    // dropped_attributes_count is the number of dropped attributes. If the value is 0, then
+    // no attributes were dropped.
     dropped_attributes_count: u32 = 0,
 
     pub const _desc_table = .{

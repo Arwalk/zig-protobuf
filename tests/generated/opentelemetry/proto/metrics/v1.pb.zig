@@ -131,6 +131,11 @@ pub const DataPointFlags = enum(i32) {
 // When new fields are added into this message, the OTLP request MUST be updated
 // as well.
 pub const MetricsData = struct {
+    // An array of ResourceMetrics.
+    // For data coming from a single resource this array will typically contain
+    // one element. Intermediary nodes that receive data from multiple origins
+    // typically batch the data before forwarding further and in that case this
+    // array will contain multiple elements.
     resource_metrics: ArrayList(ResourceMetrics),
 
     pub const _desc_table = .{
@@ -186,8 +191,16 @@ pub const MetricsData = struct {
 
 // A collection of ScopeMetrics from a Resource.
 pub const ResourceMetrics = struct {
+    // The resource for the metrics in this message.
+    // If this field is not set then no resource info is known.
     resource: ?opentelemetry_proto_resource_v1.Resource = null,
+    // A list of metrics that originate from a resource.
     scope_metrics: ArrayList(ScopeMetrics),
+    // The Schema URL, if known. This is the identifier of the Schema that the resource data
+    // is recorded in. To learn more about Schema URL see
+    // https://opentelemetry.io/docs/specs/otel/schemas/#schema-url
+    // This schema_url applies to the data in the "resource" field. It does not apply
+    // to the data in the "scope_metrics" field which have their own schema_url field.
     schema_url: ManagedString = .Empty,
 
     pub const _desc_table = .{
@@ -245,8 +258,16 @@ pub const ResourceMetrics = struct {
 
 // A collection of Metrics produced by an Scope.
 pub const ScopeMetrics = struct {
+    // The instrumentation scope information for the metrics in this message.
+    // Semantically when InstrumentationScope isn't set, it is equivalent with
+    // an empty instrumentation scope name (unknown).
     scope: ?opentelemetry_proto_common_v1.InstrumentationScope = null,
+    // A list of metrics that originate from an instrumentation library.
     metrics: ArrayList(Metric),
+    // The Schema URL, if known. This is the identifier of the Schema that the metric data
+    // is recorded in. To learn more about Schema URL see
+    // https://opentelemetry.io/docs/specs/otel/schemas/#schema-url
+    // This schema_url applies to all metrics in the "metrics" field.
     schema_url: ManagedString = .Empty,
 
     pub const _desc_table = .{
@@ -387,10 +408,24 @@ pub const ScopeMetrics = struct {
 // when the start time is truly unknown, setting StartTimeUnixNano is
 // strongly encouraged.
 pub const Metric = struct {
+    // name of the metric.
     name: ManagedString = .Empty,
+    // description of the metric, which can be used in documentation.
     description: ManagedString = .Empty,
+    // unit in which the metric value is reported. Follows the format
+    // described by http://unitsofmeasure.org/ucum.html.
     unit: ManagedString = .Empty,
+    // Additional metadata attributes that describe the metric. [Optional].
+    // Attributes are non-identifying.
+    // Consumers SHOULD NOT need to be aware of these attributes.
+    // These attributes MAY be used to encode information allowing
+    // for lossless roundtrip translation to / from another data model.
+    // Attribute keys MUST be unique (it is not allowed to have more than one
+    // attribute with the same key).
     metadata: ArrayList(opentelemetry_proto_common_v1.KeyValue),
+    // Data determines the aggregation type (if any) of the metric, what is the
+    // reported value type for the data points, as well as the relatationship to
+    // the time interval over which they are reported.
     data: ?data_union,
 
     pub const _data_case = enum {
@@ -537,7 +572,10 @@ pub const Gauge = struct {
 // reported measurements over a time interval.
 pub const Sum = struct {
     data_points: ArrayList(NumberDataPoint),
+    // aggregation_temporality describes if the aggregator reports delta changes
+    // since last report time, or cumulative changes since a fixed start time.
     aggregation_temporality: AggregationTemporality = @enumFromInt(0),
+    // If "true" means that the sum is monotonic.
     is_monotonic: bool = false,
 
     pub const _desc_table = .{
@@ -597,6 +635,8 @@ pub const Sum = struct {
 // as a Histogram of all reported measurements over a time interval.
 pub const Histogram = struct {
     data_points: ArrayList(HistogramDataPoint),
+    // aggregation_temporality describes if the aggregator reports delta changes
+    // since last report time, or cumulative changes since a fixed start time.
     aggregation_temporality: AggregationTemporality = @enumFromInt(0),
 
     pub const _desc_table = .{
@@ -655,6 +695,8 @@ pub const Histogram = struct {
 // as a ExponentialHistogram of all reported double measurements over a time interval.
 pub const ExponentialHistogram = struct {
     data_points: ArrayList(ExponentialHistogramDataPoint),
+    // aggregation_temporality describes if the aggregator reports delta changes
+    // since last report time, or cumulative changes since a fixed start time.
     aggregation_temporality: AggregationTemporality = @enumFromInt(0),
 
     pub const _desc_table = .{
@@ -772,11 +814,30 @@ pub const Summary = struct {
 // NumberDataPoint is a single data point in a timeseries that describes the
 // time-varying scalar value of a metric.
 pub const NumberDataPoint = struct {
+    // The set of key/value pairs that uniquely identify the timeseries from
+    // where this point belongs. The list may be empty (may contain 0 elements).
+    // Attribute keys MUST be unique (it is not allowed to have more than one
+    // attribute with the same key).
     attributes: ArrayList(opentelemetry_proto_common_v1.KeyValue),
+    // StartTimeUnixNano is optional but strongly encouraged, see the
+    // the detailed comments above Metric.
+    //
+    // Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January
+    // 1970.
     start_time_unix_nano: u64 = 0,
+    // TimeUnixNano is required, see the detailed comments above Metric.
+    //
+    // Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January
+    // 1970.
     time_unix_nano: u64 = 0,
+    // (Optional) List of exemplars collected from
+    // measurements that were used to form the data point
     exemplars: ArrayList(Exemplar),
+    // Flags that apply to this specific data point.  See DataPointFlags
+    // for the available flags and their meaning.
     flags: u32 = 0,
+    // The value itself.  A point is considered invalid when one of the recognized
+    // value fields is not present inside this oneof.
     value: ?value_union,
 
     pub const _value_case = enum {
@@ -859,16 +920,66 @@ pub const NumberDataPoint = struct {
 // "explicit_bounds" and "bucket_counts" must be omitted and only "count" and
 // "sum" are known.
 pub const HistogramDataPoint = struct {
+    // The set of key/value pairs that uniquely identify the timeseries from
+    // where this point belongs. The list may be empty (may contain 0 elements).
+    // Attribute keys MUST be unique (it is not allowed to have more than one
+    // attribute with the same key).
     attributes: ArrayList(opentelemetry_proto_common_v1.KeyValue),
+    // StartTimeUnixNano is optional but strongly encouraged, see the
+    // the detailed comments above Metric.
+    //
+    // Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January
+    // 1970.
     start_time_unix_nano: u64 = 0,
+    // TimeUnixNano is required, see the detailed comments above Metric.
+    //
+    // Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January
+    // 1970.
     time_unix_nano: u64 = 0,
+    // count is the number of values in the population. Must be non-negative. This
+    // value must be equal to the sum of the "count" fields in buckets if a
+    // histogram is provided.
     count: u64 = 0,
+    // sum of the values in the population. If count is zero then this field
+    // must be zero.
+    //
+    // Note: Sum should only be filled out when measuring non-negative discrete
+    // events, and is assumed to be monotonic over the values of these events.
+    // Negative events *can* be recorded, but sum should not be filled out when
+    // doing so.  This is specifically to enforce compatibility w/ OpenMetrics,
+    // see: https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#histogram
     sum: ?f64 = null,
+    // bucket_counts is an optional field contains the count values of histogram
+    // for each bucket.
+    //
+    // The sum of the bucket_counts must equal the value in the count field.
+    //
+    // The number of elements in bucket_counts array must be by one greater than
+    // the number of elements in explicit_bounds array.
     bucket_counts: ArrayList(u64),
+    // explicit_bounds specifies buckets with explicitly defined bounds for values.
+    //
+    // The boundaries for bucket at index i are:
+    //
+    // (-infinity, explicit_bounds[i]] for i == 0
+    // (explicit_bounds[i-1], explicit_bounds[i]] for 0 < i < size(explicit_bounds)
+    // (explicit_bounds[i-1], +infinity) for i == size(explicit_bounds)
+    //
+    // The values in the explicit_bounds array must be strictly increasing.
+    //
+    // Histogram buckets are inclusive of their upper boundary, except the last
+    // bucket where the boundary is at infinity. This format is intentionally
+    // compatible with the OpenMetrics histogram definition.
     explicit_bounds: ArrayList(f64),
+    // (Optional) List of exemplars collected from
+    // measurements that were used to form the data point
     exemplars: ArrayList(Exemplar),
+    // Flags that apply to this specific data point.  See DataPointFlags
+    // for the available flags and their meaning.
     flags: u32 = 0,
+    // min is the minimum value over (start_time, end_time].
     min: ?f64 = null,
+    // max is the maximum value over (start_time, end_time].
     max: ?f64 = null,
 
     pub const _desc_table = .{
@@ -937,19 +1048,80 @@ pub const HistogramDataPoint = struct {
 // summary statistics for a population of values, it may optionally contain the
 // distribution of those values across a set of buckets.
 pub const ExponentialHistogramDataPoint = struct {
+    // The set of key/value pairs that uniquely identify the timeseries from
+    // where this point belongs. The list may be empty (may contain 0 elements).
+    // Attribute keys MUST be unique (it is not allowed to have more than one
+    // attribute with the same key).
     attributes: ArrayList(opentelemetry_proto_common_v1.KeyValue),
+    // StartTimeUnixNano is optional but strongly encouraged, see the
+    // the detailed comments above Metric.
+    //
+    // Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January
+    // 1970.
     start_time_unix_nano: u64 = 0,
+    // TimeUnixNano is required, see the detailed comments above Metric.
+    //
+    // Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January
+    // 1970.
     time_unix_nano: u64 = 0,
+    // count is the number of values in the population. Must be
+    // non-negative. This value must be equal to the sum of the "bucket_counts"
+    // values in the positive and negative Buckets plus the "zero_count" field.
     count: u64 = 0,
+    // sum of the values in the population. If count is zero then this field
+    // must be zero.
+    //
+    // Note: Sum should only be filled out when measuring non-negative discrete
+    // events, and is assumed to be monotonic over the values of these events.
+    // Negative events *can* be recorded, but sum should not be filled out when
+    // doing so.  This is specifically to enforce compatibility w/ OpenMetrics,
+    // see: https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#histogram
     sum: ?f64 = null,
+    // scale describes the resolution of the histogram.  Boundaries are
+    // located at powers of the base, where:
+    //
+    //   base = (2^(2^-scale))
+    //
+    // The histogram bucket identified by `index`, a signed integer,
+    // contains values that are greater than (base^index) and
+    // less than or equal to (base^(index+1)).
+    //
+    // The positive and negative ranges of the histogram are expressed
+    // separately.  Negative values are mapped by their absolute value
+    // into the negative range using the same scale as the positive range.
+    //
+    // scale is not restricted by the protocol, as the permissible
+    // values depend on the range of the data.
     scale: i32 = 0,
+    // zero_count is the count of values that are either exactly zero or
+    // within the region considered zero by the instrumentation at the
+    // tolerated degree of precision.  This bucket stores values that
+    // cannot be expressed using the standard exponential formula as
+    // well as values that have been rounded to zero.
+    //
+    // Implementations MAY consider the zero bucket to have probability
+    // mass equal to (zero_count / count).
     zero_count: u64 = 0,
+    // positive carries the positive range of exponential bucket counts.
     positive: ?ExponentialHistogramDataPoint.Buckets = null,
+    // negative carries the negative range of exponential bucket counts.
     negative: ?ExponentialHistogramDataPoint.Buckets = null,
+    // Flags that apply to this specific data point.  See DataPointFlags
+    // for the available flags and their meaning.
     flags: u32 = 0,
+    // (Optional) List of exemplars collected from
+    // measurements that were used to form the data point
     exemplars: ArrayList(Exemplar),
+    // min is the minimum value over (start_time, end_time].
     min: ?f64 = null,
+    // max is the maximum value over (start_time, end_time].
     max: ?f64 = null,
+    // ZeroThreshold may be optionally set to convey the width of the zero
+    // region. Where the zero region is defined as the closed interval
+    // [-ZeroThreshold, ZeroThreshold].
+    // When ZeroThreshold is 0, zero count bucket stores values that cannot be
+    // expressed using the standard exponential formula as well as values that
+    // have been rounded to zero.
     zero_threshold: f64 = 0,
 
     pub const _desc_table = .{
@@ -972,7 +1144,19 @@ pub const ExponentialHistogramDataPoint = struct {
     // Buckets are a set of bucket counts, encoded in a contiguous array
     // of counts.
     pub const Buckets = struct {
+        // Offset is the bucket index of the first entry in the bucket_counts array.
+        //
+        // Note: This uses a varint encoding as a simple form of compression.
         offset: i32 = 0,
+        // bucket_counts is an array of count values, where bucket_counts[i] carries
+        // the count of the bucket at index (offset+i). bucket_counts[i] is the count
+        // of values greater than base^(offset+i) and less than or equal to
+        // base^(offset+i+1).
+        //
+        // Note: By contrast, the explicit HistogramDataPoint uses
+        // fixed64.  This field is expected to have many buckets,
+        // especially zeros, so uint64 has been selected to ensure
+        // varint encoding.
         bucket_counts: ArrayList(u64),
 
         pub const _desc_table = .{
@@ -1077,12 +1261,38 @@ pub const ExponentialHistogramDataPoint = struct {
 // SummaryDataPoint is a single data point in a timeseries that describes the
 // time-varying values of a Summary metric.
 pub const SummaryDataPoint = struct {
+    // The set of key/value pairs that uniquely identify the timeseries from
+    // where this point belongs. The list may be empty (may contain 0 elements).
+    // Attribute keys MUST be unique (it is not allowed to have more than one
+    // attribute with the same key).
     attributes: ArrayList(opentelemetry_proto_common_v1.KeyValue),
+    // StartTimeUnixNano is optional but strongly encouraged, see the
+    // the detailed comments above Metric.
+    //
+    // Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January
+    // 1970.
     start_time_unix_nano: u64 = 0,
+    // TimeUnixNano is required, see the detailed comments above Metric.
+    //
+    // Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January
+    // 1970.
     time_unix_nano: u64 = 0,
+    // count is the number of values in the population. Must be non-negative.
     count: u64 = 0,
+    // sum of the values in the population. If count is zero then this field
+    // must be zero.
+    //
+    // Note: Sum should only be filled out when measuring non-negative discrete
+    // events, and is assumed to be monotonic over the values of these events.
+    // Negative events *can* be recorded, but sum should not be filled out when
+    // doing so.  This is specifically to enforce compatibility w/ OpenMetrics,
+    // see: https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#summary
     sum: f64 = 0,
+    // (Optional) list of values at different quantiles of the distribution calculated
+    // from the current snapshot. The quantiles must be strictly increasing.
     quantile_values: ArrayList(SummaryDataPoint.ValueAtQuantile),
+    // Flags that apply to this specific data point.  See DataPointFlags
+    // for the available flags and their meaning.
     flags: u32 = 0,
 
     pub const _desc_table = .{
@@ -1104,7 +1314,12 @@ pub const SummaryDataPoint = struct {
     // See the following issue for more context:
     // https://github.com/open-telemetry/opentelemetry-proto/issues/125
     pub const ValueAtQuantile = struct {
+        // The quantile of a distribution. Must be in the interval
+        // [0.0, 1.0].
         quantile: f64 = 0,
+        // The value at the given quantile of a distribution.
+        //
+        // Quantile values must NOT be negative.
         value: f64 = 0,
 
         pub const _desc_table = .{
@@ -1211,10 +1426,26 @@ pub const SummaryDataPoint = struct {
 // was recorded, for example the span and trace ID of the active span when the
 // exemplar was recorded.
 pub const Exemplar = struct {
+    // The set of key/value pairs that were filtered out by the aggregator, but
+    // recorded alongside the original measurement. Only key/value pairs that were
+    // filtered out by the aggregator should be included
     filtered_attributes: ArrayList(opentelemetry_proto_common_v1.KeyValue),
+    // time_unix_nano is the exact time when this exemplar was recorded
+    //
+    // Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January
+    // 1970.
     time_unix_nano: u64 = 0,
+    // (Optional) Span ID of the exemplar trace.
+    // span_id may be missing if the measurement is not recorded inside a trace
+    // or if the trace is not sampled.
     span_id: ManagedString = .Empty,
+    // (Optional) Trace ID of the exemplar trace.
+    // trace_id may be missing if the measurement is not recorded inside a trace
+    // or if the trace is not sampled.
     trace_id: ManagedString = .Empty,
+    // The value of the measurement that was recorded. An exemplar is
+    // considered invalid when one of the recognized value fields is not present
+    // inside this oneof.
     value: ?value_union,
 
     pub const _value_case = enum {

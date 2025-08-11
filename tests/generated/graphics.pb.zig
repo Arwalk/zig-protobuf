@@ -952,6 +952,7 @@ pub const MapItem = struct {
 pub const GraphicsDB = struct {
     textures: ArrayList(Texture),
     graphics: ArrayList(Graphic),
+    // repeated Tileset tilesets = 3;
     bodies: ArrayList(Index),
     fxs: ArrayList(Index),
     heads: ArrayList(Index),
