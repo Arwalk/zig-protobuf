@@ -13,6 +13,7 @@ const UnionDecodingError = protobuf.UnionDecodingError;
 /// import package opentelemetry.proto.common.v1
 const opentelemetry_proto_common_v1 = @import("../common/v1.pb.zig");
 
+// Resource information.
 pub const Resource = struct {
     attributes: ArrayList(opentelemetry_proto_common_v1.KeyValue),
     dropped_attributes_count: u32 = 0,

@@ -20,6 +20,13 @@ pub const ForeignEnum = enum(i32) {
     _,
 };
 
+// This proto includes every type of field in both singular and repeated
+// forms.
+//
+// Also, crucially, all messages and enums in this file are eventually
+// submessages of this message.  So for example, a fuzz test of TestAllTypes
+// could trigger bugs that occur in any message type in this file.  We verify
+// this stays true in a unit test.
 pub const TestAllTypesProto3 = struct {
     optional_int32: i32 = 0,
     optional_int64: i64 = 0,
@@ -355,6 +362,7 @@ pub const TestAllTypesProto3 = struct {
     pub const AliasedEnum = enum(i32) {
         ALIAS_FOO = 0,
         ALIAS_BAR = 1,
+        // ALIAS_BAZ = 2;
         MOO = 2,
         _,
     };

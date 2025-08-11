@@ -11,6 +11,9 @@ const ManagedStruct = protobuf.ManagedStruct;
 const json = protobuf.json;
 const UnionDecodingError = protobuf.UnionDecodingError;
 
+// AnyValue is used to represent any type of attribute value. AnyValue may contain a
+// primitive value such as a string or integer or it may contain an arbitrary nested
+// object containing arrays, key-value lists and primitives.
 pub const AnyValue = struct {
     value: ?value_union,
 
@@ -93,6 +96,8 @@ pub const AnyValue = struct {
     }
 };
 
+// ArrayValue is a list of AnyValue messages. We need ArrayValue as a message
+// since oneof in AnyValue does not allow repeated fields.
 pub const ArrayValue = struct {
     values: ArrayList(AnyValue),
 
@@ -147,6 +152,11 @@ pub const ArrayValue = struct {
     }
 };
 
+// KeyValueList is a list of KeyValue messages. We need KeyValueList as a message
+// since `oneof` in AnyValue does not allow repeated fields. Everywhere else where we need
+// a list of KeyValue messages (e.g. in Span) we use `repeated KeyValue` directly to
+// avoid unnecessary extra wrapping (which slows down the protocol). The 2 approaches
+// are semantically equivalent.
 pub const KeyValueList = struct {
     values: ArrayList(KeyValue),
 
@@ -201,6 +211,8 @@ pub const KeyValueList = struct {
     }
 };
 
+// KeyValue is a key-value pair that is used to store Span attributes, Link
+// attributes, etc.
 pub const KeyValue = struct {
     key: ManagedString = .Empty,
     value: ?AnyValue = null,
@@ -257,6 +269,8 @@ pub const KeyValue = struct {
     }
 };
 
+// InstrumentationScope is a message representing the instrumentation scope information
+// such as the fully qualified name and version.
 pub const InstrumentationScope = struct {
     name: ManagedString = .Empty,
     version: ManagedString = .Empty,

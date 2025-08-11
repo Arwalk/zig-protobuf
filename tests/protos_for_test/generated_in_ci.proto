@@ -33,7 +33,9 @@ message WithNegativeIntegers {
 }
 
 message DemoWithAllVarint {
+    // This is an example nested enum comment.
     enum DemoEnum {
+      // My nested enum field comment.
       SomeValue = 0;
       SomeOther = 1;
       AndAnother = 2;

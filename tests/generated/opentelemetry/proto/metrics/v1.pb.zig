@@ -15,19 +15,121 @@ const opentelemetry_proto_common_v1 = @import("../common/v1.pb.zig");
 /// import package opentelemetry.proto.resource.v1
 const opentelemetry_proto_resource_v1 = @import("../resource/v1.pb.zig");
 
+// AggregationTemporality defines how a metric aggregator reports aggregated
+// values. It describes how those values relate to the time interval over
+// which they are aggregated.
 pub const AggregationTemporality = enum(i32) {
+    // UNSPECIFIED is the default AggregationTemporality, it MUST not be used.
     AGGREGATION_TEMPORALITY_UNSPECIFIED = 0,
+    // DELTA is an AggregationTemporality for a metric aggregator which reports
+    // changes since last report time. Successive metrics contain aggregation of
+    // values from continuous and non-overlapping intervals.
+    //
+    // The values for a DELTA metric are based only on the time interval
+    // associated with one measurement cycle. There is no dependency on
+    // previous measurements like is the case for CUMULATIVE metrics.
+    //
+    // For example, consider a system measuring the number of requests that
+    // it receives and reports the sum of these requests every second as a
+    // DELTA metric:
+    //
+    //   1. The system starts receiving at time=t_0.
+    //   2. A request is received, the system measures 1 request.
+    //   3. A request is received, the system measures 1 request.
+    //   4. A request is received, the system measures 1 request.
+    //   5. The 1 second collection cycle ends. A metric is exported for the
+    //      number of requests received over the interval of time t_0 to
+    //      t_0+1 with a value of 3.
+    //   6. A request is received, the system measures 1 request.
+    //   7. A request is received, the system measures 1 request.
+    //   8. The 1 second collection cycle ends. A metric is exported for the
+    //      number of requests received over the interval of time t_0+1 to
+    //      t_0+2 with a value of 2.
     AGGREGATION_TEMPORALITY_DELTA = 1,
+    // CUMULATIVE is an AggregationTemporality for a metric aggregator which
+    // reports changes since a fixed start time. This means that current values
+    // of a CUMULATIVE metric depend on all previous measurements since the
+    // start time. Because of this, the sender is required to retain this state
+    // in some form. If this state is lost or invalidated, the CUMULATIVE metric
+    // values MUST be reset and a new fixed start time following the last
+    // reported measurement time sent MUST be used.
+    //
+    // For example, consider a system measuring the number of requests that
+    // it receives and reports the sum of these requests every second as a
+    // CUMULATIVE metric:
+    //
+    //   1. The system starts receiving at time=t_0.
+    //   2. A request is received, the system measures 1 request.
+    //   3. A request is received, the system measures 1 request.
+    //   4. A request is received, the system measures 1 request.
+    //   5. The 1 second collection cycle ends. A metric is exported for the
+    //      number of requests received over the interval of time t_0 to
+    //      t_0+1 with a value of 3.
+    //   6. A request is received, the system measures 1 request.
+    //   7. A request is received, the system measures 1 request.
+    //   8. The 1 second collection cycle ends. A metric is exported for the
+    //      number of requests received over the interval of time t_0 to
+    //      t_0+2 with a value of 5.
+    //   9. The system experiences a fault and loses state.
+    //   10. The system recovers and resumes receiving at time=t_1.
+    //   11. A request is received, the system measures 1 request.
+    //   12. The 1 second collection cycle ends. A metric is exported for the
+    //      number of requests received over the interval of time t_1 to
+    //      t_0+1 with a value of 1.
+    //
+    // Note: Even though, when reporting changes since last report time, using
+    // CUMULATIVE is valid, it is not recommended. This may cause problems for
+    // systems that do not use start_time to determine when the aggregation
+    // value was reset (e.g. Prometheus).
     AGGREGATION_TEMPORALITY_CUMULATIVE = 2,
     _,
 };
 
+// DataPointFlags is defined as a protobuf 'uint32' type and is to be used as a
+// bit-field representing 32 distinct boolean flags.  Each flag defined in this
+// enum is a bit-mask.  To test the presence of a single flag in the flags of
+// a data point, for example, use an expression like:
+//
+//   (point.flags & DATA_POINT_FLAGS_NO_RECORDED_VALUE_MASK) == DATA_POINT_FLAGS_NO_RECORDED_VALUE_MASK
 pub const DataPointFlags = enum(i32) {
+    // The zero value for the enum. Should not be used for comparisons.
+    // Instead use bitwise "and" with the appropriate mask as shown above.
     DATA_POINT_FLAGS_DO_NOT_USE = 0,
+    // This DataPoint is valid but has no recorded value.  This value
+    // SHOULD be used to reflect explicitly missing data in a series, as
+    // for an equivalent to the Prometheus "staleness marker".
     DATA_POINT_FLAGS_NO_RECORDED_VALUE_MASK = 1,
     _,
 };
 
+// MetricsData represents the metrics data that can be stored in a persistent
+// storage, OR can be embedded by other protocols that transfer OTLP metrics
+// data but do not implement the OTLP protocol.
+//
+// MetricsData
+// └─── ResourceMetrics
+//   ├── Resource
+//   ├── SchemaURL
+//   └── ScopeMetrics
+//      ├── Scope
+//      ├── SchemaURL
+//      └── Metric
+//         ├── Name
+//         ├── Description
+//         ├── Unit
+//         └── data
+//            ├── Gauge
+//            ├── Sum
+//            ├── Histogram
+//            ├── ExponentialHistogram
+//            └── Summary
+//
+// The main difference between this message and collector protocol is that
+// in this message there will not be any "control" or "metadata" specific to
+// OTLP protocol.
+//
+// When new fields are added into this message, the OTLP request MUST be updated
+// as well.
 pub const MetricsData = struct {
     resource_metrics: ArrayList(ResourceMetrics),
 
@@ -82,6 +184,7 @@ pub const MetricsData = struct {
     }
 };
 
+// A collection of ScopeMetrics from a Resource.
 pub const ResourceMetrics = struct {
     resource: ?opentelemetry_proto_resource_v1.Resource = null,
     scope_metrics: ArrayList(ScopeMetrics),
@@ -140,6 +243,7 @@ pub const ResourceMetrics = struct {
     }
 };
 
+// A collection of Metrics produced by an Scope.
 pub const ScopeMetrics = struct {
     scope: ?opentelemetry_proto_common_v1.InstrumentationScope = null,
     metrics: ArrayList(Metric),
@@ -198,6 +302,90 @@ pub const ScopeMetrics = struct {
     }
 };
 
+// Defines a Metric which has one or more timeseries.  The following is a
+// brief summary of the Metric data model.  For more details, see:
+//
+//   https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md
+//
+// The data model and relation between entities is shown in the
+// diagram below. Here, "DataPoint" is the term used to refer to any
+// one of the specific data point value types, and "points" is the term used
+// to refer to any one of the lists of points contained in the Metric.
+//
+// - Metric is composed of a metadata and data.
+// - Metadata part contains a name, description, unit.
+// - Data is one of the possible types (Sum, Gauge, Histogram, Summary).
+// - DataPoint contains timestamps, attributes, and one of the possible value type
+//   fields.
+//
+//    Metric
+//  +------------+
+//  |name        |
+//  |description |
+//  |unit        |     +------------------------------------+
+//  |data        |---> |Gauge, Sum, Histogram, Summary, ... |
+//  +------------+     +------------------------------------+
+//
+//    Data [One of Gauge, Sum, Histogram, Summary, ...]
+//  +-----------+
+//  |...        |  // Metadata about the Data.
+//  |points     |--+
+//  +-----------+  |
+//                 |      +---------------------------+
+//                 |      |DataPoint 1                |
+//                 v      |+------+------+   +------+ |
+//              +-----+   ||label |label |...|label | |
+//              |  1  |-->||value1|value2|...|valueN| |
+//              +-----+   |+------+------+   +------+ |
+//              |  .  |   |+-----+                    |
+//              |  .  |   ||value|                    |
+//              |  .  |   |+-----+                    |
+//              |  .  |   +---------------------------+
+//              |  .  |                   .
+//              |  .  |                   .
+//              |  .  |                   .
+//              |  .  |   +---------------------------+
+//              |  .  |   |DataPoint M                |
+//              +-----+   |+------+------+   +------+ |
+//              |  M  |-->||label |label |...|label | |
+//              +-----+   ||value1|value2|...|valueN| |
+//                        |+------+------+   +------+ |
+//                        |+-----+                    |
+//                        ||value|                    |
+//                        |+-----+                    |
+//                        +---------------------------+
+//
+// Each distinct type of DataPoint represents the output of a specific
+// aggregation function, the result of applying the DataPoint's
+// associated function of to one or more measurements.
+//
+// All DataPoint types have three common fields:
+// - Attributes includes key-value pairs associated with the data point
+// - TimeUnixNano is required, set to the end time of the aggregation
+// - StartTimeUnixNano is optional, but strongly encouraged for DataPoints
+//   having an AggregationTemporality field, as discussed below.
+//
+// Both TimeUnixNano and StartTimeUnixNano values are expressed as
+// UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January 1970.
+//
+// # TimeUnixNano
+//
+// This field is required, having consistent interpretation across
+// DataPoint types.  TimeUnixNano is the moment corresponding to when
+// the data point's aggregate value was captured.
+//
+// Data points with the 0 value for TimeUnixNano SHOULD be rejected
+// by consumers.
+//
+// # StartTimeUnixNano
+//
+// StartTimeUnixNano in general allows detecting when a sequence of
+// observations is unbroken.  This field indicates to consumers the
+// start time for points with cumulative and delta
+// AggregationTemporality, and it should be included whenever possible
+// to support correct rate calculation.  Although it may be omitted
+// when the start time is truly unknown, setting StartTimeUnixNano is
+// strongly encouraged.
 pub const Metric = struct {
     name: ManagedString = .Empty,
     description: ManagedString = .Empty,
@@ -282,6 +470,15 @@ pub const Metric = struct {
     }
 };
 
+// Gauge represents the type of a scalar metric that always exports the
+// "current value" for every data point. It should be used for an "unknown"
+// aggregation.
+//
+// A Gauge does not support different aggregation temporalities. Given the
+// aggregation is unknown, points cannot be combined using the same
+// aggregation, regardless of aggregation temporalities. Therefore,
+// AggregationTemporality is not included. Consequently, this also means
+// "StartTimeUnixNano" is ignored for all data points.
 pub const Gauge = struct {
     data_points: ArrayList(NumberDataPoint),
 
@@ -336,6 +533,8 @@ pub const Gauge = struct {
     }
 };
 
+// Sum represents the type of a scalar metric that is calculated as a sum of all
+// reported measurements over a time interval.
 pub const Sum = struct {
     data_points: ArrayList(NumberDataPoint),
     aggregation_temporality: AggregationTemporality = @enumFromInt(0),
@@ -394,6 +593,8 @@ pub const Sum = struct {
     }
 };
 
+// Histogram represents the type of a metric that is calculated by aggregating
+// as a Histogram of all reported measurements over a time interval.
 pub const Histogram = struct {
     data_points: ArrayList(HistogramDataPoint),
     aggregation_temporality: AggregationTemporality = @enumFromInt(0),
@@ -450,6 +651,8 @@ pub const Histogram = struct {
     }
 };
 
+// ExponentialHistogram represents the type of a metric that is calculated by aggregating
+// as a ExponentialHistogram of all reported double measurements over a time interval.
 pub const ExponentialHistogram = struct {
     data_points: ArrayList(ExponentialHistogramDataPoint),
     aggregation_temporality: AggregationTemporality = @enumFromInt(0),
@@ -506,6 +709,12 @@ pub const ExponentialHistogram = struct {
     }
 };
 
+// Summary metric data are used to convey quantile summaries,
+// a Prometheus (see: https://prometheus.io/docs/concepts/metric_types/#summary)
+// and OpenMetrics (see: https://github.com/OpenObservability/OpenMetrics/blob/4dbf6075567ab43296eed941037c12951faafb92/protos/prometheus.proto#L45)
+// data type. These data points cannot always be merged in a meaningful way.
+// While they can be useful in some applications, histogram data points are
+// recommended for new applications.
 pub const Summary = struct {
     data_points: ArrayList(SummaryDataPoint),
 
@@ -560,6 +769,8 @@ pub const Summary = struct {
     }
 };
 
+// NumberDataPoint is a single data point in a timeseries that describes the
+// time-varying scalar value of a metric.
 pub const NumberDataPoint = struct {
     attributes: ArrayList(opentelemetry_proto_common_v1.KeyValue),
     start_time_unix_nano: u64 = 0,
@@ -637,6 +848,16 @@ pub const NumberDataPoint = struct {
     }
 };
 
+// HistogramDataPoint is a single data point in a timeseries that describes the
+// time-varying values of a Histogram. A Histogram contains summary statistics
+// for a population of values, it may optionally contain the distribution of
+// those values across a set of buckets.
+//
+// If the histogram contains the distribution of values, then both
+// "explicit_bounds" and "bucket counts" fields must be defined.
+// If the histogram does not contain the distribution of values, then both
+// "explicit_bounds" and "bucket_counts" must be omitted and only "count" and
+// "sum" are known.
 pub const HistogramDataPoint = struct {
     attributes: ArrayList(opentelemetry_proto_common_v1.KeyValue),
     start_time_unix_nano: u64 = 0,
@@ -711,6 +932,10 @@ pub const HistogramDataPoint = struct {
     }
 };
 
+// ExponentialHistogramDataPoint is a single data point in a timeseries that describes the
+// time-varying values of a ExponentialHistogram of double values. A ExponentialHistogram contains
+// summary statistics for a population of values, it may optionally contain the
+// distribution of those values across a set of buckets.
 pub const ExponentialHistogramDataPoint = struct {
     attributes: ArrayList(opentelemetry_proto_common_v1.KeyValue),
     start_time_unix_nano: u64 = 0,
@@ -744,6 +969,8 @@ pub const ExponentialHistogramDataPoint = struct {
         .zero_threshold = fd(14, .{ .FixedInt = .I64 }),
     };
 
+    // Buckets are a set of bucket counts, encoded in a contiguous array
+    // of counts.
     pub const Buckets = struct {
         offset: i32 = 0,
         bucket_counts: ArrayList(u64),
@@ -847,6 +1074,8 @@ pub const ExponentialHistogramDataPoint = struct {
     }
 };
 
+// SummaryDataPoint is a single data point in a timeseries that describes the
+// time-varying values of a Summary metric.
 pub const SummaryDataPoint = struct {
     attributes: ArrayList(opentelemetry_proto_common_v1.KeyValue),
     start_time_unix_nano: u64 = 0,
@@ -866,6 +1095,14 @@ pub const SummaryDataPoint = struct {
         .flags = fd(8, .{ .Varint = .Simple }),
     };
 
+    // Represents the value at a given quantile of a distribution.
+    //
+    // To record Min and Max values following conventions are used:
+    // - The 1.0 quantile is equivalent to the maximum value observed.
+    // - The 0.0 quantile is equivalent to the minimum value observed.
+    //
+    // See the following issue for more context:
+    // https://github.com/open-telemetry/opentelemetry-proto/issues/125
     pub const ValueAtQuantile = struct {
         quantile: f64 = 0,
         value: f64 = 0,
@@ -969,6 +1206,10 @@ pub const SummaryDataPoint = struct {
     }
 };
 
+// A representation of an exemplar, which is a sample input measurement.
+// Exemplars also hold information about the environment when the measurement
+// was recorded, for example the span and trace ID of the active span when the
+// exemplar was recorded.
 pub const Exemplar = struct {
     filtered_attributes: ArrayList(opentelemetry_proto_common_v1.KeyValue),
     time_unix_nano: u64 = 0,

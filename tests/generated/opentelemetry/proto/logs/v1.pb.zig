@@ -15,7 +15,9 @@ const opentelemetry_proto_common_v1 = @import("../common/v1.pb.zig");
 /// import package opentelemetry.proto.resource.v1
 const opentelemetry_proto_resource_v1 = @import("../resource/v1.pb.zig");
 
+// Possible values for LogRecord.SeverityNumber.
 pub const SeverityNumber = enum(i32) {
+    // UNSPECIFIED is the default SeverityNumber, it MUST NOT be used.
     SEVERITY_NUMBER_UNSPECIFIED = 0,
     SEVERITY_NUMBER_TRACE = 1,
     SEVERITY_NUMBER_TRACE2 = 2,
@@ -44,12 +46,32 @@ pub const SeverityNumber = enum(i32) {
     _,
 };
 
+// LogRecordFlags represents constants used to interpret the
+// LogRecord.flags field, which is protobuf 'fixed32' type and is to
+// be used as bit-fields. Each non-zero value defined in this enum is
+// a bit-mask.  To extract the bit-field, for example, use an
+// expression like:
+//
+//   (logRecord.flags & LOG_RECORD_FLAGS_TRACE_FLAGS_MASK)
 pub const LogRecordFlags = enum(i32) {
+    // The zero value for the enum. Should not be used for comparisons.
+    // Instead use bitwise "and" with the appropriate mask as shown above.
     LOG_RECORD_FLAGS_DO_NOT_USE = 0,
+    // Bits 0-7 are used for trace flags.
     LOG_RECORD_FLAGS_TRACE_FLAGS_MASK = 255,
     _,
 };
 
+// LogsData represents the logs data that can be stored in a persistent storage,
+// OR can be embedded by other protocols that transfer OTLP logs data but do not
+// implement the OTLP protocol.
+//
+// The main difference between this message and collector protocol is that
+// in this message there will not be any "control" or "metadata" specific to
+// OTLP protocol.
+//
+// When new fields are added into this message, the OTLP request MUST be updated
+// as well.
 pub const LogsData = struct {
     resource_logs: ArrayList(ResourceLogs),
 
@@ -104,6 +126,7 @@ pub const LogsData = struct {
     }
 };
 
+// A collection of ScopeLogs from a Resource.
 pub const ResourceLogs = struct {
     resource: ?opentelemetry_proto_resource_v1.Resource = null,
     scope_logs: ArrayList(ScopeLogs),
@@ -162,6 +185,7 @@ pub const ResourceLogs = struct {
     }
 };
 
+// A collection of Logs produced by a Scope.
 pub const ScopeLogs = struct {
     scope: ?opentelemetry_proto_common_v1.InstrumentationScope = null,
     log_records: ArrayList(LogRecord),
@@ -220,6 +244,8 @@ pub const ScopeLogs = struct {
     }
 };
 
+// A log record according to OpenTelemetry Log Data Model:
+// https://github.com/open-telemetry/oteps/blob/main/text/logs/0097-log-data-model.md
 pub const LogRecord = struct {
     time_unix_nano: u64 = 0,
     observed_time_unix_nano: u64 = 0,

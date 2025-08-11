@@ -23,6 +23,7 @@ pub const TestReservedEnumFields = enum(i32) {
     _,
 };
 
+// Test an enum that has multiple values with the same number.
 pub const TestEnumWithDupValue = enum(i32) {
     FOO1 = 1,
     BAR1 = 2,
@@ -32,6 +33,7 @@ pub const TestEnumWithDupValue = enum(i32) {
     _,
 };
 
+// Test an enum with large, unordered values.
 pub const TestSparseEnum = enum(i32) {
     SPARSE_A = 123,
     SPARSE_B = 62374,
@@ -148,6 +150,8 @@ pub const VeryLargeEnum = enum(i32) {
     _,
 };
 
+// This proto includes every type of field in both singular and repeated
+// forms.
 pub const TestAllTypes = struct {
     optional_int32: ?i32 = null,
     optional_int64: ?i64 = null,
@@ -413,6 +417,7 @@ pub const TestAllTypes = struct {
     }
 };
 
+// This proto includes a recursively nested message.
 pub const NestedTestAllTypes = struct {
     child: ?ManagedStruct(NestedTestAllTypes) = null,
     payload: ?TestAllTypes = null,
@@ -581,6 +586,8 @@ pub const TestDeprecatedMessage = struct {
     }
 };
 
+// Define these after TestAllTypes to make sure the compiler can handle
+// that.
 pub const ForeignMessage = struct {
     c: ?i32 = null,
     d: ?i32 = null,
@@ -951,6 +958,8 @@ pub const TestChildExtension = struct {
     }
 };
 
+// Emulates wireformat data of TestChildExtension with dynamic extension
+// (DynamicExtension).
 pub const TestChildExtensionData = struct {
     a: ?ManagedString = null,
     b: ?ManagedString = null,
@@ -1175,6 +1184,8 @@ pub const TestNestedChildExtension = struct {
     }
 };
 
+// Emulates wireformat data of TestNestedChildExtension with dynamic extension
+// (DynamicExtension).
 pub const TestNestedChildExtensionData = struct {
     a: ?i32 = null,
     child: ?TestChildExtensionData = null,
@@ -1231,6 +1242,11 @@ pub const TestNestedChildExtensionData = struct {
     }
 };
 
+// We have separate messages for testing required fields because it's
+// annoying to have to fill in required fields in TestProto in order to
+// do anything with it.  Note that we don't need to test every type of
+// required filed because the code output is basically identical to
+// optional fields for all types.
 pub const TestRequired = struct {
     a: i32,
     dummy2: ?i32 = null,
@@ -1527,6 +1543,7 @@ pub const TestNestedRequiredForeign = struct {
     }
 };
 
+// Test that we can use NestedMessage from outside TestAllTypes.
 pub const TestForeignNested = struct {
     foreign_nested: ?TestAllTypes.NestedMessage = null,
 
@@ -1581,6 +1598,7 @@ pub const TestForeignNested = struct {
     }
 };
 
+// TestEmptyMessage is used to test unknown field support.
 pub const TestEmptyMessage = struct {
     pub const _desc_table = .{};
 
@@ -1631,6 +1649,8 @@ pub const TestEmptyMessage = struct {
     }
 };
 
+// Like above, but declare all field numbers as potential extensions.  No
+// actual extensions should ever be defined for this type.
 pub const TestEmptyMessageWithExtensions = struct {
     pub const _desc_table = .{};
 
@@ -1681,6 +1701,7 @@ pub const TestEmptyMessageWithExtensions = struct {
     }
 };
 
+// Needed for a Python test.
 pub const TestPickleNestedMessage = struct {
     pub const _desc_table = .{};
 
@@ -1889,6 +1910,7 @@ pub const TestMultipleExtensionRanges = struct {
     }
 };
 
+// Test that really large tag numbers don't break anything.
 pub const TestReallyLargeTagNumber = struct {
     a: ?i32 = null,
     bb: ?i32 = null,
@@ -2001,6 +2023,7 @@ pub const TestRecursiveMessage = struct {
     }
 };
 
+// Test that mutual recursion works.
 pub const TestMutualRecursionA = struct {
     bb: ?TestMutualRecursionB = null,
     sub_message: ?TestMutualRecursionA.SubMessage = null,
@@ -2277,6 +2300,10 @@ pub const TestIsInitialized = struct {
     }
 };
 
+// Test that groups have disjoint field numbers from their siblings and
+// parents.  This is NOT possible in proto1; only google.protobuf.  When
+// attempting to compile with proto1, this will emit an error; so we only
+// include it in protobuf_unittest_proto.
 pub const TestDupFieldNumber = struct {
     a: ?i32 = null,
 
@@ -2331,6 +2358,7 @@ pub const TestDupFieldNumber = struct {
     }
 };
 
+// Additional messages for testing lazy fields.
 pub const TestEagerMessage = struct {
     sub_message: ?TestAllTypes = null,
 
@@ -2551,6 +2579,7 @@ pub const TestEagerMaybeLazy = struct {
     }
 };
 
+// Needed for a Python test.
 pub const TestNestedMessageHasBits = struct {
     optional_nested_message: ?TestNestedMessageHasBits.NestedMessage = null,
 
@@ -2661,6 +2690,8 @@ pub const TestNestedMessageHasBits = struct {
     }
 };
 
+// Test message with CamelCase field names.  This violates Protocol Buffer
+// standard style.
 pub const TestCamelCaseFieldNames = struct {
     PrimitiveField: ?i32 = null,
     StringField: ?ManagedString = null,
@@ -2737,6 +2768,8 @@ pub const TestCamelCaseFieldNames = struct {
     }
 };
 
+// We list fields out of order, to ensure that we're using field number and not
+// field index to determine serialization order.
 pub const TestFieldOrderings = struct {
     my_string: ?ManagedString = null,
     my_int: ?i64 = null,
@@ -3175,6 +3208,7 @@ pub const SparseEnumMessage = struct {
     }
 };
 
+// Test String and Bytes: string is for valid UTF-8 strings
 pub const OneString = struct {
     data: ?ManagedString = null,
 
@@ -3507,6 +3541,7 @@ pub const ManyOptionalString = struct {
     }
 };
 
+// Test int32, uint32, int64, uint64, and bool are all compatible
 pub const Int32Message = struct {
     data: ?i32 = null,
 
@@ -3777,6 +3812,7 @@ pub const BoolMessage = struct {
     }
 };
 
+// Test oneofs.
 pub const TestOneof = struct {
     foo: ?foo_union,
 
@@ -4316,6 +4352,8 @@ pub const TestPackedTypes = struct {
     }
 };
 
+// A message with the same fields as TestPackedTypes, but without packing. Used
+// to test packed <-> unpacked wire compatibility.
 pub const TestUnpackedTypes = struct {
     unpacked_int32: ArrayList(i32),
     unpacked_int64: ArrayList(i64),
@@ -4496,6 +4534,9 @@ pub const TestUnpackedExtensions = struct {
     }
 };
 
+// Used by ExtensionSetTest/DynamicExtensions.  The test actually builds
+// a set of extensions to TestAllExtensions dynamically, based on the fields
+// of this message type.
 pub const TestDynamicExtensions = struct {
     scalar_extension: ?u32 = null,
     enum_extension: ?ForeignEnum = null,
@@ -4687,6 +4728,8 @@ pub const TestRepeatedScalarDifferentTagSizes = struct {
     }
 };
 
+// Test that if an optional or required message/group field appears multiple
+// times in the input, they need to be merged.
 pub const TestParsingMerge = struct {
     required_all_types: ?TestAllTypes = null,
     optional_all_types: ?TestAllTypes = null,
@@ -4702,6 +4745,11 @@ pub const TestParsingMerge = struct {
         .repeated_group_all_types = fd(21, .{ .SubMessage = {} }),
     };
 
+    // RepeatedFieldsGenerator defines matching field types as TestParsingMerge,
+    // except that all fields are repeated. In the tests, we will serialize the
+    // RepeatedFieldsGenerator to bytes, and parse the bytes to TestParsingMerge.
+    // Repeated fields in RepeatedFieldsGenerator are expected to be merged into
+    // the corresponding required/optional fields in TestParsingMerge.
     pub const RepeatedFieldsGenerator = struct {
         field1: ArrayList(TestAllTypes),
         field2: ArrayList(TestAllTypes),
@@ -4815,6 +4863,8 @@ pub const TestParsingMerge = struct {
     }
 };
 
+// Test that the correct exception is thrown by parseFrom in a corner case
+// involving merging, extensions, and required fields.
 pub const TestMergeException = struct {
     all_extensions: ?TestAllExtensions = null,
 
@@ -4923,6 +4973,8 @@ pub const TestCommentInjectionMessage = struct {
     }
 };
 
+// Used to check that the c++ code generator re-orders messages to reduce
+// padding.
 pub const TestMessageSize = struct {
     m1: ?bool = null,
     m2: ?i64 = null,
@@ -4987,6 +5039,7 @@ pub const TestMessageSize = struct {
     }
 };
 
+// Test that RPC services work.
 pub const FooRequest = struct {
     pub const _desc_table = .{};
 
@@ -6468,6 +6521,8 @@ pub const TestVerifyBigFieldNumberUint32 = struct {
     }
 };
 
+// This message contains different kind of enums to exercise the different
+// parsers in table-driven.
 pub const EnumParseTester = struct {
     optional_seq_small_0_lowfield: ?EnumParseTester.SeqSmall0 = null,
     optional_seq_small_0_midfield: ?EnumParseTester.SeqSmall0 = null,
