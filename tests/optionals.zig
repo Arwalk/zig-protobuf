@@ -16,9 +16,11 @@ test "empty string in optional fields must be serialized over the wire" {
     try testing.expect(t.str == null);
 
     // first encode with NULL
-    const encodedNull = try t.encode(testing.allocator);
-    defer testing.allocator.free(encodedNull);
-    try testing.expectEqualSlices(u8, "", encodedNull);
+    var encodedNull: std.ArrayListUnmanaged(u8) = .empty;
+    defer encodedNull.deinit(std.testing.allocator);
+    const w = encodedNull.writer(std.testing.allocator);
+    try t.encode(w.any(), testing.allocator);
+    try testing.expectEqualSlices(u8, "", encodedNull.items);
 
     // decoded must be null as well
     const decodedNull = try jspb.TestClone.decode("", testing.allocator);
@@ -30,12 +32,14 @@ test "empty string in optional fields must be serialized over the wire" {
     try testing.expect(t.str.?.isEmpty());
 
     // then the encoded must be an empty string
-    const encodedEmpty = try t.encode(testing.allocator);
-    defer testing.allocator.free(encodedEmpty);
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x00 }, encodedEmpty);
+    var encodedEmpty: std.ArrayListUnmanaged(u8) = .empty;
+    defer encodedEmpty.deinit(std.testing.allocator);
+    const w2 = encodedEmpty.writer(std.testing.allocator);
+    try t.encode(w2.any(), testing.allocator);
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x00 }, encodedEmpty.items);
 
     // decoded must be null as well
-    const decodedEmpty = try jspb.TestClone.decode(encodedEmpty, testing.allocator);
+    const decodedEmpty = try jspb.TestClone.decode(encodedEmpty.items, testing.allocator);
     defer decodedEmpty.deinit();
     try testing.expect(decodedEmpty.str.?.isEmpty());
 }
@@ -54,19 +58,26 @@ test "unittest.proto parse and re-encode" {
     try assert(decoded);
 
     // then encode it
-    const encoded = try decoded.encode(testing.allocator);
-    defer testing.allocator.free(encoded);
+    var encoded: std.ArrayListUnmanaged(u8) = .empty;
+    defer encoded.deinit(std.testing.allocator);
+    const w = encoded.writer(std.testing.allocator);
+
+    try decoded.encode(w.any(), testing.allocator);
 
     // then re-decode it
-    const decoded2 = try unittest.TestAllTypes.decode(encoded, testing.allocator);
+    const decoded2 = try unittest.TestAllTypes.decode(encoded.items, testing.allocator);
     defer decoded2.deinit();
-    const encoded2 = try decoded.encode(testing.allocator);
-    defer testing.allocator.free(encoded2);
+
+    var encoded2: std.ArrayListUnmanaged(u8) = .empty;
+    defer encoded2.deinit(std.testing.allocator);
+    const w2 = encoded2.writer(std.testing.allocator);
+
+    try decoded2.encode(w2.any(), testing.allocator);
 
     try assert(decoded2);
 
     // finally assert blackbox serialization
-    try testing.expectEqualSlices(u8, encoded, encoded2);
+    try testing.expectEqualSlices(u8, encoded.items, encoded2.items);
 }
 
 fn assert(decoded: unittest.TestAllTypes) !void {

@@ -15,21 +15,28 @@ test "mapbox decoding and re-encoding" {
     defer decoded.deinit();
 
     // then encode it
-    const encoded = try decoded.encode(testing.allocator);
-    defer testing.allocator.free(encoded);
+    var encoded: std.ArrayListUnmanaged(u8) = .empty;
+    defer encoded.deinit(std.testing.allocator);
+    const w = encoded.writer(std.testing.allocator);
+
+    try decoded.encode(w.any(), testing.allocator);
 
     // at this moment, the copied slice will be deallocated, if strings were not copied, the decoded2 value
     // should differ
     testing.allocator.free(copied_slice);
 
     // then re-decode it
-    const decoded2 = try vector_tile.Tile.decode(encoded, testing.allocator);
+    const decoded2 = try vector_tile.Tile.decode(encoded.items, testing.allocator);
     defer decoded2.deinit();
 
     // finally assert
     try testing.expectEqualDeep(decoded, decoded2);
 
-    const encoded2 = try decoded2.encode(testing.allocator);
-    defer testing.allocator.free(encoded2);
-    try testing.expectEqualSlices(u8, encoded, encoded2);
+    var encoded2: std.ArrayListUnmanaged(u8) = .empty;
+    defer encoded2.deinit(std.testing.allocator);
+    const w2 = encoded2.writer(std.testing.allocator);
+
+    try decoded2.encode(w2.any(), testing.allocator);
+
+    try testing.expectEqualSlices(u8, encoded.items, encoded2.items);
 }

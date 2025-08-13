@@ -10,8 +10,10 @@ test "GraphicsDB" {
     const decoded = try graphics.GraphicsDB.decode(binary_file, testing.allocator);
 
     // then encode it
-    const encoded = try decoded.encode(testing.allocator);
-    defer testing.allocator.free(encoded);
+    var encoded: std.ArrayListUnmanaged(u8) = .empty;
+    defer encoded.deinit(std.testing.allocator);
+    const w = encoded.writer(std.testing.allocator);
+    try decoded.encode(w.any(), std.testing.allocator);
 
     // dupe the decoded
     const decoded_dupe = try decoded.dupe(testing.allocator);
@@ -19,14 +21,16 @@ test "GraphicsDB" {
 
     {
         // encode and assert equality
-        const encoded_dupe = try decoded_dupe.encode(testing.allocator);
-        defer testing.allocator.free(encoded_dupe);
+        var encoded_dupe: std.ArrayListUnmanaged(u8) = .empty;
+        defer encoded_dupe.deinit(std.testing.allocator);
+        const w_dupe = encoded_dupe.writer(std.testing.allocator);
+        try decoded_dupe.encode(w_dupe.any(), std.testing.allocator);
 
-        try testing.expectEqualDeep(encoded, encoded_dupe);
+        try testing.expectEqualSlices(u8, encoded.items, encoded_dupe.items);
     }
 
     // then re-decode it
-    const decoded2 = try graphics.GraphicsDB.decode(encoded, testing.allocator);
+    const decoded2 = try graphics.GraphicsDB.decode(encoded.items, testing.allocator);
     defer decoded2.deinit();
 
     // finally assert equal objects
@@ -37,16 +41,21 @@ test "GraphicsDB" {
 
     {
         // encode and assert equality again
-        const encoded_dupe = try decoded_dupe.encode(testing.allocator);
-        defer testing.allocator.free(encoded_dupe);
+        var encoded_dupe: std.ArrayListUnmanaged(u8) = .empty;
+        defer encoded_dupe.deinit(std.testing.allocator);
+        const w_dupe = encoded_dupe.writer(std.testing.allocator);
+        try decoded_dupe.encode(w_dupe.any(), std.testing.allocator);
 
-        try testing.expectEqualDeep(encoded, encoded_dupe);
+        try testing.expectEqualSlices(u8, encoded.items, encoded_dupe.items);
     }
 
     // and equal encodings
-    const encoded2 = try decoded2.encode(testing.allocator);
-    defer testing.allocator.free(encoded2);
-    try testing.expectEqualSlices(u8, encoded, encoded2);
+    var encoded2: std.ArrayListUnmanaged(u8) = .empty;
+    defer encoded2.deinit(std.testing.allocator);
+    const w2 = encoded2.writer(std.testing.allocator);
+    try decoded2.encode(w2.any(), std.testing.allocator);
+
+    try testing.expectEqualSlices(u8, encoded.items, encoded2.items);
 
     // var file = try std.fs.cwd().openFile("debug/graphics-out.bin", .{ .mode = .write_only });
     // defer file.close();

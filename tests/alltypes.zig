@@ -24,8 +24,11 @@ test "long package" {
     demo.field = .{ .field = .{ .Const = "asd" } };
     defer demo.deinit();
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
+    const w = obtained.writer(std.testing.allocator);
+
+    try demo.encode(w.any(), std.testing.allocator);
 }
 
 test "packed int32_list encoding" {
@@ -36,8 +39,11 @@ test "packed int32_list encoding" {
     try demo.int32_list.append(0x04);
     defer demo.deinit();
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
+    const w = obtained.writer(std.testing.allocator);
+
+    try demo.encode(w.any(), std.testing.allocator);
 
     try testing.expectEqualSlices(u8, &[_]u8{
         // fieldNumber=1<<3 packetType=2 (LEN)
@@ -49,9 +55,9 @@ test "packed int32_list encoding" {
         0x02,
         0x03,
         0x04,
-    }, obtained);
+    }, obtained.items);
 
-    const decoded = try tests.Packed.decode(obtained, testing.allocator);
+    const decoded = try tests.Packed.decode(obtained.items, testing.allocator);
     defer decoded.deinit();
     try testing.expectEqualSlices(i32, demo.int32_list.items, decoded.int32_list.items);
 }
@@ -64,12 +70,15 @@ test "unpacked int32_list" {
     try demo.int32_list.append(0x04);
     defer demo.deinit();
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
+    const w = obtained.writer(std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x01, 0x08, 0x02, 0x08, 0x03, 0x08, 0x04 }, obtained);
+    try demo.encode(w.any(), std.testing.allocator);
 
-    const decoded = try tests.UnPacked.decode(obtained, testing.allocator);
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x01, 0x08, 0x02, 0x08, 0x03, 0x08, 0x04 }, obtained.items);
+
+    const decoded = try tests.UnPacked.decode(obtained.items, testing.allocator);
     defer decoded.deinit();
     try testing.expectEqualSlices(i32, demo.int32_list.items, decoded.int32_list.items);
 }

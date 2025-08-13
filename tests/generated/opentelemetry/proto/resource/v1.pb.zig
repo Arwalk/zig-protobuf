@@ -22,8 +22,8 @@ pub const Resource = struct {
         .dropped_attributes_count = fd(2, .{ .Varint = .Simple }),
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);

@@ -27,14 +27,17 @@ test "oneof encode/decode int" {
         try testing.expectEqualDeep(demo, dupe);
     }
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
+    const w = obtained.writer(std.testing.allocator);
+
+    try demo.encode(w.any(), testing.allocator);
 
     try testing.expectEqualSlices(u8, &[_]u8{
         0x18, 10,
-    }, obtained);
+    }, obtained.items);
 
-    const decoded = try tests_oneof.OneofContainer.decode(obtained, testing.allocator);
+    const decoded = try tests_oneof.OneofContainer.decode(obtained.items, testing.allocator);
     defer decoded.deinit();
 
     try testing.expectEqual(demo.some_oneof.?.a_number, decoded.some_oneof.?.a_number);
@@ -46,8 +49,11 @@ test "oneof encode/decode enum" {
 
     demo.some_oneof = .{ .enum_value = .SOMETHING2 };
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
+    const w = obtained.writer(std.testing.allocator);
+
+    try demo.encode(w.any(), testing.allocator);
 
     {
         // duplicate the one-of and deep compare
@@ -58,9 +64,9 @@ test "oneof encode/decode enum" {
 
     try testing.expectEqualSlices(u8, &[_]u8{
         0x30, 0x02,
-    }, obtained);
+    }, obtained.items);
 
-    const decoded = try tests_oneof.OneofContainer.decode(obtained, testing.allocator);
+    const decoded = try tests_oneof.OneofContainer.decode(obtained.items, testing.allocator);
     defer decoded.deinit();
 
     try testing.expectEqual(demo.some_oneof.?.enum_value, decoded.some_oneof.?.enum_value);
@@ -79,17 +85,24 @@ test "oneof encode/decode string" {
         try testing.expectEqualDeep(demo, dupe);
     }
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
+    const w = obtained.writer(std.testing.allocator);
+
+    try demo.encode(w.any(), testing.allocator);
 
     try testing.expectEqualSlices(u8, &[_]u8{
         0x0A, 0x03, 0x31, 0x32, 0x33,
-    }, obtained);
+    }, obtained.items);
 
-    const decoded = try tests_oneof.OneofContainer.decode(obtained, testing.allocator);
+    const decoded = try tests_oneof.OneofContainer.decode(obtained.items, testing.allocator);
     defer decoded.deinit();
 
-    try testing.expectEqualSlices(u8, demo.some_oneof.?.string_in_oneof.getSlice(), decoded.some_oneof.?.string_in_oneof.getSlice());
+    try testing.expectEqualSlices(
+        u8,
+        demo.some_oneof.?.string_in_oneof.getSlice(),
+        decoded.some_oneof.?.string_in_oneof.getSlice(),
+    );
 }
 
 test "oneof encode/decode submessage" {
@@ -105,17 +118,24 @@ test "oneof encode/decode submessage" {
         try testing.expectEqualDeep(demo, dupe);
     }
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
+    const w = obtained.writer(std.testing.allocator);
+
+    try demo.encode(w.any(), testing.allocator);
 
     try testing.expectEqualSlices(u8, &[_]u8{
         0x12, 0x07, 0x08, 0x01, 0x12, 0x03, 0x31, 0x32, 0x33,
-    }, obtained);
+    }, obtained.items);
 
-    const decoded = try tests_oneof.OneofContainer.decode(obtained, testing.allocator);
+    const decoded = try tests_oneof.OneofContainer.decode(obtained.items, testing.allocator);
     defer decoded.deinit();
 
-    try testing.expectEqualSlices(u8, demo.some_oneof.?.message_in_oneof.str.getSlice(), decoded.some_oneof.?.message_in_oneof.str.getSlice());
+    try testing.expectEqualSlices(
+        u8,
+        demo.some_oneof.?.message_in_oneof.str.getSlice(),
+        decoded.some_oneof.?.message_in_oneof.str.getSlice(),
+    );
 }
 
 test "decoding multiple messages keeps the last value 123" {

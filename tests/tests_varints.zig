@@ -10,11 +10,16 @@ test "Varints" {
     demo.uint32 = 150;
     demo.uint64 = 150;
     demo.a_bool = true;
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x01, 0x10, 0x01, 0x18, 0x96, 0x01, 0x20, 0x96, 0x01, 0x28, 0x01 }, obtained);
 
-    const decoded = try tests.Varints.decode(obtained, testing.allocator);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
+
+    const w = obtained.writer(std.testing.allocator);
+    try demo.encode(w.any(), std.testing.allocator);
+
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x01, 0x10, 0x01, 0x18, 0x96, 0x01, 0x20, 0x96, 0x01, 0x28, 0x01 }, obtained.items);
+
+    const decoded = try tests.Varints.decode(obtained.items, testing.allocator);
     defer decoded.deinit();
     try testing.expectEqual(demo, decoded);
 }
@@ -51,10 +56,13 @@ test "Varints - encode/decode equivalence" {
     demo.uint64 = 1512312313130;
     demo.a_bool = true;
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
 
-    const decoded = try tests.Varints.decode(obtained, testing.allocator);
+    const w = obtained.writer(std.testing.allocator);
+    try demo.encode(w.any(), std.testing.allocator);
+
+    const decoded = try tests.Varints.decode(obtained.items, testing.allocator);
     defer decoded.deinit();
     try testing.expectEqualDeep(demo, decoded);
 }
@@ -67,12 +75,15 @@ test "EmptyLists" {
     try demo.varuint32List.append(0x04);
     defer demo.deinit();
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x01, 0x08, 0x02, 0x08, 0x03, 0x08, 0x04 }, obtained);
+    const w = obtained.writer(std.testing.allocator);
+    try demo.encode(w.any(), std.testing.allocator);
 
-    const decoded = try tests.EmptyLists.decode(obtained, testing.allocator);
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x01, 0x08, 0x02, 0x08, 0x03, 0x08, 0x04 }, obtained.items);
+
+    const decoded = try tests.EmptyLists.decode(obtained.items, testing.allocator);
     defer decoded.deinit();
     try testing.expectEqualSlices(u32, demo.varuint32List.items, decoded.varuint32List.items);
     try testing.expectEqualSlices(u32, demo.varuint32Empty.items, decoded.varuint32Empty.items);
@@ -86,12 +97,19 @@ test "SubMessageList" {
     try demo.subMessageList.append(.{ .a = 4 });
     defer demo.deinit();
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x02, 0x08, 0x01, 0x0A, 0x02, 0x08, 0x02, 0x0A, 0x02, 0x08, 0x03, 0x0A, 0x02, 0x08, 0x04 }, obtained);
+    const w = obtained.writer(std.testing.allocator);
+    try demo.encode(w.any(), std.testing.allocator);
 
-    const decoded = try tests.SubMessageList.decode(obtained, testing.allocator);
+    try testing.expectEqualSlices(
+        u8,
+        &[_]u8{ 0x0A, 0x02, 0x08, 0x01, 0x0A, 0x02, 0x08, 0x02, 0x0A, 0x02, 0x08, 0x03, 0x0A, 0x02, 0x08, 0x04 },
+        obtained.items,
+    );
+
+    const decoded = try tests.SubMessageList.decode(obtained.items, testing.allocator);
     defer decoded.deinit();
     try testing.expectEqualSlices(tests.Demo1, demo.subMessageList.items, decoded.subMessageList.items);
 }
@@ -104,16 +122,19 @@ test "VarintListPacked - encode/decode" {
     try demo.varuint32List.append(0x04);
     defer demo.deinit();
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
+
+    const w = obtained.writer(std.testing.allocator);
+    try demo.encode(w.any(), std.testing.allocator);
 
     try testing.expectEqualSlices(u8, &[_]u8{
         0x0A, 0x04,
         0x01, 0x02,
         0x03, 0x04,
-    }, obtained);
+    }, obtained.items);
 
-    const decoded = try tests.VarintListPacked.decode(obtained, testing.allocator);
+    const decoded = try tests.VarintListPacked.decode(obtained.items, testing.allocator);
     defer decoded.deinit();
     try testing.expectEqualSlices(u32, demo.varuint32List.items, decoded.varuint32List.items);
 }
@@ -145,26 +166,38 @@ test "VarintListPacked - decode packed" {
 
 test "basic encoding" {
     var demo = tests.Demo1{ .a = 150 };
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x96, 0x01 }, obtained);
+
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
+
+    const w = obtained.writer(std.testing.allocator);
+    try demo.encode(w.any(), std.testing.allocator);
+
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x96, 0x01 }, obtained.items);
 
     demo.a = 0;
-    const obtained2 = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained2);
-    try testing.expectEqualSlices(u8, &[_]u8{}, obtained2);
+    var obtained2: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained2.deinit(std.testing.allocator);
+
+    const w2 = obtained2.writer(std.testing.allocator);
+    try demo.encode(w2.any(), std.testing.allocator);
+
+    try testing.expectEqualSlices(u8, &[_]u8{}, obtained2.items);
 }
 
 test "EmptyMessage" {
     var demo = tests.EmptyMessage.init(testing.allocator);
     defer demo.deinit();
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, &[_]u8{}, obtained);
+    const w = obtained.writer(std.testing.allocator);
+    try demo.encode(w.any(), std.testing.allocator);
 
-    const decoded = try tests.EmptyMessage.decode(obtained, testing.allocator);
+    try testing.expectEqualSlices(u8, &[_]u8{}, obtained.items);
+
+    const decoded = try tests.EmptyMessage.decode(obtained.items, testing.allocator);
     defer decoded.deinit();
     try testing.expectEqual(demo, decoded);
 }
@@ -187,14 +220,17 @@ test "FixedSizesList" {
     try demo.fixed32List.append(0x04);
     defer demo.deinit();
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
+
+    const w = obtained.writer(std.testing.allocator);
+    try demo.encode(w.any(), std.testing.allocator);
 
     try testing.expectEqualSlices(u8, &[_]u8{
         0x0D, 0x01, 0x00, 0x00, 0x00, 0x0D, 0x02, 0x00, 0x00, 0x00, 0x0D, 0x03, 0x00, 0x00, 0x00, 0x0D, 0x04, 0x00, 0x00, 0x00,
-    }, obtained);
+    }, obtained.items);
 
-    const decoded = try tests.FixedSizesList.decode(obtained, testing.allocator);
+    const decoded = try tests.FixedSizesList.decode(obtained.items, testing.allocator);
     defer decoded.deinit();
     try testing.expectEqualSlices(u32, demo.fixed32List.items, decoded.fixed32List.items);
 }
@@ -207,17 +243,20 @@ test "VarintListNotPacked - not packed - encode/decode" {
     try demo.varuint32List.append(0x04);
     defer demo.deinit();
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
+
+    const w = obtained.writer(std.testing.allocator);
+    try demo.encode(w.any(), std.testing.allocator);
 
     try testing.expectEqualSlices(u8, &[_]u8{
         0x08, 0x01,
         0x08, 0x02,
         0x08, 0x03,
         0x08, 0x04,
-    }, obtained);
+    }, obtained.items);
 
-    const decoded = try tests.VarintListNotPacked.decode(obtained, testing.allocator);
+    const decoded = try tests.VarintListNotPacked.decode(obtained.items, testing.allocator);
     defer decoded.deinit();
     try testing.expectEqualSlices(u32, demo.varuint32List.items, decoded.varuint32List.items);
 }
@@ -264,10 +303,13 @@ test "varint packed - encode, single element multi-byte-varint" {
     try demo.list_of_data.append(0xA3);
     defer demo.deinit();
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x02, 0xA3, 0x01 }, obtained);
+    const w = obtained.writer(std.testing.allocator);
+    try demo.encode(w.any(), std.testing.allocator);
+
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x02, 0xA3, 0x01 }, obtained.items);
 }
 
 test "varint packed - decode, single element multi-byte-varint" {
@@ -283,12 +325,15 @@ test "varint packed - encode decode, single element single-byte-varint" {
     try demo.list_of_data.append(0x13);
     defer demo.deinit();
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x01, 0x13 }, obtained);
+    const w = obtained.writer(std.testing.allocator);
+    try demo.encode(w.any(), std.testing.allocator);
 
-    const decoded = try tests.WithIntsPacked.decode(obtained, testing.allocator);
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x01, 0x13 }, obtained.items);
+
+    const decoded = try tests.WithIntsPacked.decode(obtained.items, testing.allocator);
     defer decoded.deinit();
     try testing.expectEqualSlices(u32, demo.list_of_data.items, decoded.list_of_data.items);
 }
@@ -299,12 +344,15 @@ test "varint packed - encode decode - single-byte-varint" {
     try demo.list_of_data.append(0x12);
     defer demo.deinit();
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x02, 0x11, 0x12 }, obtained);
+    const w = obtained.writer(std.testing.allocator);
+    try demo.encode(w.any(), std.testing.allocator);
 
-    const decoded = try tests.WithIntsPacked.decode(obtained, testing.allocator);
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x02, 0x11, 0x12 }, obtained.items);
+
+    const decoded = try tests.WithIntsPacked.decode(obtained.items, testing.allocator);
     defer decoded.deinit();
     try testing.expectEqualSlices(u32, demo.list_of_data.items, decoded.list_of_data.items);
 }
@@ -315,21 +363,27 @@ test "varint packed - encode - multi-byte-varint" {
     try demo.list_of_data.append(0xA2);
     defer demo.deinit();
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x04, 0xA1, 0x01, 0xA2, 0x01 }, obtained);
+    const w = obtained.writer(std.testing.allocator);
+    try demo.encode(w.any(), std.testing.allocator);
+
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x04, 0xA1, 0x01, 0xA2, 0x01 }, obtained.items);
 }
 
 test "WithSubmessages" {
     var demo = tests.WithSubmessages2{ .sub_demo1 = .{ .a = 1 }, .sub_demo2 = .{ .a = 2, .b = 3 } };
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x08 + 2, 0x02, 0x08, 0x01, 0x10 + 2, 0x04, 0x08, 0x02, 0x10, 0x03 }, obtained);
+    const w = obtained.writer(std.testing.allocator);
+    try demo.encode(w.any(), std.testing.allocator);
 
-    const decoded = try tests.WithSubmessages2.decode(obtained, testing.allocator);
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x08 + 2, 0x02, 0x08, 0x01, 0x10 + 2, 0x04, 0x08, 0x02, 0x10, 0x03 }, obtained.items);
+
+    const decoded = try tests.WithSubmessages2.decode(obtained.items, testing.allocator);
     try testing.expectEqual(demo, decoded);
 }
 
@@ -339,31 +393,44 @@ test "FixedInt - not packed" {
     try demo.list_of_data.append(0x01);
     defer demo.deinit();
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
+
+    const w = obtained.writer(std.testing.allocator);
+    try demo.encode(w.any(), std.testing.allocator);
 
     try testing.expectEqualSlices(u8, &[_]u8{
         0x08, 0x08,
         0x08, 0x01,
-    }, obtained);
+    }, obtained.items);
 
-    const decoded = try tests.WithIntsNotPacked.decode(obtained, testing.allocator);
+    const decoded = try tests.WithIntsNotPacked.decode(obtained.items, testing.allocator);
     defer decoded.deinit();
     try testing.expectEqualSlices(u32, demo.list_of_data.items, decoded.list_of_data.items);
 }
 
 test "basic encoding with optionals" {
     const demo = tests.Demo2{ .a = 150, .b = 0 };
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
+
+    const w = obtained.writer(std.testing.allocator);
+    try demo.encode(w.any(), std.testing.allocator);
+
     // 0x08 , 0x96, 0x01
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x96, 0x01 }, obtained);
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x96, 0x01 }, obtained.items);
 
     const demo2 = tests.Demo2{ .a = 150, .b = 150 };
-    const obtained2 = try demo2.encode(testing.allocator);
-    defer testing.allocator.free(obtained2);
+
+    var obtained2: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained2.deinit(std.testing.allocator);
+
+    const w2 = obtained2.writer(std.testing.allocator);
+    try demo2.encode(w2.any(), std.testing.allocator);
+
     // 0x08 , 0x96, 0x01
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x96, 0x01, 0x10, 0x96, 0x01 }, obtained2);
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x96, 0x01, 0x10, 0x96, 0x01 }, obtained2.items);
 }
 
 test "basic decoding" {
@@ -384,26 +451,38 @@ test "DemoWithAllVarint" {
 
 test "basic encoding with negative numbers" {
     var demo = tests.WithNegativeIntegers{ .a = -2, .b = -1 };
-    const obtained = try demo.encode(testing.allocator);
-    defer demo.deinit();
-    defer testing.allocator.free(obtained);
+
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
+
+    const w = obtained.writer(std.testing.allocator);
+    try demo.encode(w.any(), std.testing.allocator);
+
     // 0x08
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x03, 0x10, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01 }, obtained);
-    const decoded = try tests.WithNegativeIntegers.decode(obtained, testing.allocator);
+    try testing.expectEqualSlices(
+        u8,
+        &[_]u8{ 0x08, 0x03, 0x10, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01 },
+        obtained.items,
+    );
+    const decoded = try tests.WithNegativeIntegers.decode(obtained.items, testing.allocator);
     try testing.expectEqual(demo, decoded);
 }
 
 fn check(object: anytype, expected: []const u8) !void {
     defer object.deinit();
 
-    const obtained = try object.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
+
+    const w = obtained.writer(std.testing.allocator);
+    try object.encode(w.any(), std.testing.allocator);
+
     const buffer = try testing.allocator.alloc(u8, expected.len);
     defer testing.allocator.free(buffer);
     const bytes = try std.fmt.hexToBytes(buffer, expected);
 
-    try testing.expectEqualSlices(u8, bytes, obtained);
-    const decoded = try @TypeOf(object).decode(obtained, testing.allocator);
+    try testing.expectEqualSlices(u8, bytes, obtained.items);
+    const decoded = try @TypeOf(object).decode(obtained.items, testing.allocator);
     try testing.expectEqual(object, decoded);
 }
 

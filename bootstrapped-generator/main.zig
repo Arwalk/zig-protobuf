@@ -25,9 +25,8 @@ pub fn main() !void {
 
     try ctx.processRequest(allocator);
 
-    const stdout = &std.io.getStdOut();
-    const r = try ctx.res.encode(allocator);
-    _ = try stdout.write(r);
+    const stdout = std.io.getStdOut().writer();
+    try ctx.res.encode(stdout.any(), allocator);
 }
 
 const GenerationContext = struct {
@@ -653,8 +652,8 @@ const GenerationContext = struct {
 
             try lines.append(try std.fmt.allocPrint(allocator,
                 \\
-                \\    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {{
-                \\        return protobuf.pb_encode(self, allocator);
+                \\    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {{
+                \\        return protobuf.pb_encode(writer, allocator, self);
                 \\    }}
                 \\    pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {{
                 \\        return protobuf.pb_decode(@This(), input, allocator);
