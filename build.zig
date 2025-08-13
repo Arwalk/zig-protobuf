@@ -20,13 +20,17 @@ pub fn build(b: *std.Build) !void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
-    const lib = b.addStaticLibrary(.{
+    const lib = b.addLibrary(.{
         .name = "zig-protobuf",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
-        .root_source_file = b.path("src/protobuf.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/protobuf.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+
+        .linkage = .static,
     });
 
     // This declares intent for the library to be installed into the standard
@@ -36,6 +40,8 @@ pub fn build(b: *std.Build) !void {
 
     const module = b.addModule("protobuf", .{
         .root_source_file = b.path("src/protobuf.zig"),
+        .target = target,
+        .optimize = optimize,
     });
 
     const exe = buildGenerator(b, .{
@@ -51,53 +57,70 @@ pub fn build(b: *std.Build) !void {
     const test_step = b.step("test", "Run library tests");
 
     const tests = [_]*std.Build.Step.Compile{
+        b.addTest(.{ .name = "protobuf", .root_module = module }),
         b.addTest(.{
-            .name = "protobuf",
-            .root_source_file = b.path("src/protobuf.zig"),
-            .target = target,
-            .optimize = optimize,
+            .name = "bootstrap",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("bootstrapped-generator/main.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
         }),
         b.addTest(.{
             .name = "tests",
-            .root_source_file = b.path("tests/tests.zig"),
-            .target = target,
-            .optimize = optimize,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/tests.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
         }),
         b.addTest(.{
             .name = "alltypes",
-            .root_source_file = b.path("tests/alltypes.zig"),
-            .target = target,
-            .optimize = optimize,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/alltypes.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
         }),
         b.addTest(.{
             .name = "integration",
-            .root_source_file = b.path("tests/integration.zig"),
-            .target = target,
-            .optimize = optimize,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/integration.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
         }),
         b.addTest(.{
             .name = "fixedsizes",
-            .root_source_file = b.path("tests/tests_fixedsizes.zig"),
-            .target = target,
-            .optimize = optimize,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/tests_fixedsizes.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
         }),
         b.addTest(.{
             .name = "varints",
-            .root_source_file = b.path("tests/tests_varints.zig"),
-            .target = target,
-            .optimize = optimize,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/tests_varints.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
         }),
         b.addTest(.{
             .name = "json",
-            .root_source_file = b.path("tests/tests_json.zig"),
-            .target = target,
-            .optimize = optimize,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/tests_json.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
         }),
         b.addTest(.{
             .name = "FullName",
-            .root_source_file = b.path("bootstrapped-generator/FullName.zig"),
-            .target = target,
-            .optimize = optimize,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("bootstrapped-generator/FullName.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
         }),
     };
 
@@ -114,7 +137,9 @@ pub fn build(b: *std.Build) !void {
     });
 
     for (tests) |test_item| {
-        test_item.root_module.addImport("protobuf", module);
+        if (!std.mem.eql(u8, "protobuf", test_item.name)) {
+            test_item.root_module.addImport("protobuf", module);
+        }
 
         // This creates a build step. It will be visible in the `zig build --help` menu,
         // and can be selected like this: `zig build test`
