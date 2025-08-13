@@ -9,10 +9,6 @@ const ParseFromValueError = std.json.ParseFromValueError;
 
 const log = std.log.scoped(.zig_protobuf);
 
-// common definitions
-
-const ArrayList = std.ArrayList;
-
 /// Type of encoding for a Varint value.
 const VarintType = enum { Simple, ZigZagOptimized };
 
@@ -262,7 +258,7 @@ pub fn fd(comptime field_number: ?u32, comptime ftype: FieldType) FieldDescripto
 /// Appends an unsigned varint value.
 /// Awaits a u64 value as it's the biggest unsigned varint possible,
 // so anything can be cast to it by definition
-fn append_raw_varint(pb: *ArrayList(u8), value: u64) Allocator.Error!void {
+fn append_raw_varint(pb: *std.ArrayList(u8), value: u64) Allocator.Error!void {
     var copy = value;
     while (copy > 0x7F) {
         try pb.append(0x80 + @as(u8, @intCast(copy & 0x7F)));
@@ -274,7 +270,7 @@ fn append_raw_varint(pb: *ArrayList(u8), value: u64) Allocator.Error!void {
 /// Inserts a varint into the pb at start_index
 /// Mostly useful when inserting the size of a field after it has been
 /// Appended to the pb buffer.
-fn insert_raw_varint(pb: *ArrayList(u8), size: u64, start_index: usize) Allocator.Error!void {
+fn insert_raw_varint(pb: *std.ArrayList(u8), size: u64, start_index: usize) Allocator.Error!void {
     if (size < 0x7F) {
         try pb.insert(start_index, @as(u8, @truncate(size)));
     } else {
@@ -316,7 +312,7 @@ test "encode zig zag test" {
 /// Appends a varint to the pb array.
 /// Mostly does the required transformations to use append_raw_varint
 /// after making the value some kind of unsigned value.
-fn append_as_varint(pb: *ArrayList(u8), int: anytype, comptime varint_type: VarintType) Allocator.Error!void {
+fn append_as_varint(pb: *std.ArrayList(u8), int: anytype, comptime varint_type: VarintType) Allocator.Error!void {
     const type_of_val = @TypeOf(int);
     const val: u64 = blk: {
         switch (@typeInfo(type_of_val).int.signedness) {
@@ -339,7 +335,7 @@ fn append_as_varint(pb: *ArrayList(u8), int: anytype, comptime varint_type: Vari
 
 /// Append a value of any complex type that can be transfered as a varint
 /// Only serves as an indirection to manage Enum and Booleans properly.
-fn append_varint(pb: *ArrayList(u8), value: anytype, comptime varint_type: VarintType) Allocator.Error!void {
+fn append_varint(pb: *std.ArrayList(u8), value: anytype, comptime varint_type: VarintType) Allocator.Error!void {
     switch (@typeInfo(@TypeOf(value))) {
         .@"enum" => try append_as_varint(pb, @as(i32, @intFromEnum(value)), varint_type),
         .bool => try append_as_varint(pb, @as(u8, if (value) 1 else 0), varint_type),
@@ -350,7 +346,7 @@ fn append_varint(pb: *ArrayList(u8), value: anytype, comptime varint_type: Varin
 
 /// Appends a fixed size int to the pb buffer.
 /// Takes care of casting any signed/float value to an appropriate unsigned type
-fn append_fixed(pb: *ArrayList(u8), value: anytype) Allocator.Error!void {
+fn append_fixed(pb: *std.ArrayList(u8), value: anytype) Allocator.Error!void {
     const bitsize = @bitSizeOf(@TypeOf(value));
 
     var as_unsigned_int = switch (@TypeOf(value)) {
@@ -369,7 +365,7 @@ fn append_fixed(pb: *ArrayList(u8), value: anytype) Allocator.Error!void {
 
 /// Appends a submessage to the array.
 /// Recursively calls internal_pb_encode.
-fn append_submessage(pb: *ArrayList(u8), value: anytype) Allocator.Error!void {
+fn append_submessage(pb: *std.ArrayList(u8), value: anytype) Allocator.Error!void {
     const len_index = pb.items.len;
     try internal_pb_encode(pb, value);
     const size_encoded = pb.items.len - len_index;
@@ -377,14 +373,14 @@ fn append_submessage(pb: *ArrayList(u8), value: anytype) Allocator.Error!void {
 }
 
 /// Simple appending of a list of bytes.
-fn append_const_bytes(pb: *ArrayList(u8), value: ManagedString) Allocator.Error!void {
+fn append_const_bytes(pb: *std.ArrayList(u8), value: ManagedString) Allocator.Error!void {
     const slice = value.getSlice();
     try append_as_varint(pb, slice.len, .Simple);
     try pb.appendSlice(slice);
 }
 
 /// simple appending of a list of fixed-size data.
-fn append_packed_list_of_fixed(pb: *ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) Allocator.Error!void {
+fn append_packed_list_of_fixed(pb: *std.ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) Allocator.Error!void {
     if (value_list.items.len > 0) {
         // first append the tag for the field descriptor
         try append_tag(pb, field);
@@ -402,7 +398,7 @@ fn append_packed_list_of_fixed(pb: *ArrayList(u8), comptime field: FieldDescript
 }
 
 /// Appends a list of varint to the pb buffer.
-fn append_packed_list_of_varint(pb: *ArrayList(u8), value_list: anytype, comptime field: FieldDescriptor, comptime varint_type: VarintType) Allocator.Error!void {
+fn append_packed_list_of_varint(pb: *std.ArrayList(u8), value_list: anytype, comptime field: FieldDescriptor, comptime varint_type: VarintType) Allocator.Error!void {
     if (value_list.items.len > 0) {
         try append_tag(pb, field);
         const len_index = pb.items.len;
@@ -415,7 +411,7 @@ fn append_packed_list_of_varint(pb: *ArrayList(u8), value_list: anytype, comptim
 }
 
 /// Appends a list of submessages to the pb_buffer. Sequentially, prepending the tag of each message.
-fn append_list_of_submessages(pb: *ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) Allocator.Error!void {
+fn append_list_of_submessages(pb: *std.ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) Allocator.Error!void {
     for (value_list.items) |item| {
         try append_tag(pb, field);
         try append_submessage(pb, item);
@@ -423,7 +419,7 @@ fn append_list_of_submessages(pb: *ArrayList(u8), comptime field: FieldDescripto
 }
 
 /// Appends a packed list of string to the pb_buffer.
-fn append_packed_list_of_strings(pb: *ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) Allocator.Error!void {
+fn append_packed_list_of_strings(pb: *std.ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) Allocator.Error!void {
     if (value_list.items.len > 0) {
         try append_tag(pb, field);
 
@@ -437,7 +433,7 @@ fn append_packed_list_of_strings(pb: *ArrayList(u8), comptime field: FieldDescri
 }
 
 /// Appends the full tag of the field in the pb buffer, if there is any.
-fn append_tag(pb: *ArrayList(u8), comptime field: FieldDescriptor) Allocator.Error!void {
+fn append_tag(pb: *std.ArrayList(u8), comptime field: FieldDescriptor) Allocator.Error!void {
     const tag_value = (field.field_number.? << 3) | field.ftype.get_wirevalue();
     try append_varint(pb, tag_value, .Simple);
 }
@@ -448,7 +444,7 @@ fn append_tag(pb: *ArrayList(u8), comptime field: FieldDescriptor) Allocator.Err
 /// force_append is set to true if the field needs to be appended regardless of having the default value.
 ///   it is used when an optional int/bool with value zero need to be encoded. usually value==0 are not written, but optionals
 ///   require its presence to differentiate 0 from "null"
-fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, comptime force_append: bool) Allocator.Error!void {
+fn append(pb: *std.ArrayList(u8), comptime field: FieldDescriptor, value: anytype, comptime force_append: bool) Allocator.Error!void {
 
     // TODO: review semantics of default-value in regards to wire protocol
     const is_default_scalar_value = switch (@typeInfo(@TypeOf(value))) {
@@ -542,31 +538,27 @@ fn append(pb: *ArrayList(u8), comptime field: FieldDescriptor, value: anytype, c
 
 /// Internal function that decodes the descriptor information and struct fields
 /// before passing them to the append function
-fn internal_pb_encode(pb: *ArrayList(u8), data: anytype) Allocator.Error!void {
-    const type_info_data = @typeInfo(@TypeOf(data));
-    const data_type = switch (type_info_data) {
-        .@"union" => |_| // ManagedStruct case
-        @typeInfo(@TypeOf(data.Borrowed)).pointer.child,
-        else => @TypeOf(data),
-    };
-    const field_list = @typeInfo(data_type).@"struct".fields;
-
-    inline for (field_list) |field| {
-        if (@typeInfo(field.type) == .optional) {
+fn internal_pb_encode(pb: *std.ArrayList(u8), data: anytype) Allocator.Error!void {
+    const Data = if (comptime isZigProtobufManagedStruct(@TypeOf(data)))
+        @typeInfo(@TypeOf(data.Borrowed)).pointer.child
+    else
+        @TypeOf(data);
+    inline for (@typeInfo(Data).@"struct".fields) |field| {
+        if (comptime @typeInfo(field.type) == .optional) {
             const temp = getValue(@TypeOf(data), data);
             if (@field(temp, field.name)) |value| {
-                try append(pb, @field(data_type._desc_table, field.name), value, true);
+                try append(pb, @field(Data._desc_table, field.name), value, true);
             }
         } else {
             const value = getValue(@TypeOf(data), data);
-            try append(pb, @field(data_type._desc_table, field.name), @field(value, field.name), false);
+            try append(pb, @field(Data._desc_table, field.name), @field(value, field.name), false);
         }
     }
 }
 
-/// Public encoding function, meant to be embdedded in generated structs
-pub fn pb_encode(data: anytype, allocator: Allocator) Allocator.Error![]u8 {
-    var pb = ArrayList(u8).init(allocator);
+/// Public encoding function, meant to be embedded in generated structs
+pub fn pb_encode(data: anytype, allocator: std.mem.Allocator) Allocator.Error![]u8 {
+    var pb = std.ArrayList(u8).init(allocator);
     errdefer pb.deinit();
 
     try internal_pb_encode(&pb, data);
@@ -1014,7 +1006,7 @@ fn decode_fixed_value(comptime T: type, raw: u64) T {
 }
 
 /// this function receives a slice of a message and decodes one by one the elements of the packet list until the slice is exhausted
-fn decode_packed_list(slice: []const u8, comptime list_type: ListType, comptime T: type, array: *ArrayList(T), allocator: Allocator) UnionDecodingError!void {
+fn decode_packed_list(slice: []const u8, comptime list_type: ListType, comptime T: type, array: *std.ArrayList(T), allocator: Allocator) UnionDecodingError!void {
     switch (list_type) {
         .FixedInt => {
             switch (T) {
@@ -1149,28 +1141,28 @@ inline fn is_tag_known(comptime field_desc: FieldDescriptor, tag_to_check: Extra
 }
 
 fn getRootType(T: type) type {
-    return if (isZigProtobufManagedStruct(T))
+    return if (comptime isZigProtobufManagedStruct(T))
         T.UnderlyingType
     else
         return T;
 }
 
 fn initForDecode(T: type, allocator: Allocator) !T {
-    return if (isZigProtobufManagedStruct(T))
+    return if (comptime isZigProtobufManagedStruct(T))
         try T.init(allocator)
     else
         pb_init(T, allocator);
 }
 
 fn getPointer(T: type, instance: *T) *getRootType(T) {
-    return if (isZigProtobufManagedStruct(T))
+    return if (comptime isZigProtobufManagedStruct(T))
         instance.getPointer()
     else
         instance;
 }
 
 fn getValue(T: type, instance: T) getRootType(T) {
-    return if (isZigProtobufManagedStruct(T))
+    return if (comptime isZigProtobufManagedStruct(T))
         instance.get()
     else
         instance;
@@ -1269,7 +1261,7 @@ fn parseStructField(
                     const child_type = @typeInfo(
                         fieldInfo.type.Slice,
                     ).pointer.child;
-                    var array_list = ArrayList(child_type).init(allocator);
+                    var array_list = std.ArrayList(child_type).init(allocator);
                     while (true) {
                         if (.array_end == try source.peekNextTokenType()) {
                             _ = try source.next();
@@ -1472,7 +1464,7 @@ fn print_bytes(value: anytype, jws: anytype) !void {
     try jsonValueStartAssumeTypeOk(jws);
     try jws.stream.writeByte('"');
 
-    var innerArrayList: *ArrayList(u8) = jws.stream.context;
+    var innerArrayList: *std.ArrayList(u8) = jws.stream.context;
     try innerArrayList.ensureTotalCapacity(innerArrayList.capacity + size + 1);
     const temp = innerArrayList.unusedCapacitySlice();
     _ = base64.standard.Encoder.encode(
@@ -1796,7 +1788,7 @@ pub fn MessageMixins(comptime Self: type) type {
 }
 
 test "get varint" {
-    var pb = ArrayList(u8).init(testing.allocator);
+    var pb = std.ArrayList(u8).init(testing.allocator);
     defer pb.deinit();
     try append_varint(&pb, @as(i32, 0x12c), .Simple);
     try append_varint(&pb, @as(i32, 0x0), .Simple);
@@ -1807,8 +1799,8 @@ test "get varint" {
     try testing.expectEqualSlices(u8, &[_]u8{ 0b10101100, 0b00000010, 0x0, 0x1, 0xA1, 0x1, 0xFF, 0x01 }, pb.items);
 }
 
-test "append_raw_varint" {
-    var pb = ArrayList(u8).init(testing.allocator);
+test append_raw_varint {
+    var pb = std.ArrayList(u8).init(testing.allocator);
     defer pb.deinit();
 
     try append_raw_varint(&pb, 3);
@@ -1836,7 +1828,7 @@ test "append_raw_varint" {
 }
 
 test "encode and decode multiple varints" {
-    var pb = ArrayList(u8).init(testing.allocator);
+    var pb = std.ArrayList(u8).init(testing.allocator);
     defer pb.deinit();
     const list = &[_]u64{ 0, 1, 2, 3, 199, 0xff, 0xfa, 1231313, 999288361, 0, 0xfffffff, 0x80808080, 0xffffffff };
 
@@ -1851,7 +1843,7 @@ test "encode and decode multiple varints" {
     try testing.expectEqual(demo.next(), null);
 }
 
-test "VarintDecoderIterator" {
+test VarintDecoderIterator {
     var demo = VarintDecoderIterator(u64, .Simple){ .input = "\x01\x02\x03\x04\xA1\x01" };
     try testing.expectEqual(demo.next(), 1);
     try testing.expectEqual(demo.next(), 2);
@@ -1873,7 +1865,7 @@ test "VarintDecoderIterator" {
 //     try testing.expectEqual(demo.next(), null);
 // }
 
-test "FixedDecoderIterator" {
+test FixedDecoderIterator {
     var demo = FixedDecoderIterator(i64){ .input = &[_]u8{ 133, 255, 255, 255, 255, 255, 255, 255 } };
     try testing.expectEqual(demo.next(), -123);
     try testing.expectEqual(demo.next(), null);
@@ -1882,7 +1874,7 @@ test "FixedDecoderIterator" {
 // length delimited message including a list of varints
 test "unit varint packed - decode - multi-byte-varint" {
     const bytes = &[_]u8{ 0x03, 0x8e, 0x02, 0x9e, 0xa7, 0x05 };
-    var list = ArrayList(u32).init(testing.allocator);
+    var list = std.ArrayList(u32).init(testing.allocator);
     defer list.deinit();
 
     try decode_packed_list(bytes, .{ .Varint = .Simple }, u32, &list, testing.allocator);
@@ -1917,7 +1909,7 @@ test "decode fixed" {
 }
 
 test "zigzag i32 - encode" {
-    var pb = ArrayList(u8).init(testing.allocator);
+    var pb = std.ArrayList(u8).init(testing.allocator);
     defer pb.deinit();
 
     const input = "\xE7\x07";
@@ -1938,7 +1930,7 @@ test "zigzag i32/i64 - decode" {
 }
 
 test "zigzag i64 - encode" {
-    var pb = ArrayList(u8).init(testing.allocator);
+    var pb = std.ArrayList(u8).init(testing.allocator);
     defer pb.deinit();
 
     const input = "\xE7\x07";
