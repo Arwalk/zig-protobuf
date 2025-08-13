@@ -29,8 +29,8 @@ pub const MapValueEnumNoBinary = enum(i32) {
 pub const Empty = struct {
     pub const _desc_table = .{};
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -83,8 +83,8 @@ pub const EnumContainer = struct {
         .outer_enum = fd(1, .{ .Varint = .Simple }),
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -141,8 +141,8 @@ pub const Simple1 = struct {
         .a_boolean = fd(3, .{ .Varint = .Simple }),
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -197,8 +197,8 @@ pub const Simple2 = struct {
         .a_repeated_string = fd(2, .{ .List = .String }),
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -257,8 +257,8 @@ pub const SpecialCases = struct {
         .@"var" = fd(4, .String),
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -326,8 +326,8 @@ pub const OptionalFields = struct {
             .an_int = fd(1, .{ .Varint = .Simple }),
         };
 
-        pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-            return protobuf.pb_encode(self, allocator);
+        pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+            return protobuf.pb_encode(writer, allocator, self);
         }
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
             return protobuf.pb_decode(@This(), input, allocator);
@@ -373,8 +373,8 @@ pub const OptionalFields = struct {
         }
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -431,8 +431,8 @@ pub const HasExtensions = struct {
         .str3 = fd(3, .String),
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -500,8 +500,8 @@ pub const Complex = struct {
             .an_int = fd(2, .{ .Varint = .Simple }),
         };
 
-        pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-            return protobuf.pb_encode(self, allocator);
+        pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+            return protobuf.pb_encode(writer, allocator, self);
         }
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
             return protobuf.pb_decode(@This(), input, allocator);
@@ -547,8 +547,8 @@ pub const Complex = struct {
         }
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -601,8 +601,8 @@ pub const IsExtension = struct {
         .ext1 = fd(1, .String),
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -651,8 +651,8 @@ pub const IsExtension = struct {
 pub const IndirectExtension = struct {
     pub const _desc_table = .{};
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -721,8 +721,8 @@ pub const DefaultValues = struct {
         _,
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -789,8 +789,8 @@ pub const FloatingPointFields = struct {
         .default_double_field = fd(8, .{ .FixedInt = .I64 }),
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -851,8 +851,8 @@ pub const TestClone = struct {
         .unused = fd(7, .String),
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -905,8 +905,8 @@ pub const CloneExtension = struct {
         .ext = fd(2, .String),
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -963,8 +963,8 @@ pub const TestGroup = struct {
         .optional_simple = fd(8, .{ .SubMessage = {} }),
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -1017,8 +1017,8 @@ pub const TestReservedNames = struct {
         .extension = fd(1, .{ .Varint = .Simple }),
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -1067,8 +1067,8 @@ pub const TestReservedNames = struct {
 pub const TestReservedNamesExtension = struct {
     pub const _desc_table = .{};
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -1183,8 +1183,8 @@ pub const TestMessageWithOneof = struct {
         .default_oneof_b = fd(null, .{ .OneOf = default_oneof_b_union }),
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -1239,8 +1239,8 @@ pub const TestEndsWithBytes = struct {
         .data = fd(2, .Bytes),
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -1324,8 +1324,8 @@ pub const TestMapFieldsNoBinary = struct {
             .value = fd(2, .String),
         };
 
-        pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-            return protobuf.pb_encode(self, allocator);
+        pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+            return protobuf.pb_encode(writer, allocator, self);
         }
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
             return protobuf.pb_decode(@This(), input, allocator);
@@ -1380,8 +1380,8 @@ pub const TestMapFieldsNoBinary = struct {
             .value = fd(2, .{ .Varint = .Simple }),
         };
 
-        pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-            return protobuf.pb_encode(self, allocator);
+        pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+            return protobuf.pb_encode(writer, allocator, self);
         }
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
             return protobuf.pb_decode(@This(), input, allocator);
@@ -1436,8 +1436,8 @@ pub const TestMapFieldsNoBinary = struct {
             .value = fd(2, .{ .Varint = .Simple }),
         };
 
-        pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-            return protobuf.pb_encode(self, allocator);
+        pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+            return protobuf.pb_encode(writer, allocator, self);
         }
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
             return protobuf.pb_decode(@This(), input, allocator);
@@ -1492,8 +1492,8 @@ pub const TestMapFieldsNoBinary = struct {
             .value = fd(2, .{ .Varint = .Simple }),
         };
 
-        pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-            return protobuf.pb_encode(self, allocator);
+        pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+            return protobuf.pb_encode(writer, allocator, self);
         }
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
             return protobuf.pb_decode(@This(), input, allocator);
@@ -1548,8 +1548,8 @@ pub const TestMapFieldsNoBinary = struct {
             .value = fd(2, .{ .FixedInt = .I64 }),
         };
 
-        pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-            return protobuf.pb_encode(self, allocator);
+        pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+            return protobuf.pb_encode(writer, allocator, self);
         }
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
             return protobuf.pb_decode(@This(), input, allocator);
@@ -1604,8 +1604,8 @@ pub const TestMapFieldsNoBinary = struct {
             .value = fd(2, .{ .Varint = .Simple }),
         };
 
-        pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-            return protobuf.pb_encode(self, allocator);
+        pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+            return protobuf.pb_encode(writer, allocator, self);
         }
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
             return protobuf.pb_decode(@This(), input, allocator);
@@ -1660,8 +1660,8 @@ pub const TestMapFieldsNoBinary = struct {
             .value = fd(2, .{ .SubMessage = {} }),
         };
 
-        pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-            return protobuf.pb_encode(self, allocator);
+        pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+            return protobuf.pb_encode(writer, allocator, self);
         }
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
             return protobuf.pb_decode(@This(), input, allocator);
@@ -1716,8 +1716,8 @@ pub const TestMapFieldsNoBinary = struct {
             .value = fd(2, .String),
         };
 
-        pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-            return protobuf.pb_encode(self, allocator);
+        pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+            return protobuf.pb_encode(writer, allocator, self);
         }
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
             return protobuf.pb_decode(@This(), input, allocator);
@@ -1772,8 +1772,8 @@ pub const TestMapFieldsNoBinary = struct {
             .value = fd(2, .String),
         };
 
-        pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-            return protobuf.pb_encode(self, allocator);
+        pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+            return protobuf.pb_encode(writer, allocator, self);
         }
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
             return protobuf.pb_decode(@This(), input, allocator);
@@ -1828,8 +1828,8 @@ pub const TestMapFieldsNoBinary = struct {
             .value = fd(2, .String),
         };
 
-        pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-            return protobuf.pb_encode(self, allocator);
+        pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+            return protobuf.pb_encode(writer, allocator, self);
         }
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
             return protobuf.pb_decode(@This(), input, allocator);
@@ -1884,8 +1884,8 @@ pub const TestMapFieldsNoBinary = struct {
             .value = fd(2, .{ .SubMessage = {} }),
         };
 
-        pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-            return protobuf.pb_encode(self, allocator);
+        pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+            return protobuf.pb_encode(writer, allocator, self);
         }
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
             return protobuf.pb_decode(@This(), input, allocator);
@@ -1931,8 +1931,8 @@ pub const TestMapFieldsNoBinary = struct {
         }
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -1985,8 +1985,8 @@ pub const MapValueMessageNoBinary = struct {
         .foo = fd(1, .{ .Varint = .Simple }),
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
@@ -2045,8 +2045,8 @@ pub const Deeply = struct {
                 .count = fd(1, .{ .Varint = .Simple }),
             };
 
-            pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-                return protobuf.pb_encode(self, allocator);
+            pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+                return protobuf.pb_encode(writer, allocator, self);
             }
             pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
                 return protobuf.pb_decode(@This(), input, allocator);
@@ -2092,8 +2092,8 @@ pub const Deeply = struct {
             }
         };
 
-        pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-            return protobuf.pb_encode(self, allocator);
+        pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+            return protobuf.pb_encode(writer, allocator, self);
         }
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
             return protobuf.pb_decode(@This(), input, allocator);
@@ -2139,8 +2139,8 @@ pub const Deeply = struct {
         }
     };
 
-    pub fn encode(self: @This(), allocator: Allocator) Allocator.Error![]u8 {
-        return protobuf.pb_encode(self, allocator);
+    pub fn encode(self: @This(), writer: std.io.AnyWriter, allocator: Allocator) (std.io.AnyWriter.Error || Allocator.Error)!void {
+        return protobuf.pb_encode(writer, allocator, self);
     }
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);

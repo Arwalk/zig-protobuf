@@ -65,8 +65,11 @@ test "LogsData proto issue #84" {
 
     try logsData.resource_logs.append(rl);
 
-    const bytes = try logsData.encode(std.testing.allocator); // <- compile error before
-    defer std.testing.allocator.free(bytes);
+    var bytes: std.ArrayListUnmanaged(u8) = .empty;
+    defer bytes.deinit(std.testing.allocator);
+    const w = bytes.writer(std.testing.allocator);
+
+    try logsData.encode(w.any(), std.testing.allocator); // <- compile error before
 }
 
 const SelfRefNode = selfref.SelfRefNode;
@@ -92,12 +95,16 @@ test "self ref test" {
     defer demo.deinit();
 
     try testing.expectEqual(@as(i32, 0), demo.version);
-    const encoded = try demo.encode(testing.allocator);
-    defer testing.allocator.free(encoded);
 
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0x02, 0x08, 0x01 }, encoded);
+    var encoded: std.ArrayListUnmanaged(u8) = .empty;
+    defer encoded.deinit(std.testing.allocator);
+    const w = encoded.writer(std.testing.allocator);
 
-    const decoded = try SelfRefNode.decode(encoded, testing.allocator);
+    try demo.encode(w.any(), std.testing.allocator);
+
+    try testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0x02, 0x08, 0x01 }, encoded.items);
+
+    const decoded = try SelfRefNode.decode(encoded.items, testing.allocator);
     defer decoded.deinit();
 
     try testing.expectEqual(@as(i32, 1), decoded.node.?.get().version);

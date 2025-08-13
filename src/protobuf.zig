@@ -255,33 +255,16 @@ pub fn fd(comptime field_number: ?u32, comptime ftype: FieldType) FieldDescripto
 
 // encoding
 
-/// Appends an unsigned varint value.
+/// Writes an unsigned varint value.
 /// Awaits a u64 value as it's the biggest unsigned varint possible,
 // so anything can be cast to it by definition
-fn append_raw_varint(pb: *std.ArrayList(u8), value: u64) Allocator.Error!void {
+fn writeRawVarint(writer: std.io.AnyWriter, value: u64) std.io.AnyWriter.Error!void {
     var copy = value;
     while (copy > 0x7F) {
-        try pb.append(0x80 + @as(u8, @intCast(copy & 0x7F)));
+        try writer.writeByte(0x80 + @as(u8, @intCast(copy & 0x7F)));
         copy = copy >> 7;
     }
-    try pb.append(@as(u8, @intCast(copy & 0x7F)));
-}
-
-/// Inserts a varint into the pb at start_index
-/// Mostly useful when inserting the size of a field after it has been
-/// Appended to the pb buffer.
-fn insert_raw_varint(pb: *std.ArrayList(u8), size: u64, start_index: usize) Allocator.Error!void {
-    if (size < 0x7F) {
-        try pb.insert(start_index, @as(u8, @truncate(size)));
-    } else {
-        var copy = size;
-        var index = start_index;
-        while (copy > 0x7F) : (index += 1) {
-            try pb.insert(index, 0x80 + @as(u8, @intCast(copy & 0x7F)));
-            copy = copy >> 7;
-        }
-        try pb.insert(index, @as(u8, @intCast(copy & 0x7F)));
-    }
+    try writer.writeByte(@as(u8, @intCast(copy & 0x7F)));
 }
 
 fn encode_zig_zag(int: anytype) u64 {
@@ -309,10 +292,14 @@ test "encode zig zag test" {
     try testing.expectEqual(@as(u64, 0xffffffffffffffff), encode_zig_zag(@as(i64, std.math.minInt(i64))));
 }
 
-/// Appends a varint to the pb array.
-/// Mostly does the required transformations to use append_raw_varint
+/// Writes a varint.
+/// Mostly does the required transformations to use writeRawVarint
 /// after making the value some kind of unsigned value.
-fn append_as_varint(pb: *std.ArrayList(u8), int: anytype, comptime varint_type: VarintType) Allocator.Error!void {
+fn writeAsVarint(
+    writer: std.io.AnyWriter,
+    int: anytype,
+    comptime varint_type: VarintType,
+) std.io.AnyWriter.Error!void {
     const type_of_val = @TypeOf(int);
     const val: u64 = blk: {
         switch (@typeInfo(type_of_val).int.signedness) {
@@ -330,23 +317,23 @@ fn append_as_varint(pb: *std.ArrayList(u8), int: anytype, comptime varint_type: 
         }
     };
 
-    try append_raw_varint(pb, val);
+    try writeRawVarint(writer, val);
 }
 
-/// Append a value of any complex type that can be transfered as a varint
+/// Write a value of any complex type that can be transfered as a varint
 /// Only serves as an indirection to manage Enum and Booleans properly.
-fn append_varint(pb: *std.ArrayList(u8), value: anytype, comptime varint_type: VarintType) Allocator.Error!void {
+fn writeVarint(writer: std.io.AnyWriter, value: anytype, comptime varint_type: VarintType) std.io.AnyWriter.Error!void {
     switch (@typeInfo(@TypeOf(value))) {
-        .@"enum" => try append_as_varint(pb, @as(i32, @intFromEnum(value)), varint_type),
-        .bool => try append_as_varint(pb, @as(u8, if (value) 1 else 0), varint_type),
-        .int => try append_as_varint(pb, value, varint_type),
+        .@"enum" => try writeAsVarint(writer, @as(i32, @intFromEnum(value)), varint_type),
+        .bool => try writeAsVarint(writer, @as(u8, if (value) 1 else 0), varint_type),
+        .int => try writeAsVarint(writer, value, varint_type),
         else => @compileError("Should not pass a value of type " ++ @typeInfo(@TypeOf(value)) ++ "here"),
     }
 }
 
-/// Appends a fixed size int to the pb buffer.
+/// Writes a fixed size int.
 /// Takes care of casting any signed/float value to an appropriate unsigned type
-fn append_fixed(pb: *std.ArrayList(u8), value: anytype) Allocator.Error!void {
+fn writeFixed(writer: std.io.AnyWriter, value: anytype) std.io.AnyWriter.Error!void {
     const bitsize = @bitSizeOf(@TypeOf(value));
 
     var as_unsigned_int = switch (@TypeOf(value)) {
@@ -358,93 +345,141 @@ fn append_fixed(pb: *std.ArrayList(u8), value: anytype) Allocator.Error!void {
     var index: usize = 0;
 
     while (index < (bitsize / 8)) : (index += 1) {
-        try pb.append(@as(u8, @truncate(as_unsigned_int)));
+        try writer.writeByte(@as(u8, @truncate(as_unsigned_int)));
         as_unsigned_int = as_unsigned_int >> 8;
     }
 }
 
-/// Appends a submessage to the array.
-/// Recursively calls internal_pb_encode.
-fn append_submessage(pb: *std.ArrayList(u8), value: anytype) Allocator.Error!void {
-    const len_index = pb.items.len;
-    try internal_pb_encode(pb, value);
-    const size_encoded = pb.items.len - len_index;
-    try insert_raw_varint(pb, size_encoded, len_index);
+/// Writes a submessage.
+/// Recursively calls pb_encode.
+fn writeSubmessage(
+    writer: std.io.AnyWriter,
+    allocator: std.mem.Allocator,
+    value: anytype,
+) (std.mem.Allocator.Error || std.io.AnyWriter.Error)!void {
+    // TODO: Better handle calculating submessage size before write, or use
+    // fixed-sized buffer.
+    var temp_buffer: std.ArrayListUnmanaged(u8) = .empty;
+    defer temp_buffer.deinit(allocator);
+    const w = temp_buffer.writer(allocator);
+    try pb_encode(w.any(), allocator, value);
+    const size_encoded: u64 = temp_buffer.items.len;
+    try writeRawVarint(writer, size_encoded);
+    try writer.writeAll(temp_buffer.items);
 }
 
-/// Simple appending of a list of bytes.
-fn append_const_bytes(pb: *std.ArrayList(u8), value: ManagedString) Allocator.Error!void {
-    const slice = value.getSlice();
-    try append_as_varint(pb, slice.len, .Simple);
-    try pb.appendSlice(slice);
-}
-
-/// simple appending of a list of fixed-size data.
-fn append_packed_list_of_fixed(pb: *std.ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) Allocator.Error!void {
+/// simple writing of a list of fixed-size data.
+fn writePackedFixedList(
+    writer: std.io.AnyWriter,
+    allocator: std.mem.Allocator,
+    comptime field: FieldDescriptor,
+    value_list: anytype,
+) std.io.AnyWriter.Error!void {
     if (value_list.items.len > 0) {
         // first append the tag for the field descriptor
-        try append_tag(pb, field);
+        try writeTag(writer, field);
 
-        // then write elements
-        const len_index = pb.items.len;
+        var temp_buffer: std.ArrayListUnmanaged(u8) = .empty;
+        defer temp_buffer.deinit(allocator);
+        const w = temp_buffer.writer(allocator);
+
+        // write elements to temporary buffer to calculate write size
         for (value_list.items) |item| {
-            try append_fixed(pb, item);
+            try writeFixed(w.any(), item);
         }
 
-        // and finally prepend the LEN size in the len_index position
-        const size_encoded = pb.items.len - len_index;
-        try insert_raw_varint(pb, size_encoded, len_index);
+        // and finally write the LEN size in the len_index position, followed
+        // by the bytes in the temporary buffer
+        const size_encoded: u64 = temp_buffer.items.len;
+        try writeRawVarint(writer, size_encoded);
+        try writer.writeAll(temp_buffer.items);
     }
 }
 
-/// Appends a list of varint to the pb buffer.
-fn append_packed_list_of_varint(pb: *std.ArrayList(u8), value_list: anytype, comptime field: FieldDescriptor, comptime varint_type: VarintType) Allocator.Error!void {
+/// Writes a list of varint.
+fn writePackedVarintList(
+    writer: std.io.AnyWriter,
+    allocator: std.mem.Allocator,
+    value_list: anytype,
+    comptime field: FieldDescriptor,
+    comptime varint_type: VarintType,
+) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
     if (value_list.items.len > 0) {
-        try append_tag(pb, field);
-        const len_index = pb.items.len;
+        try writeTag(writer, field);
+
+        var temp_buffer: std.ArrayListUnmanaged(u8) = .empty;
+        defer temp_buffer.deinit(allocator);
+
+        const w = temp_buffer.writer(allocator);
+
         for (value_list.items) |item| {
-            try append_varint(pb, item, varint_type);
+            try writeVarint(w.any(), item, varint_type);
         }
-        const size_encoded = pb.items.len - len_index;
-        try insert_raw_varint(pb, size_encoded, len_index);
+
+        const size_encoded: u64 = temp_buffer.items.len;
+        try writeRawVarint(writer, size_encoded);
+        try writer.writeAll(temp_buffer.items);
     }
 }
 
-/// Appends a list of submessages to the pb_buffer. Sequentially, prepending the tag of each message.
-fn append_list_of_submessages(pb: *std.ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) Allocator.Error!void {
+/// Writes a list of submessages. Sequentially, prepending the tag of each message.
+fn writeSubmessageList(
+    writer: std.io.AnyWriter,
+    allocator: std.mem.Allocator,
+    comptime field: FieldDescriptor,
+    value_list: anytype,
+) (Allocator.Error || std.io.AnyWriter.Error)!void {
     for (value_list.items) |item| {
-        try append_tag(pb, field);
-        try append_submessage(pb, item);
+        try writeTag(writer, field);
+        try writeSubmessage(writer, allocator, item);
     }
 }
 
-/// Appends a packed list of string to the pb_buffer.
-fn append_packed_list_of_strings(pb: *std.ArrayList(u8), comptime field: FieldDescriptor, value_list: anytype) Allocator.Error!void {
+/// Writes a packed list of strings.
+fn writePackedStringList(
+    writer: std.io.AnyWriter,
+    allocator: std.mem.Allocator,
+    comptime field: FieldDescriptor,
+    value_list: anytype,
+) std.io.AnyWriter!void {
     if (value_list.items.len > 0) {
-        try append_tag(pb, field);
+        try writeTag(writer, field);
 
-        const len_index = pb.items.len;
+        var temp_buffer: std.ArrayListUnmanaged(u8) = .empty;
+        defer temp_buffer.deinit(allocator);
+
+        const w = temp_buffer.writer(allocator);
+
         for (value_list.items) |item| {
-            try append_const_bytes(pb, item);
+            try writeRawVarint(w.any(), item.getSlice().len);
+            try w.writeAll(item.getSlice());
         }
-        const size_encoded = pb.items.len - len_index;
-        try insert_raw_varint(pb, size_encoded, len_index);
+
+        const size_encoded: u64 = temp_buffer.items.len;
+        try writeRawVarint(writer, size_encoded);
+        try writer.writeAll(temp_buffer.items);
     }
 }
 
-/// Appends the full tag of the field in the pb buffer, if there is any.
-fn append_tag(pb: *std.ArrayList(u8), comptime field: FieldDescriptor) Allocator.Error!void {
+/// Writes the full tag of the field, if there is any.
+fn writeTag(writer: std.io.AnyWriter, comptime field: FieldDescriptor) std.io.AnyWriter.Error!void {
     const tag_value = (field.field_number.? << 3) | field.ftype.get_wirevalue();
-    try append_varint(pb, tag_value, .Simple);
+    try writeVarint(writer, tag_value, .Simple);
 }
 
-/// Appends a value to the pb buffer. Starts by appending the tag, then a comptime switch
-/// routes the code to the correct type of data to append.
+/// Write a value. Starts by writing the tag, then a comptime switch
+/// routes the code to the correct type of data to write.
 ///
-/// force_append is set to true if the field needs to be appended regardless of having the default value.
+/// force_append is set to true if the field needs to be written regardless of having the default value.
 ///   it is used when an optional int/bool with value zero need to be encoded. usually value==0 are not written, but optionals
 ///   require its presence to differentiate 0 from "null"
-fn append(pb: *std.ArrayList(u8), comptime field: FieldDescriptor, value: anytype, comptime force_append: bool) Allocator.Error!void {
+fn writeValue(
+    writer: std.io.AnyWriter,
+    allocator: std.mem.Allocator,
+    comptime field: FieldDescriptor,
+    value: anytype,
+    comptime force_append: bool,
+) std.io.AnyWriter.Error!void {
 
     // TODO: review semantics of default-value in regards to wire protocol
     const is_default_scalar_value = switch (@typeInfo(@TypeOf(value))) {
@@ -462,39 +497,40 @@ fn append(pb: *std.ArrayList(u8), comptime field: FieldDescriptor, value: anytyp
     switch (field.ftype) {
         .Varint => |varint_type| {
             if (!is_default_scalar_value or force_append) {
-                try append_tag(pb, field);
-                try append_varint(pb, value, varint_type);
+                try writeTag(writer, field);
+                try writeVarint(writer, value, varint_type);
             }
         },
         .FixedInt => {
             if (!is_default_scalar_value or force_append) {
-                try append_tag(pb, field);
-                try append_fixed(pb, value);
+                try writeTag(writer, field);
+                try writeFixed(writer, value);
             }
         },
         .SubMessage => {
             if (!is_default_scalar_value or force_append) {
-                try append_tag(pb, field);
-                try append_submessage(pb, value);
+                try writeTag(writer, field);
+                try writeSubmessage(writer, allocator, value);
             }
         },
         .String, .Bytes => {
             if (!is_default_scalar_value or force_append) {
-                try append_tag(pb, field);
-                try append_const_bytes(pb, value);
+                try writeTag(writer, field);
+                try writeRawVarint(writer, value.getSlice().len);
+                try writer.writeAll(value.getSlice());
             }
         },
         .PackedList => |list_type| {
             switch (list_type) {
                 .FixedInt => {
-                    try append_packed_list_of_fixed(pb, field, value);
+                    try writePackedFixedList(writer, allocator, field, value);
                 },
                 .Varint => |varint_type| {
-                    try append_packed_list_of_varint(pb, value, field, varint_type);
+                    try writePackedVarintList(writer, allocator, value, field, varint_type);
                 },
                 .String, .Bytes => |varint_type| {
                     // TODO: find examples about how to encode and decode packed strings. the documentation is ambiguous
-                    try append_packed_list_of_strings(pb, value, varint_type);
+                    try writePackedStringList(writer, allocator, value, varint_type);
                 },
                 .SubMessage => @compileError("submessages are not suitable for PackedLists."),
             }
@@ -503,23 +539,24 @@ fn append(pb: *std.ArrayList(u8), comptime field: FieldDescriptor, value: anytyp
             switch (list_type) {
                 .FixedInt => {
                     for (value.items) |item| {
-                        try append_tag(pb, field);
-                        try append_fixed(pb, item);
+                        try writeTag(writer, field);
+                        try writeFixed(writer, item);
                     }
                 },
                 .SubMessage => {
-                    try append_list_of_submessages(pb, field, value);
+                    try writeSubmessageList(writer, allocator, field, value);
                 },
                 .String, .Bytes => {
                     for (value.items) |item| {
-                        try append_tag(pb, field);
-                        try append_const_bytes(pb, item);
+                        try writeTag(writer, field);
+                        try writeRawVarint(writer, item.getSlice().len);
+                        try writer.writeAll(item.getSlice());
                     }
                 },
                 .Varint => |varint_type| {
                     for (value.items) |item| {
-                        try append_tag(pb, field);
-                        try append_varint(pb, item, varint_type);
+                        try writeTag(writer, field);
+                        try writeVarint(writer, item, varint_type);
                     }
                 },
             }
@@ -529,16 +566,25 @@ fn append(pb: *std.ArrayList(u8), comptime field: FieldDescriptor, value: anytyp
             const active_union_tag = @tagName(value);
             inline for (@typeInfo(@TypeOf(union_type._union_desc)).@"struct".fields) |union_field| {
                 if (std.mem.eql(u8, union_field.name, active_union_tag)) {
-                    try append(pb, @field(union_type._union_desc, union_field.name), @field(value, union_field.name), force_append);
+                    try writeValue(
+                        writer,
+                        allocator,
+                        @field(union_type._union_desc, union_field.name),
+                        @field(value, union_field.name),
+                        force_append,
+                    );
                 }
             }
         },
     }
 }
 
-/// Internal function that decodes the descriptor information and struct fields
-/// before passing them to the append function
-fn internal_pb_encode(pb: *std.ArrayList(u8), data: anytype) Allocator.Error!void {
+/// Public encoding function, meant to be embedded in generated structs
+pub fn pb_encode(
+    writer: std.io.AnyWriter,
+    allocator: std.mem.Allocator,
+    data: anytype,
+) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
     const Data = if (comptime isZigProtobufManagedStruct(@TypeOf(data)))
         @typeInfo(@TypeOf(data.Borrowed)).pointer.child
     else
@@ -547,23 +593,13 @@ fn internal_pb_encode(pb: *std.ArrayList(u8), data: anytype) Allocator.Error!voi
         if (comptime @typeInfo(field.type) == .optional) {
             const temp = getValue(@TypeOf(data), data);
             if (@field(temp, field.name)) |value| {
-                try append(pb, @field(Data._desc_table, field.name), value, true);
+                try writeValue(writer, allocator, @field(Data._desc_table, field.name), value, true);
             }
         } else {
             const value = getValue(@TypeOf(data), data);
-            try append(pb, @field(Data._desc_table, field.name), @field(value, field.name), false);
+            try writeValue(writer, allocator, @field(Data._desc_table, field.name), @field(value, field.name), false);
         }
     }
-}
-
-/// Public encoding function, meant to be embedded in generated structs
-pub fn pb_encode(data: anytype, allocator: std.mem.Allocator) Allocator.Error![]u8 {
-    var pb = std.ArrayList(u8).init(allocator);
-    errdefer pb.deinit();
-
-    try internal_pb_encode(&pb, data);
-
-    return pb.toOwnedSlice();
 }
 
 fn get_field_default_value(comptime for_type: anytype) for_type {
@@ -1739,8 +1775,12 @@ pub fn pb_jsonStringify(Self: type, self: *const Self, jws: anytype) !void {
 
 pub fn MessageMixins(comptime Self: type) type {
     return struct {
-        pub fn encode(self: Self, allocator: Allocator) Allocator.Error![]u8 {
-            return pb_encode(self, allocator);
+        pub fn encode(
+            self: Self,
+            writer: std.io.AnyWriter,
+            allocator: std.mem.Allocator,
+        ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+            return pb_encode(writer, allocator, self);
         }
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!Self {
             return pb_decode(Self, input, allocator);
@@ -1788,31 +1828,36 @@ pub fn MessageMixins(comptime Self: type) type {
 }
 
 test "get varint" {
-    var pb = std.ArrayList(u8).init(testing.allocator);
-    defer pb.deinit();
-    try append_varint(&pb, @as(i32, 0x12c), .Simple);
-    try append_varint(&pb, @as(i32, 0x0), .Simple);
-    try append_varint(&pb, @as(i32, 0x1), .Simple);
-    try append_varint(&pb, @as(i32, 0xA1), .Simple);
-    try append_varint(&pb, @as(i32, 0xFF), .Simple);
+    var pb: std.ArrayListUnmanaged(u8) = .empty;
+    defer pb.deinit(std.testing.allocator);
+
+    const w = pb.writer(std.testing.allocator);
+
+    try writeVarint(w.any(), @as(i32, 0x12c), .Simple);
+    try writeVarint(w.any(), @as(i32, 0x0), .Simple);
+    try writeVarint(w.any(), @as(i32, 0x1), .Simple);
+    try writeVarint(w.any(), @as(i32, 0xA1), .Simple);
+    try writeVarint(w.any(), @as(i32, 0xFF), .Simple);
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0b10101100, 0b00000010, 0x0, 0x1, 0xA1, 0x1, 0xFF, 0x01 }, pb.items);
 }
 
-test append_raw_varint {
-    var pb = std.ArrayList(u8).init(testing.allocator);
-    defer pb.deinit();
+test writeRawVarint {
+    var pb: std.ArrayListUnmanaged(u8) = .empty;
+    defer pb.deinit(std.testing.allocator);
 
-    try append_raw_varint(&pb, 3);
+    var w = pb.writer(std.testing.allocator);
+
+    try writeRawVarint(w.any(), 3);
 
     try testing.expectEqualSlices(u8, &[_]u8{0x03}, pb.items);
-    try append_raw_varint(&pb, 1);
+    try writeRawVarint(w.any(), 1);
     try testing.expectEqualSlices(u8, &[_]u8{ 0x3, 0x1 }, pb.items);
-    try append_raw_varint(&pb, 0);
+    try writeRawVarint(w.any(), 0);
     try testing.expectEqualSlices(u8, &[_]u8{ 0x3, 0x1, 0x0 }, pb.items);
-    try append_raw_varint(&pb, 0x80);
+    try writeRawVarint(w.any(), 0x80);
     try testing.expectEqualSlices(u8, &[_]u8{ 0x3, 0x1, 0x0, 0x80, 0x1 }, pb.items);
-    try append_raw_varint(&pb, 0xffffffff);
+    try writeRawVarint(w.any(), 0xffffffff);
     try testing.expectEqualSlices(u8, &[_]u8{
         0x3,
         0x1,
@@ -1828,12 +1873,15 @@ test append_raw_varint {
 }
 
 test "encode and decode multiple varints" {
-    var pb = std.ArrayList(u8).init(testing.allocator);
-    defer pb.deinit();
+    var pb: std.ArrayListUnmanaged(u8) = .empty;
+    defer pb.deinit(std.testing.allocator);
+
+    const w = pb.writer(std.testing.allocator);
+
     const list = &[_]u64{ 0, 1, 2, 3, 199, 0xff, 0xfa, 1231313, 999288361, 0, 0xfffffff, 0x80808080, 0xffffffff };
 
     for (list) |num|
-        try append_varint(&pb, num, .Simple);
+        try writeVarint(w.any(), num, .Simple);
 
     var demo = VarintDecoderIterator(u64, .Simple){ .input = pb.items };
 
@@ -1909,14 +1957,16 @@ test "decode fixed" {
 }
 
 test "zigzag i32 - encode" {
-    var pb = std.ArrayList(u8).init(testing.allocator);
-    defer pb.deinit();
+    var pb: std.ArrayListUnmanaged(u8) = .empty;
+    defer pb.deinit(std.testing.allocator);
+
+    const w = pb.writer(std.testing.allocator);
 
     const input = "\xE7\x07";
 
     // -500 (.ZigZag)  encodes to {0xE7,0x07} which equals to 999 (.Simple)
 
-    try append_as_varint(&pb, @as(i32, -500), .ZigZagOptimized);
+    try writeAsVarint(w.any(), @as(i32, -500), .ZigZagOptimized);
     try testing.expectEqualSlices(u8, input, pb.items);
 }
 
@@ -1930,14 +1980,16 @@ test "zigzag i32/i64 - decode" {
 }
 
 test "zigzag i64 - encode" {
-    var pb = std.ArrayList(u8).init(testing.allocator);
-    defer pb.deinit();
+    var pb: std.ArrayListUnmanaged(u8) = .empty;
+    defer pb.deinit(std.testing.allocator);
+
+    const w = pb.writer(std.testing.allocator);
 
     const input = "\xE7\x07";
 
     // -500 (.ZigZag)  encodes to {0xE7,0x07} which equals to 999 (.Simple)
 
-    try append_as_varint(&pb, @as(i64, -500), .ZigZagOptimized);
+    try writeAsVarint(w.any(), @as(i64, -500), .ZigZagOptimized);
     try testing.expectEqualSlices(u8, input, pb.items);
 }
 
