@@ -19,8 +19,11 @@ test "leak in allocated string" {
     // release the allocated string immediately
     testing.allocator.free(allocated);
 
-    const obtained = try demo.encode(testing.allocator);
-    defer testing.allocator.free(obtained);
+    var obtained: std.ArrayListUnmanaged(u8) = .empty;
+    defer obtained.deinit(std.testing.allocator);
+    const w = obtained.writer(std.testing.allocator);
+
+    try demo.encode(w.any(), std.testing.allocator);
 
     try testing.expectEqualSlices(u8, "asd", demo.field.?.field.getSlice());
 }
@@ -34,9 +37,12 @@ test "leak in list of allocated bytes" {
         .byte_field = my_bytes,
     };
 
-    const buffer = try msg.encode(testing.allocator);
-    defer testing.allocator.free(buffer);
+    var buffer: std.ArrayListUnmanaged(u8) = .empty;
+    defer buffer.deinit(std.testing.allocator);
+    const w = buffer.writer(std.testing.allocator);
 
-    const msg_copy = try tests.WithRepeatedBytes.decode(buffer, testing.allocator);
+    try msg.encode(w.any(), std.testing.allocator);
+
+    const msg_copy = try tests.WithRepeatedBytes.decode(buffer.items, testing.allocator);
     msg_copy.deinit();
 }
