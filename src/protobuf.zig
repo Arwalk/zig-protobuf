@@ -536,14 +536,39 @@ fn dupe_field(
             return list;
         },
         .String, .Bytes => {
-            const Field = comptime @TypeOf(@field(original, field_name));
+            const Original = @TypeOf(original);
+            const Field = comptime @FieldType(Original, field_name);
             const field_ti = comptime @typeInfo(Field);
             if (comptime Field == []const u8) {
+                if (comptime @typeInfo(Original) == .@"struct") {
+                    const field_info = std.meta.fieldInfo(
+                        Original,
+                        @field(std.meta.FieldEnum(Original), field_name),
+                    );
+                    if (comptime field_info.defaultValue()) |val| {
+                        if (val.ptr == @field(original, field_name).ptr) {
+                            return val;
+                        }
+                    }
+                }
                 return try allocator.dupe(u8, @field(original, field_name));
             } else switch (comptime field_ti) {
                 .optional => |o| {
                     if (@field(original, field_name)) |val| {
                         if (comptime o.child == []const u8) {
+                            if (comptime @typeInfo(Original) == .@"struct") {
+                                const field_info = std.meta.fieldInfo(
+                                    Original,
+                                    @field(std.meta.FieldEnum(Original), field_name),
+                                );
+                                if (comptime field_info.defaultValue()) |default_opt| {
+                                    if (comptime default_opt) |default| {
+                                        if (default.ptr == val.ptr) {
+                                            return default;
+                                        }
+                                    }
+                                }
+                            }
                             return try allocator.dupe(u8, val);
                         } else {
                             @compileError(std.fmt.comptimePrint(
