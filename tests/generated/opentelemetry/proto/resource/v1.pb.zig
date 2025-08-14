@@ -8,7 +8,7 @@ const fd = protobuf.fd;
 const opentelemetry_proto_common_v1 = @import("../common/v1.pb.zig");
 
 pub const Resource = struct {
-    attributes: std.ArrayList(opentelemetry_proto_common_v1.KeyValue),
+    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue),
     dropped_attributes_count: u32 = 0,
 
     pub const _desc_table = .{
@@ -32,7 +32,7 @@ pub const Resource = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {

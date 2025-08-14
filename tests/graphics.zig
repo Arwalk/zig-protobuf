@@ -7,7 +7,7 @@ const binary_file = @embedFile("./fixtures/graphics.bin");
 
 test "GraphicsDB" {
     // first decode the binary
-    const decoded = try graphics.GraphicsDB.decode(binary_file, testing.allocator);
+    var decoded = try graphics.GraphicsDB.decode(binary_file, testing.allocator);
 
     // then encode it
     var encoded: std.ArrayListUnmanaged(u8) = .empty;
@@ -16,7 +16,7 @@ test "GraphicsDB" {
     try decoded.encode(w.any(), std.testing.allocator);
 
     // dupe the decoded
-    const decoded_dupe = try decoded.dupe(testing.allocator);
+    var decoded_dupe = try decoded.dupe(testing.allocator);
     defer decoded_dupe.deinit(std.testing.allocator);
 
     {
@@ -30,7 +30,7 @@ test "GraphicsDB" {
     }
 
     // then re-decode it
-    const decoded2 = try graphics.GraphicsDB.decode(encoded.items, testing.allocator);
+    var decoded2 = try graphics.GraphicsDB.decode(encoded.items, testing.allocator);
     defer decoded2.deinit(std.testing.allocator);
 
     // finally assert equal objects

@@ -23,7 +23,7 @@ test "empty string in optional fields must be serialized over the wire" {
     try testing.expectEqualSlices(u8, "", encodedNull.items);
 
     // decoded must be null as well
-    const decodedNull = try jspb.TestClone.decode("", testing.allocator);
+    var decodedNull = try jspb.TestClone.decode("", testing.allocator);
     defer decodedNull.deinit(std.testing.allocator);
     try testing.expect(decodedNull.str == null);
 
@@ -39,7 +39,7 @@ test "empty string in optional fields must be serialized over the wire" {
     try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x00 }, encodedEmpty.items);
 
     // decoded must be null as well
-    const decodedEmpty = try jspb.TestClone.decode(encodedEmpty.items, testing.allocator);
+    var decodedEmpty = try jspb.TestClone.decode(encodedEmpty.items, testing.allocator);
     defer decodedEmpty.deinit(std.testing.allocator);
     try testing.expect(decodedEmpty.str.?.len == 0);
 }
@@ -52,7 +52,7 @@ test "unittest.proto parse and re-encode" {
         "\x31\x36\x83\x01\x88\x01\x75\x84\x01";
 
     // first decode the binary
-    const decoded = try unittest.TestAllTypes.decode(binary_file, testing.allocator);
+    var decoded = try unittest.TestAllTypes.decode(binary_file, testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try assert(decoded);
@@ -65,7 +65,7 @@ test "unittest.proto parse and re-encode" {
     try decoded.encode(w.any(), testing.allocator);
 
     // then re-decode it
-    const decoded2 = try unittest.TestAllTypes.decode(encoded.items, testing.allocator);
+    var decoded2 = try unittest.TestAllTypes.decode(encoded.items, testing.allocator);
     defer decoded2.deinit(std.testing.allocator);
 
     var encoded2: std.ArrayListUnmanaged(u8) = .empty;

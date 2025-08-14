@@ -37,7 +37,7 @@ pub const Message = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -91,7 +91,7 @@ pub const OneofContainer = struct {
         message_in_oneof: Message,
         a_number: i32,
         enum_value: Enum,
-        pub const _union_desc = .{
+        pub const _desc_table = .{
             .string_in_oneof = fd(1, .String),
             .message_in_oneof = fd(2, .{ .SubMessage = {} }),
             .a_number = fd(3, .{ .Varint = .Simple }),
@@ -121,7 +121,7 @@ pub const OneofContainer = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {

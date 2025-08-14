@@ -166,29 +166,29 @@ pub const TestAllTypes = struct {
     optional_string_piece: ?[]const u8 = null,
     optional_cord: ?[]const u8 = null,
     optional_lazy_message: ?TestAllTypes.NestedMessage = null,
-    repeated_int32: std.ArrayList(i32),
-    repeated_int64: std.ArrayList(i64),
-    repeated_uint32: std.ArrayList(u32),
-    repeated_uint64: std.ArrayList(u64),
-    repeated_sint32: std.ArrayList(i32),
-    repeated_sint64: std.ArrayList(i64),
-    repeated_fixed32: std.ArrayList(u32),
-    repeated_fixed64: std.ArrayList(u64),
-    repeated_sfixed32: std.ArrayList(i32),
-    repeated_sfixed64: std.ArrayList(i64),
-    repeated_float: std.ArrayList(f32),
-    repeated_double: std.ArrayList(f64),
-    repeated_bool: std.ArrayList(bool),
-    repeated_string: std.ArrayList([]const u8),
-    repeated_bytes: std.ArrayList([]const u8),
-    RepeatedGroup_a: std.ArrayList(i32),
-    repeated_nested_message: std.ArrayList(TestAllTypes.NestedMessage),
-    repeated_foreign_message: std.ArrayList(ForeignMessage),
-    repeated_nested_enum: std.ArrayList(TestAllTypes.NestedEnum),
-    repeated_foreign_enum: std.ArrayList(ForeignEnum),
-    repeated_string_piece: std.ArrayList([]const u8),
-    repeated_cord: std.ArrayList([]const u8),
-    repeated_lazy_message: std.ArrayList(TestAllTypes.NestedMessage),
+    repeated_int32: std.ArrayListUnmanaged(i32),
+    repeated_int64: std.ArrayListUnmanaged(i64),
+    repeated_uint32: std.ArrayListUnmanaged(u32),
+    repeated_uint64: std.ArrayListUnmanaged(u64),
+    repeated_sint32: std.ArrayListUnmanaged(i32),
+    repeated_sint64: std.ArrayListUnmanaged(i64),
+    repeated_fixed32: std.ArrayListUnmanaged(u32),
+    repeated_fixed64: std.ArrayListUnmanaged(u64),
+    repeated_sfixed32: std.ArrayListUnmanaged(i32),
+    repeated_sfixed64: std.ArrayListUnmanaged(i64),
+    repeated_float: std.ArrayListUnmanaged(f32),
+    repeated_double: std.ArrayListUnmanaged(f64),
+    repeated_bool: std.ArrayListUnmanaged(bool),
+    repeated_string: std.ArrayListUnmanaged([]const u8),
+    repeated_bytes: std.ArrayListUnmanaged([]const u8),
+    RepeatedGroup_a: std.ArrayListUnmanaged(i32),
+    repeated_nested_message: std.ArrayListUnmanaged(TestAllTypes.NestedMessage),
+    repeated_foreign_message: std.ArrayListUnmanaged(ForeignMessage),
+    repeated_nested_enum: std.ArrayListUnmanaged(TestAllTypes.NestedEnum),
+    repeated_foreign_enum: std.ArrayListUnmanaged(ForeignEnum),
+    repeated_string_piece: std.ArrayListUnmanaged([]const u8),
+    repeated_cord: std.ArrayListUnmanaged([]const u8),
+    repeated_lazy_message: std.ArrayListUnmanaged(TestAllTypes.NestedMessage),
     default_int32: ?i32 = 41,
     default_int64: ?i64 = 42,
     default_uint32: ?u32 = 43,
@@ -221,7 +221,7 @@ pub const TestAllTypes = struct {
         oneof_nested_message: TestAllTypes.NestedMessage,
         oneof_string: []const u8,
         oneof_bytes: []const u8,
-        pub const _union_desc = .{
+        pub const _desc_table = .{
             .oneof_uint32 = fd(111, .{ .Varint = .Simple }),
             .oneof_nested_message = fd(112, .{ .SubMessage = {} }),
             .oneof_string = fd(113, .String),
@@ -329,7 +329,7 @@ pub const TestAllTypes = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -383,7 +383,7 @@ pub const TestAllTypes = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -424,7 +424,7 @@ pub const TestAllTypes = struct {
 pub const NestedTestAllTypes = struct {
     child: ?*NestedTestAllTypes = null,
     payload: ?TestAllTypes = null,
-    repeated_child: std.ArrayList(NestedTestAllTypes),
+    repeated_child: std.ArrayListUnmanaged(NestedTestAllTypes),
     lazy_child: ?*NestedTestAllTypes = null,
     eager_child: ?TestAllTypes = null,
 
@@ -452,7 +452,7 @@ pub const NestedTestAllTypes = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -515,7 +515,7 @@ pub const TestDeprecatedFields = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -572,7 +572,7 @@ pub const TestDeprecatedMessage = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -635,7 +635,7 @@ pub const ForeignMessage = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -692,7 +692,7 @@ pub const TestReservedFields = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -749,7 +749,7 @@ pub const TestAllExtensions = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -812,7 +812,7 @@ pub const TestGroup = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -869,7 +869,7 @@ pub const TestGroupExtension = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -926,7 +926,7 @@ pub const TestNestedExtension = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -991,7 +991,7 @@ pub const TestChildExtension = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1072,7 +1072,7 @@ pub const TestChildExtensionData = struct {
             pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
                 return protobuf.pb_init(@This(), allocator);
             }
-            pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+            pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
                 return protobuf.pb_deinit(allocator, self);
             }
             pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1126,7 +1126,7 @@ pub const TestChildExtensionData = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1180,7 +1180,7 @@ pub const TestChildExtensionData = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1243,7 +1243,7 @@ pub const TestNestedChildExtension = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1306,7 +1306,7 @@ pub const TestNestedChildExtensionData = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1433,7 +1433,7 @@ pub const TestRequired = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1473,7 +1473,7 @@ pub const TestRequired = struct {
 
 pub const TestRequiredForeign = struct {
     optional_message: ?TestRequired = null,
-    repeated_message: std.ArrayList(TestRequired),
+    repeated_message: std.ArrayListUnmanaged(TestRequired),
     dummy: ?i32 = null,
     optional_lazy_message: ?NestedTestAllTypes = null,
 
@@ -1500,7 +1500,7 @@ pub const TestRequiredForeign = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1540,7 +1540,7 @@ pub const TestRequiredForeign = struct {
 
 pub const TestRequiredMessage = struct {
     optional_message: ?TestRequired = null,
-    repeated_message: std.ArrayList(TestRequired),
+    repeated_message: std.ArrayListUnmanaged(TestRequired),
     required_message: ?TestRequired = null,
 
     pub const _desc_table = .{
@@ -1565,7 +1565,7 @@ pub const TestRequiredMessage = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1630,7 +1630,7 @@ pub const TestNestedRequiredForeign = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1691,7 +1691,7 @@ pub const TestForeignNested = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1748,7 +1748,7 @@ pub const TestEmptyMessage = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1805,7 +1805,7 @@ pub const TestEmptyMessageWithExtensions = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1876,7 +1876,7 @@ pub const TestPickleNestedMessage = struct {
             pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
                 return protobuf.pb_init(@This(), allocator);
             }
-            pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+            pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
                 return protobuf.pb_deinit(allocator, self);
             }
             pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1930,7 +1930,7 @@ pub const TestPickleNestedMessage = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1984,7 +1984,7 @@ pub const TestPickleNestedMessage = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -2041,7 +2041,7 @@ pub const TestMultipleExtensionRanges = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -2104,7 +2104,7 @@ pub const TestReallyLargeTagNumber = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -2167,7 +2167,7 @@ pub const TestRecursiveMessage = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -2239,7 +2239,7 @@ pub const TestMutualRecursionA = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -2293,7 +2293,7 @@ pub const TestMutualRecursionA = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -2356,7 +2356,7 @@ pub const TestMutualRecursionB = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -2424,7 +2424,7 @@ pub const TestIsInitialized = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -2478,7 +2478,7 @@ pub const TestIsInitialized = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -2539,7 +2539,7 @@ pub const TestDupFieldNumber = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -2600,7 +2600,7 @@ pub const TestEagerMessage = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -2661,7 +2661,7 @@ pub const TestLazyMessage = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -2733,7 +2733,7 @@ pub const TestEagerMaybeLazy = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -2787,7 +2787,7 @@ pub const TestEagerMaybeLazy = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -2833,8 +2833,8 @@ pub const TestNestedMessageHasBits = struct {
     };
 
     pub const NestedMessage = struct {
-        nestedmessage_repeated_int32: std.ArrayList(i32),
-        nestedmessage_repeated_foreignmessage: std.ArrayList(ForeignMessage),
+        nestedmessage_repeated_int32: std.ArrayListUnmanaged(i32),
+        nestedmessage_repeated_foreignmessage: std.ArrayListUnmanaged(ForeignMessage),
 
         pub const _desc_table = .{
             .nestedmessage_repeated_int32 = fd(1, .{ .List = .{ .Varint = .Simple } }),
@@ -2857,7 +2857,7 @@ pub const TestNestedMessageHasBits = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -2911,7 +2911,7 @@ pub const TestNestedMessageHasBits = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -2956,12 +2956,12 @@ pub const TestCamelCaseFieldNames = struct {
     MessageField: ?ForeignMessage = null,
     StringPieceField: ?[]const u8 = null,
     CordField: ?[]const u8 = null,
-    RepeatedPrimitiveField: std.ArrayList(i32),
-    RepeatedStringField: std.ArrayList([]const u8),
-    RepeatedEnumField: std.ArrayList(ForeignEnum),
-    RepeatedMessageField: std.ArrayList(ForeignMessage),
-    RepeatedStringPieceField: std.ArrayList([]const u8),
-    RepeatedCordField: std.ArrayList([]const u8),
+    RepeatedPrimitiveField: std.ArrayListUnmanaged(i32),
+    RepeatedStringField: std.ArrayListUnmanaged([]const u8),
+    RepeatedEnumField: std.ArrayListUnmanaged(ForeignEnum),
+    RepeatedMessageField: std.ArrayListUnmanaged(ForeignMessage),
+    RepeatedStringPieceField: std.ArrayListUnmanaged([]const u8),
+    RepeatedCordField: std.ArrayListUnmanaged([]const u8),
 
     pub const _desc_table = .{
         .PrimitiveField = fd(1, .{ .Varint = .Simple }),
@@ -2994,7 +2994,7 @@ pub const TestCamelCaseFieldNames = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -3070,7 +3070,7 @@ pub const TestFieldOrderings = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -3124,7 +3124,7 @@ pub const TestFieldOrderings = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -3185,7 +3185,7 @@ pub const TestExtensionOrderings1 = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -3253,7 +3253,7 @@ pub const TestExtensionOrderings2 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -3307,7 +3307,7 @@ pub const TestExtensionOrderings2 = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -3420,7 +3420,7 @@ pub const TestExtremeDefaultValues = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -3481,7 +3481,7 @@ pub const SparseEnumMessage = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -3542,7 +3542,7 @@ pub const OneString = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -3581,7 +3581,7 @@ pub const OneString = struct {
 };
 
 pub const MoreString = struct {
-    data: std.ArrayList([]const u8),
+    data: std.ArrayListUnmanaged([]const u8),
 
     pub const _desc_table = .{
         .data = fd(1, .{ .List = .String }),
@@ -3603,7 +3603,7 @@ pub const MoreString = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -3664,7 +3664,7 @@ pub const OneBytes = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -3703,7 +3703,7 @@ pub const OneBytes = struct {
 };
 
 pub const MoreBytes = struct {
-    data: std.ArrayList([]const u8),
+    data: std.ArrayListUnmanaged([]const u8),
 
     pub const _desc_table = .{
         .data = fd(1, .{ .List = .Bytes }),
@@ -3725,7 +3725,7 @@ pub const MoreBytes = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -3848,7 +3848,7 @@ pub const ManyOptionalString = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -3909,7 +3909,7 @@ pub const Int32Message = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -3970,7 +3970,7 @@ pub const Uint32Message = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -4031,7 +4031,7 @@ pub const Int64Message = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -4092,7 +4092,7 @@ pub const Uint64Message = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -4153,7 +4153,7 @@ pub const BoolMessage = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -4207,7 +4207,7 @@ pub const TestOneof = struct {
         foo_message: TestAllTypes,
         a: i32,
         b: []const u8,
-        pub const _union_desc = .{
+        pub const _desc_table = .{
             .foo_int = fd(1, .{ .Varint = .Simple }),
             .foo_string = fd(2, .String),
             .foo_message = fd(3, .{ .SubMessage = {} }),
@@ -4236,7 +4236,7 @@ pub const TestOneof = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -4305,7 +4305,7 @@ pub const TestOneofBackwardsCompatible = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -4372,7 +4372,7 @@ pub const TestOneof2 = struct {
         a: i32,
         b: []const u8,
         foo_lazy_message: TestOneof2.NestedMessage,
-        pub const _union_desc = .{
+        pub const _desc_table = .{
             .foo_int = fd(1, .{ .Varint = .Simple }),
             .foo_string = fd(2, .String),
             .foo_cord = fd(3, .String),
@@ -4409,7 +4409,7 @@ pub const TestOneof2 = struct {
         bar_cord_with_empty_default: []const u8,
         bar_string_piece_with_empty_default: []const u8,
         bar_bytes_with_empty_default: []const u8,
-        pub const _union_desc = .{
+        pub const _desc_table = .{
             .bar_int = fd(12, .{ .Varint = .Simple }),
             .bar_string = fd(13, .String),
             .bar_cord = fd(14, .String),
@@ -4439,7 +4439,7 @@ pub const TestOneof2 = struct {
 
     pub const NestedMessage = struct {
         moo_int: ?i64 = null,
-        corge_int: std.ArrayList(i32),
+        corge_int: std.ArrayListUnmanaged(i32),
 
         pub const _desc_table = .{
             .moo_int = fd(1, .{ .Varint = .Simple }),
@@ -4462,7 +4462,7 @@ pub const TestOneof2 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -4516,7 +4516,7 @@ pub const TestOneof2 = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -4566,7 +4566,7 @@ pub const TestRequiredOneof = struct {
         foo_int: i32,
         foo_string: []const u8,
         foo_message: TestRequiredOneof.NestedMessage,
-        pub const _union_desc = .{
+        pub const _desc_table = .{
             .foo_int = fd(1, .{ .Varint = .Simple }),
             .foo_string = fd(2, .String),
             .foo_message = fd(3, .{ .SubMessage = {} }),
@@ -4600,7 +4600,7 @@ pub const TestRequiredOneof = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -4654,7 +4654,7 @@ pub const TestRequiredOneof = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -4693,20 +4693,20 @@ pub const TestRequiredOneof = struct {
 };
 
 pub const TestPackedTypes = struct {
-    packed_int32: std.ArrayList(i32),
-    packed_int64: std.ArrayList(i64),
-    packed_uint32: std.ArrayList(u32),
-    packed_uint64: std.ArrayList(u64),
-    packed_sint32: std.ArrayList(i32),
-    packed_sint64: std.ArrayList(i64),
-    packed_fixed32: std.ArrayList(u32),
-    packed_fixed64: std.ArrayList(u64),
-    packed_sfixed32: std.ArrayList(i32),
-    packed_sfixed64: std.ArrayList(i64),
-    packed_float: std.ArrayList(f32),
-    packed_double: std.ArrayList(f64),
-    packed_bool: std.ArrayList(bool),
-    packed_enum: std.ArrayList(ForeignEnum),
+    packed_int32: std.ArrayListUnmanaged(i32),
+    packed_int64: std.ArrayListUnmanaged(i64),
+    packed_uint32: std.ArrayListUnmanaged(u32),
+    packed_uint64: std.ArrayListUnmanaged(u64),
+    packed_sint32: std.ArrayListUnmanaged(i32),
+    packed_sint64: std.ArrayListUnmanaged(i64),
+    packed_fixed32: std.ArrayListUnmanaged(u32),
+    packed_fixed64: std.ArrayListUnmanaged(u64),
+    packed_sfixed32: std.ArrayListUnmanaged(i32),
+    packed_sfixed64: std.ArrayListUnmanaged(i64),
+    packed_float: std.ArrayListUnmanaged(f32),
+    packed_double: std.ArrayListUnmanaged(f64),
+    packed_bool: std.ArrayListUnmanaged(bool),
+    packed_enum: std.ArrayListUnmanaged(ForeignEnum),
 
     pub const _desc_table = .{
         .packed_int32 = fd(90, .{ .PackedList = .{ .Varint = .Simple } }),
@@ -4741,7 +4741,7 @@ pub const TestPackedTypes = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -4780,20 +4780,20 @@ pub const TestPackedTypes = struct {
 };
 
 pub const TestUnpackedTypes = struct {
-    unpacked_int32: std.ArrayList(i32),
-    unpacked_int64: std.ArrayList(i64),
-    unpacked_uint32: std.ArrayList(u32),
-    unpacked_uint64: std.ArrayList(u64),
-    unpacked_sint32: std.ArrayList(i32),
-    unpacked_sint64: std.ArrayList(i64),
-    unpacked_fixed32: std.ArrayList(u32),
-    unpacked_fixed64: std.ArrayList(u64),
-    unpacked_sfixed32: std.ArrayList(i32),
-    unpacked_sfixed64: std.ArrayList(i64),
-    unpacked_float: std.ArrayList(f32),
-    unpacked_double: std.ArrayList(f64),
-    unpacked_bool: std.ArrayList(bool),
-    unpacked_enum: std.ArrayList(ForeignEnum),
+    unpacked_int32: std.ArrayListUnmanaged(i32),
+    unpacked_int64: std.ArrayListUnmanaged(i64),
+    unpacked_uint32: std.ArrayListUnmanaged(u32),
+    unpacked_uint64: std.ArrayListUnmanaged(u64),
+    unpacked_sint32: std.ArrayListUnmanaged(i32),
+    unpacked_sint64: std.ArrayListUnmanaged(i64),
+    unpacked_fixed32: std.ArrayListUnmanaged(u32),
+    unpacked_fixed64: std.ArrayListUnmanaged(u64),
+    unpacked_sfixed32: std.ArrayListUnmanaged(i32),
+    unpacked_sfixed64: std.ArrayListUnmanaged(i64),
+    unpacked_float: std.ArrayListUnmanaged(f32),
+    unpacked_double: std.ArrayListUnmanaged(f64),
+    unpacked_bool: std.ArrayListUnmanaged(bool),
+    unpacked_enum: std.ArrayListUnmanaged(ForeignEnum),
 
     pub const _desc_table = .{
         .unpacked_int32 = fd(90, .{ .List = .{ .Varint = .Simple } }),
@@ -4828,7 +4828,7 @@ pub const TestUnpackedTypes = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -4885,7 +4885,7 @@ pub const TestPackedExtensions = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -4942,7 +4942,7 @@ pub const TestUnpackedExtensions = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -4986,8 +4986,8 @@ pub const TestDynamicExtensions = struct {
     dynamic_enum_extension: ?TestDynamicExtensions.DynamicEnumType = null,
     message_extension: ?ForeignMessage = null,
     dynamic_message_extension: ?TestDynamicExtensions.DynamicMessageType = null,
-    repeated_extension: std.ArrayList([]const u8),
-    packed_extension: std.ArrayList(i32),
+    repeated_extension: std.ArrayListUnmanaged([]const u8),
+    packed_extension: std.ArrayListUnmanaged(i32),
 
     pub const _desc_table = .{
         .scalar_extension = fd(2000, .{ .FixedInt = .I32 }),
@@ -5029,7 +5029,7 @@ pub const TestDynamicExtensions = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -5083,7 +5083,7 @@ pub const TestDynamicExtensions = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -5122,12 +5122,12 @@ pub const TestDynamicExtensions = struct {
 };
 
 pub const TestRepeatedScalarDifferentTagSizes = struct {
-    repeated_fixed32: std.ArrayList(u32),
-    repeated_int32: std.ArrayList(i32),
-    repeated_fixed64: std.ArrayList(u64),
-    repeated_int64: std.ArrayList(i64),
-    repeated_float: std.ArrayList(f32),
-    repeated_uint64: std.ArrayList(u64),
+    repeated_fixed32: std.ArrayListUnmanaged(u32),
+    repeated_int32: std.ArrayListUnmanaged(i32),
+    repeated_fixed64: std.ArrayListUnmanaged(u64),
+    repeated_int64: std.ArrayListUnmanaged(i64),
+    repeated_float: std.ArrayListUnmanaged(f32),
+    repeated_uint64: std.ArrayListUnmanaged(u64),
 
     pub const _desc_table = .{
         .repeated_fixed32 = fd(12, .{ .List = .{ .FixedInt = .I32 } }),
@@ -5154,7 +5154,7 @@ pub const TestRepeatedScalarDifferentTagSizes = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -5195,7 +5195,7 @@ pub const TestRepeatedScalarDifferentTagSizes = struct {
 pub const TestParsingMerge = struct {
     required_all_types: ?TestAllTypes = null,
     optional_all_types: ?TestAllTypes = null,
-    repeated_all_types: std.ArrayList(TestAllTypes),
+    repeated_all_types: std.ArrayListUnmanaged(TestAllTypes),
     optional_group_all_types: ?TestAllTypes = null,
     repeated_group_all_types: ?TestAllTypes = null,
 
@@ -5208,13 +5208,13 @@ pub const TestParsingMerge = struct {
     };
 
     pub const RepeatedFieldsGenerator = struct {
-        field1: std.ArrayList(TestAllTypes),
-        field2: std.ArrayList(TestAllTypes),
-        field3: std.ArrayList(TestAllTypes),
+        field1: std.ArrayListUnmanaged(TestAllTypes),
+        field2: std.ArrayListUnmanaged(TestAllTypes),
+        field3: std.ArrayListUnmanaged(TestAllTypes),
         Group1_field1: ?TestAllTypes = null,
         Group2_field1: ?TestAllTypes = null,
-        ext1: std.ArrayList(TestAllTypes),
-        ext2: std.ArrayList(TestAllTypes),
+        ext1: std.ArrayListUnmanaged(TestAllTypes),
+        ext2: std.ArrayListUnmanaged(TestAllTypes),
 
         pub const _desc_table = .{
             .field1 = fd(1, .{ .List = .{ .SubMessage = {} } }),
@@ -5242,7 +5242,7 @@ pub const TestParsingMerge = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -5296,7 +5296,7 @@ pub const TestParsingMerge = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -5357,7 +5357,7 @@ pub const TestMergeException = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -5418,7 +5418,7 @@ pub const TestCommentInjectionMessage = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -5489,7 +5489,7 @@ pub const TestMessageSize = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -5546,7 +5546,7 @@ pub const FooRequest = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -5603,7 +5603,7 @@ pub const FooResponse = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -5660,7 +5660,7 @@ pub const FooClientMessage = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -5717,7 +5717,7 @@ pub const FooServerMessage = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -5774,7 +5774,7 @@ pub const BarRequest = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -5831,7 +5831,7 @@ pub const BarResponse = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -5904,7 +5904,7 @@ pub const TestJsonName = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -5945,14 +5945,14 @@ pub const TestJsonName = struct {
 pub const TestHugeFieldNumbers = struct {
     optional_int32: ?i32 = null,
     fixed_32: ?i32 = null,
-    repeated_int32: std.ArrayList(i32),
-    packed_int32: std.ArrayList(i32),
+    repeated_int32: std.ArrayListUnmanaged(i32),
+    packed_int32: std.ArrayListUnmanaged(i32),
     optional_enum: ?ForeignEnum = null,
     optional_string: ?[]const u8 = null,
     optional_bytes: ?[]const u8 = null,
     optional_message: ?ForeignMessage = null,
     group_a: ?i32 = null,
-    string_string_map: std.ArrayList(TestHugeFieldNumbers.StringStringMapEntry),
+    string_string_map: std.ArrayListUnmanaged(TestHugeFieldNumbers.StringStringMapEntry),
     oneof_field: ?oneof_field_union,
 
     pub const _oneof_field_case = enum {
@@ -5966,7 +5966,7 @@ pub const TestHugeFieldNumbers = struct {
         oneof_test_all_types: TestAllTypes,
         oneof_string: []const u8,
         oneof_bytes: []const u8,
-        pub const _union_desc = .{
+        pub const _desc_table = .{
             .oneof_uint32 = fd(536870011, .{ .Varint = .Simple }),
             .oneof_test_all_types = fd(536870012, .{ .SubMessage = {} }),
             .oneof_string = fd(536870013, .String),
@@ -6013,7 +6013,7 @@ pub const TestHugeFieldNumbers = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -6067,7 +6067,7 @@ pub const TestHugeFieldNumbers = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -6144,7 +6144,7 @@ pub const TestExtensionInsideTable = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -6205,7 +6205,7 @@ pub const TestNestedGroupExtensionInnerExtension = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -6272,7 +6272,7 @@ pub const TestExtensionRangeSerialize = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -6339,7 +6339,7 @@ pub const TestVerifyInt32Simple = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -6383,7 +6383,7 @@ pub const TestVerifyInt32 = struct {
     optional_int32_63: ?i32 = null,
     optional_int32_64: ?i32 = null,
     optional_all_types: ?TestAllTypes = null,
-    repeated_all_types: std.ArrayList(TestAllTypes),
+    repeated_all_types: std.ArrayListUnmanaged(TestAllTypes),
 
     pub const _desc_table = .{
         .optional_int32_1 = fd(1, .{ .Varint = .Simple }),
@@ -6410,7 +6410,7 @@ pub const TestVerifyInt32 = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -6457,7 +6457,7 @@ pub const TestVerifyMostlyInt32 = struct {
     optional_int32_63: ?i32 = null,
     optional_int32_64: ?i32 = null,
     optional_all_types: ?TestAllTypes = null,
-    repeated_all_types: std.ArrayList(TestAllTypes),
+    repeated_all_types: std.ArrayListUnmanaged(TestAllTypes),
 
     pub const _desc_table = .{
         .optional_int64_30 = fd(30, .{ .Varint = .Simple }),
@@ -6487,7 +6487,7 @@ pub const TestVerifyMostlyInt32 = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -6535,7 +6535,7 @@ pub const TestVerifyMostlyInt32BigFieldNumber = struct {
     optional_int32_63: ?i32 = null,
     optional_int32_64: ?i32 = null,
     optional_all_types: ?TestAllTypes = null,
-    repeated_all_types: std.ArrayList(TestAllTypes),
+    repeated_all_types: std.ArrayListUnmanaged(TestAllTypes),
 
     pub const _desc_table = .{
         .optional_int64_30 = fd(30, .{ .Varint = .Simple }),
@@ -6566,7 +6566,7 @@ pub const TestVerifyMostlyInt32BigFieldNumber = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -6633,7 +6633,7 @@ pub const TestVerifyUint32Simple = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -6677,7 +6677,7 @@ pub const TestVerifyUint32 = struct {
     optional_uint32_63: ?u32 = null,
     optional_uint32_64: ?u32 = null,
     optional_all_types: ?TestAllTypes = null,
-    repeated_all_types: std.ArrayList(TestAllTypes),
+    repeated_all_types: std.ArrayListUnmanaged(TestAllTypes),
 
     pub const _desc_table = .{
         .optional_uint32_1 = fd(1, .{ .Varint = .Simple }),
@@ -6704,7 +6704,7 @@ pub const TestVerifyUint32 = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -6748,7 +6748,7 @@ pub const TestVerifyOneUint32 = struct {
     optional_int32_63: ?i32 = null,
     optional_int32_64: ?i32 = null,
     optional_all_types: ?TestAllTypes = null,
-    repeated_all_types: std.ArrayList(TestAllTypes),
+    repeated_all_types: std.ArrayListUnmanaged(TestAllTypes),
 
     pub const _desc_table = .{
         .optional_uint32_1 = fd(1, .{ .Varint = .Simple }),
@@ -6775,7 +6775,7 @@ pub const TestVerifyOneUint32 = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -6820,7 +6820,7 @@ pub const TestVerifyOneInt32BigFieldNumber = struct {
     optional_int64_63: ?i64 = null,
     optional_int64_64: ?i64 = null,
     optional_all_types: ?TestAllTypes = null,
-    repeated_all_types: std.ArrayList(TestAllTypes),
+    repeated_all_types: std.ArrayListUnmanaged(TestAllTypes),
 
     pub const _desc_table = .{
         .optional_int32_65 = fd(65, .{ .Varint = .Simple }),
@@ -6848,7 +6848,7 @@ pub const TestVerifyOneInt32BigFieldNumber = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -6894,7 +6894,7 @@ pub const TestVerifyInt32BigFieldNumber = struct {
     optional_int32_63: ?i32 = null,
     optional_int32_64: ?i32 = null,
     optional_all_types: ?TestAllTypes = null,
-    repeated_all_types: std.ArrayList(TestAllTypes),
+    repeated_all_types: std.ArrayListUnmanaged(TestAllTypes),
 
     pub const _desc_table = .{
         .optional_int32_1000 = fd(1000, .{ .Varint = .Simple }),
@@ -6923,7 +6923,7 @@ pub const TestVerifyInt32BigFieldNumber = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -6969,7 +6969,7 @@ pub const TestVerifyUint32BigFieldNumber = struct {
     optional_uint32_63: ?u32 = null,
     optional_uint32_64: ?u32 = null,
     optional_all_types: ?TestAllTypes = null,
-    repeated_all_types: std.ArrayList(TestAllTypes),
+    repeated_all_types: std.ArrayListUnmanaged(TestAllTypes),
 
     pub const _desc_table = .{
         .optional_uint32_1000 = fd(1000, .{ .Varint = .Simple }),
@@ -6998,7 +6998,7 @@ pub const TestVerifyUint32BigFieldNumber = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -7053,7 +7053,7 @@ pub const TestVerifyBigFieldNumberUint32 = struct {
         optional_uint32_63: ?u32 = null,
         optional_uint32_64: ?u32 = null,
         optional_nested: ?*TestVerifyBigFieldNumberUint32.Nested = null,
-        repeated_nested: std.ArrayList(TestVerifyBigFieldNumberUint32.Nested),
+        repeated_nested: std.ArrayListUnmanaged(TestVerifyBigFieldNumberUint32.Nested),
 
         pub const _desc_table = .{
             .optional_uint32_5000 = fd(5000, .{ .Varint = .Simple }),
@@ -7084,7 +7084,7 @@ pub const TestVerifyBigFieldNumberUint32 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -7138,7 +7138,7 @@ pub const TestVerifyBigFieldNumberUint32 = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -7180,39 +7180,39 @@ pub const EnumParseTester = struct {
     optional_seq_small_0_lowfield: ?EnumParseTester.SeqSmall0 = null,
     optional_seq_small_0_midfield: ?EnumParseTester.SeqSmall0 = null,
     optional_seq_small_0_hifield: ?EnumParseTester.SeqSmall0 = null,
-    repeated_seq_small_0_lowfield: std.ArrayList(EnumParseTester.SeqSmall0),
-    repeated_seq_small_0_midfield: std.ArrayList(EnumParseTester.SeqSmall0),
-    repeated_seq_small_0_hifield: std.ArrayList(EnumParseTester.SeqSmall0),
-    packed_seq_small_0_lowfield: std.ArrayList(EnumParseTester.SeqSmall0),
-    packed_seq_small_0_midfield: std.ArrayList(EnumParseTester.SeqSmall0),
-    packed_seq_small_0_hifield: std.ArrayList(EnumParseTester.SeqSmall0),
+    repeated_seq_small_0_lowfield: std.ArrayListUnmanaged(EnumParseTester.SeqSmall0),
+    repeated_seq_small_0_midfield: std.ArrayListUnmanaged(EnumParseTester.SeqSmall0),
+    repeated_seq_small_0_hifield: std.ArrayListUnmanaged(EnumParseTester.SeqSmall0),
+    packed_seq_small_0_lowfield: std.ArrayListUnmanaged(EnumParseTester.SeqSmall0),
+    packed_seq_small_0_midfield: std.ArrayListUnmanaged(EnumParseTester.SeqSmall0),
+    packed_seq_small_0_hifield: std.ArrayListUnmanaged(EnumParseTester.SeqSmall0),
     optional_seq_small_1_lowfield: ?EnumParseTester.SeqSmall1 = null,
     optional_seq_small_1_midfield: ?EnumParseTester.SeqSmall1 = null,
     optional_seq_small_1_hifield: ?EnumParseTester.SeqSmall1 = null,
-    repeated_seq_small_1_lowfield: std.ArrayList(EnumParseTester.SeqSmall1),
-    repeated_seq_small_1_midfield: std.ArrayList(EnumParseTester.SeqSmall1),
-    repeated_seq_small_1_hifield: std.ArrayList(EnumParseTester.SeqSmall1),
-    packed_seq_small_1_lowfield: std.ArrayList(EnumParseTester.SeqSmall1),
-    packed_seq_small_1_midfield: std.ArrayList(EnumParseTester.SeqSmall1),
-    packed_seq_small_1_hifield: std.ArrayList(EnumParseTester.SeqSmall1),
+    repeated_seq_small_1_lowfield: std.ArrayListUnmanaged(EnumParseTester.SeqSmall1),
+    repeated_seq_small_1_midfield: std.ArrayListUnmanaged(EnumParseTester.SeqSmall1),
+    repeated_seq_small_1_hifield: std.ArrayListUnmanaged(EnumParseTester.SeqSmall1),
+    packed_seq_small_1_lowfield: std.ArrayListUnmanaged(EnumParseTester.SeqSmall1),
+    packed_seq_small_1_midfield: std.ArrayListUnmanaged(EnumParseTester.SeqSmall1),
+    packed_seq_small_1_hifield: std.ArrayListUnmanaged(EnumParseTester.SeqSmall1),
     optional_seq_large_lowfield: ?EnumParseTester.SeqLarge = null,
     optional_seq_large_midfield: ?EnumParseTester.SeqLarge = null,
     optional_seq_large_hifield: ?EnumParseTester.SeqLarge = null,
-    repeated_seq_large_lowfield: std.ArrayList(EnumParseTester.SeqLarge),
-    repeated_seq_large_midfield: std.ArrayList(EnumParseTester.SeqLarge),
-    repeated_seq_large_hifield: std.ArrayList(EnumParseTester.SeqLarge),
-    packed_seq_large_lowfield: std.ArrayList(EnumParseTester.SeqLarge),
-    packed_seq_large_midfield: std.ArrayList(EnumParseTester.SeqLarge),
-    packed_seq_large_hifield: std.ArrayList(EnumParseTester.SeqLarge),
+    repeated_seq_large_lowfield: std.ArrayListUnmanaged(EnumParseTester.SeqLarge),
+    repeated_seq_large_midfield: std.ArrayListUnmanaged(EnumParseTester.SeqLarge),
+    repeated_seq_large_hifield: std.ArrayListUnmanaged(EnumParseTester.SeqLarge),
+    packed_seq_large_lowfield: std.ArrayListUnmanaged(EnumParseTester.SeqLarge),
+    packed_seq_large_midfield: std.ArrayListUnmanaged(EnumParseTester.SeqLarge),
+    packed_seq_large_hifield: std.ArrayListUnmanaged(EnumParseTester.SeqLarge),
     optional_arbitrary_lowfield: ?EnumParseTester.Arbitrary = null,
     optional_arbitrary_midfield: ?EnumParseTester.Arbitrary = null,
     optional_arbitrary_hifield: ?EnumParseTester.Arbitrary = null,
-    repeated_arbitrary_lowfield: std.ArrayList(EnumParseTester.Arbitrary),
-    repeated_arbitrary_midfield: std.ArrayList(EnumParseTester.Arbitrary),
-    repeated_arbitrary_hifield: std.ArrayList(EnumParseTester.Arbitrary),
-    packed_arbitrary_lowfield: std.ArrayList(EnumParseTester.Arbitrary),
-    packed_arbitrary_midfield: std.ArrayList(EnumParseTester.Arbitrary),
-    packed_arbitrary_hifield: std.ArrayList(EnumParseTester.Arbitrary),
+    repeated_arbitrary_lowfield: std.ArrayListUnmanaged(EnumParseTester.Arbitrary),
+    repeated_arbitrary_midfield: std.ArrayListUnmanaged(EnumParseTester.Arbitrary),
+    repeated_arbitrary_hifield: std.ArrayListUnmanaged(EnumParseTester.Arbitrary),
+    packed_arbitrary_lowfield: std.ArrayListUnmanaged(EnumParseTester.Arbitrary),
+    packed_arbitrary_midfield: std.ArrayListUnmanaged(EnumParseTester.Arbitrary),
+    packed_arbitrary_hifield: std.ArrayListUnmanaged(EnumParseTester.Arbitrary),
     other_field: ?i32 = null,
 
     pub const _desc_table = .{
@@ -7334,7 +7334,7 @@ pub const EnumParseTester = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {

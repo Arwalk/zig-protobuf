@@ -45,7 +45,7 @@ pub const LogRecordFlags = enum(i32) {
 };
 
 pub const LogsData = struct {
-    resource_logs: std.ArrayList(ResourceLogs),
+    resource_logs: std.ArrayListUnmanaged(ResourceLogs),
 
     pub const _desc_table = .{
         .resource_logs = fd(1, .{ .List = .{ .SubMessage = {} } }),
@@ -67,7 +67,7 @@ pub const LogsData = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -107,7 +107,7 @@ pub const LogsData = struct {
 
 pub const ResourceLogs = struct {
     resource: ?opentelemetry_proto_resource_v1.Resource = null,
-    scope_logs: std.ArrayList(ScopeLogs),
+    scope_logs: std.ArrayListUnmanaged(ScopeLogs),
     schema_url: []const u8 = &.{},
 
     pub const _desc_table = .{
@@ -132,7 +132,7 @@ pub const ResourceLogs = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -172,7 +172,7 @@ pub const ResourceLogs = struct {
 
 pub const ScopeLogs = struct {
     scope: ?opentelemetry_proto_common_v1.InstrumentationScope = null,
-    log_records: std.ArrayList(LogRecord),
+    log_records: std.ArrayListUnmanaged(LogRecord),
     schema_url: []const u8 = &.{},
 
     pub const _desc_table = .{
@@ -197,7 +197,7 @@ pub const ScopeLogs = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -241,7 +241,7 @@ pub const LogRecord = struct {
     severity_number: SeverityNumber = @enumFromInt(0),
     severity_text: []const u8 = &.{},
     body: ?opentelemetry_proto_common_v1.AnyValue = null,
-    attributes: std.ArrayList(opentelemetry_proto_common_v1.KeyValue),
+    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue),
     dropped_attributes_count: u32 = 0,
     flags: u32 = 0,
     trace_id: []const u8 = &.{},
@@ -276,7 +276,7 @@ pub const LogRecord = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {

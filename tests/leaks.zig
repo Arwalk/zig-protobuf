@@ -27,8 +27,8 @@ test "leak in allocated string" {
 }
 
 test "leak in list of allocated bytes" {
-    var my_bytes = std.ArrayList([]const u8).init(testing.allocator);
-    try my_bytes.append(try std.testing.allocator.dupe(u8, "abcdef"));
+    var my_bytes = try std.ArrayListUnmanaged([]const u8).initCapacity(testing.allocator, 1);
+    try my_bytes.append(std.testing.allocator, try std.testing.allocator.dupe(u8, "abcdef"));
 
     var msg = tests.WithRepeatedBytes{
         .byte_field = my_bytes,
@@ -41,6 +41,6 @@ test "leak in list of allocated bytes" {
 
     try msg.encode(w.any(), std.testing.allocator);
 
-    const msg_copy = try tests.WithRepeatedBytes.decode(buffer.items, testing.allocator);
+    var msg_copy = try tests.WithRepeatedBytes.decode(buffer.items, testing.allocator);
     msg_copy.deinit(std.testing.allocator);
 }

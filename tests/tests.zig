@@ -28,7 +28,7 @@ pub fn printAllDecoded(input: []const u8) !void {
 }
 
 test "DefaultValuesInit" {
-    var demo = try DefaultValues.init(testing.allocator);
+    var demo = try DefaultValues.init(std.testing.allocator);
     defer demo.deinit(std.testing.allocator);
 
     try testing.expectEqualSlices(u8, "default<>'\"abc", demo.string_field.?);
@@ -62,10 +62,10 @@ test "LogsData proto issue #84" {
     var logsData = try pblogs.LogsData.init(std.testing.allocator);
     defer logsData.deinit(std.testing.allocator);
 
-    const rl = try pblogs.ResourceLogs.init(std.testing.allocator);
+    var rl = try pblogs.ResourceLogs.init(std.testing.allocator);
     defer rl.deinit(std.testing.allocator);
 
-    try logsData.resource_logs.append(rl);
+    try logsData.resource_logs.append(std.testing.allocator, rl);
 
     var bytes: std.ArrayListUnmanaged(u8) = .empty;
     defer bytes.deinit(std.testing.allocator);
@@ -107,7 +107,7 @@ test "self ref test" {
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0x02, 0x08, 0x01 }, encoded.items);
 
-    const decoded = try SelfRefNode.decode(encoded.items, testing.allocator);
+    var decoded = try SelfRefNode.decode(encoded.items, testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqual(@as(i32, 1), decoded.node.?.version);
