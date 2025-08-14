@@ -1,22 +1,11 @@
 const std = @import("std");
-const StructField = std.builtin.Type.StructField;
-const isIntegral = std.meta.trait.isIntegral;
-const Allocator = std.mem.Allocator;
-const testing = std.testing;
-const base64 = std.base64;
-const base64Errors = std.base64.Error;
-const ParseFromValueError = std.json.ParseFromValueError;
 
 const log = std.log.scoped(.zig_protobuf);
 
 /// Type of encoding for a Varint value.
-const VarintType = enum { Simple, ZigZagOptimized };
+const VarintEncoding = enum { Simple, ZigZagOptimized };
 
 pub const DecodingError = error{ NotEnoughData, InvalidInput };
-
-pub const UnionDecodingError = DecodingError || Allocator.Error;
-
-pub const json = std.json;
 
 /// Enum describing the different field types available.
 pub const FieldTypeTag = enum { Varint, FixedInt, SubMessage, String, Bytes, List, PackedList, OneOf };
@@ -35,7 +24,7 @@ pub const ListTypeTag = enum {
 
 /// Tagged union for repeated fields, giving the details of the underlying type.
 pub const ListType = union(ListTypeTag) {
-    Varint: VarintType,
+    Varint: VarintEncoding,
     String,
     Bytes,
     FixedInt: FixedSize,
@@ -44,7 +33,7 @@ pub const ListType = union(ListTypeTag) {
 
 /// Main tagged union holding the details of any field type.
 pub const FieldType = union(FieldTypeTag) {
-    Varint: VarintType,
+    Varint: VarintEncoding,
     FixedInt: FixedSize,
     SubMessage,
     String,
@@ -107,17 +96,17 @@ fn encode_zig_zag(int: anytype) u64 {
 }
 
 test "encode zig zag test" {
-    try testing.expectEqual(@as(u64, 0), encode_zig_zag(@as(i32, 0)));
-    try testing.expectEqual(@as(u64, 1), encode_zig_zag(@as(i32, -1)));
-    try testing.expectEqual(@as(u64, 2), encode_zig_zag(@as(i32, 1)));
-    try testing.expectEqual(@as(u64, 0xfffffffe), encode_zig_zag(@as(i32, std.math.maxInt(i32))));
-    try testing.expectEqual(@as(u64, 0xffffffff), encode_zig_zag(@as(i32, std.math.minInt(i32))));
+    try std.testing.expectEqual(@as(u64, 0), encode_zig_zag(@as(i32, 0)));
+    try std.testing.expectEqual(@as(u64, 1), encode_zig_zag(@as(i32, -1)));
+    try std.testing.expectEqual(@as(u64, 2), encode_zig_zag(@as(i32, 1)));
+    try std.testing.expectEqual(@as(u64, 0xfffffffe), encode_zig_zag(@as(i32, std.math.maxInt(i32))));
+    try std.testing.expectEqual(@as(u64, 0xffffffff), encode_zig_zag(@as(i32, std.math.minInt(i32))));
 
-    try testing.expectEqual(@as(u64, 0), encode_zig_zag(@as(i64, 0)));
-    try testing.expectEqual(@as(u64, 1), encode_zig_zag(@as(i64, -1)));
-    try testing.expectEqual(@as(u64, 2), encode_zig_zag(@as(i64, 1)));
-    try testing.expectEqual(@as(u64, 0xfffffffffffffffe), encode_zig_zag(@as(i64, std.math.maxInt(i64))));
-    try testing.expectEqual(@as(u64, 0xffffffffffffffff), encode_zig_zag(@as(i64, std.math.minInt(i64))));
+    try std.testing.expectEqual(@as(u64, 0), encode_zig_zag(@as(i64, 0)));
+    try std.testing.expectEqual(@as(u64, 1), encode_zig_zag(@as(i64, -1)));
+    try std.testing.expectEqual(@as(u64, 2), encode_zig_zag(@as(i64, 1)));
+    try std.testing.expectEqual(@as(u64, 0xfffffffffffffffe), encode_zig_zag(@as(i64, std.math.maxInt(i64))));
+    try std.testing.expectEqual(@as(u64, 0xffffffffffffffff), encode_zig_zag(@as(i64, std.math.minInt(i64))));
 }
 
 /// Writes a varint.
@@ -126,7 +115,7 @@ test "encode zig zag test" {
 fn writeAsVarint(
     writer: std.io.AnyWriter,
     int: anytype,
-    comptime varint_type: VarintType,
+    comptime varint_type: VarintEncoding,
 ) std.io.AnyWriter.Error!void {
     const type_of_val = @TypeOf(int);
     const val: u64 = blk: {
@@ -150,7 +139,7 @@ fn writeAsVarint(
 
 /// Write a value of any complex type that can be transfered as a varint
 /// Only serves as an indirection to manage Enum and Booleans properly.
-fn writeVarint(writer: std.io.AnyWriter, value: anytype, comptime varint_type: VarintType) std.io.AnyWriter.Error!void {
+fn writeVarint(writer: std.io.AnyWriter, value: anytype, comptime varint_type: VarintEncoding) std.io.AnyWriter.Error!void {
     switch (@typeInfo(@TypeOf(value))) {
         .@"enum" => try writeAsVarint(writer, @as(i32, @intFromEnum(value)), varint_type),
         .bool => try writeAsVarint(writer, @as(u8, if (value) 1 else 0), varint_type),
@@ -230,7 +219,7 @@ fn writePackedVarintList(
     allocator: std.mem.Allocator,
     value_list: anytype,
     comptime field: FieldDescriptor,
-    comptime varint_type: VarintType,
+    comptime varint_type: VarintEncoding,
 ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
     if (value_list.items.len > 0) {
         try writeTag(writer, field);
@@ -256,7 +245,7 @@ fn writeSubmessageList(
     allocator: std.mem.Allocator,
     comptime field: FieldDescriptor,
     value_list: anytype,
-) (Allocator.Error || std.io.AnyWriter.Error)!void {
+) (std.mem.Allocator.Error || std.io.AnyWriter.Error)!void {
     for (value_list.items) |item| {
         try writeTag(writer, field);
         try writeSubmessage(writer, allocator, item);
@@ -444,7 +433,7 @@ fn get_field_default_value(comptime for_type: anytype) for_type {
     };
 }
 
-inline fn internal_init(comptime T: type, value: *T, allocator: Allocator) !void {
+inline fn internal_init(comptime T: type, value: *T, allocator: std.mem.Allocator) !void {
     if (comptime @typeInfo(T) != .@"struct") {
         @compileError(std.fmt.comptimePrint(
             "Invalid internal init type {s}",
@@ -496,7 +485,7 @@ inline fn internal_init(comptime T: type, value: *T, allocator: Allocator) !void
 }
 
 /// Generic init function. Properly initialise any field required. Meant to be embedded in generated structs.
-pub fn pb_init(comptime T: type, allocator: Allocator) Allocator.Error!T {
+pub fn pb_init(comptime T: type, allocator: std.mem.Allocator) std.mem.Allocator.Error!T {
     switch (comptime @typeInfo(@TypeOf(T))) {
         .pointer => |p| {
             const value = try allocator.create(p.child);
@@ -513,7 +502,7 @@ pub fn pb_init(comptime T: type, allocator: Allocator) Allocator.Error!T {
 
 /// Generic function to deeply duplicate a message using a new allocator.
 /// The original parameter is constant
-pub fn pb_dupe(comptime T: type, original: T, allocator: Allocator) Allocator.Error!T {
+pub fn pb_dupe(comptime T: type, original: T, allocator: std.mem.Allocator) std.mem.Allocator.Error!T {
     var result: T = undefined;
 
     inline for (@typeInfo(T).@"struct".fields) |field| {
@@ -524,7 +513,12 @@ pub fn pb_dupe(comptime T: type, original: T, allocator: Allocator) Allocator.Er
 }
 
 /// Internal dupe function for a specific field
-fn dupe_field(original: anytype, comptime field_name: []const u8, comptime ftype: FieldType, allocator: Allocator) Allocator.Error!@TypeOf(@field(original, field_name)) {
+fn dupe_field(
+    original: anytype,
+    comptime field_name: []const u8,
+    comptime ftype: FieldType,
+    allocator: std.mem.Allocator,
+) std.mem.Allocator.Error!@TypeOf(@field(original, field_name)) {
     switch (ftype) {
         .Varint, .FixedInt => {
             return @field(original, field_name);
@@ -845,7 +839,7 @@ fn FixedDecoderIterator(comptime T: type) type {
     };
 }
 
-fn VarintDecoderIterator(comptime T: type, comptime varint_type: VarintType) type {
+fn VarintDecoderIterator(comptime T: type, comptime varint_type: VarintEncoding) type {
     return struct {
         const Self = @This();
 
@@ -963,21 +957,21 @@ fn decode_zig_zag(comptime T: type, raw: u64) DecodingError!T {
 }
 
 test "decode zig zag test" {
-    try testing.expectEqual(@as(i32, 0), decode_zig_zag(i32, 0));
-    try testing.expectEqual(@as(i32, -1), decode_zig_zag(i32, 1));
-    try testing.expectEqual(@as(i32, 1), decode_zig_zag(i32, 2));
-    try testing.expectEqual(@as(i32, std.math.maxInt(i32)), decode_zig_zag(i32, 0xfffffffe));
-    try testing.expectEqual(@as(i32, std.math.minInt(i32)), decode_zig_zag(i32, 0xffffffff));
+    try std.testing.expectEqual(@as(i32, 0), decode_zig_zag(i32, 0));
+    try std.testing.expectEqual(@as(i32, -1), decode_zig_zag(i32, 1));
+    try std.testing.expectEqual(@as(i32, 1), decode_zig_zag(i32, 2));
+    try std.testing.expectEqual(@as(i32, std.math.maxInt(i32)), decode_zig_zag(i32, 0xfffffffe));
+    try std.testing.expectEqual(@as(i32, std.math.minInt(i32)), decode_zig_zag(i32, 0xffffffff));
 
-    try testing.expectEqual(@as(i64, 0), decode_zig_zag(i64, 0));
-    try testing.expectEqual(@as(i64, -1), decode_zig_zag(i64, 1));
-    try testing.expectEqual(@as(i64, 1), decode_zig_zag(i64, 2));
-    try testing.expectEqual(@as(i64, std.math.maxInt(i64)), decode_zig_zag(i64, 0xfffffffffffffffe));
-    try testing.expectEqual(@as(i64, std.math.minInt(i64)), decode_zig_zag(i64, 0xffffffffffffffff));
+    try std.testing.expectEqual(@as(i64, 0), decode_zig_zag(i64, 0));
+    try std.testing.expectEqual(@as(i64, -1), decode_zig_zag(i64, 1));
+    try std.testing.expectEqual(@as(i64, 1), decode_zig_zag(i64, 2));
+    try std.testing.expectEqual(@as(i64, std.math.maxInt(i64)), decode_zig_zag(i64, 0xfffffffffffffffe));
+    try std.testing.expectEqual(@as(i64, std.math.minInt(i64)), decode_zig_zag(i64, 0xffffffffffffffff));
 }
 
 /// Get a real varint of type T from a raw u64 data.
-fn decode_varint_value(comptime T: type, comptime varint_type: VarintType, raw: u64) DecodingError!T {
+fn decode_varint_value(comptime T: type, comptime varint_type: VarintEncoding, raw: u64) DecodingError!T {
     return switch (varint_type) {
         .ZigZagOptimized => switch (@typeInfo(T)) {
             .int => decode_zig_zag(T, raw),
@@ -1012,7 +1006,13 @@ fn decode_fixed_value(comptime T: type, raw: u64) T {
 }
 
 /// this function receives a slice of a message and decodes one by one the elements of the packet list until the slice is exhausted
-fn decode_packed_list(slice: []const u8, comptime list_type: ListType, comptime T: type, array: *std.ArrayList(T), allocator: Allocator) UnionDecodingError!void {
+fn decode_packed_list(
+    slice: []const u8,
+    comptime list_type: ListType,
+    comptime T: type,
+    array: *std.ArrayList(T),
+    allocator: std.mem.Allocator,
+) (DecodingError || std.mem.Allocator.Error)!void {
     switch (list_type) {
         .FixedInt => {
             switch (T) {
@@ -1048,8 +1048,8 @@ fn decode_value(
     comptime Decoded: type,
     comptime ftype: FieldType,
     extracted_data: Extracted,
-    allocator: Allocator,
-) UnionDecodingError!Decoded {
+    allocator: std.mem.Allocator,
+) (DecodingError || std.mem.Allocator.Error)!Decoded {
     return switch (ftype) {
         .Varint => |varint_type| switch (extracted_data.data) {
             .RawValue => |value| try decode_varint_value(Decoded, varint_type, value),
@@ -1114,7 +1114,14 @@ fn decode_value(
     };
 }
 
-fn decode_data(comptime T: type, comptime field_desc: FieldDescriptor, comptime field: StructField, result: *T, extracted_data: Extracted, allocator: Allocator) UnionDecodingError!void {
+fn decode_data(
+    comptime T: type,
+    comptime field_desc: FieldDescriptor,
+    comptime field: std.builtin.Type.StructField,
+    result: *T,
+    extracted_data: Extracted,
+    allocator: std.mem.Allocator,
+) (DecodingError || std.mem.Allocator.Error)!void {
     switch (field_desc.ftype) {
         .Varint, .FixedInt, .SubMessage, .String, .Bytes => {
             // first try to release the current value
@@ -1193,7 +1200,11 @@ inline fn is_tag_known(comptime field_desc: FieldDescriptor, tag_to_check: Extra
 
 /// public decoding function meant to be embedded in message structures
 /// Iterates over the input and try to fill the resulting structure accordingly.
-pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) UnionDecodingError!T {
+pub fn pb_decode(
+    comptime T: type,
+    input: []const u8,
+    allocator: std.mem.Allocator,
+) (DecodingError || std.mem.Allocator.Error)!T {
     var result = try pb_init(T, allocator);
 
     var iterator = WireDecoderIterator{ .input = input };
@@ -1213,7 +1224,7 @@ pub fn pb_decode(comptime T: type, input: []const u8, allocator: Allocator) Unio
     return result;
 }
 
-fn freeAllocated(allocator: Allocator, token: json.Token) void {
+fn freeAllocated(allocator: std.mem.Allocator, token: std.json.Token) void {
     // Took from std.json source code since it was non-public one
     switch (token) {
         .allocated_number, .allocated_string => |slice| {
@@ -1240,25 +1251,27 @@ fn fillDefaultStructValues(
     }
 }
 
-fn base64ErrorToJsonParseError(err: base64Errors) ParseFromValueError {
+fn base64ErrorToJsonParseError(err: std.base64.Error) std.json.ParseFromValueError {
     return switch (err) {
-        base64Errors.NoSpaceLeft => ParseFromValueError.Overflow,
-        base64Errors.InvalidPadding, base64Errors.InvalidCharacter => ParseFromValueError.UnexpectedToken,
+        std.base64.Error.NoSpaceLeft => std.json.ParseFromValueError.Overflow,
+        std.base64.Error.InvalidPadding,
+        std.base64.Error.InvalidCharacter,
+        => std.json.ParseFromValueError.UnexpectedToken,
     };
 }
 
 fn parse_bytes(
-    allocator: Allocator,
+    allocator: std.mem.Allocator,
     source: anytype,
-    options: json.ParseOptions,
+    options: std.json.ParseOptions,
 ) ![]const u8 {
-    const temp_raw = try json.innerParse([]u8, allocator, source, options);
-    const size = base64.standard.Decoder.calcSizeForSlice(temp_raw) catch |err| {
+    const temp_raw = try std.json.innerParse([]u8, allocator, source, options);
+    const size = std.base64.standard.Decoder.calcSizeForSlice(temp_raw) catch |err| {
         return base64ErrorToJsonParseError(err);
     };
     const tempstring = try allocator.alloc(u8, size);
     errdefer allocator.free(tempstring);
-    base64.standard.Decoder.decode(tempstring, temp_raw) catch |err| {
+    std.base64.standard.Decoder.decode(tempstring, temp_raw) catch |err| {
         return base64ErrorToJsonParseError(err);
     };
     return tempstring;
@@ -1267,10 +1280,10 @@ fn parse_bytes(
 fn parseStructField(
     comptime T: type,
     result: *T,
-    comptime fieldInfo: StructField,
-    allocator: Allocator,
+    comptime fieldInfo: std.builtin.Type.StructField,
+    allocator: std.mem.Allocator,
     source: anytype,
-    options: json.ParseOptions,
+    options: std.json.ParseOptions,
 ) !void {
     @field(result.*, fieldInfo.name) = switch (@field(
         T._desc_table,
@@ -1294,7 +1307,7 @@ fn parseStructField(
                         array_list.appendAssumeCapacity(switch (list_type) {
                             .Bytes => try parse_bytes(allocator, source, options),
                             .Varint, .FixedInt, .SubMessage, .String => other: {
-                                break :other try json.innerParse(
+                                break :other try std.json.innerParse(
                                     child_type,
                                     allocator,
                                     source,
@@ -1366,7 +1379,7 @@ fn parseStructField(
                                 );
                             },
                             .Varint, .FixedInt, .SubMessage, .String => other: {
-                                break :other try json.innerParse(
+                                break :other try std.json.innerParse(
                                     union_field.type,
                                     allocator,
                                     source,
@@ -1396,7 +1409,7 @@ fn parseStructField(
             // .SubMessage's (generated structs) and .String's
             //   (ManagedString's) have its own jsonParse implementation
             // Numeric types will be handled using default std.json parser
-            break :other try json.innerParse(
+            break :other try std.json.innerParse(
                 fieldInfo.type,
                 allocator,
                 source,
@@ -1416,19 +1429,19 @@ fn parseStructField(
 pub fn pb_json_decode(
     comptime T: type,
     input: []const u8,
-    options: json.ParseOptions,
-    allocator: Allocator,
+    options: std.json.ParseOptions,
+    allocator: std.mem.Allocator,
 ) !std.json.Parsed(T) {
-    const parsed = try json.parseFromSlice(T, allocator, input, options);
+    const parsed = try std.json.parseFromSlice(T, allocator, input, options);
     return parsed;
 }
 
 pub fn pb_json_encode(
     data: anytype,
-    options: json.StringifyOptions,
-    allocator: Allocator,
+    options: std.json.StringifyOptions,
+    allocator: std.mem.Allocator,
 ) ![]u8 {
-    return try json.stringifyAlloc(allocator, data, options);
+    return try std.json.stringifyAlloc(allocator, data, options);
 }
 
 fn to_camel_case(not_camel_cased_string: []const u8) []const u8 {
@@ -1480,7 +1493,7 @@ fn print_numeric(value: anytype, jws: anytype) !void {
 }
 
 fn print_bytes(value: anytype, jws: anytype) !void {
-    const size = base64.standard.Encoder.calcSize(value.len);
+    const size = std.base64.standard.Encoder.calcSize(value.len);
 
     try jsonValueStartAssumeTypeOk(jws);
     try jws.stream.writeByte('"');
@@ -1488,7 +1501,7 @@ fn print_bytes(value: anytype, jws: anytype) !void {
     var innerArrayList: *std.ArrayList(u8) = jws.stream.context;
     try innerArrayList.ensureTotalCapacity(innerArrayList.capacity + size + 1);
     const temp = innerArrayList.unusedCapacitySlice();
-    _ = base64.standard.Encoder.encode(temp, value);
+    _ = std.base64.standard.Encoder.encode(temp, value);
     innerArrayList.items.len += size;
     try jws.stream.writeByte('"');
 
@@ -1640,7 +1653,12 @@ fn stringify_struct_field(
     }
 }
 
-pub fn pb_json_parse(Self: type, allocator: Allocator, source: anytype, options: json.ParseOptions) !Self {
+pub fn pb_json_parse(
+    Self: type,
+    allocator: std.mem.Allocator,
+    source: anytype,
+    options: std.json.ParseOptions,
+) !Self {
     if (.object_begin != try source.next()) {
         return error.UnexpectedToken;
     }
@@ -1651,7 +1669,7 @@ pub fn pb_json_parse(Self: type, allocator: Allocator, source: anytype, options:
     var fields_seen = [_]bool{false} ** structInfo.fields.len;
 
     while (true) {
-        var name_token: ?json.Token = try source.nextAllocMax(
+        var name_token: ?std.json.Token = try source.nextAllocMax(
             allocator,
             .alloc_if_needed,
             options.max_value_len.?,
@@ -1764,29 +1782,32 @@ pub fn MessageMixins(comptime Self: type) type {
         ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
             return pb_encode(writer, allocator, self);
         }
-        pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!Self {
+        pub fn decode(
+            input: []const u8,
+            allocator: std.mem.Allocator,
+        ) (DecodingError || std.mem.Allocator.Error)!Self {
             return pb_decode(Self, input, allocator);
         }
-        pub fn init(allocator: Allocator) Allocator.Error!Self {
+        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!Self {
             return pb_init(Self, allocator);
         }
         pub fn deinit(self: Self, allocator: std.mem.Allocator) void {
             return pb_deinit(allocator, self);
         }
-        pub fn dupe(self: Self, allocator: Allocator) Allocator.Error!Self {
+        pub fn dupe(self: Self, allocator: std.mem.Allocator) std.mem.Allocator.Error!Self {
             return pb_dupe(Self, self, allocator);
         }
         pub fn json_decode(
             input: []const u8,
-            options: json.ParseOptions,
-            allocator: Allocator,
+            options: std.json.ParseOptions,
+            allocator: std.mem.Allocator,
         ) !std.json.Parsed(Self) {
             return pb_json_decode(Self, input, options, allocator);
         }
         pub fn json_encode(
             self: Self,
-            options: json.StringifyOptions,
-            allocator: Allocator,
+            options: std.json.StringifyOptions,
+            allocator: std.mem.Allocator,
         ) ![]const u8 {
             return pb_json_encode(self, options, allocator);
         }
@@ -1794,9 +1815,9 @@ pub fn MessageMixins(comptime Self: type) type {
         // This method is used by std.json
         // internally for deserialization. DO NOT RENAME!
         pub fn jsonParse(
-            allocator: Allocator,
+            allocator: std.mem.Allocator,
             source: anytype,
-            options: json.ParseOptions,
+            options: std.json.ParseOptions,
         ) !Self {
             return pb_json_parse(Self, allocator, source, options);
         }
@@ -1821,7 +1842,7 @@ test "get varint" {
     try writeVarint(w.any(), @as(i32, 0xA1), .Simple);
     try writeVarint(w.any(), @as(i32, 0xFF), .Simple);
 
-    try testing.expectEqualSlices(u8, &[_]u8{ 0b10101100, 0b00000010, 0x0, 0x1, 0xA1, 0x1, 0xFF, 0x01 }, pb.items);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0b10101100, 0b00000010, 0x0, 0x1, 0xA1, 0x1, 0xFF, 0x01 }, pb.items);
 }
 
 test writeRawVarint {
@@ -1832,15 +1853,15 @@ test writeRawVarint {
 
     try writeRawVarint(w.any(), 3);
 
-    try testing.expectEqualSlices(u8, &[_]u8{0x03}, pb.items);
+    try std.testing.expectEqualSlices(u8, &[_]u8{0x03}, pb.items);
     try writeRawVarint(w.any(), 1);
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x3, 0x1 }, pb.items);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0x3, 0x1 }, pb.items);
     try writeRawVarint(w.any(), 0);
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x3, 0x1, 0x0 }, pb.items);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0x3, 0x1, 0x0 }, pb.items);
     try writeRawVarint(w.any(), 0x80);
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x3, 0x1, 0x0, 0x80, 0x1 }, pb.items);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0x3, 0x1, 0x0, 0x80, 0x1 }, pb.items);
     try writeRawVarint(w.any(), 0xffffffff);
-    try testing.expectEqualSlices(u8, &[_]u8{
+    try std.testing.expectEqualSlices(u8, &[_]u8{
         0x3,
         0x1,
         0x0,
@@ -1868,19 +1889,19 @@ test "encode and decode multiple varints" {
     var demo = VarintDecoderIterator(u64, .Simple){ .input = pb.items };
 
     for (list) |num|
-        try testing.expectEqual(num, (try demo.next()).?);
+        try std.testing.expectEqual(num, (try demo.next()).?);
 
-    try testing.expectEqual(demo.next(), null);
+    try std.testing.expectEqual(demo.next(), null);
 }
 
 test VarintDecoderIterator {
     var demo = VarintDecoderIterator(u64, .Simple){ .input = "\x01\x02\x03\x04\xA1\x01" };
-    try testing.expectEqual(demo.next(), 1);
-    try testing.expectEqual(demo.next(), 2);
-    try testing.expectEqual(demo.next(), 3);
-    try testing.expectEqual(demo.next(), 4);
-    try testing.expectEqual(demo.next(), 0xA1);
-    try testing.expectEqual(demo.next(), null);
+    try std.testing.expectEqual(demo.next(), 1);
+    try std.testing.expectEqual(demo.next(), 2);
+    try std.testing.expectEqual(demo.next(), 3);
+    try std.testing.expectEqual(demo.next(), 4);
+    try std.testing.expectEqual(demo.next(), 0xA1);
+    try std.testing.expectEqual(demo.next(), null);
 }
 
 // TODO: the following two tests should work
@@ -1897,45 +1918,45 @@ test VarintDecoderIterator {
 
 test FixedDecoderIterator {
     var demo = FixedDecoderIterator(i64){ .input = &[_]u8{ 133, 255, 255, 255, 255, 255, 255, 255 } };
-    try testing.expectEqual(demo.next(), -123);
-    try testing.expectEqual(demo.next(), null);
+    try std.testing.expectEqual(demo.next(), -123);
+    try std.testing.expectEqual(demo.next(), null);
 }
 
 // length delimited message including a list of varints
 test "unit varint packed - decode - multi-byte-varint" {
     const bytes = &[_]u8{ 0x03, 0x8e, 0x02, 0x9e, 0xa7, 0x05 };
-    var list = std.ArrayList(u32).init(testing.allocator);
+    var list = std.ArrayList(u32).init(std.testing.allocator);
     defer list.deinit();
 
-    try decode_packed_list(bytes, .{ .Varint = .Simple }, u32, &list, testing.allocator);
+    try decode_packed_list(bytes, .{ .Varint = .Simple }, u32, &list, std.testing.allocator);
 
-    try testing.expectEqualSlices(u32, &[_]u32{ 3, 270, 86942 }, list.items);
+    try std.testing.expectEqualSlices(u32, &[_]u32{ 3, 270, 86942 }, list.items);
 }
 
 test "decode fixed" {
     const u_32 = [_]u8{ 2, 0, 0, 0 };
     const u_32_result: u32 = 2;
-    try testing.expectEqual(u_32_result, decode_fixed(u32, &u_32));
+    try std.testing.expectEqual(u_32_result, decode_fixed(u32, &u_32));
 
     const u_64 = [_]u8{ 1, 0, 0, 0, 0, 0, 0, 0 };
     const u_64_result: u64 = 1;
-    try testing.expectEqual(u_64_result, decode_fixed(u64, &u_64));
+    try std.testing.expectEqual(u_64_result, decode_fixed(u64, &u_64));
 
     const i_32 = [_]u8{ 0xFF, 0xFF, 0xFF, 0xFF };
     const i_32_result: i32 = -1;
-    try testing.expectEqual(i_32_result, decode_fixed(i32, &i_32));
+    try std.testing.expectEqual(i_32_result, decode_fixed(i32, &i_32));
 
     const i_64 = [_]u8{ 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
     const i_64_result: i64 = -2;
-    try testing.expectEqual(i_64_result, decode_fixed(i64, &i_64));
+    try std.testing.expectEqual(i_64_result, decode_fixed(i64, &i_64));
 
     const f_32 = [_]u8{ 0x00, 0x00, 0xa0, 0x40 };
     const f_32_result: f32 = 5.0;
-    try testing.expectEqual(f_32_result, decode_fixed(f32, &f_32));
+    try std.testing.expectEqual(f_32_result, decode_fixed(f32, &f_32));
 
     const f_64 = [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x40 };
     const f_64_result: f64 = 5.0;
-    try testing.expectEqual(f_64_result, decode_fixed(f64, &f_64));
+    try std.testing.expectEqual(f_64_result, decode_fixed(f64, &f_64));
 }
 
 test "zigzag i32 - encode" {
@@ -1949,16 +1970,16 @@ test "zigzag i32 - encode" {
     // -500 (.ZigZag)  encodes to {0xE7,0x07} which equals to 999 (.Simple)
 
     try writeAsVarint(w.any(), @as(i32, -500), .ZigZagOptimized);
-    try testing.expectEqualSlices(u8, input, pb.items);
+    try std.testing.expectEqualSlices(u8, input, pb.items);
 }
 
 test "zigzag i32/i64 - decode" {
-    try testing.expectEqual(@as(i32, 1), try decode_varint_value(i32, .ZigZagOptimized, 2));
-    try testing.expectEqual(@as(i32, -2), try decode_varint_value(i32, .ZigZagOptimized, 3));
-    try testing.expectEqual(@as(i32, -500), try decode_varint_value(i32, .ZigZagOptimized, 999));
-    try testing.expectEqual(@as(i64, -500), try decode_varint_value(i64, .ZigZagOptimized, 999));
-    try testing.expectEqual(@as(i64, -500), try decode_varint_value(i64, .ZigZagOptimized, 999));
-    try testing.expectEqual(@as(i64, -0x80000000), try decode_varint_value(i64, .ZigZagOptimized, 0xffffffff));
+    try std.testing.expectEqual(@as(i32, 1), try decode_varint_value(i32, .ZigZagOptimized, 2));
+    try std.testing.expectEqual(@as(i32, -2), try decode_varint_value(i32, .ZigZagOptimized, 3));
+    try std.testing.expectEqual(@as(i32, -500), try decode_varint_value(i32, .ZigZagOptimized, 999));
+    try std.testing.expectEqual(@as(i64, -500), try decode_varint_value(i64, .ZigZagOptimized, 999));
+    try std.testing.expectEqual(@as(i64, -500), try decode_varint_value(i64, .ZigZagOptimized, 999));
+    try std.testing.expectEqual(@as(i64, -0x80000000), try decode_varint_value(i64, .ZigZagOptimized, 0xffffffff));
 }
 
 test "zigzag i64 - encode" {
@@ -1972,14 +1993,14 @@ test "zigzag i64 - encode" {
     // -500 (.ZigZag)  encodes to {0xE7,0x07} which equals to 999 (.Simple)
 
     try writeAsVarint(w.any(), @as(i64, -500), .ZigZagOptimized);
-    try testing.expectEqualSlices(u8, input, pb.items);
+    try std.testing.expectEqualSlices(u8, input, pb.items);
 }
 
 test "incorrect data - decode" {
     const input = "\xFF\xFF\xFF\xFF\xFF\x01";
     const value = decode_varint(u32, input);
 
-    try testing.expectError(error.InvalidInput, value);
+    try std.testing.expectError(error.InvalidInput, value);
 }
 
 test "incorrect data - simple varint" {
@@ -2009,6 +2030,12 @@ test "correct data - simple varint" {
 }
 
 test "invalid enum values" {
-    try std.testing.expectError(DecodingError.InvalidInput, decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, (1 << 64) - 1));
-    try std.testing.expectError(DecodingError.InvalidInput, decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, 4));
+    try std.testing.expectError(
+        DecodingError.InvalidInput,
+        decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, (1 << 64) - 1),
+    );
+    try std.testing.expectError(
+        DecodingError.InvalidInput,
+        decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, 4),
+    );
 }
