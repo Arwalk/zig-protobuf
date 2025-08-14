@@ -6,7 +6,7 @@ const protobuf = @import("protobuf");
 const fd = protobuf.fd;
 
 pub const Tile = struct {
-    layers: std.ArrayList(Tile.Layer),
+    layers: std.ArrayListUnmanaged(Tile.Layer),
 
     pub const _desc_table = .{
         .layers = fd(3, .{ .List = .{ .SubMessage = {} } }),
@@ -55,7 +55,7 @@ pub const Tile = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -95,9 +95,9 @@ pub const Tile = struct {
 
     pub const Feature = struct {
         id: ?u64 = 0,
-        tags: std.ArrayList(u32),
+        tags: std.ArrayListUnmanaged(u32),
         type: ?Tile.GeomType = .UNKNOWN,
-        geometry: std.ArrayList(u32),
+        geometry: std.ArrayListUnmanaged(u32),
 
         pub const _desc_table = .{
             .id = fd(1, .{ .Varint = .Simple }),
@@ -122,7 +122,7 @@ pub const Tile = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -163,9 +163,9 @@ pub const Tile = struct {
     pub const Layer = struct {
         version: u32 = 1,
         name: []const u8,
-        features: std.ArrayList(Tile.Feature),
-        keys: std.ArrayList([]const u8),
-        values: std.ArrayList(Tile.Value),
+        features: std.ArrayListUnmanaged(Tile.Feature),
+        keys: std.ArrayListUnmanaged([]const u8),
+        values: std.ArrayListUnmanaged(Tile.Value),
         extent: ?u32 = 4096,
 
         pub const _desc_table = .{
@@ -193,7 +193,7 @@ pub const Tile = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -247,7 +247,7 @@ pub const Tile = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {

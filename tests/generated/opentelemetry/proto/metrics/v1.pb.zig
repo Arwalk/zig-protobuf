@@ -23,7 +23,7 @@ pub const DataPointFlags = enum(i32) {
 };
 
 pub const MetricsData = struct {
-    resource_metrics: std.ArrayList(ResourceMetrics),
+    resource_metrics: std.ArrayListUnmanaged(ResourceMetrics),
 
     pub const _desc_table = .{
         .resource_metrics = fd(1, .{ .List = .{ .SubMessage = {} } }),
@@ -45,7 +45,7 @@ pub const MetricsData = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -85,7 +85,7 @@ pub const MetricsData = struct {
 
 pub const ResourceMetrics = struct {
     resource: ?opentelemetry_proto_resource_v1.Resource = null,
-    scope_metrics: std.ArrayList(ScopeMetrics),
+    scope_metrics: std.ArrayListUnmanaged(ScopeMetrics),
     schema_url: []const u8 = &.{},
 
     pub const _desc_table = .{
@@ -110,7 +110,7 @@ pub const ResourceMetrics = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -150,7 +150,7 @@ pub const ResourceMetrics = struct {
 
 pub const ScopeMetrics = struct {
     scope: ?opentelemetry_proto_common_v1.InstrumentationScope = null,
-    metrics: std.ArrayList(Metric),
+    metrics: std.ArrayListUnmanaged(Metric),
     schema_url: []const u8 = &.{},
 
     pub const _desc_table = .{
@@ -175,7 +175,7 @@ pub const ScopeMetrics = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -217,7 +217,7 @@ pub const Metric = struct {
     name: []const u8 = &.{},
     description: []const u8 = &.{},
     unit: []const u8 = &.{},
-    metadata: std.ArrayList(opentelemetry_proto_common_v1.KeyValue),
+    metadata: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue),
     data: ?data_union,
 
     pub const _data_case = enum {
@@ -233,7 +233,7 @@ pub const Metric = struct {
         histogram: Histogram,
         exponential_histogram: ExponentialHistogram,
         summary: Summary,
-        pub const _union_desc = .{
+        pub const _desc_table = .{
             .gauge = fd(5, .{ .SubMessage = {} }),
             .sum = fd(7, .{ .SubMessage = {} }),
             .histogram = fd(9, .{ .SubMessage = {} }),
@@ -266,7 +266,7 @@ pub const Metric = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -305,7 +305,7 @@ pub const Metric = struct {
 };
 
 pub const Gauge = struct {
-    data_points: std.ArrayList(NumberDataPoint),
+    data_points: std.ArrayListUnmanaged(NumberDataPoint),
 
     pub const _desc_table = .{
         .data_points = fd(1, .{ .List = .{ .SubMessage = {} } }),
@@ -327,7 +327,7 @@ pub const Gauge = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -366,7 +366,7 @@ pub const Gauge = struct {
 };
 
 pub const Sum = struct {
-    data_points: std.ArrayList(NumberDataPoint),
+    data_points: std.ArrayListUnmanaged(NumberDataPoint),
     aggregation_temporality: AggregationTemporality = @enumFromInt(0),
     is_monotonic: bool = false,
 
@@ -392,7 +392,7 @@ pub const Sum = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -431,7 +431,7 @@ pub const Sum = struct {
 };
 
 pub const Histogram = struct {
-    data_points: std.ArrayList(HistogramDataPoint),
+    data_points: std.ArrayListUnmanaged(HistogramDataPoint),
     aggregation_temporality: AggregationTemporality = @enumFromInt(0),
 
     pub const _desc_table = .{
@@ -455,7 +455,7 @@ pub const Histogram = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -494,7 +494,7 @@ pub const Histogram = struct {
 };
 
 pub const ExponentialHistogram = struct {
-    data_points: std.ArrayList(ExponentialHistogramDataPoint),
+    data_points: std.ArrayListUnmanaged(ExponentialHistogramDataPoint),
     aggregation_temporality: AggregationTemporality = @enumFromInt(0),
 
     pub const _desc_table = .{
@@ -518,7 +518,7 @@ pub const ExponentialHistogram = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -557,7 +557,7 @@ pub const ExponentialHistogram = struct {
 };
 
 pub const Summary = struct {
-    data_points: std.ArrayList(SummaryDataPoint),
+    data_points: std.ArrayListUnmanaged(SummaryDataPoint),
 
     pub const _desc_table = .{
         .data_points = fd(1, .{ .List = .{ .SubMessage = {} } }),
@@ -579,7 +579,7 @@ pub const Summary = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -618,10 +618,10 @@ pub const Summary = struct {
 };
 
 pub const NumberDataPoint = struct {
-    attributes: std.ArrayList(opentelemetry_proto_common_v1.KeyValue),
+    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue),
     start_time_unix_nano: u64 = 0,
     time_unix_nano: u64 = 0,
-    exemplars: std.ArrayList(Exemplar),
+    exemplars: std.ArrayListUnmanaged(Exemplar),
     flags: u32 = 0,
     value: ?value_union,
 
@@ -632,7 +632,7 @@ pub const NumberDataPoint = struct {
     pub const value_union = union(_value_case) {
         as_double: f64,
         as_int: i64,
-        pub const _union_desc = .{
+        pub const _desc_table = .{
             .as_double = fd(4, .{ .FixedInt = .I64 }),
             .as_int = fd(6, .{ .FixedInt = .I64 }),
         };
@@ -663,7 +663,7 @@ pub const NumberDataPoint = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -702,14 +702,14 @@ pub const NumberDataPoint = struct {
 };
 
 pub const HistogramDataPoint = struct {
-    attributes: std.ArrayList(opentelemetry_proto_common_v1.KeyValue),
+    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue),
     start_time_unix_nano: u64 = 0,
     time_unix_nano: u64 = 0,
     count: u64 = 0,
     sum: ?f64 = null,
-    bucket_counts: std.ArrayList(u64),
-    explicit_bounds: std.ArrayList(f64),
-    exemplars: std.ArrayList(Exemplar),
+    bucket_counts: std.ArrayListUnmanaged(u64),
+    explicit_bounds: std.ArrayListUnmanaged(f64),
+    exemplars: std.ArrayListUnmanaged(Exemplar),
     flags: u32 = 0,
     min: ?f64 = null,
     max: ?f64 = null,
@@ -744,7 +744,7 @@ pub const HistogramDataPoint = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -783,7 +783,7 @@ pub const HistogramDataPoint = struct {
 };
 
 pub const ExponentialHistogramDataPoint = struct {
-    attributes: std.ArrayList(opentelemetry_proto_common_v1.KeyValue),
+    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue),
     start_time_unix_nano: u64 = 0,
     time_unix_nano: u64 = 0,
     count: u64 = 0,
@@ -793,7 +793,7 @@ pub const ExponentialHistogramDataPoint = struct {
     positive: ?ExponentialHistogramDataPoint.Buckets = null,
     negative: ?ExponentialHistogramDataPoint.Buckets = null,
     flags: u32 = 0,
-    exemplars: std.ArrayList(Exemplar),
+    exemplars: std.ArrayListUnmanaged(Exemplar),
     min: ?f64 = null,
     max: ?f64 = null,
     zero_threshold: f64 = 0,
@@ -817,7 +817,7 @@ pub const ExponentialHistogramDataPoint = struct {
 
     pub const Buckets = struct {
         offset: i32 = 0,
-        bucket_counts: std.ArrayList(u64),
+        bucket_counts: std.ArrayListUnmanaged(u64),
 
         pub const _desc_table = .{
             .offset = fd(1, .{ .Varint = .ZigZagOptimized }),
@@ -840,7 +840,7 @@ pub const ExponentialHistogramDataPoint = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -894,7 +894,7 @@ pub const ExponentialHistogramDataPoint = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -933,12 +933,12 @@ pub const ExponentialHistogramDataPoint = struct {
 };
 
 pub const SummaryDataPoint = struct {
-    attributes: std.ArrayList(opentelemetry_proto_common_v1.KeyValue),
+    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue),
     start_time_unix_nano: u64 = 0,
     time_unix_nano: u64 = 0,
     count: u64 = 0,
     sum: f64 = 0,
-    quantile_values: std.ArrayList(SummaryDataPoint.ValueAtQuantile),
+    quantile_values: std.ArrayListUnmanaged(SummaryDataPoint.ValueAtQuantile),
     flags: u32 = 0,
 
     pub const _desc_table = .{
@@ -976,7 +976,7 @@ pub const SummaryDataPoint = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1030,7 +1030,7 @@ pub const SummaryDataPoint = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1069,7 +1069,7 @@ pub const SummaryDataPoint = struct {
 };
 
 pub const Exemplar = struct {
-    filtered_attributes: std.ArrayList(opentelemetry_proto_common_v1.KeyValue),
+    filtered_attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue),
     time_unix_nano: u64 = 0,
     span_id: []const u8 = &.{},
     trace_id: []const u8 = &.{},
@@ -1082,7 +1082,7 @@ pub const Exemplar = struct {
     pub const value_union = union(_value_case) {
         as_double: f64,
         as_int: i64,
-        pub const _union_desc = .{
+        pub const _desc_table = .{
             .as_double = fd(3, .{ .FixedInt = .I64 }),
             .as_int = fd(6, .{ .FixedInt = .I64 }),
         };
@@ -1112,7 +1112,7 @@ pub const Exemplar = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {

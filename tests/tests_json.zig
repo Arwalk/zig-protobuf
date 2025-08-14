@@ -116,7 +116,7 @@ fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
                         field_info.name,
                     ) == union1_active_tag) {
                         if (!switch (@field(
-                            @TypeOf(field1)._union_desc,
+                            @TypeOf(field1)._desc_table,
                             field_info.name,
                         ).ftype) {
                             .String, .Bytes => std.mem.eql(
@@ -254,7 +254,7 @@ const repeated_enum_camel_case3_json = @embedFile(
 );
 
 test "JSON: encode RepeatedEnum" {
-    const pb_instance = try repeated_enum_init(allocator);
+    var pb_instance = try repeated_enum_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const encoded = try pb_instance.json_encode(
@@ -267,7 +267,7 @@ test "JSON: encode RepeatedEnum" {
 }
 
 test "JSON: decode RepeatedEnum (camelCase, variant 1)" {
-    const pb_instance = try repeated_enum_init(allocator);
+    var pb_instance = try repeated_enum_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -281,7 +281,7 @@ test "JSON: decode RepeatedEnum (camelCase, variant 1)" {
 }
 
 test "JSON: decode RepeatedEnum (camelCase, variant 2)" {
-    const pb_instance = try repeated_enum_init(allocator);
+    var pb_instance = try repeated_enum_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -295,7 +295,7 @@ test "JSON: decode RepeatedEnum (camelCase, variant 2)" {
 }
 
 test "JSON: decode RepeatedEnum (camelCase, variant 3)" {
-    const pb_instance = try repeated_enum_init(allocator);
+    var pb_instance = try repeated_enum_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -313,7 +313,7 @@ const with_strings_init = @import("./json_data/with_strings/instance.zig").get;
 const with_strings_camel_case_json = @embedFile("./json_data/with_strings/camelCase.json");
 
 test "JSON: encode WithStrings" {
-    const pb_instance = try with_strings_init(allocator);
+    var pb_instance = try with_strings_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const encoded = try pb_instance.json_encode(
@@ -326,7 +326,7 @@ test "JSON: encode WithStrings" {
 }
 
 test "JSON: decode WithStrings" {
-    const pb_instance = try with_strings_init(allocator);
+    var pb_instance = try with_strings_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -414,7 +414,7 @@ const packed_mixed_case_json = @embedFile("./json_data/packed/mixed_case.json");
 const packed_camel_case_1_json = @embedFile("./json_data/packed/camelCase_1.json");
 
 test "JSON: encode Packed" {
-    const pb_instance = try packed_init(allocator);
+    var pb_instance = try packed_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const encoded = try pb_instance.json_encode(
@@ -427,7 +427,7 @@ test "JSON: encode Packed" {
 }
 
 test "JSON: decode Packed (from camelCase)" {
-    const pb_instance = try packed_init(allocator);
+    var pb_instance = try packed_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -441,7 +441,7 @@ test "JSON: decode Packed (from camelCase)" {
 }
 
 test "JSON: decode Packed (from snake_case)" {
-    const pb_instance = try packed_init(allocator);
+    var pb_instance = try packed_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -455,7 +455,7 @@ test "JSON: decode Packed (from snake_case)" {
 }
 
 test "JSON: decode Packed (from mixed_case)" {
-    const pb_instance = try packed_init(allocator);
+    var pb_instance = try packed_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -469,7 +469,7 @@ test "JSON: decode Packed (from mixed_case)" {
 }
 
 test "JSON: decode Packed (from stringified float/integers)" {
-    const pb_instance = try packed_init2(allocator);
+    var pb_instance = try packed_init2(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -502,7 +502,7 @@ const string_in_oneof_mixed_case2_json = @embedFile(
 );
 
 test "JSON: encode OneofContainer (string_in_oneof)" {
-    const pb_instance = try string_in_oneof_init(allocator);
+    var pb_instance = try string_in_oneof_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const encoded = try pb_instance.json_encode(
@@ -515,7 +515,7 @@ test "JSON: encode OneofContainer (string_in_oneof)" {
 }
 
 test "JSON: decode OneofContainer (string_in_oneof) (from camelCase)" {
-    const pb_instance = try string_in_oneof_init(allocator);
+    var pb_instance = try string_in_oneof_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -529,7 +529,7 @@ test "JSON: decode OneofContainer (string_in_oneof) (from camelCase)" {
 }
 
 test "JSON: decode OneofContainer (string_in_oneof) (from snake_case)" {
-    const pb_instance = try string_in_oneof_init(allocator);
+    var pb_instance = try string_in_oneof_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -543,7 +543,7 @@ test "JSON: decode OneofContainer (string_in_oneof) (from snake_case)" {
 }
 
 test "JSON: decode OneofContainer (string_in_oneof) (from mixed_case1)" {
-    const pb_instance = try string_in_oneof_init(allocator);
+    var pb_instance = try string_in_oneof_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -557,7 +557,7 @@ test "JSON: decode OneofContainer (string_in_oneof) (from mixed_case1)" {
 }
 
 test "JSON: decode OneofContainer (string_in_oneof) (from mixed_case2)" {
-    const pb_instance = try string_in_oneof_init(allocator);
+    var pb_instance = try string_in_oneof_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -590,8 +590,9 @@ const message_in_oneof_mixed_case2_json = @embedFile(
 );
 
 test "JSON: encode OneofContainer (message_in_oneof)" {
-    const pb_instance = try message_in_oneof_init(allocator);
+    var pb_instance = try message_in_oneof_init(allocator);
     defer pb_instance.deinit(allocator);
+
     const encoded = try pb_instance.json_encode(
         .{ .whitespace = .indent_2 },
         allocator,
@@ -602,7 +603,7 @@ test "JSON: encode OneofContainer (message_in_oneof)" {
 }
 
 test "JSON: decode OneofContainer (message_in_oneof) (from camelCase)" {
-    const pb_instance = try message_in_oneof_init(allocator);
+    var pb_instance = try message_in_oneof_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -616,7 +617,7 @@ test "JSON: decode OneofContainer (message_in_oneof) (from camelCase)" {
 }
 
 test "JSON: decode OneofContainer (message_in_oneof) (from snake_case)" {
-    const pb_instance = try message_in_oneof_init(allocator);
+    var pb_instance = try message_in_oneof_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -630,7 +631,7 @@ test "JSON: decode OneofContainer (message_in_oneof) (from snake_case)" {
 }
 
 test "JSON: decode OneofContainer (message_in_oneof) (from mixed_case1)" {
-    const pb_instance = try message_in_oneof_init(allocator);
+    var pb_instance = try message_in_oneof_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -644,7 +645,7 @@ test "JSON: decode OneofContainer (message_in_oneof) (from mixed_case1)" {
 }
 
 test "JSON: decode OneofContainer (message_in_oneof) (from mixed_case2)" {
-    const pb_instance = try message_in_oneof_init(allocator);
+    var pb_instance = try message_in_oneof_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -665,7 +666,7 @@ const bytes_camel_case_json = @embedFile("json_data/with_bytes/camelCase.json");
 const bytes_snake_case_json = @embedFile("json_data/with_bytes/snake_case.json");
 
 test "JSON: encode Bytes" {
-    const pb_instance = try bytes_init(allocator);
+    var pb_instance = try bytes_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const encoded = try pb_instance.json_encode(
@@ -678,7 +679,7 @@ test "JSON: encode Bytes" {
 }
 
 test "JSON: decode Bytes (from camelCase)" {
-    const pb_instance = try bytes_init(allocator);
+    var pb_instance = try bytes_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -692,7 +693,7 @@ test "JSON: decode Bytes (from camelCase)" {
 }
 
 test "JSON: decode Bytes (from snake_case)" {
-    const pb_instance = try bytes_init(allocator);
+    var pb_instance = try bytes_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -712,7 +713,7 @@ const more_bytes_init = @import("./json_data/more_bytes/instance.zig").get;
 const more_bytes_camel_case_json = @embedFile("./json_data/more_bytes/camelCase.json");
 
 test "JSON: encode MoreBytes" {
-    const pb_instance = try more_bytes_init(allocator);
+    var pb_instance = try more_bytes_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const encoded = try pb_instance.json_encode(
@@ -725,7 +726,7 @@ test "JSON: encode MoreBytes" {
 }
 
 test "JSON: decode MoreBytes (from camelCase)" {
-    const pb_instance = try more_bytes_init(allocator);
+    var pb_instance = try more_bytes_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -938,7 +939,7 @@ const test_oneof2_init = @import("./json_data/test_oneof2/instance.zig").get;
 const test_oneof2_camel_case_json = @embedFile("./json_data/test_oneof2/camelCase.json");
 
 test "JSON: encode TestOneof2 (oneof=.Bytes)" {
-    const pb_instance = try test_oneof2_init(allocator);
+    var pb_instance = try test_oneof2_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const encoded = try pb_instance.json_encode(
@@ -951,7 +952,7 @@ test "JSON: encode TestOneof2 (oneof=.Bytes)" {
 }
 
 test "JSON: decode TestOneof2 (oneof=.Bytes)" {
-    const pb_instance = try test_oneof2_init(allocator);
+    var pb_instance = try test_oneof2_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
@@ -975,7 +976,7 @@ const test_packed_types_camel_case_json = @embedFile(
 );
 
 test "JSON: encode TestPackedTypes (repeated NaNs/infs)" {
-    const pb_instance = try test_packed_types_init(allocator);
+    var pb_instance = try test_packed_types_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const encoded = try pb_instance.json_encode(
@@ -988,7 +989,7 @@ test "JSON: encode TestPackedTypes (repeated NaNs/infs)" {
 }
 
 test "JSON: decode TestPackedTypes (repeated NaNs/infs)" {
-    const pb_instance = try test_packed_types_init(allocator);
+    var pb_instance = try test_packed_types_init(allocator);
     defer pb_instance.deinit(allocator);
 
     const decoded = try @TypeOf(pb_instance).json_decode(
