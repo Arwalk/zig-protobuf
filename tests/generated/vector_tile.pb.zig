@@ -5,9 +5,7 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 const protobuf = @import("protobuf");
-const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
-const ManagedStruct = protobuf.ManagedStruct;
 const json = protobuf.json;
 const UnionDecodingError = protobuf.UnionDecodingError;
 
@@ -27,7 +25,7 @@ pub const Tile = struct {
     };
 
     pub const Value = struct {
-        string_value: ?ManagedString = null,
+        string_value: ?[]const u8 = null,
         float_value: ?f32 = null,
         double_value: ?f64 = null,
         int_value: ?i64 = null,
@@ -51,11 +49,11 @@ pub const Tile = struct {
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
             return protobuf.pb_decode(@This(), input, allocator);
         }
-        pub fn init(allocator: Allocator) @This() {
+        pub fn init(allocator: Allocator) Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This()) void {
-            return protobuf.pb_deinit(self);
+        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+            return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
             return protobuf.pb_dupe(@This(), self, allocator);
@@ -111,11 +109,11 @@ pub const Tile = struct {
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
             return protobuf.pb_decode(@This(), input, allocator);
         }
-        pub fn init(allocator: Allocator) @This() {
+        pub fn init(allocator: Allocator) Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This()) void {
-            return protobuf.pb_deinit(self);
+        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+            return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
             return protobuf.pb_dupe(@This(), self, allocator);
@@ -154,9 +152,9 @@ pub const Tile = struct {
 
     pub const Layer = struct {
         version: u32 = 1,
-        name: ManagedString,
+        name: []const u8,
         features: ArrayList(Tile.Feature),
-        keys: ArrayList(ManagedString),
+        keys: ArrayList([]const u8),
         values: ArrayList(Tile.Value),
         extent: ?u32 = 4096,
 
@@ -175,11 +173,11 @@ pub const Tile = struct {
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
             return protobuf.pb_decode(@This(), input, allocator);
         }
-        pub fn init(allocator: Allocator) @This() {
+        pub fn init(allocator: Allocator) Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This()) void {
-            return protobuf.pb_deinit(self);
+        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+            return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
             return protobuf.pb_dupe(@This(), self, allocator);
@@ -222,11 +220,11 @@ pub const Tile = struct {
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
     }
-    pub fn init(allocator: Allocator) @This() {
+    pub fn init(allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This()) void {
-        return protobuf.pb_deinit(self);
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_dupe(@This(), self, allocator);

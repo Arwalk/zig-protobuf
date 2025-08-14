@@ -9,15 +9,13 @@ const unittest = @import("./generated/unittest.pb.zig");
 const longName = @import("./generated/some/really/long/name/which/does/not/really/make/any/sense/but/sometimes/we/still/see/stuff/like/this.pb.zig");
 
 test "leak in allocated string" {
-    var demo = longName.WouldYouParseThisForMePlease.init(testing.allocator);
-    defer demo.deinit();
+    var demo = try longName.WouldYouParseThisForMePlease.init(testing.allocator);
+    defer demo.deinit(std.testing.allocator);
 
     // allocate a "dynamic" string
     const allocated = try testing.allocator.dupe(u8, "asd");
     // copy the allocated string
-    demo.field = .{ .field = try protobuf.ManagedString.copy(allocated, testing.allocator) };
-    // release the allocated string immediately
-    testing.allocator.free(allocated);
+    demo.field = .{ .field = allocated };
 
     var obtained: std.ArrayListUnmanaged(u8) = .empty;
     defer obtained.deinit(std.testing.allocator);
@@ -25,17 +23,17 @@ test "leak in allocated string" {
 
     try demo.encode(w.any(), std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, "asd", demo.field.?.field.getSlice());
+    try testing.expectEqualSlices(u8, "asd", demo.field.?.field);
 }
 
 test "leak in list of allocated bytes" {
-    var my_bytes = std.ArrayList(protobuf.ManagedString).init(testing.allocator);
-    try my_bytes.append(protobuf.ManagedString{ .Const = "abcdef" });
-    defer my_bytes.deinit();
+    var my_bytes = std.ArrayList([]const u8).init(testing.allocator);
+    try my_bytes.append(try std.testing.allocator.dupe(u8, "abcdef"));
 
     var msg = tests.WithRepeatedBytes{
         .byte_field = my_bytes,
     };
+    defer msg.deinit(std.testing.allocator);
 
     var buffer: std.ArrayListUnmanaged(u8) = .empty;
     defer buffer.deinit(std.testing.allocator);
@@ -44,5 +42,5 @@ test "leak in list of allocated bytes" {
     try msg.encode(w.any(), std.testing.allocator);
 
     const msg_copy = try tests.WithRepeatedBytes.decode(buffer.items, testing.allocator);
-    msg_copy.deinit();
+    msg_copy.deinit(std.testing.allocator);
 }

@@ -5,9 +5,7 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 const protobuf = @import("protobuf");
-const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
-const ManagedStruct = protobuf.ManagedStruct;
 const json = protobuf.json;
 const UnionDecodingError = protobuf.UnionDecodingError;
 
@@ -24,13 +22,13 @@ pub const AnyValue = struct {
         bytes_value,
     };
     pub const value_union = union(_value_case) {
-        string_value: ManagedString,
+        string_value: []const u8,
         bool_value: bool,
         int_value: i64,
         double_value: f64,
         array_value: ArrayValue,
         kvlist_value: KeyValueList,
-        bytes_value: ManagedString,
+        bytes_value: []const u8,
         pub const _union_desc = .{
             .string_value = fd(1, .String),
             .bool_value = fd(2, .{ .Varint = .Simple }),
@@ -52,11 +50,11 @@ pub const AnyValue = struct {
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
     }
-    pub fn init(allocator: Allocator) @This() {
+    pub fn init(allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This()) void {
-        return protobuf.pb_deinit(self);
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_dupe(@This(), self, allocator);
@@ -106,11 +104,11 @@ pub const ArrayValue = struct {
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
     }
-    pub fn init(allocator: Allocator) @This() {
+    pub fn init(allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This()) void {
-        return protobuf.pb_deinit(self);
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_dupe(@This(), self, allocator);
@@ -160,11 +158,11 @@ pub const KeyValueList = struct {
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
     }
-    pub fn init(allocator: Allocator) @This() {
+    pub fn init(allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This()) void {
-        return protobuf.pb_deinit(self);
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_dupe(@This(), self, allocator);
@@ -202,7 +200,7 @@ pub const KeyValueList = struct {
 };
 
 pub const KeyValue = struct {
-    key: ManagedString = .Empty,
+    key: []const u8 = &.{},
     value: ?AnyValue = null,
 
     pub const _desc_table = .{
@@ -216,11 +214,11 @@ pub const KeyValue = struct {
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
     }
-    pub fn init(allocator: Allocator) @This() {
+    pub fn init(allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This()) void {
-        return protobuf.pb_deinit(self);
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_dupe(@This(), self, allocator);
@@ -258,8 +256,8 @@ pub const KeyValue = struct {
 };
 
 pub const InstrumentationScope = struct {
-    name: ManagedString = .Empty,
-    version: ManagedString = .Empty,
+    name: []const u8 = &.{},
+    version: []const u8 = &.{},
     attributes: ArrayList(KeyValue),
     dropped_attributes_count: u32 = 0,
 
@@ -276,11 +274,11 @@ pub const InstrumentationScope = struct {
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
     }
-    pub fn init(allocator: Allocator) @This() {
+    pub fn init(allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This()) void {
-        return protobuf.pb_deinit(self);
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_dupe(@This(), self, allocator);

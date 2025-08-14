@@ -7,23 +7,23 @@ const tests_oneof = @import("./generated/tests/oneof.pb.zig");
 
 test "decode empty oneof must be null" {
     const decoded = try tests_oneof.OneofContainer.decode("", testing.allocator);
-    defer decoded.deinit();
+    defer decoded.deinit(std.testing.allocator);
 
-    try testing.expect(decoded.regular_field.isEmpty());
+    try testing.expect(decoded.regular_field.len == 0);
     try testing.expectEqual(decoded.enum_field, .UNSPECIFIED);
     try testing.expectEqual(decoded.some_oneof, null);
 }
 
 test "oneof encode/decode int" {
-    var demo = tests_oneof.OneofContainer.init(testing.allocator);
-    defer demo.deinit();
+    var demo = try tests_oneof.OneofContainer.init(testing.allocator);
+    defer demo.deinit(std.testing.allocator);
 
     demo.some_oneof = .{ .a_number = 10 };
 
     {
         // duplicate the one-of and deep compare
         const dupe = try demo.dupe(testing.allocator);
-        defer dupe.deinit();
+        defer dupe.deinit(std.testing.allocator);
         try testing.expectEqualDeep(demo, dupe);
     }
 
@@ -38,14 +38,14 @@ test "oneof encode/decode int" {
     }, obtained.items);
 
     const decoded = try tests_oneof.OneofContainer.decode(obtained.items, testing.allocator);
-    defer decoded.deinit();
+    defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqual(demo.some_oneof.?.a_number, decoded.some_oneof.?.a_number);
 }
 
 test "oneof encode/decode enum" {
-    var demo = tests_oneof.OneofContainer.init(testing.allocator);
-    defer demo.deinit();
+    var demo = try tests_oneof.OneofContainer.init(testing.allocator);
+    defer demo.deinit(std.testing.allocator);
 
     demo.some_oneof = .{ .enum_value = .SOMETHING2 };
 
@@ -58,7 +58,7 @@ test "oneof encode/decode enum" {
     {
         // duplicate the one-of and deep compare
         const dupe = try demo.dupe(testing.allocator);
-        defer dupe.deinit();
+        defer dupe.deinit(std.testing.allocator);
         try testing.expectEqualDeep(demo, dupe);
     }
 
@@ -67,21 +67,21 @@ test "oneof encode/decode enum" {
     }, obtained.items);
 
     const decoded = try tests_oneof.OneofContainer.decode(obtained.items, testing.allocator);
-    defer decoded.deinit();
+    defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqual(demo.some_oneof.?.enum_value, decoded.some_oneof.?.enum_value);
 }
 
 test "oneof encode/decode string" {
-    var demo = tests_oneof.OneofContainer.init(testing.allocator);
-    defer demo.deinit();
+    var demo = try tests_oneof.OneofContainer.init(testing.allocator);
+    defer demo.deinit(std.testing.allocator);
 
-    demo.some_oneof = .{ .string_in_oneof = protobuf.ManagedString.static("123") };
+    demo.some_oneof = .{ .string_in_oneof = try std.testing.allocator.dupe(u8, "123") };
 
     {
         // duplicate the one-of and deep compare
         const dupe = try demo.dupe(testing.allocator);
-        defer dupe.deinit();
+        defer dupe.deinit(std.testing.allocator);
         try testing.expectEqualDeep(demo, dupe);
     }
 
@@ -96,25 +96,25 @@ test "oneof encode/decode string" {
     }, obtained.items);
 
     const decoded = try tests_oneof.OneofContainer.decode(obtained.items, testing.allocator);
-    defer decoded.deinit();
+    defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqualSlices(
         u8,
-        demo.some_oneof.?.string_in_oneof.getSlice(),
-        decoded.some_oneof.?.string_in_oneof.getSlice(),
+        demo.some_oneof.?.string_in_oneof,
+        decoded.some_oneof.?.string_in_oneof,
     );
 }
 
 test "oneof encode/decode submessage" {
-    var demo = tests_oneof.OneofContainer.init(testing.allocator);
-    defer demo.deinit();
+    var demo = try tests_oneof.OneofContainer.init(testing.allocator);
+    defer demo.deinit(std.testing.allocator);
 
-    demo.some_oneof = .{ .message_in_oneof = .{ .value = 1, .str = protobuf.ManagedString.static("123") } };
+    demo.some_oneof = .{ .message_in_oneof = .{ .value = 1, .str = try std.testing.allocator.dupe(u8, "123") } };
 
     {
         // duplicate the one-of and deep compare
         const dupe = try demo.dupe(testing.allocator);
-        defer dupe.deinit();
+        defer dupe.deinit(std.testing.allocator);
         try testing.expectEqualDeep(demo, dupe);
     }
 
@@ -129,12 +129,12 @@ test "oneof encode/decode submessage" {
     }, obtained.items);
 
     const decoded = try tests_oneof.OneofContainer.decode(obtained.items, testing.allocator);
-    defer decoded.deinit();
+    defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqualSlices(
         u8,
-        demo.some_oneof.?.message_in_oneof.str.getSlice(),
-        decoded.some_oneof.?.message_in_oneof.str.getSlice(),
+        demo.some_oneof.?.message_in_oneof.str,
+        decoded.some_oneof.?.message_in_oneof.str,
     );
 }
 
@@ -155,9 +155,9 @@ test "decoding multiple messages keeps the last value 123" {
     };
 
     const decoded = try tests_oneof.OneofContainer.decode(payload, testing.allocator);
-    defer decoded.deinit();
+    defer decoded.deinit(std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, "123", decoded.some_oneof.?.message_in_oneof.str.getSlice());
+    try testing.expectEqualSlices(u8, "123", decoded.some_oneof.?.message_in_oneof.str);
 }
 
 test "decoding multiple messages keeps the last value 132" {
@@ -182,7 +182,7 @@ test "decoding multiple messages keeps the last value 132" {
     };
 
     const decoded = try tests_oneof.OneofContainer.decode(payload, testing.allocator);
-    defer decoded.deinit();
+    defer decoded.deinit(std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, "123", decoded.some_oneof.?.string_in_oneof.getSlice());
+    try testing.expectEqualSlices(u8, "123", decoded.some_oneof.?.string_in_oneof);
 }

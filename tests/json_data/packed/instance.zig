@@ -4,7 +4,7 @@ const ArrayList = std.ArrayList;
 const Packed = @import("../../generated/tests.pb.zig").Packed;
 
 pub fn get(allocator: Allocator) !Packed {
-    var instance = Packed.init(allocator);
+    var instance = try Packed.init(allocator);
 
     try instance.int32_list.append(-1);
     try instance.int32_list.append(2);
@@ -50,7 +50,7 @@ pub fn get(allocator: Allocator) !Packed {
 }
 
 pub fn get2(allocator: Allocator) !Packed {
-    var instance = Packed.init(allocator);
+    var instance = try Packed.init(allocator);
 
     try instance.int32_list.append(-1);
     try instance.int32_list.append(2);

@@ -5,9 +5,7 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 const protobuf = @import("protobuf");
-const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
-const ManagedStruct = protobuf.ManagedStruct;
 const json = protobuf.json;
 const UnionDecodingError = protobuf.UnionDecodingError;
 
@@ -24,11 +22,11 @@ pub const WouldYouParseThisForMePlease = struct {
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
     }
-    pub fn init(allocator: Allocator) @This() {
+    pub fn init(allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This()) void {
-        return protobuf.pb_deinit(self);
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_dupe(@This(), self, allocator);
@@ -66,7 +64,7 @@ pub const WouldYouParseThisForMePlease = struct {
 };
 
 pub const Test = struct {
-    field: ManagedString = .Empty,
+    field: []const u8 = &.{},
 
     pub const _desc_table = .{
         .field = fd(1, .String),
@@ -78,11 +76,11 @@ pub const Test = struct {
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
     }
-    pub fn init(allocator: Allocator) @This() {
+    pub fn init(allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This()) void {
-        return protobuf.pb_deinit(self);
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_dupe(@This(), self, allocator);
