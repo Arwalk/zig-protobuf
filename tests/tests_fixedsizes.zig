@@ -1,11 +1,10 @@
 const FixedSizes = @import("./generated/tests.pb.zig").FixedSizes;
 
 const std = @import("std");
-const testing = std.testing;
 
 test "FixedSizes" {
-    var demo = FixedSizes.init(testing.allocator);
-    defer demo.deinit();
+    var demo = try FixedSizes.init(std.testing.allocator);
+    defer demo.deinit(std.testing.allocator);
     demo.sfixed64 = -1;
     demo.sfixed32 = -2;
     demo.fixed32 = 1;
@@ -21,17 +20,17 @@ test "FixedSizes" {
     const w = obtained.writer(std.testing.allocator);
     try demo.encode(w.any(), std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, &expected, obtained.items);
+    try std.testing.expectEqualSlices(u8, &expected, obtained.items);
 
     // decoding
-    const decoded = try FixedSizes.decode(&expected, testing.allocator);
-    defer decoded.deinit();
-    try testing.expectEqual(demo, decoded);
+    const decoded = try FixedSizes.decode(&expected, std.testing.allocator);
+    defer decoded.deinit(std.testing.allocator);
+    try std.testing.expectEqual(demo, decoded);
 }
 
 test "FixedSizes - encode/decode" {
-    var demo = FixedSizes.init(testing.allocator);
-    defer demo.deinit();
+    var demo = try FixedSizes.init(std.testing.allocator);
+    defer demo.deinit(std.testing.allocator);
     demo.sfixed64 = -1123123141;
     demo.sfixed32 = -2131312;
     demo.fixed32 = 1;
@@ -46,7 +45,7 @@ test "FixedSizes - encode/decode" {
     try demo.encode(w.any(), std.testing.allocator);
 
     // decoding
-    const decoded = try FixedSizes.decode(obtained.items, testing.allocator);
-    defer decoded.deinit();
-    try testing.expectEqualDeep(demo, decoded);
+    const decoded = try FixedSizes.decode(obtained.items, std.testing.allocator);
+    defer decoded.deinit(std.testing.allocator);
+    try std.testing.expectEqualDeep(demo, decoded);
 }

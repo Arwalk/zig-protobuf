@@ -5,9 +5,7 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 const protobuf = @import("protobuf");
-const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
-const ManagedStruct = protobuf.ManagedStruct;
 const json = protobuf.json;
 const UnionDecodingError = protobuf.UnionDecodingError;
 
@@ -26,11 +24,11 @@ pub const Result = struct {
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
     }
-    pub fn init(allocator: Allocator) @This() {
+    pub fn init(allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This()) void {
-        return protobuf.pb_deinit(self);
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_dupe(@This(), self, allocator);
@@ -76,7 +74,7 @@ pub const Node = struct {
     };
     pub const node_union = union(_node_case) {
         sub_node: SubNode,
-        some_string: ManagedString,
+        some_string: []const u8,
         pub const _union_desc = .{
             .sub_node = fd(1, .{ .SubMessage = {} }),
             .some_string = fd(2, .String),
@@ -93,11 +91,11 @@ pub const Node = struct {
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
     }
-    pub fn init(allocator: Allocator) @This() {
+    pub fn init(allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This()) void {
-        return protobuf.pb_deinit(self);
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_dupe(@This(), self, allocator);
@@ -136,7 +134,7 @@ pub const Node = struct {
 
 pub const SubNode = struct {
     sub: ?Node = null,
-    another_string: ManagedString = .Empty,
+    another_string: []const u8 = &.{},
 
     pub const _desc_table = .{
         .sub = fd(1, .{ .SubMessage = {} }),
@@ -149,11 +147,11 @@ pub const SubNode = struct {
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
     }
-    pub fn init(allocator: Allocator) @This() {
+    pub fn init(allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This()) void {
-        return protobuf.pb_deinit(self);
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_dupe(@This(), self, allocator);

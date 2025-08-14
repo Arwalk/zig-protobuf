@@ -17,7 +17,7 @@ test "GraphicsDB" {
 
     // dupe the decoded
     const decoded_dupe = try decoded.dupe(testing.allocator);
-    defer decoded_dupe.deinit();
+    defer decoded_dupe.deinit(std.testing.allocator);
 
     {
         // encode and assert equality
@@ -31,13 +31,13 @@ test "GraphicsDB" {
 
     // then re-decode it
     const decoded2 = try graphics.GraphicsDB.decode(encoded.items, testing.allocator);
-    defer decoded2.deinit();
+    defer decoded2.deinit(std.testing.allocator);
 
     // finally assert equal objects
     try testing.expectEqualDeep(decoded, decoded2);
 
     // then clean up the decoded memory of the first object. this should free all string slices
-    decoded.deinit();
+    decoded.deinit(std.testing.allocator);
 
     {
         // encode and assert equality again

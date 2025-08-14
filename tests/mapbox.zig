@@ -12,7 +12,7 @@ test "mapbox decoding and re-encoding" {
 
     // first decode the binary
     const decoded = try vector_tile.Tile.decode(copied_slice, testing.allocator);
-    defer decoded.deinit();
+    defer decoded.deinit(std.testing.allocator);
 
     // then encode it
     var encoded: std.ArrayListUnmanaged(u8) = .empty;
@@ -27,7 +27,7 @@ test "mapbox decoding and re-encoding" {
 
     // then re-decode it
     const decoded2 = try vector_tile.Tile.decode(encoded.items, testing.allocator);
-    defer decoded2.deinit();
+    defer decoded2.deinit(std.testing.allocator);
 
     // finally assert
     try testing.expectEqualDeep(decoded, decoded2);

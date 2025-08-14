@@ -10,8 +10,8 @@ const unittest = @import("./generated/unittest.pb.zig");
 const longName = @import("./generated/some/really/long/name/which/does/not/really/make/any/sense/but/sometimes/we/still/see/stuff/like/this.pb.zig");
 
 test "empty string in optional fields must be serialized over the wire" {
-    var t = jspb.TestClone.init(testing.allocator);
-    defer t.deinit();
+    var t = try jspb.TestClone.init(testing.allocator);
+    defer t.deinit(std.testing.allocator);
 
     try testing.expect(t.str == null);
 
@@ -24,12 +24,12 @@ test "empty string in optional fields must be serialized over the wire" {
 
     // decoded must be null as well
     const decodedNull = try jspb.TestClone.decode("", testing.allocator);
-    defer decodedNull.deinit();
+    defer decodedNull.deinit(std.testing.allocator);
     try testing.expect(decodedNull.str == null);
 
     // setting a value to "" must serialize the value
-    t.str = .{ .Const = "" };
-    try testing.expect(t.str.?.isEmpty());
+    t.str = "";
+    try testing.expect(t.str.?.len == 0);
 
     // then the encoded must be an empty string
     var encodedEmpty: std.ArrayListUnmanaged(u8) = .empty;
@@ -40,8 +40,8 @@ test "empty string in optional fields must be serialized over the wire" {
 
     // decoded must be null as well
     const decodedEmpty = try jspb.TestClone.decode(encodedEmpty.items, testing.allocator);
-    defer decodedEmpty.deinit();
-    try testing.expect(decodedEmpty.str.?.isEmpty());
+    defer decodedEmpty.deinit(std.testing.allocator);
+    try testing.expect(decodedEmpty.str.?.len == 0);
 }
 
 test "unittest.proto parse and re-encode" {
@@ -53,7 +53,7 @@ test "unittest.proto parse and re-encode" {
 
     // first decode the binary
     const decoded = try unittest.TestAllTypes.decode(binary_file, testing.allocator);
-    defer decoded.deinit();
+    defer decoded.deinit(std.testing.allocator);
 
     try assert(decoded);
 
@@ -66,7 +66,7 @@ test "unittest.proto parse and re-encode" {
 
     // then re-decode it
     const decoded2 = try unittest.TestAllTypes.decode(encoded.items, testing.allocator);
-    defer decoded2.deinit();
+    defer decoded2.deinit(std.testing.allocator);
 
     var encoded2: std.ArrayListUnmanaged(u8) = .empty;
     defer encoded2.deinit(std.testing.allocator);
@@ -95,6 +95,6 @@ fn assert(decoded: unittest.TestAllTypes) !void {
     try testing.expectEqual(decoded.optional_float, 111.0);
     try testing.expectEqual(decoded.optional_double, 112.0);
     try testing.expectEqual(decoded.optional_bool, true);
-    try testing.expectEqualSlices(u8, decoded.optional_string.?.getSlice(), "115");
-    try testing.expectEqualSlices(u8, decoded.optional_bytes.?.getSlice(), "116");
+    try testing.expectEqualSlices(u8, decoded.optional_string.?, "115");
+    try testing.expectEqualSlices(u8, decoded.optional_bytes.?, "116");
 }

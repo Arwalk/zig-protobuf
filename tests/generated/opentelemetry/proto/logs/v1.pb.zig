@@ -5,9 +5,7 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 const protobuf = @import("protobuf");
-const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
-const ManagedStruct = protobuf.ManagedStruct;
 const json = protobuf.json;
 const UnionDecodingError = protobuf.UnionDecodingError;
 /// import package opentelemetry.proto.common.v1
@@ -63,11 +61,11 @@ pub const LogsData = struct {
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
     }
-    pub fn init(allocator: Allocator) @This() {
+    pub fn init(allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This()) void {
-        return protobuf.pb_deinit(self);
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_dupe(@This(), self, allocator);
@@ -107,7 +105,7 @@ pub const LogsData = struct {
 pub const ResourceLogs = struct {
     resource: ?opentelemetry_proto_resource_v1.Resource = null,
     scope_logs: ArrayList(ScopeLogs),
-    schema_url: ManagedString = .Empty,
+    schema_url: []const u8 = &.{},
 
     pub const _desc_table = .{
         .resource = fd(1, .{ .SubMessage = {} }),
@@ -121,11 +119,11 @@ pub const ResourceLogs = struct {
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
     }
-    pub fn init(allocator: Allocator) @This() {
+    pub fn init(allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This()) void {
-        return protobuf.pb_deinit(self);
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_dupe(@This(), self, allocator);
@@ -165,7 +163,7 @@ pub const ResourceLogs = struct {
 pub const ScopeLogs = struct {
     scope: ?opentelemetry_proto_common_v1.InstrumentationScope = null,
     log_records: ArrayList(LogRecord),
-    schema_url: ManagedString = .Empty,
+    schema_url: []const u8 = &.{},
 
     pub const _desc_table = .{
         .scope = fd(1, .{ .SubMessage = {} }),
@@ -179,11 +177,11 @@ pub const ScopeLogs = struct {
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
     }
-    pub fn init(allocator: Allocator) @This() {
+    pub fn init(allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This()) void {
-        return protobuf.pb_deinit(self);
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_dupe(@This(), self, allocator);
@@ -224,13 +222,13 @@ pub const LogRecord = struct {
     time_unix_nano: u64 = 0,
     observed_time_unix_nano: u64 = 0,
     severity_number: SeverityNumber = @enumFromInt(0),
-    severity_text: ManagedString = .Empty,
+    severity_text: []const u8 = &.{},
     body: ?opentelemetry_proto_common_v1.AnyValue = null,
     attributes: ArrayList(opentelemetry_proto_common_v1.KeyValue),
     dropped_attributes_count: u32 = 0,
     flags: u32 = 0,
-    trace_id: ManagedString = .Empty,
-    span_id: ManagedString = .Empty,
+    trace_id: []const u8 = &.{},
+    span_id: []const u8 = &.{},
 
     pub const _desc_table = .{
         .time_unix_nano = fd(1, .{ .FixedInt = .I64 }),
@@ -251,11 +249,11 @@ pub const LogRecord = struct {
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
     }
-    pub fn init(allocator: Allocator) @This() {
+    pub fn init(allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This()) void {
-        return protobuf.pb_deinit(self);
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_dupe(@This(), self, allocator);

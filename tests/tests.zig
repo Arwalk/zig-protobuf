@@ -28,40 +28,42 @@ pub fn printAllDecoded(input: []const u8) !void {
 }
 
 test "DefaultValuesInit" {
-    var demo = DefaultValues.init(testing.allocator);
+    var demo = try DefaultValues.init(testing.allocator);
+    defer demo.deinit(std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, "default<>'\"abc", demo.string_field.?.getSlice());
+    try testing.expectEqualSlices(u8, "default<>'\"abc", demo.string_field.?);
     try testing.expectEqual(true, demo.bool_field.?);
     try testing.expectEqual(demo.int_field, 11);
     try testing.expectEqual(demo.enum_field.?, .E1);
-    try testing.expectEqualSlices(u8, "", demo.empty_field.?.getSlice());
-    try testing.expectEqualSlices(u8, "moo", demo.bytes_field.?.getSlice());
+    try testing.expectEqualSlices(u8, "", demo.empty_field.?);
+    try testing.expectEqualSlices(u8, "moo", demo.bytes_field.?);
 }
 
 test "DefaultValuesDecode" {
     var demo = try DefaultValues.decode("", testing.allocator);
+    defer demo.deinit(std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, "default<>'\"abc", demo.string_field.?.getSlice());
+    try testing.expectEqualSlices(u8, "default<>'\"abc", demo.string_field.?);
     try testing.expectEqual(true, demo.bool_field.?);
     try testing.expectEqual(demo.int_field, 11);
     try testing.expectEqual(demo.enum_field.?, .E1);
-    try testing.expectEqualSlices(u8, "", demo.empty_field.?.getSlice());
-    try testing.expectEqualSlices(u8, "moo", demo.bytes_field.?.getSlice());
+    try testing.expectEqualSlices(u8, "", demo.empty_field.?);
+    try testing.expectEqualSlices(u8, "moo", demo.bytes_field.?);
 }
 
 test "issue #74" {
-    var item = metrics.MetricsData.init(testing.allocator);
+    var item = try metrics.MetricsData.init(testing.allocator);
     var copy = try item.dupe(testing.allocator);
-    copy.deinit();
-    item.deinit();
+    copy.deinit(std.testing.allocator);
+    item.deinit(std.testing.allocator);
 }
 
 test "LogsData proto issue #84" {
-    var logsData = pblogs.LogsData.init(std.testing.allocator);
-    defer logsData.deinit();
+    var logsData = try pblogs.LogsData.init(std.testing.allocator);
+    defer logsData.deinit(std.testing.allocator);
 
-    const rl = pblogs.ResourceLogs.init(std.testing.allocator);
-    defer rl.deinit();
+    const rl = try pblogs.ResourceLogs.init(std.testing.allocator);
+    defer rl.deinit(std.testing.allocator);
 
     try logsData.resource_logs.append(rl);
 
@@ -88,11 +90,12 @@ const ManagedStruct = protobuf.ManagedStruct;
 //};
 
 test "self ref test" {
-    var demo = SelfRefNode.init(testing.allocator);
-    var demo2 = SelfRefNode.init(testing.allocator);
+    var demo = try SelfRefNode.init(testing.allocator);
+    const demo2 = try std.testing.allocator.create(SelfRefNode);
+    demo2.* = try SelfRefNode.init(testing.allocator);
     demo2.version = 1;
-    demo.node = ManagedStruct(SelfRefNode).managed(&demo2);
-    defer demo.deinit();
+    demo.node = demo2;
+    defer demo.deinit(std.testing.allocator);
 
     try testing.expectEqual(@as(i32, 0), demo.version);
 
@@ -105,9 +108,9 @@ test "self ref test" {
     try testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0x02, 0x08, 0x01 }, encoded.items);
 
     const decoded = try SelfRefNode.decode(encoded.items, testing.allocator);
-    defer decoded.deinit();
+    defer decoded.deinit(std.testing.allocator);
 
-    try testing.expectEqual(@as(i32, 1), decoded.node.?.get().version);
+    try testing.expectEqual(@as(i32, 1), decoded.node.?.version);
 }
 
 // TODO: check for cyclic structure
