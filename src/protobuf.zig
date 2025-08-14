@@ -603,7 +603,7 @@ fn dupe_field(
                     return result;
                 },
                 // Handle submessage in "oneof"; non-optional struct in union.
-                // Submessages in unions may be non-optional in proto3 and
+                // Submessages in unions will be non-optional in proto3 and
                 // editions, as submessages always have an explicit presence.
                 // As such, an "empty" submessage cannot be sent, and the lack
                 // of a sent submessage/other union field will be interpreted
