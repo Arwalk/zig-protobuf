@@ -5,7 +5,7 @@ const Allocator = std.mem.Allocator;
 const TestPackedTypes = @import("../../generated/unittest.pb.zig").TestPackedTypes;
 
 pub fn get(allocator: Allocator) !TestPackedTypes {
-    var instance = TestPackedTypes.init(allocator);
+    var instance = try TestPackedTypes.init(allocator);
     try instance.packed_float.append(1.0);
     try instance.packed_double.append(1.0);
     try instance.packed_float.append(math.nan(f32));

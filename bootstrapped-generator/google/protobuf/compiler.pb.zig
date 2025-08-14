@@ -5,9 +5,7 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 const protobuf = @import("protobuf");
-const ManagedString = protobuf.ManagedString;
 const fd = protobuf.fd;
-const ManagedStruct = protobuf.ManagedStruct;
 const json = protobuf.json;
 const UnionDecodingError = protobuf.UnionDecodingError;
 /// import package google.protobuf
@@ -17,7 +15,7 @@ pub const Version = struct {
     major: ?i32 = null,
     minor: ?i32 = null,
     patch: ?i32 = null,
-    suffix: ?ManagedString = null,
+    suffix: ?[]const u8 = null,
 
     pub const _desc_table = .{
         .major = fd(1, .{ .Varint = .Simple }),
@@ -32,11 +30,11 @@ pub const Version = struct {
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
     }
-    pub fn init(allocator: Allocator) @This() {
+    pub fn init(allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This()) void {
-        return protobuf.pb_deinit(self);
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_dupe(@This(), self, allocator);
@@ -74,8 +72,8 @@ pub const Version = struct {
 };
 
 pub const CodeGeneratorRequest = struct {
-    file_to_generate: ArrayList(ManagedString),
-    parameter: ?ManagedString = null,
+    file_to_generate: ArrayList([]const u8),
+    parameter: ?[]const u8 = null,
     proto_file: ArrayList(google_protobuf.FileDescriptorProto),
     compiler_version: ?Version = null,
 
@@ -92,11 +90,11 @@ pub const CodeGeneratorRequest = struct {
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
     }
-    pub fn init(allocator: Allocator) @This() {
+    pub fn init(allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This()) void {
-        return protobuf.pb_deinit(self);
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_dupe(@This(), self, allocator);
@@ -134,7 +132,7 @@ pub const CodeGeneratorRequest = struct {
 };
 
 pub const CodeGeneratorResponse = struct {
-    @"error": ?ManagedString = null,
+    @"error": ?[]const u8 = null,
     supported_features: ?u64 = null,
     file: ArrayList(CodeGeneratorResponse.File),
 
@@ -151,9 +149,9 @@ pub const CodeGeneratorResponse = struct {
     };
 
     pub const File = struct {
-        name: ?ManagedString = null,
-        insertion_point: ?ManagedString = null,
-        content: ?ManagedString = null,
+        name: ?[]const u8 = null,
+        insertion_point: ?[]const u8 = null,
+        content: ?[]const u8 = null,
         generated_code_info: ?google_protobuf.GeneratedCodeInfo = null,
 
         pub const _desc_table = .{
@@ -169,11 +167,11 @@ pub const CodeGeneratorResponse = struct {
         pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
             return protobuf.pb_decode(@This(), input, allocator);
         }
-        pub fn init(allocator: Allocator) @This() {
+        pub fn init(allocator: Allocator) Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This()) void {
-            return protobuf.pb_deinit(self);
+        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+            return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
             return protobuf.pb_dupe(@This(), self, allocator);
@@ -216,11 +214,11 @@ pub const CodeGeneratorResponse = struct {
     pub fn decode(input: []const u8, allocator: Allocator) UnionDecodingError!@This() {
         return protobuf.pb_decode(@This(), input, allocator);
     }
-    pub fn init(allocator: Allocator) @This() {
+    pub fn init(allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This()) void {
-        return protobuf.pb_deinit(self);
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: Allocator) Allocator.Error!@This() {
         return protobuf.pb_dupe(@This(), self, allocator);
