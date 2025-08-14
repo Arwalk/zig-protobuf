@@ -36,7 +36,7 @@ pub const Version = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -75,9 +75,9 @@ pub const Version = struct {
 };
 
 pub const CodeGeneratorRequest = struct {
-    file_to_generate: std.ArrayList([]const u8),
+    file_to_generate: std.ArrayListUnmanaged([]const u8),
     parameter: ?[]const u8 = null,
-    proto_file: std.ArrayList(google_protobuf.FileDescriptorProto),
+    proto_file: std.ArrayListUnmanaged(google_protobuf.FileDescriptorProto),
     compiler_version: ?Version = null,
 
     pub const _desc_table = .{
@@ -103,7 +103,7 @@ pub const CodeGeneratorRequest = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -144,7 +144,7 @@ pub const CodeGeneratorRequest = struct {
 pub const CodeGeneratorResponse = struct {
     @"error": ?[]const u8 = null,
     supported_features: ?u64 = null,
-    file: std.ArrayList(CodeGeneratorResponse.File),
+    file: std.ArrayListUnmanaged(CodeGeneratorResponse.File),
 
     pub const _desc_table = .{
         .@"error" = fd(1, .String),
@@ -187,7 +187,7 @@ pub const CodeGeneratorResponse = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -241,7 +241,7 @@ pub const CodeGeneratorResponse = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {

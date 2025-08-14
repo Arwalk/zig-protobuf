@@ -33,11 +33,11 @@ test "long package" {
 
 test "packed int32_list encoding" {
     var demo = try tests.Packed.init(std.testing.allocator);
-    try demo.int32_list.append(0x01);
-    try demo.int32_list.append(0x02);
-    try demo.int32_list.append(0x03);
-    try demo.int32_list.append(0x04);
     defer demo.deinit(std.testing.allocator);
+    try demo.int32_list.append(std.testing.allocator, 0x01);
+    try demo.int32_list.append(std.testing.allocator, 0x02);
+    try demo.int32_list.append(std.testing.allocator, 0x03);
+    try demo.int32_list.append(std.testing.allocator, 0x04);
 
     var obtained: std.ArrayListUnmanaged(u8) = .empty;
     defer obtained.deinit(std.testing.allocator);
@@ -57,18 +57,18 @@ test "packed int32_list encoding" {
         0x04,
     }, obtained.items);
 
-    const decoded = try tests.Packed.decode(obtained.items, testing.allocator);
+    var decoded = try tests.Packed.decode(obtained.items, testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(i32, demo.int32_list.items, decoded.int32_list.items);
 }
 
 test "unpacked int32_list" {
     var demo = try tests.UnPacked.init(testing.allocator);
-    try demo.int32_list.append(0x01);
-    try demo.int32_list.append(0x02);
-    try demo.int32_list.append(0x03);
-    try demo.int32_list.append(0x04);
     defer demo.deinit(std.testing.allocator);
+    try demo.int32_list.append(std.testing.allocator, 0x01);
+    try demo.int32_list.append(std.testing.allocator, 0x02);
+    try demo.int32_list.append(std.testing.allocator, 0x03);
+    try demo.int32_list.append(std.testing.allocator, 0x04);
 
     var obtained: std.ArrayListUnmanaged(u8) = .empty;
     defer obtained.deinit(std.testing.allocator);
@@ -78,14 +78,14 @@ test "unpacked int32_list" {
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x01, 0x08, 0x02, 0x08, 0x03, 0x08, 0x04 }, obtained.items);
 
-    const decoded = try tests.UnPacked.decode(obtained.items, testing.allocator);
+    var decoded = try tests.UnPacked.decode(obtained.items, testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(i32, demo.int32_list.items, decoded.int32_list.items);
 }
 
 test "Required.Proto3.ProtobufInput.ValidDataRepeated.BOOL.PackedInput.ProtobufOutput" {
     const bytes = "\xda\x02\x28\x00\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01\xce\xc2\xf1\x05\x80\x80\x80\x80\x20\xff\xff\xff\xff\xff\xff\xff\xff\x7f\x80\x80\x80\x80\x80\x80\x80\x80\x80\x01";
-    const m = try proto3.TestAllTypesProto3.decode(bytes, testing.allocator);
+    var m = try proto3.TestAllTypesProto3.decode(bytes, testing.allocator);
     defer m.deinit(std.testing.allocator);
 
     // TODO: try testing.expectEqualSlices(bool, &[_]bool{ false, false, false, false, true, false, false }, m.repeated_bool.items);

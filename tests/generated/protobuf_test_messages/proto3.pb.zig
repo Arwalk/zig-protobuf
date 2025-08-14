@@ -37,74 +37,74 @@ pub const TestAllTypesProto3 = struct {
     optional_aliased_enum: TestAllTypesProto3.AliasedEnum = @enumFromInt(0),
     optional_string_piece: []const u8 = &.{},
     optional_cord: []const u8 = &.{},
-    repeated_int32: std.ArrayList(i32),
-    repeated_int64: std.ArrayList(i64),
-    repeated_uint32: std.ArrayList(u32),
-    repeated_uint64: std.ArrayList(u64),
-    repeated_sint32: std.ArrayList(i32),
-    repeated_sint64: std.ArrayList(i64),
-    repeated_fixed32: std.ArrayList(u32),
-    repeated_fixed64: std.ArrayList(u64),
-    repeated_sfixed32: std.ArrayList(i32),
-    repeated_sfixed64: std.ArrayList(i64),
-    repeated_float: std.ArrayList(f32),
-    repeated_double: std.ArrayList(f64),
-    repeated_bool: std.ArrayList(bool),
-    repeated_string: std.ArrayList([]const u8),
-    repeated_bytes: std.ArrayList([]const u8),
-    repeated_nested_message: std.ArrayList(TestAllTypesProto3.NestedMessage),
-    repeated_foreign_message: std.ArrayList(ForeignMessage),
-    repeated_nested_enum: std.ArrayList(TestAllTypesProto3.NestedEnum),
-    repeated_foreign_enum: std.ArrayList(ForeignEnum),
-    repeated_string_piece: std.ArrayList([]const u8),
-    repeated_cord: std.ArrayList([]const u8),
-    packed_int32: std.ArrayList(i32),
-    packed_int64: std.ArrayList(i64),
-    packed_uint32: std.ArrayList(u32),
-    packed_uint64: std.ArrayList(u64),
-    packed_sint32: std.ArrayList(i32),
-    packed_sint64: std.ArrayList(i64),
-    packed_fixed32: std.ArrayList(u32),
-    packed_fixed64: std.ArrayList(u64),
-    packed_sfixed32: std.ArrayList(i32),
-    packed_sfixed64: std.ArrayList(i64),
-    packed_float: std.ArrayList(f32),
-    packed_double: std.ArrayList(f64),
-    packed_bool: std.ArrayList(bool),
-    packed_nested_enum: std.ArrayList(TestAllTypesProto3.NestedEnum),
-    unpacked_int32: std.ArrayList(i32),
-    unpacked_int64: std.ArrayList(i64),
-    unpacked_uint32: std.ArrayList(u32),
-    unpacked_uint64: std.ArrayList(u64),
-    unpacked_sint32: std.ArrayList(i32),
-    unpacked_sint64: std.ArrayList(i64),
-    unpacked_fixed32: std.ArrayList(u32),
-    unpacked_fixed64: std.ArrayList(u64),
-    unpacked_sfixed32: std.ArrayList(i32),
-    unpacked_sfixed64: std.ArrayList(i64),
-    unpacked_float: std.ArrayList(f32),
-    unpacked_double: std.ArrayList(f64),
-    unpacked_bool: std.ArrayList(bool),
-    unpacked_nested_enum: std.ArrayList(TestAllTypesProto3.NestedEnum),
-    map_int32_int32: std.ArrayList(TestAllTypesProto3.MapInt32Int32Entry),
-    map_int64_int64: std.ArrayList(TestAllTypesProto3.MapInt64Int64Entry),
-    map_uint32_uint32: std.ArrayList(TestAllTypesProto3.MapUint32Uint32Entry),
-    map_uint64_uint64: std.ArrayList(TestAllTypesProto3.MapUint64Uint64Entry),
-    map_sint32_sint32: std.ArrayList(TestAllTypesProto3.MapSint32Sint32Entry),
-    map_sint64_sint64: std.ArrayList(TestAllTypesProto3.MapSint64Sint64Entry),
-    map_fixed32_fixed32: std.ArrayList(TestAllTypesProto3.MapFixed32Fixed32Entry),
-    map_fixed64_fixed64: std.ArrayList(TestAllTypesProto3.MapFixed64Fixed64Entry),
-    map_sfixed32_sfixed32: std.ArrayList(TestAllTypesProto3.MapSfixed32Sfixed32Entry),
-    map_sfixed64_sfixed64: std.ArrayList(TestAllTypesProto3.MapSfixed64Sfixed64Entry),
-    map_int32_float: std.ArrayList(TestAllTypesProto3.MapInt32FloatEntry),
-    map_int32_double: std.ArrayList(TestAllTypesProto3.MapInt32DoubleEntry),
-    map_bool_bool: std.ArrayList(TestAllTypesProto3.MapBoolBoolEntry),
-    map_string_string: std.ArrayList(TestAllTypesProto3.MapStringStringEntry),
-    map_string_bytes: std.ArrayList(TestAllTypesProto3.MapStringBytesEntry),
-    map_string_nested_message: std.ArrayList(TestAllTypesProto3.MapStringNestedMessageEntry),
-    map_string_foreign_message: std.ArrayList(TestAllTypesProto3.MapStringForeignMessageEntry),
-    map_string_nested_enum: std.ArrayList(TestAllTypesProto3.MapStringNestedEnumEntry),
-    map_string_foreign_enum: std.ArrayList(TestAllTypesProto3.MapStringForeignEnumEntry),
+    repeated_int32: std.ArrayListUnmanaged(i32),
+    repeated_int64: std.ArrayListUnmanaged(i64),
+    repeated_uint32: std.ArrayListUnmanaged(u32),
+    repeated_uint64: std.ArrayListUnmanaged(u64),
+    repeated_sint32: std.ArrayListUnmanaged(i32),
+    repeated_sint64: std.ArrayListUnmanaged(i64),
+    repeated_fixed32: std.ArrayListUnmanaged(u32),
+    repeated_fixed64: std.ArrayListUnmanaged(u64),
+    repeated_sfixed32: std.ArrayListUnmanaged(i32),
+    repeated_sfixed64: std.ArrayListUnmanaged(i64),
+    repeated_float: std.ArrayListUnmanaged(f32),
+    repeated_double: std.ArrayListUnmanaged(f64),
+    repeated_bool: std.ArrayListUnmanaged(bool),
+    repeated_string: std.ArrayListUnmanaged([]const u8),
+    repeated_bytes: std.ArrayListUnmanaged([]const u8),
+    repeated_nested_message: std.ArrayListUnmanaged(TestAllTypesProto3.NestedMessage),
+    repeated_foreign_message: std.ArrayListUnmanaged(ForeignMessage),
+    repeated_nested_enum: std.ArrayListUnmanaged(TestAllTypesProto3.NestedEnum),
+    repeated_foreign_enum: std.ArrayListUnmanaged(ForeignEnum),
+    repeated_string_piece: std.ArrayListUnmanaged([]const u8),
+    repeated_cord: std.ArrayListUnmanaged([]const u8),
+    packed_int32: std.ArrayListUnmanaged(i32),
+    packed_int64: std.ArrayListUnmanaged(i64),
+    packed_uint32: std.ArrayListUnmanaged(u32),
+    packed_uint64: std.ArrayListUnmanaged(u64),
+    packed_sint32: std.ArrayListUnmanaged(i32),
+    packed_sint64: std.ArrayListUnmanaged(i64),
+    packed_fixed32: std.ArrayListUnmanaged(u32),
+    packed_fixed64: std.ArrayListUnmanaged(u64),
+    packed_sfixed32: std.ArrayListUnmanaged(i32),
+    packed_sfixed64: std.ArrayListUnmanaged(i64),
+    packed_float: std.ArrayListUnmanaged(f32),
+    packed_double: std.ArrayListUnmanaged(f64),
+    packed_bool: std.ArrayListUnmanaged(bool),
+    packed_nested_enum: std.ArrayListUnmanaged(TestAllTypesProto3.NestedEnum),
+    unpacked_int32: std.ArrayListUnmanaged(i32),
+    unpacked_int64: std.ArrayListUnmanaged(i64),
+    unpacked_uint32: std.ArrayListUnmanaged(u32),
+    unpacked_uint64: std.ArrayListUnmanaged(u64),
+    unpacked_sint32: std.ArrayListUnmanaged(i32),
+    unpacked_sint64: std.ArrayListUnmanaged(i64),
+    unpacked_fixed32: std.ArrayListUnmanaged(u32),
+    unpacked_fixed64: std.ArrayListUnmanaged(u64),
+    unpacked_sfixed32: std.ArrayListUnmanaged(i32),
+    unpacked_sfixed64: std.ArrayListUnmanaged(i64),
+    unpacked_float: std.ArrayListUnmanaged(f32),
+    unpacked_double: std.ArrayListUnmanaged(f64),
+    unpacked_bool: std.ArrayListUnmanaged(bool),
+    unpacked_nested_enum: std.ArrayListUnmanaged(TestAllTypesProto3.NestedEnum),
+    map_int32_int32: std.ArrayListUnmanaged(TestAllTypesProto3.MapInt32Int32Entry),
+    map_int64_int64: std.ArrayListUnmanaged(TestAllTypesProto3.MapInt64Int64Entry),
+    map_uint32_uint32: std.ArrayListUnmanaged(TestAllTypesProto3.MapUint32Uint32Entry),
+    map_uint64_uint64: std.ArrayListUnmanaged(TestAllTypesProto3.MapUint64Uint64Entry),
+    map_sint32_sint32: std.ArrayListUnmanaged(TestAllTypesProto3.MapSint32Sint32Entry),
+    map_sint64_sint64: std.ArrayListUnmanaged(TestAllTypesProto3.MapSint64Sint64Entry),
+    map_fixed32_fixed32: std.ArrayListUnmanaged(TestAllTypesProto3.MapFixed32Fixed32Entry),
+    map_fixed64_fixed64: std.ArrayListUnmanaged(TestAllTypesProto3.MapFixed64Fixed64Entry),
+    map_sfixed32_sfixed32: std.ArrayListUnmanaged(TestAllTypesProto3.MapSfixed32Sfixed32Entry),
+    map_sfixed64_sfixed64: std.ArrayListUnmanaged(TestAllTypesProto3.MapSfixed64Sfixed64Entry),
+    map_int32_float: std.ArrayListUnmanaged(TestAllTypesProto3.MapInt32FloatEntry),
+    map_int32_double: std.ArrayListUnmanaged(TestAllTypesProto3.MapInt32DoubleEntry),
+    map_bool_bool: std.ArrayListUnmanaged(TestAllTypesProto3.MapBoolBoolEntry),
+    map_string_string: std.ArrayListUnmanaged(TestAllTypesProto3.MapStringStringEntry),
+    map_string_bytes: std.ArrayListUnmanaged(TestAllTypesProto3.MapStringBytesEntry),
+    map_string_nested_message: std.ArrayListUnmanaged(TestAllTypesProto3.MapStringNestedMessageEntry),
+    map_string_foreign_message: std.ArrayListUnmanaged(TestAllTypesProto3.MapStringForeignMessageEntry),
+    map_string_nested_enum: std.ArrayListUnmanaged(TestAllTypesProto3.MapStringNestedEnumEntry),
+    map_string_foreign_enum: std.ArrayListUnmanaged(TestAllTypesProto3.MapStringForeignEnumEntry),
     optional_bool_wrapper: ?google_protobuf.BoolValue = null,
     optional_int32_wrapper: ?google_protobuf.Int32Value = null,
     optional_int64_wrapper: ?google_protobuf.Int64Value = null,
@@ -114,15 +114,15 @@ pub const TestAllTypesProto3 = struct {
     optional_double_wrapper: ?google_protobuf.DoubleValue = null,
     optional_string_wrapper: ?google_protobuf.StringValue = null,
     optional_bytes_wrapper: ?google_protobuf.BytesValue = null,
-    repeated_bool_wrapper: std.ArrayList(google_protobuf.BoolValue),
-    repeated_int32_wrapper: std.ArrayList(google_protobuf.Int32Value),
-    repeated_int64_wrapper: std.ArrayList(google_protobuf.Int64Value),
-    repeated_uint32_wrapper: std.ArrayList(google_protobuf.UInt32Value),
-    repeated_uint64_wrapper: std.ArrayList(google_protobuf.UInt64Value),
-    repeated_float_wrapper: std.ArrayList(google_protobuf.FloatValue),
-    repeated_double_wrapper: std.ArrayList(google_protobuf.DoubleValue),
-    repeated_string_wrapper: std.ArrayList(google_protobuf.StringValue),
-    repeated_bytes_wrapper: std.ArrayList(google_protobuf.BytesValue),
+    repeated_bool_wrapper: std.ArrayListUnmanaged(google_protobuf.BoolValue),
+    repeated_int32_wrapper: std.ArrayListUnmanaged(google_protobuf.Int32Value),
+    repeated_int64_wrapper: std.ArrayListUnmanaged(google_protobuf.Int64Value),
+    repeated_uint32_wrapper: std.ArrayListUnmanaged(google_protobuf.UInt32Value),
+    repeated_uint64_wrapper: std.ArrayListUnmanaged(google_protobuf.UInt64Value),
+    repeated_float_wrapper: std.ArrayListUnmanaged(google_protobuf.FloatValue),
+    repeated_double_wrapper: std.ArrayListUnmanaged(google_protobuf.DoubleValue),
+    repeated_string_wrapper: std.ArrayListUnmanaged(google_protobuf.StringValue),
+    repeated_bytes_wrapper: std.ArrayListUnmanaged(google_protobuf.BytesValue),
     optional_duration: ?google_protobuf.Duration = null,
     optional_timestamp: ?google_protobuf.Timestamp = null,
     optional_field_mask: ?google_protobuf.FieldMask = null,
@@ -130,13 +130,13 @@ pub const TestAllTypesProto3 = struct {
     optional_any: ?google_protobuf.Any = null,
     optional_value: ?google_protobuf.Value = null,
     optional_null_value: google_protobuf.NullValue = @enumFromInt(0),
-    repeated_duration: std.ArrayList(google_protobuf.Duration),
-    repeated_timestamp: std.ArrayList(google_protobuf.Timestamp),
-    repeated_fieldmask: std.ArrayList(google_protobuf.FieldMask),
-    repeated_struct: std.ArrayList(google_protobuf.Struct),
-    repeated_any: std.ArrayList(google_protobuf.Any),
-    repeated_value: std.ArrayList(google_protobuf.Value),
-    repeated_list_value: std.ArrayList(google_protobuf.ListValue),
+    repeated_duration: std.ArrayListUnmanaged(google_protobuf.Duration),
+    repeated_timestamp: std.ArrayListUnmanaged(google_protobuf.Timestamp),
+    repeated_fieldmask: std.ArrayListUnmanaged(google_protobuf.FieldMask),
+    repeated_struct: std.ArrayListUnmanaged(google_protobuf.Struct),
+    repeated_any: std.ArrayListUnmanaged(google_protobuf.Any),
+    repeated_value: std.ArrayListUnmanaged(google_protobuf.Value),
+    repeated_list_value: std.ArrayListUnmanaged(google_protobuf.ListValue),
     fieldname1: i32 = 0,
     field_name2: i32 = 0,
     _field_name3: i32 = 0,
@@ -180,7 +180,7 @@ pub const TestAllTypesProto3 = struct {
         oneof_double: f64,
         oneof_enum: TestAllTypesProto3.NestedEnum,
         oneof_null_value: google_protobuf.NullValue,
-        pub const _union_desc = .{
+        pub const _desc_table = .{
             .oneof_uint32 = fd(111, .{ .Varint = .Simple }),
             .oneof_nested_message = fd(112, .{ .SubMessage = {} }),
             .oneof_string = fd(113, .String),
@@ -376,7 +376,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -439,7 +439,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -502,7 +502,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -565,7 +565,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -628,7 +628,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -691,7 +691,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -754,7 +754,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -817,7 +817,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -880,7 +880,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -943,7 +943,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1006,7 +1006,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1069,7 +1069,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1132,7 +1132,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1195,7 +1195,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1258,7 +1258,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1321,7 +1321,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1384,7 +1384,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1447,7 +1447,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1510,7 +1510,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1573,7 +1573,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.pb_init(@This(), allocator);
         }
-        pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.pb_deinit(allocator, self);
         }
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1627,7 +1627,7 @@ pub const TestAllTypesProto3 = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1688,7 +1688,7 @@ pub const ForeignMessage = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1745,7 +1745,7 @@ pub const NullHypothesisProto3 = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1808,7 +1808,7 @@ pub const EnumOnlyProto3 = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {

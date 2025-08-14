@@ -381,12 +381,12 @@ fn writeValue(
         .OneOf => |union_type| {
             // iterate over union tags until one matches `active_union_tag` and then use the comptime information to append the value
             const active_union_tag = @tagName(value);
-            inline for (@typeInfo(@TypeOf(union_type._union_desc)).@"struct".fields) |union_field| {
+            inline for (@typeInfo(@TypeOf(union_type._desc_table)).@"struct".fields) |union_field| {
                 if (std.mem.eql(u8, union_field.name, active_union_tag)) {
                     try writeValue(
                         writer,
                         allocator,
-                        @field(union_type._union_desc, union_field.name),
+                        @field(union_type._desc_table, union_field.name),
                         @field(value, union_field.name),
                         force_append,
                     );
@@ -433,7 +433,7 @@ fn get_field_default_value(comptime for_type: anytype) for_type {
     };
 }
 
-inline fn internal_init(comptime T: type, value: *T, allocator: std.mem.Allocator) !void {
+inline fn internal_init(comptime T: type, value: *T) !void {
     if (comptime @typeInfo(T) != .@"struct") {
         @compileError(std.fmt.comptimePrint(
             "Invalid internal init type {s}",
@@ -444,22 +444,7 @@ inline fn internal_init(comptime T: type, value: *T, allocator: std.mem.Allocato
         switch (@field(T._desc_table, field.name).ftype) {
             .String, .Bytes => {
                 if (field.defaultValue()) |val| {
-                    switch (@typeInfo(@TypeOf(val))) {
-                        .optional => {
-                            if (val != null and val.?.len > 0) {
-                                @field(value, field.name) = try allocator.dupe(u8, val.?);
-                            } else {
-                                @field(value, field.name) = val;
-                            }
-                        },
-                        else => {
-                            if (val.len > 0) {
-                                @field(value, field.name) = try allocator.dupe(u8, val);
-                            } else {
-                                @field(value, field.name) = val;
-                            }
-                        },
-                    }
+                    @field(value, field.name) = val;
                 } else {
                     @field(value, field.name) = get_field_default_value(field.type);
                 }
@@ -478,7 +463,7 @@ inline fn internal_init(comptime T: type, value: *T, allocator: std.mem.Allocato
                 @field(value, field.name) = null;
             },
             .List, .PackedList => {
-                @field(value, field.name) = @TypeOf(@field(value, field.name)).init(allocator);
+                @field(value, field.name) = .empty;
             },
         }
     }
@@ -489,12 +474,12 @@ pub fn pb_init(comptime T: type, allocator: std.mem.Allocator) std.mem.Allocator
     switch (comptime @typeInfo(@TypeOf(T))) {
         .pointer => |p| {
             const value = try allocator.create(p.child);
-            try internal_init(p.child, value, allocator);
+            try internal_init(p.child, value);
             return value;
         },
         else => {
             var value: T = undefined;
-            try internal_init(T, &value, allocator);
+            try internal_init(T, &value);
             return value;
         },
     }
@@ -529,12 +514,12 @@ fn dupe_field(
             switch (list_type) {
                 .SubMessage, .String => {
                     for (@field(original, field_name).items) |item| {
-                        try list.append(try item.dupe(allocator));
+                        try list.append(allocator, try item.dupe(allocator));
                     }
                 },
                 .Varint, .Bytes, .FixedInt => {
                     for (@field(original, field_name).items) |item| {
-                        try list.append(item);
+                        try list.append(allocator, item);
                     }
                 },
             }
@@ -545,7 +530,7 @@ fn dupe_field(
             var list = try @TypeOf(@field(original, field_name)).initCapacity(allocator, capacity);
 
             for (@field(original, field_name).items) |item| {
-                try list.append(item);
+                try list.append(allocator, item);
             }
 
             return list;
@@ -636,11 +621,11 @@ fn dupe_field(
             // if the value is set, inline-iterate over the possible OneOfs
             if (@field(original, field_name)) |union_value| {
                 const active = @tagName(union_value);
-                inline for (@typeInfo(@TypeOf(one_of._union_desc)).@"struct".fields) |union_field| {
+                inline for (@typeInfo(@TypeOf(one_of._desc_table)).@"struct".fields) |union_field| {
                     // and if one matches the actual tagName of the union
                     if (std.mem.eql(u8, union_field.name, active)) {
                         // deinit the current value
-                        const value = try dupe_field(union_value, union_field.name, @field(one_of._union_desc, union_field.name).ftype, allocator);
+                        const value = try dupe_field(union_value, union_field.name, @field(one_of._desc_table, union_field.name).ftype, allocator);
 
                         return @unionInit(one_of, union_field.name, value);
                     }
@@ -653,102 +638,185 @@ fn dupe_field(
 
 /// Generic deinit function. Properly cleans any field required. Meant to be embedded in generated structs.
 pub fn pb_deinit(allocator: std.mem.Allocator, data: anytype) void {
-    const T = @TypeOf(data);
+    const T = @typeInfo(@TypeOf(data)).pointer.child;
 
     inline for (@typeInfo(T).@"struct".fields) |field| {
-        deinit_field(data, allocator, field.name, @field(T._desc_table, field.name).ftype);
+        deinitField(allocator, data, field.name);
     }
 }
 
-/// Internal deinit function for a specific field
-fn deinit_field(result: anytype, allocator: std.mem.Allocator, comptime field_name: []const u8, comptime ftype: FieldType) void {
-    switch (ftype) {
-        .Varint, .FixedInt => {},
-        .SubMessage => {
-            const Field = comptime @TypeOf(@field(result, field_name));
-            switch (comptime @typeInfo(Field)) {
-                .optional => |o| {
-                    const Inner = o.child;
-                    switch (comptime @typeInfo(Inner)) {
+fn deinitField(
+    allocator: std.mem.Allocator,
+    root: anytype,
+    comptime field_name: []const u8,
+) void {
+    const Root = if (comptime @typeInfo(@TypeOf(root)) == .pointer)
+        @typeInfo(@TypeOf(root)).pointer.child
+    else
+        @TypeOf(root);
+    const root_ti = @typeInfo(Root);
+    const desc: FieldDescriptor = @field(Root._desc_table, field_name);
+    const Field = @FieldType(Root, field_name);
+    const ti = @typeInfo(Field);
+
+    comptime std.debug.assert(root_ti == .@"struct" or root_ti == .@"union");
+
+    switch (comptime ti) {
+        .bool, .int, .@"enum", .float => {},
+        .pointer => |p| {
+            const child_ti = @typeInfo(p.child);
+            switch (p.size) {
+                .one => {
+                    comptime std.debug.assert(child_ti == .@"struct");
+                    comptime std.debug.assert(desc.ftype == .SubMessage);
+                    @field(root, field_name).deinit(allocator);
+                    allocator.destroy(@field(root, field_name));
+                },
+                .slice => {
+                    comptime std.debug.assert(
+                        // TODO: Use slices instead of `ArrayListUnmanaged`
+                        // for (packed) lists.
+                        // desc.ftype == .List or
+                        // desc.ftype == .PackedList or
+                        desc.ftype == .String or
+                            desc.ftype == .Bytes,
+                    );
+                    const slc: []const p.child = @field(root, field_name);
+                    if (slc.len == 0) return;
+
+                    if (comptime root_ti == .@"struct") {
+                        const field_info = comptime std.meta.fieldInfo(
+                            Root,
+                            @field(std.meta.FieldEnum(Root), field_name),
+                        );
+
+                        if (comptime field_info.defaultValue()) |default| {
+                            if (comptime default.len > 0) {
+                                if (default.ptr == slc.ptr) return;
+                            }
+                        }
+                    }
+
+                    switch (comptime child_ti) {
                         .@"struct" => {
-                            if (@field(result, field_name)) |*submessage| {
-                                submessage.deinit(allocator);
+                            // Maps cannot be repeated; this is guaranteed
+                            // to be a slice of submessages.
+                            comptime std.debug.assert(desc.ftype == .List);
+                            for (slc) |*item| {
+                                item.deinit(allocator);
                             }
                         },
-                        .pointer => |p| {
-                            comptime std.debug.assert(p.size == .one);
-                            if (@field(result, field_name)) |submessage| {
-                                submessage.deinit(allocator);
-                                allocator.destroy(submessage);
+                        .pointer => |pi| {
+                            // `repeated` cannot be directly nested; this
+                            // is guaranteed to be `string` or `bytes`.
+                            comptime std.debug.assert(pi.child == u8);
+                            for (slc) |item| {
+                                allocator.free(item);
                             }
                         },
+                        .bool, .int, .@"enum", .float => {},
                         else => unreachable,
                     }
+
+                    allocator.free(slc);
                 },
-                .@"struct" => @field(result, field_name).deinit(allocator),
+                .many, .c => unreachable,
+            }
+        },
+        .optional => |o| {
+            if (@field(root, field_name) == null) return;
+            const child_ti = @typeInfo(o.child);
+            switch (comptime child_ti) {
                 .pointer => |p| {
-                    comptime std.debug.assert(p.size == .one);
-                    @field(result, field_name).deinit(allocator);
-                    allocator.destroy(@field(result, field_name));
+                    if (comptime p.size == .one) {
+                        comptime std.debug.assert(@typeInfo(p.child) == .@"struct");
+                        comptime std.debug.assert(desc.ftype == .SubMessage);
+
+                        @field(root, field_name).?.deinit(allocator);
+                        allocator.destroy(@field(root, field_name).?);
+                    } else if (comptime p.size == .slice) {
+                        // Only strings/bytes may be optional slices. Lists
+                        // and packed lists cannot be optional.
+                        comptime std.debug.assert(p.child == u8);
+
+                        if (comptime root_ti == .@"struct") {
+                            const field_info = comptime std.meta.fieldInfo(
+                                Root,
+                                @field(std.meta.FieldEnum(Root), field_name),
+                            );
+
+                            if (comptime field_info.defaultValue()) |default| {
+                                if (comptime default != null and default.?.len > 0) {
+                                    if (default.?.ptr == @field(root, field_name).?.ptr) return;
+                                }
+                            }
+                        }
+
+                        if (@field(root, field_name).?.len > 0)
+                            allocator.free(@field(root, field_name).?);
+                    } else unreachable;
                 },
+                .@"struct" => |s| {
+                    // If arraylist, also free items inside.
+                    if (comptime s.fields.len == 2 and
+                        @hasField(o.child, "items") and @hasField(o.child, "capacity"))
+                    {
+                        std.log.err("list of strings deinit", .{});
+                        const ListItem = @typeInfo(@FieldType(o.child, "items")).pointer.child;
+                        switch (comptime @typeInfo(ListItem)) {
+                            .pointer => {
+                                std.debug.assert(ListItem == []const u8);
+                                for (@field(root, field_name).?.items) |item| {
+                                    if (item.len > 0) allocator.free(item);
+                                }
+                            },
+                            .@"struct" => {
+                                for (@field(root, field_name).?.items) |*item| {
+                                    item.deinit(allocator);
+                                }
+                            },
+                            else => unreachable,
+                        }
+                    }
+                    @field(root, field_name).?.deinit(allocator);
+                },
+                .@"union" => {
+                    switch (@field(root, field_name).?) {
+                        inline else => |_, active| {
+                            deinitField(allocator, &@field(root, field_name).?, @tagName(active));
+                        },
+                    }
+                },
+                .@"enum", .bool, .int, .float => {},
                 else => unreachable,
             }
         },
-        .List => |list_type| {
-            switch (list_type) {
-                .SubMessage,
-                => {
-                    for (@field(result, field_name).items) |item| {
-                        item.deinit(allocator);
-                    }
-                },
-                .String, .Bytes => {
-                    for (@field(result, field_name).items) |item| {
-                        if (item.len > 0) {
-                            allocator.free(item);
+        // Maps, `oneof` submessages, and `ArrayListUnmanaged`s
+        .@"struct" => |s| {
+            // If arraylist, also free items inside.
+            if (comptime s.fields.len == 2 and
+                @hasField(Field, "items") and @hasField(Field, "capacity"))
+            {
+                const ListItem = @typeInfo(@FieldType(Field, "items")).pointer.child;
+                switch (comptime @typeInfo(ListItem)) {
+                    .pointer => {
+                        std.debug.assert(ListItem == []const u8);
+                        for (@field(root, field_name).items) |item| {
+                            if (item.len > 0) allocator.free(item);
                         }
-                    }
-                },
-                .Varint, .FixedInt => {},
-            }
-            @field(result, field_name).deinit();
-        },
-        .PackedList => |_| {
-            @field(result, field_name).deinit();
-        },
-        .String, .Bytes => {
-            const Field = comptime @TypeOf(@field(result, field_name));
-            const field_ti = comptime @typeInfo(Field);
-            switch (comptime field_ti) {
-                .optional => {
-                    if (@field(result, field_name)) |str| {
-                        if (str.len > 0) {
-                            allocator.free(str);
+                    },
+                    .@"struct" => {
+                        for (@field(root, field_name).items) |*item| {
+                            item.deinit(allocator);
                         }
-                    }
-                },
-                else => if (@field(result, field_name).len > 0)
-                    allocator.free(@field(result, field_name)),
-            }
-        },
-        .OneOf => |union_type| {
-            // if the value is set, inline-iterate over the possible OneOfs
-            if (@field(result, field_name)) |union_value| {
-                const active = @tagName(union_value);
-                inline for (@typeInfo(@TypeOf(union_type._union_desc)).@"struct".fields) |union_field| {
-                    // and if one matches the actual tagName of the union
-                    if (std.mem.eql(u8, union_field.name, active)) {
-                        // deinit the current value
-                        deinit_field(
-                            union_value,
-                            allocator,
-                            union_field.name,
-                            @field(union_type._union_desc, union_field.name).ftype,
-                        );
-                    }
+                    },
+                    .bool, .@"enum", .float, .int => {},
+                    else => unreachable,
                 }
             }
+            @field(root, field_name).deinit(allocator);
         },
+        else => unreachable,
     }
 }
 
@@ -1010,7 +1078,7 @@ fn decode_packed_list(
     slice: []const u8,
     comptime list_type: ListType,
     comptime T: type,
-    array: *std.ArrayList(T),
+    array: *std.ArrayListUnmanaged(T),
     allocator: std.mem.Allocator,
 ) (DecodingError || std.mem.Allocator.Error)!void {
     switch (list_type) {
@@ -1019,7 +1087,7 @@ fn decode_packed_list(
                 u32, i32, u64, i64, f32, f64 => {
                     var fixed_iterator = FixedDecoderIterator(T){ .input = slice };
                     while (fixed_iterator.next()) |value| {
-                        try array.append(value);
+                        try array.append(allocator, value);
                     }
                 },
                 else => @compileError("Type not accepted for FixedInt: " ++ @typeName(T)),
@@ -1028,13 +1096,13 @@ fn decode_packed_list(
         .Varint => |varint_type| {
             var varint_iterator = VarintDecoderIterator(T, varint_type){ .input = slice };
             while (try varint_iterator.next()) |value| {
-                try array.append(value);
+                try array.append(allocator, value);
             }
         },
         .String => {
             var varint_iterator = LengthDelimitedDecoderIterator{ .input = slice };
             while (try varint_iterator.next()) |value| {
-                try array.append(try allocator.dupe(u8, value));
+                try array.append(allocator, try allocator.dupe(u8, value));
             }
         },
         .Bytes, .SubMessage =>
@@ -1125,7 +1193,7 @@ fn decode_data(
     switch (field_desc.ftype) {
         .Varint, .FixedInt, .SubMessage, .String, .Bytes => {
             // first try to release the current value
-            deinit_field(result, allocator, field.name, field_desc.ftype);
+            deinitField(allocator, result, field.name);
 
             // then apply the new value
             switch (@typeInfo(field.type)) {
@@ -1139,25 +1207,25 @@ fn decode_data(
             switch (list_type) {
                 .Varint => |varint_type| {
                     switch (extracted_data.data) {
-                        .RawValue => |value| try @field(result, field.name).append(try decode_varint_value(child_type, varint_type, value)),
+                        .RawValue => |value| try @field(result, field.name).append(allocator, try decode_varint_value(child_type, varint_type, value)),
                         .Slice => |slice| try decode_packed_list(slice, list_type, child_type, &@field(result, field.name), allocator),
                     }
                 },
                 .FixedInt => |_| {
                     switch (extracted_data.data) {
-                        .RawValue => |value| try @field(result, field.name).append(decode_fixed_value(child_type, value)),
+                        .RawValue => |value| try @field(result, field.name).append(allocator, decode_fixed_value(child_type, value)),
                         .Slice => |slice| try decode_packed_list(slice, list_type, child_type, &@field(result, field.name), allocator),
                     }
                 },
                 .SubMessage => switch (extracted_data.data) {
                     .Slice => |slice| {
-                        try @field(result, field.name).append(try child_type.decode(slice, allocator));
+                        try @field(result, field.name).append(allocator, try child_type.decode(slice, allocator));
                     },
                     .RawValue => return error.InvalidInput,
                 },
                 .String, .Bytes => switch (extracted_data.data) {
                     .Slice => |slice| {
-                        try @field(result, field.name).append(try allocator.dupe(u8, slice));
+                        try @field(result, field.name).append(allocator, try allocator.dupe(u8, slice));
                     },
                     .RawValue => return error.InvalidInput,
                 },
@@ -1165,14 +1233,14 @@ fn decode_data(
         },
         .OneOf => |one_of| {
             // the following code:
-            // 1. creates a compile time for iterating over all `one_of._union_desc` fields
+            // 1. creates a compile time for iterating over all `one_of._desc_table` fields
             // 2. when a match is found, it creates the union value in the `field.name` property of the struct `result`. breaks the for at that point
-            const desc_union = one_of._union_desc;
+            const desc_union = one_of._desc_table;
             inline for (@typeInfo(one_of).@"union".fields) |union_field| {
                 const v = @field(desc_union, union_field.name);
                 if (is_tag_known(v, extracted_data)) {
                     // deinit the current value of the enum to prevent leaks
-                    deinit_field(result, allocator, field.name, field_desc.ftype);
+                    deinitField(allocator, result, field.name);
 
                     // and decode & assign the new value
                     const value = try decode_value(union_field.type, v.ftype, extracted_data, allocator);
@@ -1187,7 +1255,7 @@ inline fn is_tag_known(comptime field_desc: FieldDescriptor, tag_to_check: Extra
     if (field_desc.field_number) |field_number| {
         return field_number == tag_to_check.field_number;
     } else {
-        const desc_union = field_desc.ftype.OneOf._union_desc;
+        const desc_union = field_desc.ftype.OneOf._desc_table;
         inline for (@typeInfo(@TypeOf(desc_union)).@"struct".fields) |union_field| {
             if (is_tag_known(@field(desc_union, union_field.name), tag_to_check)) {
                 return true;
@@ -1290,20 +1358,20 @@ fn parseStructField(
         fieldInfo.name,
     ).ftype) {
         .List, .PackedList => |list_type| list: {
-            // repeated T -> ArrayList(T)
+            // repeated T -> ArrayListUnmanaged(T)
             switch (try source.peekNextTokenType()) {
                 .array_begin => {
                     assert(.array_begin == try source.next());
                     const child_type = @typeInfo(
                         fieldInfo.type.Slice,
                     ).pointer.child;
-                    var array_list = std.ArrayList(child_type).init(allocator);
+                    var array_list: std.ArrayListUnmanaged(child_type) = .empty;
                     while (true) {
                         if (.array_end == try source.peekNextTokenType()) {
                             _ = try source.next();
                             break;
                         }
-                        try array_list.ensureUnusedCapacity(1);
+                        try array_list.ensureUnusedCapacity(allocator, 1);
                         array_list.appendAssumeCapacity(switch (list_type) {
                             .Bytes => try parse_bytes(allocator, source, options),
                             .Varint, .FixedInt, .SubMessage, .String => other: {
@@ -1368,7 +1436,7 @@ fn parseStructField(
                         union_type,
                         union_field.name,
                         switch (@field(
-                            oneof._union_desc,
+                            oneof._desc_table,
                             union_field.name,
                         ).ftype) {
                             .Bytes => bytes: {
@@ -1583,7 +1651,7 @@ fn stringify_struct_field(
             try print_bytes(value, jws);
         },
         .List, .PackedList => |list_type| {
-            // ArrayList
+            // ArrayListUnmanaged
             const slice = value.items;
             try jws.beginArray();
             for (slice) |el| {
@@ -1616,7 +1684,7 @@ fn stringify_struct_field(
                 )) {
                     const union_camel_case_name = comptime to_camel_case(union_field.name);
                     try jws.objectField(union_camel_case_name);
-                    switch (@field(oneof._union_desc, union_field.name).ftype) {
+                    switch (@field(oneof._desc_table, union_field.name).ftype) {
                         .Varint, .FixedInt => {
                             try print_numeric(@field(value, union_field.name), jws);
                         },
@@ -1791,7 +1859,7 @@ pub fn MessageMixins(comptime Self: type) type {
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!Self {
             return pb_init(Self, allocator);
         }
-        pub fn deinit(self: Self, allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
             return pb_deinit(allocator, self);
         }
         pub fn dupe(self: Self, allocator: std.mem.Allocator) std.mem.Allocator.Error!Self {
@@ -1925,8 +1993,8 @@ test FixedDecoderIterator {
 // length delimited message including a list of varints
 test "unit varint packed - decode - multi-byte-varint" {
     const bytes = &[_]u8{ 0x03, 0x8e, 0x02, 0x9e, 0xa7, 0x05 };
-    var list = std.ArrayList(u32).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayListUnmanaged(u32) = .empty;
+    defer list.deinit(std.testing.allocator);
 
     try decode_packed_list(bytes, .{ .Varint = .Simple }, u32, &list, std.testing.allocator);
 

@@ -23,7 +23,7 @@ test "FixedSizes" {
     try std.testing.expectEqualSlices(u8, &expected, obtained.items);
 
     // decoding
-    const decoded = try FixedSizes.decode(&expected, std.testing.allocator);
+    var decoded = try FixedSizes.decode(&expected, std.testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try std.testing.expectEqual(demo, decoded);
 }
@@ -45,7 +45,7 @@ test "FixedSizes - encode/decode" {
     try demo.encode(w.any(), std.testing.allocator);
 
     // decoding
-    const decoded = try FixedSizes.decode(obtained.items, std.testing.allocator);
+    var decoded = try FixedSizes.decode(obtained.items, std.testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try std.testing.expectEqualDeep(demo, decoded);
 }

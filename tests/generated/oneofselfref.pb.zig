@@ -30,7 +30,7 @@ pub const Result = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -78,7 +78,7 @@ pub const Node = struct {
     pub const node_union = union(_node_case) {
         sub_node: SubNode,
         some_string: []const u8,
-        pub const _union_desc = .{
+        pub const _desc_table = .{
             .sub_node = fd(1, .{ .SubMessage = {} }),
             .some_string = fd(2, .String),
         };
@@ -104,7 +104,7 @@ pub const Node = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -167,7 +167,7 @@ pub const SubNode = struct {
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.pb_init(@This(), allocator);
     }
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.pb_deinit(allocator, self);
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {

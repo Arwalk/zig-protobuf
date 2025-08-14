@@ -93,7 +93,7 @@ const GenerationContext = struct {
             ret.name = try allocator.dupe(u8, packageToFileName(entry.key_ptr.*, &name_buf));
             ret.content = try std.mem.concat(allocator, u8, entry.value_ptr.*.items);
 
-            try self.res.file.append(ret);
+            try self.res.file.append(allocator, ret);
         }
 
         self.res.supported_features = @intFromEnum(plugin.CodeGeneratorResponse.Feature.FEATURE_PROTO3_OPTIONAL);
@@ -165,7 +165,7 @@ const GenerationContext = struct {
     }
 
     /// resolves an import path from the file A relative to B
-    fn resolvePath(self: *GenerationContext, allocator: std.mem.Allocator, a: []const u8, b: []const u8) ![]const u8 {
+    fn resolvePath(_: *GenerationContext, allocator: std.mem.Allocator, a: []const u8, b: []const u8) ![]const u8 {
         var a_path_buf: [std.fs.max_path_bytes]u8 = undefined;
         var b_path_buf: [std.fs.max_path_bytes]u8 = undefined;
 
@@ -174,7 +174,7 @@ const GenerationContext = struct {
 
         // to resolve some escaping oddities, the windows path separator is canonicalized to /
         const resolvedRelativePath = try std.fs.path.relative(allocator, aPath, bPath);
-        return std.mem.replaceOwned(u8, self.req.file_to_generate.allocator, resolvedRelativePath, "\\", "/");
+        return std.mem.replaceOwned(u8, allocator, resolvedRelativePath, "\\", "/");
     }
 
     pub fn printFileDeclarations(
@@ -195,7 +195,7 @@ const GenerationContext = struct {
         lines: *std.ArrayList([]const u8),
         fqn: FullName,
         file: descriptor.FileDescriptorProto,
-        enums: std.ArrayList(descriptor.EnumDescriptorProto),
+        enums: std.ArrayListUnmanaged(descriptor.EnumDescriptorProto),
     ) !void {
         _ = ctx;
         _ = file;
@@ -207,7 +207,7 @@ const GenerationContext = struct {
             try lines.append(try std.fmt.allocPrint(allocator, "\npub const {?s} = enum(i32) {{\n", .{e.name.?}));
 
             for (e.value.items) |elem| {
-                try lines.append(try std.fmt.allocPrint(allocator, "   {?s} = {},\n", .{ elem.name.?, elem.number orelse 0 }));
+                try lines.append(try std.fmt.allocPrint(allocator, "   {s} = {},\n", .{ elem.name.?, elem.number orelse 0 }));
             }
 
             try lines.append("    _,\n};\n\n");
@@ -314,7 +314,7 @@ const GenerationContext = struct {
                 }
             }
         } else {
-            prefix = "std.ArrayList(";
+            prefix = "std.ArrayListUnmanaged(";
             postfix = ")";
         }
 
@@ -519,7 +519,7 @@ const GenerationContext = struct {
         lines: *std.ArrayList([]const u8),
         fqn: FullName,
         file: descriptor.FileDescriptorProto,
-        messages: std.ArrayList(descriptor.DescriptorProto),
+        messages: std.ArrayListUnmanaged(descriptor.DescriptorProto),
     ) !void {
         for (messages.items) |message| {
             const m: descriptor.DescriptorProto = message;
@@ -588,7 +588,7 @@ const GenerationContext = struct {
                     }
 
                     try lines.append(
-                        \\    pub const _union_desc = .{
+                        \\    pub const _desc_table  = .{
                         \\
                     );
 
@@ -657,7 +657,7 @@ const GenerationContext = struct {
                 \\    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {{
                 \\        return protobuf.pb_init(@This(), allocator);
                 \\    }}
-                \\    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {{
+                \\    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {{
                 \\        return protobuf.pb_deinit(allocator, self);
                 \\    }}
                 \\    pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {{
