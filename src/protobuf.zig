@@ -168,7 +168,7 @@ fn writeFixed(writer: std.io.AnyWriter, value: anytype) std.io.AnyWriter.Error!v
 }
 
 /// Writes a submessage.
-/// Recursively calls pb_encode.
+/// Recursively calls encode.
 fn writeSubmessage(
     writer: std.io.AnyWriter,
     allocator: std.mem.Allocator,
@@ -179,7 +179,7 @@ fn writeSubmessage(
     var temp_buffer: std.ArrayListUnmanaged(u8) = .empty;
     defer temp_buffer.deinit(allocator);
     const w = temp_buffer.writer(allocator);
-    try pb_encode(w.any(), allocator, value);
+    try encode(w.any(), allocator, value);
     const size_encoded: u64 = temp_buffer.items.len;
     try writeRawVarint(writer, size_encoded);
     try writer.writeAll(temp_buffer.items);
@@ -397,7 +397,7 @@ fn writeValue(
 }
 
 /// Public encoding function, meant to be embedded in generated structs
-pub fn pb_encode(
+pub fn encode(
     writer: std.io.AnyWriter,
     allocator: std.mem.Allocator,
     data: anytype,
@@ -470,7 +470,7 @@ inline fn internal_init(comptime T: type, value: *T) !void {
 }
 
 /// Generic init function. Properly initialise any field required. Meant to be embedded in generated structs.
-pub fn pb_init(comptime T: type, allocator: std.mem.Allocator) std.mem.Allocator.Error!T {
+pub fn init(comptime T: type, allocator: std.mem.Allocator) std.mem.Allocator.Error!T {
     switch (comptime @typeInfo(@TypeOf(T))) {
         .pointer => |p| {
             const value = try allocator.create(p.child);
@@ -487,18 +487,18 @@ pub fn pb_init(comptime T: type, allocator: std.mem.Allocator) std.mem.Allocator
 
 /// Generic function to deeply duplicate a message using a new allocator.
 /// The original parameter is constant
-pub fn pb_dupe(comptime T: type, original: T, allocator: std.mem.Allocator) std.mem.Allocator.Error!T {
+pub fn dupe(comptime T: type, original: T, allocator: std.mem.Allocator) std.mem.Allocator.Error!T {
     var result: T = undefined;
 
     inline for (@typeInfo(T).@"struct".fields) |field| {
-        @field(result, field.name) = try dupe_field(original, field.name, @field(T._desc_table, field.name).ftype, allocator);
+        @field(result, field.name) = try dupeField(original, field.name, @field(T._desc_table, field.name).ftype, allocator);
     }
 
     return result;
 }
 
 /// Internal dupe function for a specific field
-fn dupe_field(
+fn dupeField(
     original: anytype,
     comptime field_name: []const u8,
     comptime ftype: FieldType,
@@ -650,7 +650,7 @@ fn dupe_field(
                     // and if one matches the actual tagName of the union
                     if (std.mem.eql(u8, union_field.name, active)) {
                         // deinit the current value
-                        const value = try dupe_field(union_value, union_field.name, @field(one_of._desc_table, union_field.name).ftype, allocator);
+                        const value = try dupeField(union_value, union_field.name, @field(one_of._desc_table, union_field.name).ftype, allocator);
 
                         return @unionInit(one_of, union_field.name, value);
                     }
@@ -662,7 +662,7 @@ fn dupe_field(
 }
 
 /// Generic deinit function. Properly cleans any field required. Meant to be embedded in generated structs.
-pub fn pb_deinit(allocator: std.mem.Allocator, data: anytype) void {
+pub fn deinit(allocator: std.mem.Allocator, data: anytype) void {
     const T = @typeInfo(@TypeOf(data)).pointer.child;
 
     inline for (@typeInfo(T).@"struct".fields) |field| {
@@ -736,7 +736,7 @@ fn deinitField(
                             // is guaranteed to be `string` or `bytes`.
                             comptime std.debug.assert(pi.child == u8);
                             for (slc) |item| {
-                                allocator.free(item);
+                                if (item.len > 0) allocator.free(item);
                             }
                         },
                         .bool, .int, .@"enum", .float => {},
@@ -1156,26 +1156,26 @@ fn decode_value(
             .Slice => |slice| b: {
                 switch (comptime @typeInfo(Decoded)) {
                     .@"struct" => {
-                        break :b try pb_decode(Decoded, slice, allocator);
+                        break :b try decode(Decoded, slice, allocator);
                     },
                     .pointer => |p| {
                         comptime std.debug.assert(p.size == .one);
                         const result: *p.child = try allocator.create(p.child);
                         errdefer allocator.destroy(result);
-                        result.* = try pb_decode(p.child, slice, allocator);
+                        result.* = try decode(p.child, slice, allocator);
                         break :b result;
                     },
                     .optional => |o| {
                         const Inner = o.child;
                         switch (comptime @typeInfo(Inner)) {
                             .@"struct" => {
-                                break :b try pb_decode(Inner, slice, allocator);
+                                break :b try decode(Inner, slice, allocator);
                             },
                             .pointer => |p| {
                                 comptime std.debug.assert(p.size == .one);
                                 const result: *p.child = try allocator.create(p.child);
                                 errdefer allocator.destroy(result);
-                                result.* = try pb_decode(p.child, slice, allocator);
+                                result.* = try decode(p.child, slice, allocator);
                                 break :b result;
                             },
                             else => {
@@ -1293,12 +1293,12 @@ inline fn is_tag_known(comptime field_desc: FieldDescriptor, tag_to_check: Extra
 
 /// public decoding function meant to be embedded in message structures
 /// Iterates over the input and try to fill the resulting structure accordingly.
-pub fn pb_decode(
+pub fn decode(
     comptime T: type,
     input: []const u8,
     allocator: std.mem.Allocator,
 ) (DecodingError || std.mem.Allocator.Error)!T {
-    var result = try pb_init(T, allocator);
+    var result = try init(T, allocator);
 
     var iterator = WireDecoderIterator{ .input = input };
 
@@ -1519,7 +1519,7 @@ fn parseStructField(
     };
 }
 
-pub fn pb_json_decode(
+pub fn jsonDecode(
     comptime T: type,
     input: []const u8,
     options: std.json.ParseOptions,
@@ -1529,7 +1529,7 @@ pub fn pb_json_decode(
     return parsed;
 }
 
-pub fn pb_json_encode(
+pub fn jsonEncode(
     data: anytype,
     options: std.json.StringifyOptions,
     allocator: std.mem.Allocator,
@@ -1746,7 +1746,7 @@ fn stringify_struct_field(
     }
 }
 
-pub fn pb_json_parse(
+pub fn jsonParse(
     Self: type,
     allocator: std.mem.Allocator,
     source: anytype,
@@ -1845,7 +1845,7 @@ pub fn pb_json_parse(
     return result;
 }
 
-pub fn pb_jsonStringify(Self: type, self: *const Self, jws: anytype) !void {
+pub fn jsonStringify(Self: type, self: *const Self, jws: anytype) !void {
     try jws.beginObject();
 
     inline for (@typeInfo(Self).@"struct".fields) |fieldInfo| {
