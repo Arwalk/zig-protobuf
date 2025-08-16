@@ -30,7 +30,10 @@ pub const Tag = packed struct(u16) {
 
     /// Encode tag to byte stream. Returns number of bytes used for encoding,
     /// which is guaranteed to be between 1-3 inclusive.
-    pub fn encode(comptime self: Tag, writer: std.io.AnyWriter) !usize {
+    pub inline fn encode(
+        comptime self: Tag,
+        writer: std.io.AnyWriter,
+    ) !usize {
         const out_bytes: []const u8 = comptime b: {
             var raw: u16 = @bitCast(self);
             var buf: [3]u8 = undefined;
