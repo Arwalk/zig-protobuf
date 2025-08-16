@@ -30,34 +30,40 @@ pub const Empty = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -67,13 +73,13 @@ pub const Empty = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -91,34 +97,40 @@ pub const EnumContainer = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -128,13 +140,13 @@ pub const EnumContainer = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -156,34 +168,40 @@ pub const Simple1 = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -193,13 +211,13 @@ pub const Simple1 = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -219,34 +237,40 @@ pub const Simple2 = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -256,13 +280,13 @@ pub const Simple2 = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -286,34 +310,40 @@ pub const SpecialCases = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -323,13 +353,13 @@ pub const SpecialCases = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -362,34 +392,40 @@ pub const OptionalFields = struct {
         ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
+
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
+
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.init(@This(), allocator);
         }
+
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
+
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
         }
-        pub fn json_decode(
+
+        pub fn jsonDecode(
             input: []const u8,
             options: std.json.ParseOptions,
             allocator: std.mem.Allocator,
         ) !std.json.Parsed(@This()) {
-            return protobuf.jsonDecode(@This(), input, options, allocator);
+            return protobuf.json.decode(@This(), input, options, allocator);
         }
-        pub fn json_encode(
+
+        pub fn jsonEncode(
             self: @This(),
             options: std.json.StringifyOptions,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
-            return protobuf.jsonEncode(self, options, allocator);
+            return protobuf.json.encode(self, options, allocator);
         }
 
         // This method is used by std.json
@@ -399,13 +435,13 @@ pub const OptionalFields = struct {
             source: anytype,
             options: std.json.ParseOptions,
         ) !@This() {
-            return protobuf.jsonParse(@This(), allocator, source, options);
+            return protobuf.json.parse(@This(), allocator, source, options);
         }
 
         // This method is used by std.json
         // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.jsonStringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws);
         }
     };
 
@@ -416,34 +452,40 @@ pub const OptionalFields = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -453,13 +495,13 @@ pub const OptionalFields = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -481,34 +523,40 @@ pub const HasExtensions = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -518,13 +566,13 @@ pub const HasExtensions = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -557,34 +605,40 @@ pub const Complex = struct {
         ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
+
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
+
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.init(@This(), allocator);
         }
+
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
+
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
         }
-        pub fn json_decode(
+
+        pub fn jsonDecode(
             input: []const u8,
             options: std.json.ParseOptions,
             allocator: std.mem.Allocator,
         ) !std.json.Parsed(@This()) {
-            return protobuf.jsonDecode(@This(), input, options, allocator);
+            return protobuf.json.decode(@This(), input, options, allocator);
         }
-        pub fn json_encode(
+
+        pub fn jsonEncode(
             self: @This(),
             options: std.json.StringifyOptions,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
-            return protobuf.jsonEncode(self, options, allocator);
+            return protobuf.json.encode(self, options, allocator);
         }
 
         // This method is used by std.json
@@ -594,13 +648,13 @@ pub const Complex = struct {
             source: anytype,
             options: std.json.ParseOptions,
         ) !@This() {
-            return protobuf.jsonParse(@This(), allocator, source, options);
+            return protobuf.json.parse(@This(), allocator, source, options);
         }
 
         // This method is used by std.json
         // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.jsonStringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws);
         }
     };
 
@@ -611,34 +665,40 @@ pub const Complex = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -648,13 +708,13 @@ pub const Complex = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -672,34 +732,40 @@ pub const IsExtension = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -709,13 +775,13 @@ pub const IsExtension = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -729,34 +795,40 @@ pub const IndirectExtension = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -766,13 +838,13 @@ pub const IndirectExtension = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -806,34 +878,40 @@ pub const DefaultValues = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -843,13 +921,13 @@ pub const DefaultValues = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -881,34 +959,40 @@ pub const FloatingPointFields = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -918,13 +1002,13 @@ pub const FloatingPointFields = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -950,34 +1034,40 @@ pub const TestClone = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -987,13 +1077,13 @@ pub const TestClone = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -1011,34 +1101,40 @@ pub const CloneExtension = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -1048,13 +1144,13 @@ pub const CloneExtension = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -1076,34 +1172,40 @@ pub const TestGroup = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -1113,13 +1215,13 @@ pub const TestGroup = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -1137,34 +1239,40 @@ pub const TestReservedNames = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -1174,13 +1282,13 @@ pub const TestReservedNames = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -1194,34 +1302,40 @@ pub const TestReservedNamesExtension = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -1231,13 +1345,13 @@ pub const TestReservedNamesExtension = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -1317,34 +1431,40 @@ pub const TestMessageWithOneof = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -1354,13 +1474,13 @@ pub const TestMessageWithOneof = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -1380,34 +1500,40 @@ pub const TestEndsWithBytes = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -1417,13 +1543,13 @@ pub const TestEndsWithBytes = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -1472,34 +1598,40 @@ pub const TestMapFieldsNoBinary = struct {
         ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
+
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
+
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.init(@This(), allocator);
         }
+
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
+
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
         }
-        pub fn json_decode(
+
+        pub fn jsonDecode(
             input: []const u8,
             options: std.json.ParseOptions,
             allocator: std.mem.Allocator,
         ) !std.json.Parsed(@This()) {
-            return protobuf.jsonDecode(@This(), input, options, allocator);
+            return protobuf.json.decode(@This(), input, options, allocator);
         }
-        pub fn json_encode(
+
+        pub fn jsonEncode(
             self: @This(),
             options: std.json.StringifyOptions,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
-            return protobuf.jsonEncode(self, options, allocator);
+            return protobuf.json.encode(self, options, allocator);
         }
 
         // This method is used by std.json
@@ -1509,13 +1641,13 @@ pub const TestMapFieldsNoBinary = struct {
             source: anytype,
             options: std.json.ParseOptions,
         ) !@This() {
-            return protobuf.jsonParse(@This(), allocator, source, options);
+            return protobuf.json.parse(@This(), allocator, source, options);
         }
 
         // This method is used by std.json
         // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.jsonStringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws);
         }
     };
 
@@ -1535,34 +1667,40 @@ pub const TestMapFieldsNoBinary = struct {
         ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
+
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
+
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.init(@This(), allocator);
         }
+
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
+
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
         }
-        pub fn json_decode(
+
+        pub fn jsonDecode(
             input: []const u8,
             options: std.json.ParseOptions,
             allocator: std.mem.Allocator,
         ) !std.json.Parsed(@This()) {
-            return protobuf.jsonDecode(@This(), input, options, allocator);
+            return protobuf.json.decode(@This(), input, options, allocator);
         }
-        pub fn json_encode(
+
+        pub fn jsonEncode(
             self: @This(),
             options: std.json.StringifyOptions,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
-            return protobuf.jsonEncode(self, options, allocator);
+            return protobuf.json.encode(self, options, allocator);
         }
 
         // This method is used by std.json
@@ -1572,13 +1710,13 @@ pub const TestMapFieldsNoBinary = struct {
             source: anytype,
             options: std.json.ParseOptions,
         ) !@This() {
-            return protobuf.jsonParse(@This(), allocator, source, options);
+            return protobuf.json.parse(@This(), allocator, source, options);
         }
 
         // This method is used by std.json
         // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.jsonStringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws);
         }
     };
 
@@ -1598,34 +1736,40 @@ pub const TestMapFieldsNoBinary = struct {
         ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
+
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
+
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.init(@This(), allocator);
         }
+
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
+
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
         }
-        pub fn json_decode(
+
+        pub fn jsonDecode(
             input: []const u8,
             options: std.json.ParseOptions,
             allocator: std.mem.Allocator,
         ) !std.json.Parsed(@This()) {
-            return protobuf.jsonDecode(@This(), input, options, allocator);
+            return protobuf.json.decode(@This(), input, options, allocator);
         }
-        pub fn json_encode(
+
+        pub fn jsonEncode(
             self: @This(),
             options: std.json.StringifyOptions,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
-            return protobuf.jsonEncode(self, options, allocator);
+            return protobuf.json.encode(self, options, allocator);
         }
 
         // This method is used by std.json
@@ -1635,13 +1779,13 @@ pub const TestMapFieldsNoBinary = struct {
             source: anytype,
             options: std.json.ParseOptions,
         ) !@This() {
-            return protobuf.jsonParse(@This(), allocator, source, options);
+            return protobuf.json.parse(@This(), allocator, source, options);
         }
 
         // This method is used by std.json
         // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.jsonStringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws);
         }
     };
 
@@ -1661,34 +1805,40 @@ pub const TestMapFieldsNoBinary = struct {
         ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
+
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
+
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.init(@This(), allocator);
         }
+
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
+
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
         }
-        pub fn json_decode(
+
+        pub fn jsonDecode(
             input: []const u8,
             options: std.json.ParseOptions,
             allocator: std.mem.Allocator,
         ) !std.json.Parsed(@This()) {
-            return protobuf.jsonDecode(@This(), input, options, allocator);
+            return protobuf.json.decode(@This(), input, options, allocator);
         }
-        pub fn json_encode(
+
+        pub fn jsonEncode(
             self: @This(),
             options: std.json.StringifyOptions,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
-            return protobuf.jsonEncode(self, options, allocator);
+            return protobuf.json.encode(self, options, allocator);
         }
 
         // This method is used by std.json
@@ -1698,13 +1848,13 @@ pub const TestMapFieldsNoBinary = struct {
             source: anytype,
             options: std.json.ParseOptions,
         ) !@This() {
-            return protobuf.jsonParse(@This(), allocator, source, options);
+            return protobuf.json.parse(@This(), allocator, source, options);
         }
 
         // This method is used by std.json
         // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.jsonStringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws);
         }
     };
 
@@ -1724,34 +1874,40 @@ pub const TestMapFieldsNoBinary = struct {
         ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
+
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
+
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.init(@This(), allocator);
         }
+
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
+
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
         }
-        pub fn json_decode(
+
+        pub fn jsonDecode(
             input: []const u8,
             options: std.json.ParseOptions,
             allocator: std.mem.Allocator,
         ) !std.json.Parsed(@This()) {
-            return protobuf.jsonDecode(@This(), input, options, allocator);
+            return protobuf.json.decode(@This(), input, options, allocator);
         }
-        pub fn json_encode(
+
+        pub fn jsonEncode(
             self: @This(),
             options: std.json.StringifyOptions,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
-            return protobuf.jsonEncode(self, options, allocator);
+            return protobuf.json.encode(self, options, allocator);
         }
 
         // This method is used by std.json
@@ -1761,13 +1917,13 @@ pub const TestMapFieldsNoBinary = struct {
             source: anytype,
             options: std.json.ParseOptions,
         ) !@This() {
-            return protobuf.jsonParse(@This(), allocator, source, options);
+            return protobuf.json.parse(@This(), allocator, source, options);
         }
 
         // This method is used by std.json
         // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.jsonStringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws);
         }
     };
 
@@ -1787,34 +1943,40 @@ pub const TestMapFieldsNoBinary = struct {
         ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
+
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
+
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.init(@This(), allocator);
         }
+
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
+
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
         }
-        pub fn json_decode(
+
+        pub fn jsonDecode(
             input: []const u8,
             options: std.json.ParseOptions,
             allocator: std.mem.Allocator,
         ) !std.json.Parsed(@This()) {
-            return protobuf.jsonDecode(@This(), input, options, allocator);
+            return protobuf.json.decode(@This(), input, options, allocator);
         }
-        pub fn json_encode(
+
+        pub fn jsonEncode(
             self: @This(),
             options: std.json.StringifyOptions,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
-            return protobuf.jsonEncode(self, options, allocator);
+            return protobuf.json.encode(self, options, allocator);
         }
 
         // This method is used by std.json
@@ -1824,13 +1986,13 @@ pub const TestMapFieldsNoBinary = struct {
             source: anytype,
             options: std.json.ParseOptions,
         ) !@This() {
-            return protobuf.jsonParse(@This(), allocator, source, options);
+            return protobuf.json.parse(@This(), allocator, source, options);
         }
 
         // This method is used by std.json
         // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.jsonStringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws);
         }
     };
 
@@ -1850,34 +2012,40 @@ pub const TestMapFieldsNoBinary = struct {
         ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
+
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
+
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.init(@This(), allocator);
         }
+
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
+
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
         }
-        pub fn json_decode(
+
+        pub fn jsonDecode(
             input: []const u8,
             options: std.json.ParseOptions,
             allocator: std.mem.Allocator,
         ) !std.json.Parsed(@This()) {
-            return protobuf.jsonDecode(@This(), input, options, allocator);
+            return protobuf.json.decode(@This(), input, options, allocator);
         }
-        pub fn json_encode(
+
+        pub fn jsonEncode(
             self: @This(),
             options: std.json.StringifyOptions,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
-            return protobuf.jsonEncode(self, options, allocator);
+            return protobuf.json.encode(self, options, allocator);
         }
 
         // This method is used by std.json
@@ -1887,13 +2055,13 @@ pub const TestMapFieldsNoBinary = struct {
             source: anytype,
             options: std.json.ParseOptions,
         ) !@This() {
-            return protobuf.jsonParse(@This(), allocator, source, options);
+            return protobuf.json.parse(@This(), allocator, source, options);
         }
 
         // This method is used by std.json
         // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.jsonStringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws);
         }
     };
 
@@ -1913,34 +2081,40 @@ pub const TestMapFieldsNoBinary = struct {
         ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
+
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
+
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.init(@This(), allocator);
         }
+
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
+
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
         }
-        pub fn json_decode(
+
+        pub fn jsonDecode(
             input: []const u8,
             options: std.json.ParseOptions,
             allocator: std.mem.Allocator,
         ) !std.json.Parsed(@This()) {
-            return protobuf.jsonDecode(@This(), input, options, allocator);
+            return protobuf.json.decode(@This(), input, options, allocator);
         }
-        pub fn json_encode(
+
+        pub fn jsonEncode(
             self: @This(),
             options: std.json.StringifyOptions,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
-            return protobuf.jsonEncode(self, options, allocator);
+            return protobuf.json.encode(self, options, allocator);
         }
 
         // This method is used by std.json
@@ -1950,13 +2124,13 @@ pub const TestMapFieldsNoBinary = struct {
             source: anytype,
             options: std.json.ParseOptions,
         ) !@This() {
-            return protobuf.jsonParse(@This(), allocator, source, options);
+            return protobuf.json.parse(@This(), allocator, source, options);
         }
 
         // This method is used by std.json
         // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.jsonStringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws);
         }
     };
 
@@ -1976,34 +2150,40 @@ pub const TestMapFieldsNoBinary = struct {
         ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
+
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
+
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.init(@This(), allocator);
         }
+
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
+
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
         }
-        pub fn json_decode(
+
+        pub fn jsonDecode(
             input: []const u8,
             options: std.json.ParseOptions,
             allocator: std.mem.Allocator,
         ) !std.json.Parsed(@This()) {
-            return protobuf.jsonDecode(@This(), input, options, allocator);
+            return protobuf.json.decode(@This(), input, options, allocator);
         }
-        pub fn json_encode(
+
+        pub fn jsonEncode(
             self: @This(),
             options: std.json.StringifyOptions,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
-            return protobuf.jsonEncode(self, options, allocator);
+            return protobuf.json.encode(self, options, allocator);
         }
 
         // This method is used by std.json
@@ -2013,13 +2193,13 @@ pub const TestMapFieldsNoBinary = struct {
             source: anytype,
             options: std.json.ParseOptions,
         ) !@This() {
-            return protobuf.jsonParse(@This(), allocator, source, options);
+            return protobuf.json.parse(@This(), allocator, source, options);
         }
 
         // This method is used by std.json
         // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.jsonStringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws);
         }
     };
 
@@ -2039,34 +2219,40 @@ pub const TestMapFieldsNoBinary = struct {
         ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
+
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
+
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.init(@This(), allocator);
         }
+
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
+
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
         }
-        pub fn json_decode(
+
+        pub fn jsonDecode(
             input: []const u8,
             options: std.json.ParseOptions,
             allocator: std.mem.Allocator,
         ) !std.json.Parsed(@This()) {
-            return protobuf.jsonDecode(@This(), input, options, allocator);
+            return protobuf.json.decode(@This(), input, options, allocator);
         }
-        pub fn json_encode(
+
+        pub fn jsonEncode(
             self: @This(),
             options: std.json.StringifyOptions,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
-            return protobuf.jsonEncode(self, options, allocator);
+            return protobuf.json.encode(self, options, allocator);
         }
 
         // This method is used by std.json
@@ -2076,13 +2262,13 @@ pub const TestMapFieldsNoBinary = struct {
             source: anytype,
             options: std.json.ParseOptions,
         ) !@This() {
-            return protobuf.jsonParse(@This(), allocator, source, options);
+            return protobuf.json.parse(@This(), allocator, source, options);
         }
 
         // This method is used by std.json
         // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.jsonStringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws);
         }
     };
 
@@ -2102,34 +2288,40 @@ pub const TestMapFieldsNoBinary = struct {
         ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
+
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
+
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.init(@This(), allocator);
         }
+
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
+
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
         }
-        pub fn json_decode(
+
+        pub fn jsonDecode(
             input: []const u8,
             options: std.json.ParseOptions,
             allocator: std.mem.Allocator,
         ) !std.json.Parsed(@This()) {
-            return protobuf.jsonDecode(@This(), input, options, allocator);
+            return protobuf.json.decode(@This(), input, options, allocator);
         }
-        pub fn json_encode(
+
+        pub fn jsonEncode(
             self: @This(),
             options: std.json.StringifyOptions,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
-            return protobuf.jsonEncode(self, options, allocator);
+            return protobuf.json.encode(self, options, allocator);
         }
 
         // This method is used by std.json
@@ -2139,13 +2331,13 @@ pub const TestMapFieldsNoBinary = struct {
             source: anytype,
             options: std.json.ParseOptions,
         ) !@This() {
-            return protobuf.jsonParse(@This(), allocator, source, options);
+            return protobuf.json.parse(@This(), allocator, source, options);
         }
 
         // This method is used by std.json
         // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.jsonStringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws);
         }
     };
 
@@ -2156,34 +2348,40 @@ pub const TestMapFieldsNoBinary = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -2193,13 +2391,13 @@ pub const TestMapFieldsNoBinary = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -2217,34 +2415,40 @@ pub const MapValueMessageNoBinary = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -2254,13 +2458,13 @@ pub const MapValueMessageNoBinary = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
 
@@ -2284,34 +2488,40 @@ pub const Deeply = struct {
             ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
                 return protobuf.encode(writer, allocator, self);
             }
+
             pub fn decode(
                 input: []const u8,
                 allocator: std.mem.Allocator,
             ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
                 return protobuf.decode(@This(), input, allocator);
             }
+
             pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
                 return protobuf.init(@This(), allocator);
             }
+
             pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
                 return protobuf.deinit(allocator, self);
             }
+
             pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
                 return protobuf.dupe(@This(), self, allocator);
             }
-            pub fn json_decode(
+
+            pub fn jsonDecode(
                 input: []const u8,
                 options: std.json.ParseOptions,
                 allocator: std.mem.Allocator,
             ) !std.json.Parsed(@This()) {
-                return protobuf.jsonDecode(@This(), input, options, allocator);
+                return protobuf.json.decode(@This(), input, options, allocator);
             }
-            pub fn json_encode(
+
+            pub fn jsonEncode(
                 self: @This(),
                 options: std.json.StringifyOptions,
                 allocator: std.mem.Allocator,
             ) ![]const u8 {
-                return protobuf.jsonEncode(self, options, allocator);
+                return protobuf.json.encode(self, options, allocator);
             }
 
             // This method is used by std.json
@@ -2321,13 +2531,13 @@ pub const Deeply = struct {
                 source: anytype,
                 options: std.json.ParseOptions,
             ) !@This() {
-                return protobuf.jsonParse(@This(), allocator, source, options);
+                return protobuf.json.parse(@This(), allocator, source, options);
             }
 
             // This method is used by std.json
             // internally for serialization. DO NOT RENAME!
             pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-                return protobuf.jsonStringify(@This(), self, jws);
+                return protobuf.json.stringify(@This(), self, jws);
             }
         };
 
@@ -2338,34 +2548,40 @@ pub const Deeply = struct {
         ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
+
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
+
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.init(@This(), allocator);
         }
+
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
+
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
         }
-        pub fn json_decode(
+
+        pub fn jsonDecode(
             input: []const u8,
             options: std.json.ParseOptions,
             allocator: std.mem.Allocator,
         ) !std.json.Parsed(@This()) {
-            return protobuf.jsonDecode(@This(), input, options, allocator);
+            return protobuf.json.decode(@This(), input, options, allocator);
         }
-        pub fn json_encode(
+
+        pub fn jsonEncode(
             self: @This(),
             options: std.json.StringifyOptions,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
-            return protobuf.jsonEncode(self, options, allocator);
+            return protobuf.json.encode(self, options, allocator);
         }
 
         // This method is used by std.json
@@ -2375,13 +2591,13 @@ pub const Deeply = struct {
             source: anytype,
             options: std.json.ParseOptions,
         ) !@This() {
-            return protobuf.jsonParse(@This(), allocator, source, options);
+            return protobuf.json.parse(@This(), allocator, source, options);
         }
 
         // This method is used by std.json
         // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.jsonStringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws);
         }
     };
 
@@ -2392,34 +2608,40 @@ pub const Deeply = struct {
     ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
+
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
+
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.init(@This(), allocator);
     }
+
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
+
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
-    pub fn json_decode(
+
+    pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
-        return protobuf.jsonDecode(@This(), input, options, allocator);
+        return protobuf.json.decode(@This(), input, options, allocator);
     }
-    pub fn json_encode(
+
+    pub fn jsonEncode(
         self: @This(),
         options: std.json.StringifyOptions,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
-        return protobuf.jsonEncode(self, options, allocator);
+        return protobuf.json.encode(self, options, allocator);
     }
 
     // This method is used by std.json
@@ -2429,12 +2651,12 @@ pub const Deeply = struct {
         source: anytype,
         options: std.json.ParseOptions,
     ) !@This() {
-        return protobuf.jsonParse(@This(), allocator, source, options);
+        return protobuf.json.parse(@This(), allocator, source, options);
     }
 
     // This method is used by std.json
     // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.jsonStringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws);
     }
 };
