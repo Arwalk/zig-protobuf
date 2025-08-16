@@ -81,6 +81,27 @@ pub const FieldType = union(enum) {
                 };
             }
 
+            pub fn isFixed(self: @This()) bool {
+                return switch (self) {
+                    .float,
+                    .fixed32,
+                    .sfixed32,
+                    .double,
+                    .fixed64,
+                    .sfixed64,
+                    => true,
+                    else => false,
+                };
+            }
+
+            pub fn isNumeric(self: @This()) bool {
+                return self != .string and self != .bytes;
+            }
+
+            pub fn isSlice(self: @This()) bool {
+                return self == .string or self == .bytes;
+            }
+
             pub fn toWire(self: @This()) wire.Type {
                 return switch (self) {
                     .int32,
@@ -376,26 +397,24 @@ fn writeValue(
     };
 
     switch (comptime field.ftype) {
-        .scalar => |scalar| switch (comptime scalar) {
-            .float, .double, .fixed32, .fixed64, .sfixed32, .sfixed64 => {
+        .scalar => |scalar| {
+            if (comptime scalar.isFixed()) {
                 if (!is_default_scalar_value or force_append) {
                     try writeTag(writer, field);
                     try writeFixed(writer, value);
                 }
-            },
-            .string, .bytes => {
+            } else if (comptime scalar.isSlice()) {
                 if (!is_default_scalar_value or force_append) {
                     try writeTag(writer, field);
                     try writeRawVarint(writer, value.len);
                     try writer.writeAll(value);
                 }
-            },
-            else => {
+            } else {
                 if (!is_default_scalar_value or force_append) {
                     try writeTag(writer, field);
                     try writeVarint(writer, value, scalar);
                 }
-            },
+            }
         },
         .@"enum" => {
             if (!is_default_scalar_value or force_append) {
@@ -411,16 +430,14 @@ fn writeValue(
         },
         .packed_list => |list_type| {
             switch (comptime list_type) {
-                .scalar => |scalar| switch (comptime scalar) {
-                    .float, .double, .fixed32, .fixed64, .sfixed32, .sfixed64 => {
+                .scalar => |scalar| {
+                    if (comptime scalar.isFixed()) {
                         try writePackedFixedList(writer, allocator, field, value);
-                    },
-                    .string, .bytes => {
+                    } else if (comptime scalar.isSlice()) {
                         try writePackedStringList(writer, allocator, field, value);
-                    },
-                    else => {
+                    } else {
                         try writePackedVarintList(writer, allocator, value, field, scalar);
-                    },
+                    }
                 },
                 .@"enum" => {
                     try writePackedEnumList(writer, allocator, value, field);
@@ -429,27 +446,25 @@ fn writeValue(
             }
         },
         .list => |list_type| {
-            switch (list_type) {
-                .scalar => |scalar| switch (comptime scalar) {
-                    .float, .double, .fixed32, .fixed64, .sfixed32, .sfixed64 => {
+            switch (comptime list_type) {
+                .scalar => |scalar| {
+                    if (comptime scalar.isFixed()) {
                         for (value.items) |item| {
                             try writeTag(writer, field);
                             try writeFixed(writer, item);
                         }
-                    },
-                    .string, .bytes => {
+                    } else if (comptime scalar.isSlice()) {
                         for (value.items) |item| {
                             try writeTag(writer, field);
                             try writeRawVarint(writer, item.len);
                             try writer.writeAll(item);
                         }
-                    },
-                    else => {
+                    } else {
                         for (value.items) |item| {
                             try writeTag(writer, field);
                             try writeVarint(writer, item, scalar);
                         }
-                    },
+                    }
                 },
                 .submessage => {
                     try writeSubmessageList(writer, allocator, field, value);
@@ -1162,10 +1177,10 @@ fn decode_packed_list(
     array: *std.ArrayListUnmanaged(T),
     allocator: std.mem.Allocator,
 ) (DecodingError || std.mem.Allocator.Error)!void {
-    switch (list_type) {
-        .scalar => |scalar| switch (scalar) {
-            .float, .double, .fixed32, .fixed64, .sfixed32, .sfixed64 => {
-                switch (T) {
+    switch (comptime list_type) {
+        .scalar => |scalar| {
+            if (comptime scalar.isFixed()) {
+                switch (comptime T) {
                     u32, i32, u64, i64, f32, f64 => {
                         var fixed_iterator = FixedDecoderIterator(T){ .input = slice };
                         while (fixed_iterator.next()) |value| {
@@ -1174,21 +1189,24 @@ fn decode_packed_list(
                     },
                     else => @compileError("Type not accepted for FixedInt: " ++ @typeName(T)),
                 }
-            },
-            .string, .bytes => {
+            } else if (comptime scalar.isSlice()) {
                 var varint_iterator = LengthDelimitedDecoderIterator{ .input = slice };
                 while (try varint_iterator.next()) |value| {
                     try array.append(allocator, try allocator.dupe(u8, value));
                 }
-            },
-            else => {
+            } else {
                 var varint_iterator = VarintDecoderIterator(T, scalar){ .input = slice };
                 while (try varint_iterator.next()) |value| {
                     try array.append(allocator, value);
                 }
-            },
+            }
         },
-        .@"enum" => {},
+        .@"enum" => {
+            var varint_iterator = VarintDecoderIterator(T, .int32){ .input = slice };
+            while (try varint_iterator.next()) |value| {
+                try array.append(allocator, value);
+            }
+        },
         .submessage =>
         // submessages are not suitable for packed lists yet, but the wire message can be malformed
         return error.InvalidInput,
@@ -1202,27 +1220,31 @@ fn decode_value(
     extracted_data: Extracted,
     allocator: std.mem.Allocator,
 ) (DecodingError || std.mem.Allocator.Error)!Decoded {
-    return switch (ftype) {
-        .scalar => |scalar| switch (scalar) {
-            .float, .double, .fixed32, .fixed64, .sfixed32, .sfixed64 => switch (extracted_data.data) {
-                .RawValue => |value| decode_fixed_value(Decoded, value),
-                .Slice => error.InvalidInput,
-            },
-            .string, .bytes => switch (extracted_data.data) {
-                .Slice => |slice| try allocator.dupe(u8, slice),
-                .RawValue => error.InvalidInput,
-            },
-            else => switch (extracted_data.data) {
-                .RawValue => |value| try decode_varint_value(Decoded, scalar, value),
-                .Slice => error.InvalidInput,
-            },
+    switch (ftype) {
+        .scalar => |scalar| {
+            if (comptime scalar.isFixed()) {
+                return switch (extracted_data.data) {
+                    .RawValue => |value| decode_fixed_value(Decoded, value),
+                    .Slice => error.InvalidInput,
+                };
+            } else if (comptime scalar.isSlice()) {
+                return switch (extracted_data.data) {
+                    .Slice => |slice| try allocator.dupe(u8, slice),
+                    .RawValue => error.InvalidInput,
+                };
+            } else {
+                return switch (extracted_data.data) {
+                    .RawValue => |value| try decode_varint_value(Decoded, scalar, value),
+                    .Slice => error.InvalidInput,
+                };
+            }
         },
-        .@"enum" => switch (extracted_data.data) {
+        .@"enum" => return switch (extracted_data.data) {
             .RawValue => |value| try decode_varint_value(Decoded, .int32, value),
             .Slice => error.InvalidInput,
         },
 
-        .submessage => switch (extracted_data.data) {
+        .submessage => return switch (extracted_data.data) {
             .Slice => |slice| b: {
                 switch (comptime @typeInfo(Decoded)) {
                     .@"struct" => {
@@ -1264,13 +1286,13 @@ fn decode_value(
                     },
                 }
             },
-            .RawValue => error.InvalidInput,
+            .RawValue => return error.InvalidInput,
         },
         .list, .packed_list, .oneof => {
             log.err("Invalid scalar type {any}\n", .{ftype});
             return error.InvalidInput;
         },
-    };
+    }
 }
 
 fn decode_data(
@@ -1281,7 +1303,7 @@ fn decode_data(
     extracted_data: Extracted,
     allocator: std.mem.Allocator,
 ) (DecodingError || std.mem.Allocator.Error)!void {
-    switch (field_desc.ftype) {
+    switch (comptime field_desc.ftype) {
         .scalar, .@"enum", .submessage => {
             // first try to release the current value
             deinitField(allocator, result, field.name);
@@ -1295,22 +1317,26 @@ fn decode_data(
         .list, .packed_list => |list_type| {
             const child_type = @typeInfo(@TypeOf(@field(result, field.name).items)).pointer.child;
 
-            switch (list_type) {
-                .scalar => |scalar| switch (scalar) {
-                    .string, .bytes => switch (extracted_data.data) {
-                        .Slice => |slice| {
-                            try @field(result, field.name).append(allocator, try allocator.dupe(u8, slice));
-                        },
-                        .RawValue => return error.InvalidInput,
-                    },
-                    .float, .double, .fixed32, .fixed64, .sfixed32, .sfixed64 => switch (extracted_data.data) {
-                        .RawValue => |value| try @field(result, field.name).append(allocator, decode_fixed_value(child_type, value)),
-                        .Slice => |slice| try decode_packed_list(slice, list_type, child_type, &@field(result, field.name), allocator),
-                    },
-                    else => switch (extracted_data.data) {
-                        .RawValue => |value| try @field(result, field.name).append(allocator, try decode_varint_value(child_type, scalar, value)),
-                        .Slice => |slice| try decode_packed_list(slice, list_type, child_type, &@field(result, field.name), allocator),
-                    },
+            switch (comptime list_type) {
+                .scalar => |scalar| {
+                    if (comptime scalar.isSlice()) {
+                        switch (extracted_data.data) {
+                            .Slice => |slice| {
+                                try @field(result, field.name).append(allocator, try allocator.dupe(u8, slice));
+                            },
+                            .RawValue => return error.InvalidInput,
+                        }
+                    } else if (comptime scalar.isFixed()) {
+                        switch (extracted_data.data) {
+                            .RawValue => |value| try @field(result, field.name).append(allocator, decode_fixed_value(child_type, value)),
+                            .Slice => |slice| try decode_packed_list(slice, list_type, child_type, &@field(result, field.name), allocator),
+                        }
+                    } else {
+                        switch (extracted_data.data) {
+                            .RawValue => |value| try @field(result, field.name).append(allocator, try decode_varint_value(child_type, scalar, value)),
+                            .Slice => |slice| try decode_packed_list(slice, list_type, child_type, &@field(result, field.name), allocator),
+                        }
+                    }
                 },
                 .@"enum" => switch (extracted_data.data) {
                     .RawValue => |value| try @field(result, field.name).append(allocator, try decode_varint_value(child_type, .int32, value)),
