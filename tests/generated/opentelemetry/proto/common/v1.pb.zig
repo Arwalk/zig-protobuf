@@ -29,7 +29,7 @@ pub const AnyValue = struct {
             .string_value = fd(1, .String),
             .bool_value = fd(2, .{ .Varint = .Simple }),
             .int_value = fd(3, .{ .Varint = .Simple }),
-            .double_value = fd(4, .{ .FixedInt = .I64 }),
+            .double_value = fd(4, .{ .FixedInt = .i64 }),
             .array_value = fd(5, .{ .SubMessage = {} }),
             .kvlist_value = fd(6, .{ .SubMessage = {} }),
             .bytes_value = fd(7, .Bytes),

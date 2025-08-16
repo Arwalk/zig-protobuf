@@ -36,12 +36,12 @@ pub const FixedSizes = struct {
     float: f32 = 0,
 
     pub const _desc_table = .{
-        .sfixed64 = fd(1, .{ .FixedInt = .I64 }),
-        .sfixed32 = fd(2, .{ .FixedInt = .I32 }),
-        .fixed32 = fd(3, .{ .FixedInt = .I32 }),
-        .fixed64 = fd(4, .{ .FixedInt = .I64 }),
-        .double = fd(5, .{ .FixedInt = .I64 }),
-        .float = fd(6, .{ .FixedInt = .I32 }),
+        .sfixed64 = fd(1, .{ .FixedInt = .i64 }),
+        .sfixed32 = fd(2, .{ .FixedInt = .i32 }),
+        .fixed32 = fd(3, .{ .FixedInt = .i32 }),
+        .fixed64 = fd(4, .{ .FixedInt = .i64 }),
+        .double = fd(5, .{ .FixedInt = .i64 }),
+        .float = fd(6, .{ .FixedInt = .i32 }),
     };
 
     pub fn encode(
@@ -343,8 +343,8 @@ pub const Packed = struct {
         .int32_list = fd(1, .{ .PackedList = .{ .Varint = .Simple } }),
         .uint32_list = fd(2, .{ .PackedList = .{ .Varint = .Simple } }),
         .sint32_list = fd(3, .{ .PackedList = .{ .Varint = .ZigZagOptimized } }),
-        .float_list = fd(4, .{ .PackedList = .{ .FixedInt = .I32 } }),
-        .double_list = fd(5, .{ .PackedList = .{ .FixedInt = .I64 } }),
+        .float_list = fd(4, .{ .PackedList = .{ .FixedInt = .i32 } }),
+        .double_list = fd(5, .{ .PackedList = .{ .FixedInt = .i64 } }),
         .int64_list = fd(6, .{ .PackedList = .{ .Varint = .Simple } }),
         .sint64_list = fd(7, .{ .PackedList = .{ .Varint = .ZigZagOptimized } }),
         .uint64_list = fd(8, .{ .PackedList = .{ .Varint = .Simple } }),
@@ -428,8 +428,8 @@ pub const UnPacked = struct {
         .int32_list = fd(1, .{ .List = .{ .Varint = .Simple } }),
         .uint32_list = fd(2, .{ .List = .{ .Varint = .Simple } }),
         .sint32_list = fd(3, .{ .List = .{ .Varint = .ZigZagOptimized } }),
-        .float_list = fd(4, .{ .List = .{ .FixedInt = .I32 } }),
-        .double_list = fd(5, .{ .List = .{ .FixedInt = .I64 } }),
+        .float_list = fd(4, .{ .List = .{ .FixedInt = .i32 } }),
+        .double_list = fd(5, .{ .List = .{ .FixedInt = .i64 } }),
         .int64_list = fd(6, .{ .List = .{ .Varint = .Simple } }),
         .sint64_list = fd(7, .{ .List = .{ .Varint = .ZigZagOptimized } }),
         .uint64_list = fd(8, .{ .List = .{ .Varint = .Simple } }),

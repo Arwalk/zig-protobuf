@@ -546,11 +546,11 @@ pub const Light = struct {
     fall_off: f32 = 0,
 
     pub const _desc_table = .{
-        .hue = fd(1, .{ .FixedInt = .I32 }),
-        .height = fd(2, .{ .FixedInt = .I32 }),
-        .radius = fd(3, .{ .FixedInt = .I32 }),
-        .saturation = fd(4, .{ .FixedInt = .I32 }),
-        .fall_off = fd(5, .{ .FixedInt = .I32 }),
+        .hue = fd(1, .{ .FixedInt = .i32 }),
+        .height = fd(2, .{ .FixedInt = .i32 }),
+        .radius = fd(3, .{ .FixedInt = .i32 }),
+        .saturation = fd(4, .{ .FixedInt = .i32 }),
+        .fall_off = fd(5, .{ .FixedInt = .i32 }),
     };
 
     pub fn encode(
@@ -1617,7 +1617,7 @@ pub const Animation = struct {
 
     pub const _desc_table = .{
         .frames = fd(1, .{ .PackedList = .{ .Varint = .Simple } }),
-        .speed = fd(2, .{ .FixedInt = .I32 }),
+        .speed = fd(2, .{ .FixedInt = .i32 }),
     };
 
     pub fn encode(

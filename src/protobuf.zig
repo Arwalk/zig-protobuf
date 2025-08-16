@@ -3,6 +3,7 @@ const std = @import("std");
 const log = std.log.scoped(.zig_protobuf);
 
 pub const json = @import("json.zig");
+pub const wire = @import("wire.zig");
 
 /// Type of encoding for a Varint value.
 const VarintEncoding = enum { Simple, ZigZagOptimized };
@@ -13,7 +14,7 @@ pub const DecodingError = error{ NotEnoughData, InvalidInput };
 pub const FieldTypeTag = enum { Varint, FixedInt, SubMessage, String, Bytes, List, PackedList, OneOf };
 
 /// Enum describing how much bits a FixedInt will use.
-pub const FixedSize = enum(u3) { I64 = 1, I32 = 5 };
+pub const FixedSize = enum(u1) { i32, i64 };
 
 /// Enum describing the content type of a repeated field.
 pub const ListTypeTag = enum {
@@ -44,16 +45,21 @@ pub const FieldType = union(FieldTypeTag) {
     PackedList: ListType,
     OneOf: type,
 
-    /// Returns the wire type of a field. See https://developers.google.com/protocol-buffers/docs/encoding#structure
-    pub fn get_wirevalue(comptime ftype: FieldType) u3 {
-        return switch (ftype) {
-            .Varint => 0,
-            .FixedInt => |size| @intFromEnum(size),
-            .String, .SubMessage, .PackedList, .Bytes => 2,
-            .List => |inner| switch (inner) {
-                .Varint => 0,
-                .FixedInt => |size| @intFromEnum(size),
-                .String, .SubMessage, .Bytes => 2,
+    pub fn toWireType(comptime ftype: FieldType) wire.Type {
+        return switch (comptime ftype) {
+            .Varint => .varint,
+            .FixedInt => |size| switch (comptime size) {
+                .i64 => .i64,
+                .i32 => .i32,
+            },
+            .String, .SubMessage, .PackedList, .Bytes => .len,
+            .List => |inner| switch (comptime inner) {
+                .Varint => .varint,
+                .FixedInt => |size| switch (comptime size) {
+                    .i64 => .i64,
+                    .i32 => .i32,
+                },
+                .String, .SubMessage, .Bytes => .len,
             },
             .OneOf => @compileError("Shouldn't pass a .OneOf field to this function here."),
         };
@@ -86,31 +92,6 @@ fn writeRawVarint(writer: std.io.AnyWriter, value: u64) std.io.AnyWriter.Error!v
     try writer.writeByte(@as(u8, @intCast(copy & 0x7F)));
 }
 
-fn encode_zig_zag(int: anytype) u64 {
-    const type_of_val = @TypeOf(int);
-    const to_int64: i64 = switch (type_of_val) {
-        i32 => @intCast(int),
-        i64 => int,
-        else => @compileError("should not be here"),
-    };
-    const calc = (to_int64 << 1) ^ (to_int64 >> 63);
-    return @bitCast(calc);
-}
-
-test "encode zig zag test" {
-    try std.testing.expectEqual(@as(u64, 0), encode_zig_zag(@as(i32, 0)));
-    try std.testing.expectEqual(@as(u64, 1), encode_zig_zag(@as(i32, -1)));
-    try std.testing.expectEqual(@as(u64, 2), encode_zig_zag(@as(i32, 1)));
-    try std.testing.expectEqual(@as(u64, 0xfffffffe), encode_zig_zag(@as(i32, std.math.maxInt(i32))));
-    try std.testing.expectEqual(@as(u64, 0xffffffff), encode_zig_zag(@as(i32, std.math.minInt(i32))));
-
-    try std.testing.expectEqual(@as(u64, 0), encode_zig_zag(@as(i64, 0)));
-    try std.testing.expectEqual(@as(u64, 1), encode_zig_zag(@as(i64, -1)));
-    try std.testing.expectEqual(@as(u64, 2), encode_zig_zag(@as(i64, 1)));
-    try std.testing.expectEqual(@as(u64, 0xfffffffffffffffe), encode_zig_zag(@as(i64, std.math.maxInt(i64))));
-    try std.testing.expectEqual(@as(u64, 0xffffffffffffffff), encode_zig_zag(@as(i64, std.math.minInt(i64))));
-}
-
 /// Writes a varint.
 /// Mostly does the required transformations to use writeRawVarint
 /// after making the value some kind of unsigned value.
@@ -125,7 +106,7 @@ fn writeAsVarint(
             .signed => {
                 switch (varint_type) {
                     .ZigZagOptimized => {
-                        break :blk encode_zig_zag(int);
+                        break :blk wire.ZigZag.encode(int);
                     },
                     .Simple => {
                         break :blk @bitCast(@as(i64, @intCast(int)));
@@ -282,8 +263,11 @@ fn writePackedStringList(
 
 /// Writes the full tag of the field, if there is any.
 fn writeTag(writer: std.io.AnyWriter, comptime field: FieldDescriptor) std.io.AnyWriter.Error!void {
-    const tag_value = (field.field_number.? << 3) | field.ftype.get_wirevalue();
-    try writeVarint(writer, tag_value, .Simple);
+    const tag: wire.Tag = .{
+        .type = comptime field.ftype.toWireType(),
+        .field = field.field_number.?,
+    };
+    _ = try tag.encode(writer);
 }
 
 /// Write a value. Starts by writing the tag, then a comptime switch
@@ -859,8 +843,7 @@ const ExtractedDataTag = enum {
 const ExtractedData = union(ExtractedDataTag) { RawValue: u64, Slice: []const u8 };
 
 /// Unit of extracted data from a stream
-/// Please not that "tag" is supposed to be the full tag. See get_full_tag_value.
-const Extracted = struct { tag: u32, field_number: u32, data: ExtractedData };
+const Extracted = struct { tag: wire.Tag, field_number: u32, data: ExtractedData };
 
 /// Decoded varint value generic type
 fn DecodedVarint(comptime T: type) type {
@@ -980,23 +963,27 @@ pub const WireDecoderIterator = struct {
     /// Attempts at decoding the next pb_buffer data.
     pub fn next(state: *WireDecoderIterator) DecodingError!?Extracted {
         if (state.current_index < state.input.len) {
-            const tag_and_wire = try decode_varint(u32, state.input[state.current_index..]);
-            state.current_index += tag_and_wire.size;
-            const wire_type = tag_and_wire.value & 0b00000111;
-            const data: ExtractedData = switch (wire_type) {
-                0 => blk: { // VARINT
+            var fbs = std.io.fixedBufferStream(state.input[state.current_index..]);
+            const reader = fbs.reader();
+            const tag: wire.Tag = wire.Tag.decode(reader.any()) catch |e| switch (e) {
+                error.InvalidTag => return DecodingError.InvalidInput,
+                else => unreachable,
+            };
+            state.current_index += if (tag.field > 2047) 3 else if (tag.field > 15) 2 else 1;
+            const data: ExtractedData = switch (tag.type) {
+                .varint => blk: { // VARINT
                     const varint = try decode_varint(u64, state.input[state.current_index..]);
                     state.current_index += varint.size;
                     break :blk ExtractedData{
                         .RawValue = varint.value,
                     };
                 },
-                1 => blk: { // 64BIT
+                .i64 => blk: { // 64BIT
                     const value = ExtractedData{ .RawValue = decode_fixed(u64, state.input[state.current_index .. state.current_index + 8]) };
                     state.current_index += 8;
                     break :blk value;
                 },
-                2 => blk: { // LEN PREFIXED MESSAGE
+                .len => blk: { // LEN PREFIXED MESSAGE
                     const size = try decode_varint(u32, state.input[state.current_index..]);
                     const start = (state.current_index + size.size);
                     const end = start + size.value;
@@ -1009,68 +996,27 @@ pub const WireDecoderIterator = struct {
                     state.current_index += size.value + size.size;
                     break :blk value;
                 },
-                3, 4 => { // SGROUP,EGROUP
-                    return null;
-                },
-                5 => blk: { // 32BIT
+                .sgroup, .egroup => return null,
+                .i32 => blk: { // 32BIT
                     const value = ExtractedData{ .RawValue = decode_fixed(u32, state.input[state.current_index .. state.current_index + 4]) };
                     state.current_index += 4;
                     break :blk value;
                 },
-                else => {
-                    return error.InvalidInput;
-                },
             };
 
-            return Extracted{ .tag = tag_and_wire.value, .data = data, .field_number = tag_and_wire.value >> 3 };
+            return Extracted{ .tag = tag, .data = data, .field_number = tag.field };
         } else {
             return null;
         }
     }
 };
 
-fn decode_zig_zag(comptime T: type, raw: u64) DecodingError!T {
-    comptime {
-        switch (T) {
-            i32, i64 => {},
-            else => @compileError("should only pass i32 or i64 here"),
-        }
-    }
-
-    const v: T = block: {
-        var v = raw >> 1;
-        if (raw & 0x1 != 0) {
-            v = v ^ (~@as(u64, 0));
-        }
-
-        const bitcasted: i64 = @as(i64, @bitCast(v));
-
-        break :block std.math.cast(T, bitcasted) orelse return DecodingError.InvalidInput;
-    };
-
-    return v;
-}
-
-test "decode zig zag test" {
-    try std.testing.expectEqual(@as(i32, 0), decode_zig_zag(i32, 0));
-    try std.testing.expectEqual(@as(i32, -1), decode_zig_zag(i32, 1));
-    try std.testing.expectEqual(@as(i32, 1), decode_zig_zag(i32, 2));
-    try std.testing.expectEqual(@as(i32, std.math.maxInt(i32)), decode_zig_zag(i32, 0xfffffffe));
-    try std.testing.expectEqual(@as(i32, std.math.minInt(i32)), decode_zig_zag(i32, 0xffffffff));
-
-    try std.testing.expectEqual(@as(i64, 0), decode_zig_zag(i64, 0));
-    try std.testing.expectEqual(@as(i64, -1), decode_zig_zag(i64, 1));
-    try std.testing.expectEqual(@as(i64, 1), decode_zig_zag(i64, 2));
-    try std.testing.expectEqual(@as(i64, std.math.maxInt(i64)), decode_zig_zag(i64, 0xfffffffffffffffe));
-    try std.testing.expectEqual(@as(i64, std.math.minInt(i64)), decode_zig_zag(i64, 0xffffffffffffffff));
-}
-
 /// Get a real varint of type T from a raw u64 data.
 fn decode_varint_value(comptime T: type, comptime varint_type: VarintEncoding, raw: u64) DecodingError!T {
     return switch (varint_type) {
         .ZigZagOptimized => switch (@typeInfo(T)) {
-            .int => decode_zig_zag(T, raw),
-            .@"enum" => std.meta.intToEnum(T, decode_zig_zag(i32, raw)) catch DecodingError.InvalidInput, // should never happen, enums are int32 simple?
+            .int => wire.ZigZag.decode(T, raw),
+            .@"enum" => std.meta.intToEnum(T, wire.ZigZag.decode(i32, raw)) catch DecodingError.InvalidInput, // should never happen, enums are int32 simple?
             else => @compileError("Invalid type passed"),
         },
         .Simple => switch (@typeInfo(T)) {
@@ -1527,4 +1473,9 @@ test "invalid enum values" {
         DecodingError.InvalidInput,
         decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, 4),
     );
+}
+
+test {
+    _ = wire;
+    _ = json;
 }

@@ -440,8 +440,8 @@ const GenerationContext = struct {
         }
 
         const infix: []const u8 = switch (field.type.?) {
-            .TYPE_DOUBLE, .TYPE_SFIXED64, .TYPE_FIXED64 => ".{ .FixedInt = .I64 }",
-            .TYPE_FLOAT, .TYPE_SFIXED32, .TYPE_FIXED32 => ".{ .FixedInt = .I32 }",
+            .TYPE_DOUBLE, .TYPE_SFIXED64, .TYPE_FIXED64 => ".{ .FixedInt = .i64 }",
+            .TYPE_FLOAT, .TYPE_SFIXED32, .TYPE_FIXED32 => ".{ .FixedInt = .i32 }",
             .TYPE_ENUM, .TYPE_UINT32, .TYPE_UINT64, .TYPE_BOOL, .TYPE_INT32, .TYPE_INT64 => ".{ .Varint = .Simple }",
             .TYPE_SINT32, .TYPE_SINT64 => ".{ .Varint = .ZigZagOptimized }",
             .TYPE_STRING => ".String",
