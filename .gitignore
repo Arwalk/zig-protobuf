@@ -1,5 +1,6 @@
 zig-cache
 .vscode*
+.helix*
 .idea*
 *.exe
 **/.DS_Store

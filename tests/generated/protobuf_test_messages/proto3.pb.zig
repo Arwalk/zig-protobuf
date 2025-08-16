@@ -187,8 +187,8 @@ pub const TestAllTypesProto3 = struct {
             .oneof_bytes = fd(114, .Bytes),
             .oneof_bool = fd(115, .{ .Varint = .Simple }),
             .oneof_uint64 = fd(116, .{ .Varint = .Simple }),
-            .oneof_float = fd(117, .{ .FixedInt = .I32 }),
-            .oneof_double = fd(118, .{ .FixedInt = .I64 }),
+            .oneof_float = fd(117, .{ .FixedInt = .i32 }),
+            .oneof_double = fd(118, .{ .FixedInt = .i64 }),
             .oneof_enum = fd(119, .{ .Varint = .Simple }),
             .oneof_null_value = fd(120, .{ .Varint = .Simple }),
         };
@@ -201,12 +201,12 @@ pub const TestAllTypesProto3 = struct {
         .optional_uint64 = fd(4, .{ .Varint = .Simple }),
         .optional_sint32 = fd(5, .{ .Varint = .ZigZagOptimized }),
         .optional_sint64 = fd(6, .{ .Varint = .ZigZagOptimized }),
-        .optional_fixed32 = fd(7, .{ .FixedInt = .I32 }),
-        .optional_fixed64 = fd(8, .{ .FixedInt = .I64 }),
-        .optional_sfixed32 = fd(9, .{ .FixedInt = .I32 }),
-        .optional_sfixed64 = fd(10, .{ .FixedInt = .I64 }),
-        .optional_float = fd(11, .{ .FixedInt = .I32 }),
-        .optional_double = fd(12, .{ .FixedInt = .I64 }),
+        .optional_fixed32 = fd(7, .{ .FixedInt = .i32 }),
+        .optional_fixed64 = fd(8, .{ .FixedInt = .i64 }),
+        .optional_sfixed32 = fd(9, .{ .FixedInt = .i32 }),
+        .optional_sfixed64 = fd(10, .{ .FixedInt = .i64 }),
+        .optional_float = fd(11, .{ .FixedInt = .i32 }),
+        .optional_double = fd(12, .{ .FixedInt = .i64 }),
         .optional_bool = fd(13, .{ .Varint = .Simple }),
         .optional_string = fd(14, .String),
         .optional_bytes = fd(15, .Bytes),
@@ -223,12 +223,12 @@ pub const TestAllTypesProto3 = struct {
         .repeated_uint64 = fd(34, .{ .PackedList = .{ .Varint = .Simple } }),
         .repeated_sint32 = fd(35, .{ .PackedList = .{ .Varint = .ZigZagOptimized } }),
         .repeated_sint64 = fd(36, .{ .PackedList = .{ .Varint = .ZigZagOptimized } }),
-        .repeated_fixed32 = fd(37, .{ .PackedList = .{ .FixedInt = .I32 } }),
-        .repeated_fixed64 = fd(38, .{ .PackedList = .{ .FixedInt = .I64 } }),
-        .repeated_sfixed32 = fd(39, .{ .PackedList = .{ .FixedInt = .I32 } }),
-        .repeated_sfixed64 = fd(40, .{ .PackedList = .{ .FixedInt = .I64 } }),
-        .repeated_float = fd(41, .{ .PackedList = .{ .FixedInt = .I32 } }),
-        .repeated_double = fd(42, .{ .PackedList = .{ .FixedInt = .I64 } }),
+        .repeated_fixed32 = fd(37, .{ .PackedList = .{ .FixedInt = .i32 } }),
+        .repeated_fixed64 = fd(38, .{ .PackedList = .{ .FixedInt = .i64 } }),
+        .repeated_sfixed32 = fd(39, .{ .PackedList = .{ .FixedInt = .i32 } }),
+        .repeated_sfixed64 = fd(40, .{ .PackedList = .{ .FixedInt = .i64 } }),
+        .repeated_float = fd(41, .{ .PackedList = .{ .FixedInt = .i32 } }),
+        .repeated_double = fd(42, .{ .PackedList = .{ .FixedInt = .i64 } }),
         .repeated_bool = fd(43, .{ .PackedList = .{ .Varint = .Simple } }),
         .repeated_string = fd(44, .{ .List = .String }),
         .repeated_bytes = fd(45, .{ .List = .Bytes }),
@@ -244,12 +244,12 @@ pub const TestAllTypesProto3 = struct {
         .packed_uint64 = fd(78, .{ .PackedList = .{ .Varint = .Simple } }),
         .packed_sint32 = fd(79, .{ .PackedList = .{ .Varint = .ZigZagOptimized } }),
         .packed_sint64 = fd(80, .{ .PackedList = .{ .Varint = .ZigZagOptimized } }),
-        .packed_fixed32 = fd(81, .{ .PackedList = .{ .FixedInt = .I32 } }),
-        .packed_fixed64 = fd(82, .{ .PackedList = .{ .FixedInt = .I64 } }),
-        .packed_sfixed32 = fd(83, .{ .PackedList = .{ .FixedInt = .I32 } }),
-        .packed_sfixed64 = fd(84, .{ .PackedList = .{ .FixedInt = .I64 } }),
-        .packed_float = fd(85, .{ .PackedList = .{ .FixedInt = .I32 } }),
-        .packed_double = fd(86, .{ .PackedList = .{ .FixedInt = .I64 } }),
+        .packed_fixed32 = fd(81, .{ .PackedList = .{ .FixedInt = .i32 } }),
+        .packed_fixed64 = fd(82, .{ .PackedList = .{ .FixedInt = .i64 } }),
+        .packed_sfixed32 = fd(83, .{ .PackedList = .{ .FixedInt = .i32 } }),
+        .packed_sfixed64 = fd(84, .{ .PackedList = .{ .FixedInt = .i64 } }),
+        .packed_float = fd(85, .{ .PackedList = .{ .FixedInt = .i32 } }),
+        .packed_double = fd(86, .{ .PackedList = .{ .FixedInt = .i64 } }),
         .packed_bool = fd(87, .{ .PackedList = .{ .Varint = .Simple } }),
         .packed_nested_enum = fd(88, .{ .PackedList = .{ .Varint = .Simple } }),
         .unpacked_int32 = fd(89, .{ .List = .{ .Varint = .Simple } }),
@@ -258,12 +258,12 @@ pub const TestAllTypesProto3 = struct {
         .unpacked_uint64 = fd(92, .{ .List = .{ .Varint = .Simple } }),
         .unpacked_sint32 = fd(93, .{ .List = .{ .Varint = .ZigZagOptimized } }),
         .unpacked_sint64 = fd(94, .{ .List = .{ .Varint = .ZigZagOptimized } }),
-        .unpacked_fixed32 = fd(95, .{ .List = .{ .FixedInt = .I32 } }),
-        .unpacked_fixed64 = fd(96, .{ .List = .{ .FixedInt = .I64 } }),
-        .unpacked_sfixed32 = fd(97, .{ .List = .{ .FixedInt = .I32 } }),
-        .unpacked_sfixed64 = fd(98, .{ .List = .{ .FixedInt = .I64 } }),
-        .unpacked_float = fd(99, .{ .List = .{ .FixedInt = .I32 } }),
-        .unpacked_double = fd(100, .{ .List = .{ .FixedInt = .I64 } }),
+        .unpacked_fixed32 = fd(95, .{ .List = .{ .FixedInt = .i32 } }),
+        .unpacked_fixed64 = fd(96, .{ .List = .{ .FixedInt = .i64 } }),
+        .unpacked_sfixed32 = fd(97, .{ .List = .{ .FixedInt = .i32 } }),
+        .unpacked_sfixed64 = fd(98, .{ .List = .{ .FixedInt = .i64 } }),
+        .unpacked_float = fd(99, .{ .List = .{ .FixedInt = .i32 } }),
+        .unpacked_double = fd(100, .{ .List = .{ .FixedInt = .i64 } }),
         .unpacked_bool = fd(101, .{ .List = .{ .Varint = .Simple } }),
         .unpacked_nested_enum = fd(102, .{ .List = .{ .Varint = .Simple } }),
         .map_int32_int32 = fd(56, .{ .List = .{ .SubMessage = {} } }),
@@ -839,8 +839,8 @@ pub const TestAllTypesProto3 = struct {
         value: u32 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .FixedInt = .I32 }),
-            .value = fd(2, .{ .FixedInt = .I32 }),
+            .key = fd(1, .{ .FixedInt = .i32 }),
+            .value = fd(2, .{ .FixedInt = .i32 }),
         };
 
         pub fn encode(
@@ -908,8 +908,8 @@ pub const TestAllTypesProto3 = struct {
         value: u64 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .FixedInt = .I64 }),
-            .value = fd(2, .{ .FixedInt = .I64 }),
+            .key = fd(1, .{ .FixedInt = .i64 }),
+            .value = fd(2, .{ .FixedInt = .i64 }),
         };
 
         pub fn encode(
@@ -977,8 +977,8 @@ pub const TestAllTypesProto3 = struct {
         value: i32 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .FixedInt = .I32 }),
-            .value = fd(2, .{ .FixedInt = .I32 }),
+            .key = fd(1, .{ .FixedInt = .i32 }),
+            .value = fd(2, .{ .FixedInt = .i32 }),
         };
 
         pub fn encode(
@@ -1046,8 +1046,8 @@ pub const TestAllTypesProto3 = struct {
         value: i64 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .FixedInt = .I64 }),
-            .value = fd(2, .{ .FixedInt = .I64 }),
+            .key = fd(1, .{ .FixedInt = .i64 }),
+            .value = fd(2, .{ .FixedInt = .i64 }),
         };
 
         pub fn encode(
@@ -1116,7 +1116,7 @@ pub const TestAllTypesProto3 = struct {
 
         pub const _desc_table = .{
             .key = fd(1, .{ .Varint = .Simple }),
-            .value = fd(2, .{ .FixedInt = .I32 }),
+            .value = fd(2, .{ .FixedInt = .i32 }),
         };
 
         pub fn encode(
@@ -1185,7 +1185,7 @@ pub const TestAllTypesProto3 = struct {
 
         pub const _desc_table = .{
             .key = fd(1, .{ .Varint = .Simple }),
-            .value = fd(2, .{ .FixedInt = .I64 }),
+            .value = fd(2, .{ .FixedInt = .i64 }),
         };
 
         pub fn encode(

@@ -31,8 +31,8 @@ pub const Tile = struct {
 
         pub const _desc_table = .{
             .string_value = fd(1, .String),
-            .float_value = fd(2, .{ .FixedInt = .I32 }),
-            .double_value = fd(3, .{ .FixedInt = .I64 }),
+            .float_value = fd(2, .{ .FixedInt = .i32 }),
+            .double_value = fd(3, .{ .FixedInt = .i64 }),
             .int_value = fd(4, .{ .Varint = .Simple }),
             .uint_value = fd(5, .{ .Varint = .Simple }),
             .sint_value = fd(6, .{ .Varint = .ZigZagOptimized }),

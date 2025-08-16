@@ -1775,7 +1775,7 @@ pub const UninterpretedOption = struct {
         .identifier_value = fd(3, .String),
         .positive_int_value = fd(4, .{ .Varint = .Simple }),
         .negative_int_value = fd(5, .{ .Varint = .Simple }),
-        .double_value = fd(6, .{ .FixedInt = .I64 }),
+        .double_value = fd(6, .{ .FixedInt = .i64 }),
         .string_value = fd(7, .Bytes),
         .aggregate_value = fd(8, .String),
     };
@@ -2566,7 +2566,7 @@ pub const Value = struct {
         list_value: ListValue,
         pub const _desc_table = .{
             .null_value = fd(1, .{ .Varint = .Simple }),
-            .number_value = fd(2, .{ .FixedInt = .I64 }),
+            .number_value = fd(2, .{ .FixedInt = .i64 }),
             .string_value = fd(3, .String),
             .bool_value = fd(4, .{ .Varint = .Simple }),
             .struct_value = fd(5, .{ .SubMessage = {} }),
@@ -2778,7 +2778,7 @@ pub const DoubleValue = struct {
     value: f64 = 0,
 
     pub const _desc_table = .{
-        .value = fd(1, .{ .FixedInt = .I64 }),
+        .value = fd(1, .{ .FixedInt = .i64 }),
     };
 
     pub fn encode(
@@ -2845,7 +2845,7 @@ pub const FloatValue = struct {
     value: f32 = 0,
 
     pub const _desc_table = .{
-        .value = fd(1, .{ .FixedInt = .I32 }),
+        .value = fd(1, .{ .FixedInt = .i32 }),
     };
 
     pub fn encode(

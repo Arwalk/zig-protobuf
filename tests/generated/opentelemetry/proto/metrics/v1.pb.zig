@@ -687,15 +687,15 @@ pub const NumberDataPoint = struct {
         as_double: f64,
         as_int: i64,
         pub const _desc_table = .{
-            .as_double = fd(4, .{ .FixedInt = .I64 }),
-            .as_int = fd(6, .{ .FixedInt = .I64 }),
+            .as_double = fd(4, .{ .FixedInt = .i64 }),
+            .as_int = fd(6, .{ .FixedInt = .i64 }),
         };
     };
 
     pub const _desc_table = .{
         .attributes = fd(7, .{ .List = .{ .SubMessage = {} } }),
-        .start_time_unix_nano = fd(2, .{ .FixedInt = .I64 }),
-        .time_unix_nano = fd(3, .{ .FixedInt = .I64 }),
+        .start_time_unix_nano = fd(2, .{ .FixedInt = .i64 }),
+        .time_unix_nano = fd(3, .{ .FixedInt = .i64 }),
         .exemplars = fd(5, .{ .List = .{ .SubMessage = {} } }),
         .flags = fd(8, .{ .Varint = .Simple }),
         .value = fd(null, .{ .OneOf = value_union }),
@@ -776,16 +776,16 @@ pub const HistogramDataPoint = struct {
 
     pub const _desc_table = .{
         .attributes = fd(9, .{ .List = .{ .SubMessage = {} } }),
-        .start_time_unix_nano = fd(2, .{ .FixedInt = .I64 }),
-        .time_unix_nano = fd(3, .{ .FixedInt = .I64 }),
-        .count = fd(4, .{ .FixedInt = .I64 }),
-        .sum = fd(5, .{ .FixedInt = .I64 }),
-        .bucket_counts = fd(6, .{ .PackedList = .{ .FixedInt = .I64 } }),
-        .explicit_bounds = fd(7, .{ .PackedList = .{ .FixedInt = .I64 } }),
+        .start_time_unix_nano = fd(2, .{ .FixedInt = .i64 }),
+        .time_unix_nano = fd(3, .{ .FixedInt = .i64 }),
+        .count = fd(4, .{ .FixedInt = .i64 }),
+        .sum = fd(5, .{ .FixedInt = .i64 }),
+        .bucket_counts = fd(6, .{ .PackedList = .{ .FixedInt = .i64 } }),
+        .explicit_bounds = fd(7, .{ .PackedList = .{ .FixedInt = .i64 } }),
         .exemplars = fd(8, .{ .List = .{ .SubMessage = {} } }),
         .flags = fd(10, .{ .Varint = .Simple }),
-        .min = fd(11, .{ .FixedInt = .I64 }),
-        .max = fd(12, .{ .FixedInt = .I64 }),
+        .min = fd(11, .{ .FixedInt = .i64 }),
+        .max = fd(12, .{ .FixedInt = .i64 }),
     };
 
     pub fn encode(
@@ -866,19 +866,19 @@ pub const ExponentialHistogramDataPoint = struct {
 
     pub const _desc_table = .{
         .attributes = fd(1, .{ .List = .{ .SubMessage = {} } }),
-        .start_time_unix_nano = fd(2, .{ .FixedInt = .I64 }),
-        .time_unix_nano = fd(3, .{ .FixedInt = .I64 }),
-        .count = fd(4, .{ .FixedInt = .I64 }),
-        .sum = fd(5, .{ .FixedInt = .I64 }),
+        .start_time_unix_nano = fd(2, .{ .FixedInt = .i64 }),
+        .time_unix_nano = fd(3, .{ .FixedInt = .i64 }),
+        .count = fd(4, .{ .FixedInt = .i64 }),
+        .sum = fd(5, .{ .FixedInt = .i64 }),
         .scale = fd(6, .{ .Varint = .ZigZagOptimized }),
-        .zero_count = fd(7, .{ .FixedInt = .I64 }),
+        .zero_count = fd(7, .{ .FixedInt = .i64 }),
         .positive = fd(8, .{ .SubMessage = {} }),
         .negative = fd(9, .{ .SubMessage = {} }),
         .flags = fd(10, .{ .Varint = .Simple }),
         .exemplars = fd(11, .{ .List = .{ .SubMessage = {} } }),
-        .min = fd(12, .{ .FixedInt = .I64 }),
-        .max = fd(13, .{ .FixedInt = .I64 }),
-        .zero_threshold = fd(14, .{ .FixedInt = .I64 }),
+        .min = fd(12, .{ .FixedInt = .i64 }),
+        .max = fd(13, .{ .FixedInt = .i64 }),
+        .zero_threshold = fd(14, .{ .FixedInt = .i64 }),
     };
 
     pub const Buckets = struct {
@@ -1021,10 +1021,10 @@ pub const SummaryDataPoint = struct {
 
     pub const _desc_table = .{
         .attributes = fd(7, .{ .List = .{ .SubMessage = {} } }),
-        .start_time_unix_nano = fd(2, .{ .FixedInt = .I64 }),
-        .time_unix_nano = fd(3, .{ .FixedInt = .I64 }),
-        .count = fd(4, .{ .FixedInt = .I64 }),
-        .sum = fd(5, .{ .FixedInt = .I64 }),
+        .start_time_unix_nano = fd(2, .{ .FixedInt = .i64 }),
+        .time_unix_nano = fd(3, .{ .FixedInt = .i64 }),
+        .count = fd(4, .{ .FixedInt = .i64 }),
+        .sum = fd(5, .{ .FixedInt = .i64 }),
         .quantile_values = fd(6, .{ .List = .{ .SubMessage = {} } }),
         .flags = fd(8, .{ .Varint = .Simple }),
     };
@@ -1034,8 +1034,8 @@ pub const SummaryDataPoint = struct {
         value: f64 = 0,
 
         pub const _desc_table = .{
-            .quantile = fd(1, .{ .FixedInt = .I64 }),
-            .value = fd(2, .{ .FixedInt = .I64 }),
+            .quantile = fd(1, .{ .FixedInt = .i64 }),
+            .value = fd(2, .{ .FixedInt = .i64 }),
         };
 
         pub fn encode(
@@ -1173,14 +1173,14 @@ pub const Exemplar = struct {
         as_double: f64,
         as_int: i64,
         pub const _desc_table = .{
-            .as_double = fd(3, .{ .FixedInt = .I64 }),
-            .as_int = fd(6, .{ .FixedInt = .I64 }),
+            .as_double = fd(3, .{ .FixedInt = .i64 }),
+            .as_int = fd(6, .{ .FixedInt = .i64 }),
         };
     };
 
     pub const _desc_table = .{
         .filtered_attributes = fd(7, .{ .List = .{ .SubMessage = {} } }),
-        .time_unix_nano = fd(2, .{ .FixedInt = .I64 }),
+        .time_unix_nano = fd(2, .{ .FixedInt = .i64 }),
         .span_id = fd(4, .Bytes),
         .trace_id = fd(5, .Bytes),
         .value = fd(null, .{ .OneOf = value_union }),

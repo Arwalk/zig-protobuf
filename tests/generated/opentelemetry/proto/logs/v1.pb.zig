@@ -266,14 +266,14 @@ pub const LogRecord = struct {
     span_id: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .time_unix_nano = fd(1, .{ .FixedInt = .I64 }),
-        .observed_time_unix_nano = fd(11, .{ .FixedInt = .I64 }),
+        .time_unix_nano = fd(1, .{ .FixedInt = .i64 }),
+        .observed_time_unix_nano = fd(11, .{ .FixedInt = .i64 }),
         .severity_number = fd(2, .{ .Varint = .Simple }),
         .severity_text = fd(3, .String),
         .body = fd(5, .{ .SubMessage = {} }),
         .attributes = fd(6, .{ .List = .{ .SubMessage = {} } }),
         .dropped_attributes_count = fd(7, .{ .Varint = .Simple }),
-        .flags = fd(8, .{ .FixedInt = .I32 }),
+        .flags = fd(8, .{ .FixedInt = .i32 }),
         .trace_id = fd(9, .Bytes),
         .span_id = fd(10, .Bytes),
     };
