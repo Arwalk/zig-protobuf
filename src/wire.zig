@@ -30,16 +30,24 @@ pub const Tag = packed struct(u16) {
 
     /// Encode tag to byte stream. Returns number of bytes used for encoding,
     /// which is guaranteed to be between 1-3 inclusive.
-    pub fn encode(self: Tag, writer: std.io.AnyWriter) !usize {
-        var raw: u16 = @bitCast(self);
-        var written: u2 = 1;
-        if (raw > 0x7F) {
-            try writer.writeByte(0x80 | @as(u8, @intCast(raw & 0x7F)));
-            written += 1;
-            raw >>= 7;
-        }
-        try writer.writeByte(@intCast(raw));
-        return written;
+    pub fn encode(comptime self: Tag, writer: std.io.AnyWriter) !usize {
+        const out_bytes: []const u8 = comptime b: {
+            var raw: u16 = @bitCast(self);
+            var buf: [3]u8 = undefined;
+            const len: u2 = for (0..3) |i| {
+                if (raw < 0x80) {
+                    buf[i] = @intCast(raw);
+                    break i + 1;
+                } else {
+                    buf[i] = 0x80 | @as(u8, @intCast(raw & 0x7F));
+                }
+                raw >>= 7;
+            } else unreachable;
+
+            break :b std.fmt.comptimePrint("{s}", .{buf[0..len]});
+        };
+        try writer.writeAll(out_bytes);
+        return out_bytes.len;
     }
 
     test encode {

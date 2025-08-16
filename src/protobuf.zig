@@ -362,8 +362,8 @@ fn writePackedStringList(
 
 /// Writes the full tag of the field, if there is any.
 fn writeTag(writer: std.io.AnyWriter, comptime field: FieldDescriptor) std.io.AnyWriter.Error!void {
-    const tag: wire.Tag = .{
-        .type = comptime field.ftype.toWire(),
+    const tag: wire.Tag = comptime .{
+        .type = field.ftype.toWire(),
         .field = field.field_number.?,
     };
     _ = try tag.encode(writer);
