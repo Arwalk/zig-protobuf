@@ -942,14 +942,14 @@ pub const FloatingPointFields = struct {
     default_double_field: ?f64 = 2,
 
     pub const _desc_table = .{
-        .optional_float_field = fd(1, .{ .FixedInt = .I32 }),
-        .required_float_field = fd(2, .{ .FixedInt = .I32 }),
-        .repeated_float_field = fd(3, .{ .List = .{ .FixedInt = .I32 } }),
-        .default_float_field = fd(4, .{ .FixedInt = .I32 }),
-        .optional_double_field = fd(5, .{ .FixedInt = .I64 }),
-        .required_double_field = fd(6, .{ .FixedInt = .I64 }),
-        .repeated_double_field = fd(7, .{ .List = .{ .FixedInt = .I64 } }),
-        .default_double_field = fd(8, .{ .FixedInt = .I64 }),
+        .optional_float_field = fd(1, .{ .FixedInt = .i32 }),
+        .required_float_field = fd(2, .{ .FixedInt = .i32 }),
+        .repeated_float_field = fd(3, .{ .List = .{ .FixedInt = .i32 } }),
+        .default_float_field = fd(4, .{ .FixedInt = .i32 }),
+        .optional_double_field = fd(5, .{ .FixedInt = .i64 }),
+        .required_double_field = fd(6, .{ .FixedInt = .i64 }),
+        .repeated_double_field = fd(7, .{ .List = .{ .FixedInt = .i64 } }),
+        .default_double_field = fd(8, .{ .FixedInt = .i64 }),
     };
 
     pub fn encode(
@@ -1864,7 +1864,7 @@ pub const TestMapFieldsNoBinary = struct {
 
         pub const _desc_table = .{
             .key = fd(1, .String),
-            .value = fd(2, .{ .FixedInt = .I64 }),
+            .value = fd(2, .{ .FixedInt = .i64 }),
         };
 
         pub fn encode(

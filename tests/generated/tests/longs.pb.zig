@@ -18,12 +18,12 @@ pub const LongsMessage = struct {
     uint64_field_max: u64 = 0,
 
     pub const _desc_table = .{
-        .fixed64_field_min = fd(1, .{ .FixedInt = .I64 }),
-        .fixed64_field_max = fd(2, .{ .FixedInt = .I64 }),
+        .fixed64_field_min = fd(1, .{ .FixedInt = .i64 }),
+        .fixed64_field_max = fd(2, .{ .FixedInt = .i64 }),
         .int64_field_min = fd(3, .{ .Varint = .Simple }),
         .int64_field_max = fd(4, .{ .Varint = .Simple }),
-        .sfixed64_field_min = fd(5, .{ .FixedInt = .I64 }),
-        .sfixed64_field_max = fd(6, .{ .FixedInt = .I64 }),
+        .sfixed64_field_min = fd(5, .{ .FixedInt = .i64 }),
+        .sfixed64_field_max = fd(6, .{ .FixedInt = .i64 }),
         .sint64_field_min = fd(7, .{ .Varint = .ZigZagOptimized }),
         .sint64_field_max = fd(8, .{ .Varint = .ZigZagOptimized }),
         .uint64_field_min = fd(9, .{ .Varint = .Simple }),
