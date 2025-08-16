@@ -43,10 +43,7 @@ pub const Tag = packed struct(u16) {
     }
 
     test encode {
-        const tag: Tag = .{
-            .type = .len,
-            .field = 15,
-        };
+        const tag: Tag = .{ .type = .len, .field = 15 };
 
         var result: [2]u8 = undefined;
         var fbs = std.io.fixedBufferStream(&result);
@@ -56,6 +53,12 @@ pub const Tag = packed struct(u16) {
 
         try std.testing.expectEqual(1, encoded);
         try std.testing.expectEqual((15 << 3) | 2, result[0]);
+
+        fbs.reset();
+        const tag2: Tag = .{ .type = .i64, .field = 1 };
+        const encoded2 = try tag2.encode(writer.any());
+        try std.testing.expectEqual(1, encoded2);
+        try std.testing.expectEqual((1 << 3) | 1, result[0]);
     }
 
     /// Decode from byte stream to tag. Unlike normal `varint` types, the
@@ -63,17 +66,15 @@ pub const Tag = packed struct(u16) {
     /// tag will always be unsigned.
     pub fn decode(reader: std.io.AnyReader) !Tag {
         var raw_result: u24 = 0;
-        var shift: u4 = 0;
 
         // Guaranteed that a tag will take less than 3 bytes in stream. Any
         // more bytes will result in an invalid field number (exceeding proto
         // limits), and as such should be considered an invalid tag.
-        for (0..3) |_| {
+        for (0..3) |i| {
             const b = try reader.readByte();
             const num = b & 0x7F;
-            raw_result |= @as(u24, num) << shift;
+            raw_result |= @as(u24, num) << @intCast(7 * i);
             if (b >> 7 == 0) break;
-            shift += 7;
         } else {
             @branchHint(.cold);
             return error.InvalidTag;

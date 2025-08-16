@@ -10,8 +10,8 @@ pub const Result = struct {
     node: ?Node = null,
 
     pub const _desc_table = .{
-        .version = fd(1, .{ .Varint = .Simple }),
-        .node = fd(2, .{ .SubMessage = {} }),
+        .version = fd(1, .{ .scalar = .int32 }),
+        .node = fd(2, .submessage),
     };
 
     pub fn encode(
@@ -85,13 +85,13 @@ pub const Node = struct {
         sub_node: SubNode,
         some_string: []const u8,
         pub const _desc_table = .{
-            .sub_node = fd(1, .{ .SubMessage = {} }),
-            .some_string = fd(2, .String),
+            .sub_node = fd(1, .submessage),
+            .some_string = fd(2, .{ .scalar = .string }),
         };
     };
 
     pub const _desc_table = .{
-        .node = fd(null, .{ .OneOf = node_union }),
+        .node = fd(null, .{ .oneof = node_union }),
     };
 
     pub fn encode(
@@ -159,8 +159,8 @@ pub const SubNode = struct {
     another_string: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .sub = fd(1, .{ .SubMessage = {} }),
-        .another_string = fd(2, .String),
+        .sub = fd(1, .submessage),
+        .another_string = fd(2, .{ .scalar = .string }),
     };
 
     pub fn encode(

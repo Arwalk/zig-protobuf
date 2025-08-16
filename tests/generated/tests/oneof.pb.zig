@@ -17,8 +17,8 @@ pub const Message = struct {
     str: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .value = fd(1, .{ .Varint = .Simple }),
-        .str = fd(2, .String),
+        .value = fd(1, .{ .scalar = .int32 }),
+        .str = fd(2, .{ .scalar = .string }),
     };
 
     pub fn encode(
@@ -98,17 +98,17 @@ pub const OneofContainer = struct {
         a_number: i32,
         enum_value: Enum,
         pub const _desc_table = .{
-            .string_in_oneof = fd(1, .String),
-            .message_in_oneof = fd(2, .{ .SubMessage = {} }),
-            .a_number = fd(3, .{ .Varint = .Simple }),
-            .enum_value = fd(6, .{ .Varint = .Simple }),
+            .string_in_oneof = fd(1, .{ .scalar = .string }),
+            .message_in_oneof = fd(2, .submessage),
+            .a_number = fd(3, .{ .scalar = .int32 }),
+            .enum_value = fd(6, .@"enum"),
         };
     };
 
     pub const _desc_table = .{
-        .regular_field = fd(4, .String),
-        .enum_field = fd(5, .{ .Varint = .Simple }),
-        .some_oneof = fd(null, .{ .OneOf = some_oneof_union }),
+        .regular_field = fd(4, .{ .scalar = .string }),
+        .enum_field = fd(5, .@"enum"),
+        .some_oneof = fd(null, .{ .oneof = some_oneof_union }),
     };
 
     pub fn encode(

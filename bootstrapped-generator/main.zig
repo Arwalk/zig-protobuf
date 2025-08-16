@@ -432,21 +432,31 @@ const GenerationContext = struct {
 
         if (isRepeated(field)) {
             if (isPacked(file, field)) {
-                prefix = ".{ .PackedList = ";
+                prefix = ".{ .packed_list = ";
             } else {
-                prefix = ".{ .List = ";
+                prefix = ".{ .list = ";
             }
             postfix = "}";
         }
 
         const infix: []const u8 = switch (field.type.?) {
-            .TYPE_DOUBLE, .TYPE_SFIXED64, .TYPE_FIXED64 => ".{ .FixedInt = .i64 }",
-            .TYPE_FLOAT, .TYPE_SFIXED32, .TYPE_FIXED32 => ".{ .FixedInt = .i32 }",
-            .TYPE_ENUM, .TYPE_UINT32, .TYPE_UINT64, .TYPE_BOOL, .TYPE_INT32, .TYPE_INT64 => ".{ .Varint = .Simple }",
-            .TYPE_SINT32, .TYPE_SINT64 => ".{ .Varint = .ZigZagOptimized }",
-            .TYPE_STRING => ".String",
-            .TYPE_BYTES => ".Bytes",
-            .TYPE_MESSAGE => ".{ .SubMessage = {} }",
+            .TYPE_FLOAT => ".{ .scalar = .float }",
+            .TYPE_DOUBLE => ".{ .scalar = .double }",
+            .TYPE_FIXED32 => ".{ .scalar = .fixed32 }",
+            .TYPE_SFIXED32 => ".{ .scalar = .sfixed32 }",
+            .TYPE_FIXED64 => ".{ .scalar = .fixed64 }",
+            .TYPE_SFIXED64 => ".{ .scalar = .sfixed64 }",
+            .TYPE_ENUM => ".@\"enum\"",
+            .TYPE_UINT32 => ".{ .scalar = .uint32 }",
+            .TYPE_UINT64 => ".{ .scalar = .uint64 }",
+            .TYPE_BOOL => ".{ .scalar = .bool }",
+            .TYPE_INT32 => ".{ .scalar = .int32 }",
+            .TYPE_INT64 => ".{ .scalar = .int64 }",
+            .TYPE_SINT32 => ".{ .scalar = .sint32 }",
+            .TYPE_SINT64 => ".{ .scalar = .sint64}",
+            .TYPE_STRING => ".{ .scalar = .string }",
+            .TYPE_BYTES => ".{ .scalar = .bytes }",
+            .TYPE_MESSAGE => ".submessage",
             else => {
                 std.debug.print("Unrecognized type {}\n", .{field.type.?});
                 @panic("Unrecognized type");
@@ -627,7 +637,7 @@ const GenerationContext = struct {
                 const union_element_count = self.amountOfElementsInOneofUnion(m, @as(i32, @intCast(i)));
                 if (union_element_count > 1) {
                     const oneof_name = oneof.name.?;
-                    try lines.append(try std.fmt.allocPrint(allocator, "    .{s} = fd(null, .{{ .OneOf = {s}_union }}),\n", .{ oneof_name, oneof_name }));
+                    try lines.append(try std.fmt.allocPrint(allocator, "    .{s} = fd(null, .{{ .oneof  = {s}_union }}),\n", .{ oneof_name, oneof_name }));
                 }
             }
 

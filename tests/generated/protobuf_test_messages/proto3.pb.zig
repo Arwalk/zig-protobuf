@@ -181,161 +181,161 @@ pub const TestAllTypesProto3 = struct {
         oneof_enum: TestAllTypesProto3.NestedEnum,
         oneof_null_value: google_protobuf.NullValue,
         pub const _desc_table = .{
-            .oneof_uint32 = fd(111, .{ .Varint = .Simple }),
-            .oneof_nested_message = fd(112, .{ .SubMessage = {} }),
-            .oneof_string = fd(113, .String),
-            .oneof_bytes = fd(114, .Bytes),
-            .oneof_bool = fd(115, .{ .Varint = .Simple }),
-            .oneof_uint64 = fd(116, .{ .Varint = .Simple }),
-            .oneof_float = fd(117, .{ .FixedInt = .i32 }),
-            .oneof_double = fd(118, .{ .FixedInt = .i64 }),
-            .oneof_enum = fd(119, .{ .Varint = .Simple }),
-            .oneof_null_value = fd(120, .{ .Varint = .Simple }),
+            .oneof_uint32 = fd(111, .{ .scalar = .uint32 }),
+            .oneof_nested_message = fd(112, .submessage),
+            .oneof_string = fd(113, .{ .scalar = .string }),
+            .oneof_bytes = fd(114, .{ .scalar = .bytes }),
+            .oneof_bool = fd(115, .{ .scalar = .bool }),
+            .oneof_uint64 = fd(116, .{ .scalar = .uint64 }),
+            .oneof_float = fd(117, .{ .scalar = .float }),
+            .oneof_double = fd(118, .{ .scalar = .double }),
+            .oneof_enum = fd(119, .@"enum"),
+            .oneof_null_value = fd(120, .@"enum"),
         };
     };
 
     pub const _desc_table = .{
-        .optional_int32 = fd(1, .{ .Varint = .Simple }),
-        .optional_int64 = fd(2, .{ .Varint = .Simple }),
-        .optional_uint32 = fd(3, .{ .Varint = .Simple }),
-        .optional_uint64 = fd(4, .{ .Varint = .Simple }),
-        .optional_sint32 = fd(5, .{ .Varint = .ZigZagOptimized }),
-        .optional_sint64 = fd(6, .{ .Varint = .ZigZagOptimized }),
-        .optional_fixed32 = fd(7, .{ .FixedInt = .i32 }),
-        .optional_fixed64 = fd(8, .{ .FixedInt = .i64 }),
-        .optional_sfixed32 = fd(9, .{ .FixedInt = .i32 }),
-        .optional_sfixed64 = fd(10, .{ .FixedInt = .i64 }),
-        .optional_float = fd(11, .{ .FixedInt = .i32 }),
-        .optional_double = fd(12, .{ .FixedInt = .i64 }),
-        .optional_bool = fd(13, .{ .Varint = .Simple }),
-        .optional_string = fd(14, .String),
-        .optional_bytes = fd(15, .Bytes),
-        .optional_nested_message = fd(18, .{ .SubMessage = {} }),
-        .optional_foreign_message = fd(19, .{ .SubMessage = {} }),
-        .optional_nested_enum = fd(21, .{ .Varint = .Simple }),
-        .optional_foreign_enum = fd(22, .{ .Varint = .Simple }),
-        .optional_aliased_enum = fd(23, .{ .Varint = .Simple }),
-        .optional_string_piece = fd(24, .String),
-        .optional_cord = fd(25, .String),
-        .repeated_int32 = fd(31, .{ .PackedList = .{ .Varint = .Simple } }),
-        .repeated_int64 = fd(32, .{ .PackedList = .{ .Varint = .Simple } }),
-        .repeated_uint32 = fd(33, .{ .PackedList = .{ .Varint = .Simple } }),
-        .repeated_uint64 = fd(34, .{ .PackedList = .{ .Varint = .Simple } }),
-        .repeated_sint32 = fd(35, .{ .PackedList = .{ .Varint = .ZigZagOptimized } }),
-        .repeated_sint64 = fd(36, .{ .PackedList = .{ .Varint = .ZigZagOptimized } }),
-        .repeated_fixed32 = fd(37, .{ .PackedList = .{ .FixedInt = .i32 } }),
-        .repeated_fixed64 = fd(38, .{ .PackedList = .{ .FixedInt = .i64 } }),
-        .repeated_sfixed32 = fd(39, .{ .PackedList = .{ .FixedInt = .i32 } }),
-        .repeated_sfixed64 = fd(40, .{ .PackedList = .{ .FixedInt = .i64 } }),
-        .repeated_float = fd(41, .{ .PackedList = .{ .FixedInt = .i32 } }),
-        .repeated_double = fd(42, .{ .PackedList = .{ .FixedInt = .i64 } }),
-        .repeated_bool = fd(43, .{ .PackedList = .{ .Varint = .Simple } }),
-        .repeated_string = fd(44, .{ .List = .String }),
-        .repeated_bytes = fd(45, .{ .List = .Bytes }),
-        .repeated_nested_message = fd(48, .{ .List = .{ .SubMessage = {} } }),
-        .repeated_foreign_message = fd(49, .{ .List = .{ .SubMessage = {} } }),
-        .repeated_nested_enum = fd(51, .{ .List = .{ .Varint = .Simple } }),
-        .repeated_foreign_enum = fd(52, .{ .List = .{ .Varint = .Simple } }),
-        .repeated_string_piece = fd(54, .{ .List = .String }),
-        .repeated_cord = fd(55, .{ .List = .String }),
-        .packed_int32 = fd(75, .{ .PackedList = .{ .Varint = .Simple } }),
-        .packed_int64 = fd(76, .{ .PackedList = .{ .Varint = .Simple } }),
-        .packed_uint32 = fd(77, .{ .PackedList = .{ .Varint = .Simple } }),
-        .packed_uint64 = fd(78, .{ .PackedList = .{ .Varint = .Simple } }),
-        .packed_sint32 = fd(79, .{ .PackedList = .{ .Varint = .ZigZagOptimized } }),
-        .packed_sint64 = fd(80, .{ .PackedList = .{ .Varint = .ZigZagOptimized } }),
-        .packed_fixed32 = fd(81, .{ .PackedList = .{ .FixedInt = .i32 } }),
-        .packed_fixed64 = fd(82, .{ .PackedList = .{ .FixedInt = .i64 } }),
-        .packed_sfixed32 = fd(83, .{ .PackedList = .{ .FixedInt = .i32 } }),
-        .packed_sfixed64 = fd(84, .{ .PackedList = .{ .FixedInt = .i64 } }),
-        .packed_float = fd(85, .{ .PackedList = .{ .FixedInt = .i32 } }),
-        .packed_double = fd(86, .{ .PackedList = .{ .FixedInt = .i64 } }),
-        .packed_bool = fd(87, .{ .PackedList = .{ .Varint = .Simple } }),
-        .packed_nested_enum = fd(88, .{ .PackedList = .{ .Varint = .Simple } }),
-        .unpacked_int32 = fd(89, .{ .List = .{ .Varint = .Simple } }),
-        .unpacked_int64 = fd(90, .{ .List = .{ .Varint = .Simple } }),
-        .unpacked_uint32 = fd(91, .{ .List = .{ .Varint = .Simple } }),
-        .unpacked_uint64 = fd(92, .{ .List = .{ .Varint = .Simple } }),
-        .unpacked_sint32 = fd(93, .{ .List = .{ .Varint = .ZigZagOptimized } }),
-        .unpacked_sint64 = fd(94, .{ .List = .{ .Varint = .ZigZagOptimized } }),
-        .unpacked_fixed32 = fd(95, .{ .List = .{ .FixedInt = .i32 } }),
-        .unpacked_fixed64 = fd(96, .{ .List = .{ .FixedInt = .i64 } }),
-        .unpacked_sfixed32 = fd(97, .{ .List = .{ .FixedInt = .i32 } }),
-        .unpacked_sfixed64 = fd(98, .{ .List = .{ .FixedInt = .i64 } }),
-        .unpacked_float = fd(99, .{ .List = .{ .FixedInt = .i32 } }),
-        .unpacked_double = fd(100, .{ .List = .{ .FixedInt = .i64 } }),
-        .unpacked_bool = fd(101, .{ .List = .{ .Varint = .Simple } }),
-        .unpacked_nested_enum = fd(102, .{ .List = .{ .Varint = .Simple } }),
-        .map_int32_int32 = fd(56, .{ .List = .{ .SubMessage = {} } }),
-        .map_int64_int64 = fd(57, .{ .List = .{ .SubMessage = {} } }),
-        .map_uint32_uint32 = fd(58, .{ .List = .{ .SubMessage = {} } }),
-        .map_uint64_uint64 = fd(59, .{ .List = .{ .SubMessage = {} } }),
-        .map_sint32_sint32 = fd(60, .{ .List = .{ .SubMessage = {} } }),
-        .map_sint64_sint64 = fd(61, .{ .List = .{ .SubMessage = {} } }),
-        .map_fixed32_fixed32 = fd(62, .{ .List = .{ .SubMessage = {} } }),
-        .map_fixed64_fixed64 = fd(63, .{ .List = .{ .SubMessage = {} } }),
-        .map_sfixed32_sfixed32 = fd(64, .{ .List = .{ .SubMessage = {} } }),
-        .map_sfixed64_sfixed64 = fd(65, .{ .List = .{ .SubMessage = {} } }),
-        .map_int32_float = fd(66, .{ .List = .{ .SubMessage = {} } }),
-        .map_int32_double = fd(67, .{ .List = .{ .SubMessage = {} } }),
-        .map_bool_bool = fd(68, .{ .List = .{ .SubMessage = {} } }),
-        .map_string_string = fd(69, .{ .List = .{ .SubMessage = {} } }),
-        .map_string_bytes = fd(70, .{ .List = .{ .SubMessage = {} } }),
-        .map_string_nested_message = fd(71, .{ .List = .{ .SubMessage = {} } }),
-        .map_string_foreign_message = fd(72, .{ .List = .{ .SubMessage = {} } }),
-        .map_string_nested_enum = fd(73, .{ .List = .{ .SubMessage = {} } }),
-        .map_string_foreign_enum = fd(74, .{ .List = .{ .SubMessage = {} } }),
-        .optional_bool_wrapper = fd(201, .{ .SubMessage = {} }),
-        .optional_int32_wrapper = fd(202, .{ .SubMessage = {} }),
-        .optional_int64_wrapper = fd(203, .{ .SubMessage = {} }),
-        .optional_uint32_wrapper = fd(204, .{ .SubMessage = {} }),
-        .optional_uint64_wrapper = fd(205, .{ .SubMessage = {} }),
-        .optional_float_wrapper = fd(206, .{ .SubMessage = {} }),
-        .optional_double_wrapper = fd(207, .{ .SubMessage = {} }),
-        .optional_string_wrapper = fd(208, .{ .SubMessage = {} }),
-        .optional_bytes_wrapper = fd(209, .{ .SubMessage = {} }),
-        .repeated_bool_wrapper = fd(211, .{ .List = .{ .SubMessage = {} } }),
-        .repeated_int32_wrapper = fd(212, .{ .List = .{ .SubMessage = {} } }),
-        .repeated_int64_wrapper = fd(213, .{ .List = .{ .SubMessage = {} } }),
-        .repeated_uint32_wrapper = fd(214, .{ .List = .{ .SubMessage = {} } }),
-        .repeated_uint64_wrapper = fd(215, .{ .List = .{ .SubMessage = {} } }),
-        .repeated_float_wrapper = fd(216, .{ .List = .{ .SubMessage = {} } }),
-        .repeated_double_wrapper = fd(217, .{ .List = .{ .SubMessage = {} } }),
-        .repeated_string_wrapper = fd(218, .{ .List = .{ .SubMessage = {} } }),
-        .repeated_bytes_wrapper = fd(219, .{ .List = .{ .SubMessage = {} } }),
-        .optional_duration = fd(301, .{ .SubMessage = {} }),
-        .optional_timestamp = fd(302, .{ .SubMessage = {} }),
-        .optional_field_mask = fd(303, .{ .SubMessage = {} }),
-        .optional_struct = fd(304, .{ .SubMessage = {} }),
-        .optional_any = fd(305, .{ .SubMessage = {} }),
-        .optional_value = fd(306, .{ .SubMessage = {} }),
-        .optional_null_value = fd(307, .{ .Varint = .Simple }),
-        .repeated_duration = fd(311, .{ .List = .{ .SubMessage = {} } }),
-        .repeated_timestamp = fd(312, .{ .List = .{ .SubMessage = {} } }),
-        .repeated_fieldmask = fd(313, .{ .List = .{ .SubMessage = {} } }),
-        .repeated_struct = fd(324, .{ .List = .{ .SubMessage = {} } }),
-        .repeated_any = fd(315, .{ .List = .{ .SubMessage = {} } }),
-        .repeated_value = fd(316, .{ .List = .{ .SubMessage = {} } }),
-        .repeated_list_value = fd(317, .{ .List = .{ .SubMessage = {} } }),
-        .fieldname1 = fd(401, .{ .Varint = .Simple }),
-        .field_name2 = fd(402, .{ .Varint = .Simple }),
-        ._field_name3 = fd(403, .{ .Varint = .Simple }),
-        .field__name4_ = fd(404, .{ .Varint = .Simple }),
-        .field0name5 = fd(405, .{ .Varint = .Simple }),
-        .field_0_name6 = fd(406, .{ .Varint = .Simple }),
-        .fieldName7 = fd(407, .{ .Varint = .Simple }),
-        .FieldName8 = fd(408, .{ .Varint = .Simple }),
-        .field_Name9 = fd(409, .{ .Varint = .Simple }),
-        .Field_Name10 = fd(410, .{ .Varint = .Simple }),
-        .FIELD_NAME11 = fd(411, .{ .Varint = .Simple }),
-        .FIELD_name12 = fd(412, .{ .Varint = .Simple }),
-        .__field_name13 = fd(413, .{ .Varint = .Simple }),
-        .__Field_name14 = fd(414, .{ .Varint = .Simple }),
-        .field__name15 = fd(415, .{ .Varint = .Simple }),
-        .field__Name16 = fd(416, .{ .Varint = .Simple }),
-        .field_name17__ = fd(417, .{ .Varint = .Simple }),
-        .Field_name18__ = fd(418, .{ .Varint = .Simple }),
-        .oneof_field = fd(null, .{ .OneOf = oneof_field_union }),
+        .optional_int32 = fd(1, .{ .scalar = .int32 }),
+        .optional_int64 = fd(2, .{ .scalar = .int64 }),
+        .optional_uint32 = fd(3, .{ .scalar = .uint32 }),
+        .optional_uint64 = fd(4, .{ .scalar = .uint64 }),
+        .optional_sint32 = fd(5, .{ .scalar = .sint32 }),
+        .optional_sint64 = fd(6, .{ .scalar = .sint64 }),
+        .optional_fixed32 = fd(7, .{ .scalar = .fixed32 }),
+        .optional_fixed64 = fd(8, .{ .scalar = .fixed64 }),
+        .optional_sfixed32 = fd(9, .{ .scalar = .sfixed32 }),
+        .optional_sfixed64 = fd(10, .{ .scalar = .sfixed64 }),
+        .optional_float = fd(11, .{ .scalar = .float }),
+        .optional_double = fd(12, .{ .scalar = .double }),
+        .optional_bool = fd(13, .{ .scalar = .bool }),
+        .optional_string = fd(14, .{ .scalar = .string }),
+        .optional_bytes = fd(15, .{ .scalar = .bytes }),
+        .optional_nested_message = fd(18, .submessage),
+        .optional_foreign_message = fd(19, .submessage),
+        .optional_nested_enum = fd(21, .@"enum"),
+        .optional_foreign_enum = fd(22, .@"enum"),
+        .optional_aliased_enum = fd(23, .@"enum"),
+        .optional_string_piece = fd(24, .{ .scalar = .string }),
+        .optional_cord = fd(25, .{ .scalar = .string }),
+        .repeated_int32 = fd(31, .{ .packed_list = .{ .scalar = .int32 } }),
+        .repeated_int64 = fd(32, .{ .packed_list = .{ .scalar = .int64 } }),
+        .repeated_uint32 = fd(33, .{ .packed_list = .{ .scalar = .uint32 } }),
+        .repeated_uint64 = fd(34, .{ .packed_list = .{ .scalar = .uint64 } }),
+        .repeated_sint32 = fd(35, .{ .packed_list = .{ .scalar = .sint32 } }),
+        .repeated_sint64 = fd(36, .{ .packed_list = .{ .scalar = .sint64 } }),
+        .repeated_fixed32 = fd(37, .{ .packed_list = .{ .scalar = .fixed32 } }),
+        .repeated_fixed64 = fd(38, .{ .packed_list = .{ .scalar = .fixed64 } }),
+        .repeated_sfixed32 = fd(39, .{ .packed_list = .{ .scalar = .sfixed32 } }),
+        .repeated_sfixed64 = fd(40, .{ .packed_list = .{ .scalar = .sfixed64 } }),
+        .repeated_float = fd(41, .{ .packed_list = .{ .scalar = .float } }),
+        .repeated_double = fd(42, .{ .packed_list = .{ .scalar = .double } }),
+        .repeated_bool = fd(43, .{ .packed_list = .{ .scalar = .bool } }),
+        .repeated_string = fd(44, .{ .list = .{ .scalar = .string } }),
+        .repeated_bytes = fd(45, .{ .list = .{ .scalar = .bytes } }),
+        .repeated_nested_message = fd(48, .{ .list = .submessage }),
+        .repeated_foreign_message = fd(49, .{ .list = .submessage }),
+        .repeated_nested_enum = fd(51, .{ .list = .@"enum" }),
+        .repeated_foreign_enum = fd(52, .{ .list = .@"enum" }),
+        .repeated_string_piece = fd(54, .{ .list = .{ .scalar = .string } }),
+        .repeated_cord = fd(55, .{ .list = .{ .scalar = .string } }),
+        .packed_int32 = fd(75, .{ .packed_list = .{ .scalar = .int32 } }),
+        .packed_int64 = fd(76, .{ .packed_list = .{ .scalar = .int64 } }),
+        .packed_uint32 = fd(77, .{ .packed_list = .{ .scalar = .uint32 } }),
+        .packed_uint64 = fd(78, .{ .packed_list = .{ .scalar = .uint64 } }),
+        .packed_sint32 = fd(79, .{ .packed_list = .{ .scalar = .sint32 } }),
+        .packed_sint64 = fd(80, .{ .packed_list = .{ .scalar = .sint64 } }),
+        .packed_fixed32 = fd(81, .{ .packed_list = .{ .scalar = .fixed32 } }),
+        .packed_fixed64 = fd(82, .{ .packed_list = .{ .scalar = .fixed64 } }),
+        .packed_sfixed32 = fd(83, .{ .packed_list = .{ .scalar = .sfixed32 } }),
+        .packed_sfixed64 = fd(84, .{ .packed_list = .{ .scalar = .sfixed64 } }),
+        .packed_float = fd(85, .{ .packed_list = .{ .scalar = .float } }),
+        .packed_double = fd(86, .{ .packed_list = .{ .scalar = .double } }),
+        .packed_bool = fd(87, .{ .packed_list = .{ .scalar = .bool } }),
+        .packed_nested_enum = fd(88, .{ .packed_list = .@"enum" }),
+        .unpacked_int32 = fd(89, .{ .list = .{ .scalar = .int32 } }),
+        .unpacked_int64 = fd(90, .{ .list = .{ .scalar = .int64 } }),
+        .unpacked_uint32 = fd(91, .{ .list = .{ .scalar = .uint32 } }),
+        .unpacked_uint64 = fd(92, .{ .list = .{ .scalar = .uint64 } }),
+        .unpacked_sint32 = fd(93, .{ .list = .{ .scalar = .sint32 } }),
+        .unpacked_sint64 = fd(94, .{ .list = .{ .scalar = .sint64 } }),
+        .unpacked_fixed32 = fd(95, .{ .list = .{ .scalar = .fixed32 } }),
+        .unpacked_fixed64 = fd(96, .{ .list = .{ .scalar = .fixed64 } }),
+        .unpacked_sfixed32 = fd(97, .{ .list = .{ .scalar = .sfixed32 } }),
+        .unpacked_sfixed64 = fd(98, .{ .list = .{ .scalar = .sfixed64 } }),
+        .unpacked_float = fd(99, .{ .list = .{ .scalar = .float } }),
+        .unpacked_double = fd(100, .{ .list = .{ .scalar = .double } }),
+        .unpacked_bool = fd(101, .{ .list = .{ .scalar = .bool } }),
+        .unpacked_nested_enum = fd(102, .{ .list = .@"enum" }),
+        .map_int32_int32 = fd(56, .{ .list = .submessage }),
+        .map_int64_int64 = fd(57, .{ .list = .submessage }),
+        .map_uint32_uint32 = fd(58, .{ .list = .submessage }),
+        .map_uint64_uint64 = fd(59, .{ .list = .submessage }),
+        .map_sint32_sint32 = fd(60, .{ .list = .submessage }),
+        .map_sint64_sint64 = fd(61, .{ .list = .submessage }),
+        .map_fixed32_fixed32 = fd(62, .{ .list = .submessage }),
+        .map_fixed64_fixed64 = fd(63, .{ .list = .submessage }),
+        .map_sfixed32_sfixed32 = fd(64, .{ .list = .submessage }),
+        .map_sfixed64_sfixed64 = fd(65, .{ .list = .submessage }),
+        .map_int32_float = fd(66, .{ .list = .submessage }),
+        .map_int32_double = fd(67, .{ .list = .submessage }),
+        .map_bool_bool = fd(68, .{ .list = .submessage }),
+        .map_string_string = fd(69, .{ .list = .submessage }),
+        .map_string_bytes = fd(70, .{ .list = .submessage }),
+        .map_string_nested_message = fd(71, .{ .list = .submessage }),
+        .map_string_foreign_message = fd(72, .{ .list = .submessage }),
+        .map_string_nested_enum = fd(73, .{ .list = .submessage }),
+        .map_string_foreign_enum = fd(74, .{ .list = .submessage }),
+        .optional_bool_wrapper = fd(201, .submessage),
+        .optional_int32_wrapper = fd(202, .submessage),
+        .optional_int64_wrapper = fd(203, .submessage),
+        .optional_uint32_wrapper = fd(204, .submessage),
+        .optional_uint64_wrapper = fd(205, .submessage),
+        .optional_float_wrapper = fd(206, .submessage),
+        .optional_double_wrapper = fd(207, .submessage),
+        .optional_string_wrapper = fd(208, .submessage),
+        .optional_bytes_wrapper = fd(209, .submessage),
+        .repeated_bool_wrapper = fd(211, .{ .list = .submessage }),
+        .repeated_int32_wrapper = fd(212, .{ .list = .submessage }),
+        .repeated_int64_wrapper = fd(213, .{ .list = .submessage }),
+        .repeated_uint32_wrapper = fd(214, .{ .list = .submessage }),
+        .repeated_uint64_wrapper = fd(215, .{ .list = .submessage }),
+        .repeated_float_wrapper = fd(216, .{ .list = .submessage }),
+        .repeated_double_wrapper = fd(217, .{ .list = .submessage }),
+        .repeated_string_wrapper = fd(218, .{ .list = .submessage }),
+        .repeated_bytes_wrapper = fd(219, .{ .list = .submessage }),
+        .optional_duration = fd(301, .submessage),
+        .optional_timestamp = fd(302, .submessage),
+        .optional_field_mask = fd(303, .submessage),
+        .optional_struct = fd(304, .submessage),
+        .optional_any = fd(305, .submessage),
+        .optional_value = fd(306, .submessage),
+        .optional_null_value = fd(307, .@"enum"),
+        .repeated_duration = fd(311, .{ .list = .submessage }),
+        .repeated_timestamp = fd(312, .{ .list = .submessage }),
+        .repeated_fieldmask = fd(313, .{ .list = .submessage }),
+        .repeated_struct = fd(324, .{ .list = .submessage }),
+        .repeated_any = fd(315, .{ .list = .submessage }),
+        .repeated_value = fd(316, .{ .list = .submessage }),
+        .repeated_list_value = fd(317, .{ .list = .submessage }),
+        .fieldname1 = fd(401, .{ .scalar = .int32 }),
+        .field_name2 = fd(402, .{ .scalar = .int32 }),
+        ._field_name3 = fd(403, .{ .scalar = .int32 }),
+        .field__name4_ = fd(404, .{ .scalar = .int32 }),
+        .field0name5 = fd(405, .{ .scalar = .int32 }),
+        .field_0_name6 = fd(406, .{ .scalar = .int32 }),
+        .fieldName7 = fd(407, .{ .scalar = .int32 }),
+        .FieldName8 = fd(408, .{ .scalar = .int32 }),
+        .field_Name9 = fd(409, .{ .scalar = .int32 }),
+        .Field_Name10 = fd(410, .{ .scalar = .int32 }),
+        .FIELD_NAME11 = fd(411, .{ .scalar = .int32 }),
+        .FIELD_name12 = fd(412, .{ .scalar = .int32 }),
+        .__field_name13 = fd(413, .{ .scalar = .int32 }),
+        .__Field_name14 = fd(414, .{ .scalar = .int32 }),
+        .field__name15 = fd(415, .{ .scalar = .int32 }),
+        .field__Name16 = fd(416, .{ .scalar = .int32 }),
+        .field_name17__ = fd(417, .{ .scalar = .int32 }),
+        .Field_name18__ = fd(418, .{ .scalar = .int32 }),
+        .oneof_field = fd(null, .{ .oneof = oneof_field_union }),
     };
 
     pub const NestedEnum = enum(i32) {
@@ -357,7 +357,7 @@ pub const TestAllTypesProto3 = struct {
         a: i32 = 0,
 
         pub const _desc_table = .{
-            .a = fd(1, .{ .Varint = .Simple }),
+            .a = fd(1, .{ .scalar = .int32 }),
         };
 
         pub fn encode(
@@ -425,8 +425,8 @@ pub const TestAllTypesProto3 = struct {
         value: i32 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .Varint = .Simple }),
-            .value = fd(2, .{ .Varint = .Simple }),
+            .key = fd(1, .{ .scalar = .int32 }),
+            .value = fd(2, .{ .scalar = .int32 }),
         };
 
         pub fn encode(
@@ -494,8 +494,8 @@ pub const TestAllTypesProto3 = struct {
         value: i64 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .Varint = .Simple }),
-            .value = fd(2, .{ .Varint = .Simple }),
+            .key = fd(1, .{ .scalar = .int64 }),
+            .value = fd(2, .{ .scalar = .int64 }),
         };
 
         pub fn encode(
@@ -563,8 +563,8 @@ pub const TestAllTypesProto3 = struct {
         value: u32 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .Varint = .Simple }),
-            .value = fd(2, .{ .Varint = .Simple }),
+            .key = fd(1, .{ .scalar = .uint32 }),
+            .value = fd(2, .{ .scalar = .uint32 }),
         };
 
         pub fn encode(
@@ -632,8 +632,8 @@ pub const TestAllTypesProto3 = struct {
         value: u64 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .Varint = .Simple }),
-            .value = fd(2, .{ .Varint = .Simple }),
+            .key = fd(1, .{ .scalar = .uint64 }),
+            .value = fd(2, .{ .scalar = .uint64 }),
         };
 
         pub fn encode(
@@ -701,8 +701,8 @@ pub const TestAllTypesProto3 = struct {
         value: i32 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .Varint = .ZigZagOptimized }),
-            .value = fd(2, .{ .Varint = .ZigZagOptimized }),
+            .key = fd(1, .{ .scalar = .sint32 }),
+            .value = fd(2, .{ .scalar = .sint32 }),
         };
 
         pub fn encode(
@@ -770,8 +770,8 @@ pub const TestAllTypesProto3 = struct {
         value: i64 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .Varint = .ZigZagOptimized }),
-            .value = fd(2, .{ .Varint = .ZigZagOptimized }),
+            .key = fd(1, .{ .scalar = .sint64 }),
+            .value = fd(2, .{ .scalar = .sint64 }),
         };
 
         pub fn encode(
@@ -839,8 +839,8 @@ pub const TestAllTypesProto3 = struct {
         value: u32 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .FixedInt = .i32 }),
-            .value = fd(2, .{ .FixedInt = .i32 }),
+            .key = fd(1, .{ .scalar = .fixed32 }),
+            .value = fd(2, .{ .scalar = .fixed32 }),
         };
 
         pub fn encode(
@@ -908,8 +908,8 @@ pub const TestAllTypesProto3 = struct {
         value: u64 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .FixedInt = .i64 }),
-            .value = fd(2, .{ .FixedInt = .i64 }),
+            .key = fd(1, .{ .scalar = .fixed64 }),
+            .value = fd(2, .{ .scalar = .fixed64 }),
         };
 
         pub fn encode(
@@ -977,8 +977,8 @@ pub const TestAllTypesProto3 = struct {
         value: i32 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .FixedInt = .i32 }),
-            .value = fd(2, .{ .FixedInt = .i32 }),
+            .key = fd(1, .{ .scalar = .sfixed32 }),
+            .value = fd(2, .{ .scalar = .sfixed32 }),
         };
 
         pub fn encode(
@@ -1046,8 +1046,8 @@ pub const TestAllTypesProto3 = struct {
         value: i64 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .FixedInt = .i64 }),
-            .value = fd(2, .{ .FixedInt = .i64 }),
+            .key = fd(1, .{ .scalar = .sfixed64 }),
+            .value = fd(2, .{ .scalar = .sfixed64 }),
         };
 
         pub fn encode(
@@ -1115,8 +1115,8 @@ pub const TestAllTypesProto3 = struct {
         value: f32 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .Varint = .Simple }),
-            .value = fd(2, .{ .FixedInt = .i32 }),
+            .key = fd(1, .{ .scalar = .int32 }),
+            .value = fd(2, .{ .scalar = .float }),
         };
 
         pub fn encode(
@@ -1184,8 +1184,8 @@ pub const TestAllTypesProto3 = struct {
         value: f64 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .Varint = .Simple }),
-            .value = fd(2, .{ .FixedInt = .i64 }),
+            .key = fd(1, .{ .scalar = .int32 }),
+            .value = fd(2, .{ .scalar = .double }),
         };
 
         pub fn encode(
@@ -1253,8 +1253,8 @@ pub const TestAllTypesProto3 = struct {
         value: bool = false,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .Varint = .Simple }),
-            .value = fd(2, .{ .Varint = .Simple }),
+            .key = fd(1, .{ .scalar = .bool }),
+            .value = fd(2, .{ .scalar = .bool }),
         };
 
         pub fn encode(
@@ -1322,8 +1322,8 @@ pub const TestAllTypesProto3 = struct {
         value: []const u8 = &.{},
 
         pub const _desc_table = .{
-            .key = fd(1, .String),
-            .value = fd(2, .String),
+            .key = fd(1, .{ .scalar = .string }),
+            .value = fd(2, .{ .scalar = .string }),
         };
 
         pub fn encode(
@@ -1391,8 +1391,8 @@ pub const TestAllTypesProto3 = struct {
         value: []const u8 = &.{},
 
         pub const _desc_table = .{
-            .key = fd(1, .String),
-            .value = fd(2, .Bytes),
+            .key = fd(1, .{ .scalar = .string }),
+            .value = fd(2, .{ .scalar = .bytes }),
         };
 
         pub fn encode(
@@ -1460,8 +1460,8 @@ pub const TestAllTypesProto3 = struct {
         value: ?TestAllTypesProto3.NestedMessage = null,
 
         pub const _desc_table = .{
-            .key = fd(1, .String),
-            .value = fd(2, .{ .SubMessage = {} }),
+            .key = fd(1, .{ .scalar = .string }),
+            .value = fd(2, .submessage),
         };
 
         pub fn encode(
@@ -1529,8 +1529,8 @@ pub const TestAllTypesProto3 = struct {
         value: ?ForeignMessage = null,
 
         pub const _desc_table = .{
-            .key = fd(1, .String),
-            .value = fd(2, .{ .SubMessage = {} }),
+            .key = fd(1, .{ .scalar = .string }),
+            .value = fd(2, .submessage),
         };
 
         pub fn encode(
@@ -1598,8 +1598,8 @@ pub const TestAllTypesProto3 = struct {
         value: TestAllTypesProto3.NestedEnum = @enumFromInt(0),
 
         pub const _desc_table = .{
-            .key = fd(1, .String),
-            .value = fd(2, .{ .Varint = .Simple }),
+            .key = fd(1, .{ .scalar = .string }),
+            .value = fd(2, .@"enum"),
         };
 
         pub fn encode(
@@ -1667,8 +1667,8 @@ pub const TestAllTypesProto3 = struct {
         value: ForeignEnum = @enumFromInt(0),
 
         pub const _desc_table = .{
-            .key = fd(1, .String),
-            .value = fd(2, .{ .Varint = .Simple }),
+            .key = fd(1, .{ .scalar = .string }),
+            .value = fd(2, .@"enum"),
         };
 
         pub fn encode(
@@ -1795,7 +1795,7 @@ pub const ForeignMessage = struct {
     c: i32 = 0,
 
     pub const _desc_table = .{
-        .c = fd(1, .{ .Varint = .Simple }),
+        .c = fd(1, .{ .scalar = .int32 }),
     };
 
     pub fn encode(

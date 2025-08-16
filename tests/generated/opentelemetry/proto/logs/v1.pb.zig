@@ -48,7 +48,7 @@ pub const LogsData = struct {
     resource_logs: std.ArrayListUnmanaged(ResourceLogs),
 
     pub const _desc_table = .{
-        .resource_logs = fd(1, .{ .List = .{ .SubMessage = {} } }),
+        .resource_logs = fd(1, .{ .list = .submessage }),
     };
 
     pub fn encode(
@@ -117,9 +117,9 @@ pub const ResourceLogs = struct {
     schema_url: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .resource = fd(1, .{ .SubMessage = {} }),
-        .scope_logs = fd(2, .{ .List = .{ .SubMessage = {} } }),
-        .schema_url = fd(3, .String),
+        .resource = fd(1, .submessage),
+        .scope_logs = fd(2, .{ .list = .submessage }),
+        .schema_url = fd(3, .{ .scalar = .string }),
     };
 
     pub fn encode(
@@ -188,9 +188,9 @@ pub const ScopeLogs = struct {
     schema_url: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .scope = fd(1, .{ .SubMessage = {} }),
-        .log_records = fd(2, .{ .List = .{ .SubMessage = {} } }),
-        .schema_url = fd(3, .String),
+        .scope = fd(1, .submessage),
+        .log_records = fd(2, .{ .list = .submessage }),
+        .schema_url = fd(3, .{ .scalar = .string }),
     };
 
     pub fn encode(
@@ -266,16 +266,16 @@ pub const LogRecord = struct {
     span_id: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .time_unix_nano = fd(1, .{ .FixedInt = .i64 }),
-        .observed_time_unix_nano = fd(11, .{ .FixedInt = .i64 }),
-        .severity_number = fd(2, .{ .Varint = .Simple }),
-        .severity_text = fd(3, .String),
-        .body = fd(5, .{ .SubMessage = {} }),
-        .attributes = fd(6, .{ .List = .{ .SubMessage = {} } }),
-        .dropped_attributes_count = fd(7, .{ .Varint = .Simple }),
-        .flags = fd(8, .{ .FixedInt = .i32 }),
-        .trace_id = fd(9, .Bytes),
-        .span_id = fd(10, .Bytes),
+        .time_unix_nano = fd(1, .{ .scalar = .fixed64 }),
+        .observed_time_unix_nano = fd(11, .{ .scalar = .fixed64 }),
+        .severity_number = fd(2, .@"enum"),
+        .severity_text = fd(3, .{ .scalar = .string }),
+        .body = fd(5, .submessage),
+        .attributes = fd(6, .{ .list = .submessage }),
+        .dropped_attributes_count = fd(7, .{ .scalar = .uint32 }),
+        .flags = fd(8, .{ .scalar = .fixed32 }),
+        .trace_id = fd(9, .{ .scalar = .bytes }),
+        .span_id = fd(10, .{ .scalar = .bytes }),
     };
 
     pub fn encode(

@@ -87,7 +87,7 @@ pub const EnumContainer = struct {
     outer_enum: ?OuterEnum = null,
 
     pub const _desc_table = .{
-        .outer_enum = fd(1, .{ .Varint = .Simple }),
+        .outer_enum = fd(1, .@"enum"),
     };
 
     pub fn encode(
@@ -156,9 +156,9 @@ pub const Simple1 = struct {
     a_boolean: ?bool = null,
 
     pub const _desc_table = .{
-        .a_string = fd(1, .String),
-        .a_repeated_string = fd(2, .{ .List = .String }),
-        .a_boolean = fd(3, .{ .Varint = .Simple }),
+        .a_string = fd(1, .{ .scalar = .string }),
+        .a_repeated_string = fd(2, .{ .list = .{ .scalar = .string } }),
+        .a_boolean = fd(3, .{ .scalar = .bool }),
     };
 
     pub fn encode(
@@ -226,8 +226,8 @@ pub const Simple2 = struct {
     a_repeated_string: std.ArrayListUnmanaged([]const u8),
 
     pub const _desc_table = .{
-        .a_string = fd(1, .String),
-        .a_repeated_string = fd(2, .{ .List = .String }),
+        .a_string = fd(1, .{ .scalar = .string }),
+        .a_repeated_string = fd(2, .{ .list = .{ .scalar = .string } }),
     };
 
     pub fn encode(
@@ -297,10 +297,10 @@ pub const SpecialCases = struct {
     @"var": []const u8,
 
     pub const _desc_table = .{
-        .normal = fd(1, .String),
-        .default = fd(2, .String),
-        .function = fd(3, .String),
-        .@"var" = fd(4, .String),
+        .normal = fd(1, .{ .scalar = .string }),
+        .default = fd(2, .{ .scalar = .string }),
+        .function = fd(3, .{ .scalar = .string }),
+        .@"var" = fd(4, .{ .scalar = .string }),
     };
 
     pub fn encode(
@@ -371,18 +371,18 @@ pub const OptionalFields = struct {
     a_repeated_string: std.ArrayListUnmanaged([]const u8),
 
     pub const _desc_table = .{
-        .a_string = fd(1, .String),
-        .a_bool = fd(2, .{ .Varint = .Simple }),
-        .a_nested_message = fd(3, .{ .SubMessage = {} }),
-        .a_repeated_message = fd(4, .{ .List = .{ .SubMessage = {} } }),
-        .a_repeated_string = fd(5, .{ .List = .String }),
+        .a_string = fd(1, .{ .scalar = .string }),
+        .a_bool = fd(2, .{ .scalar = .bool }),
+        .a_nested_message = fd(3, .submessage),
+        .a_repeated_message = fd(4, .{ .list = .submessage }),
+        .a_repeated_string = fd(5, .{ .list = .{ .scalar = .string } }),
     };
 
     pub const Nested = struct {
         an_int: ?i32 = null,
 
         pub const _desc_table = .{
-            .an_int = fd(1, .{ .Varint = .Simple }),
+            .an_int = fd(1, .{ .scalar = .int32 }),
         };
 
         pub fn encode(
@@ -511,9 +511,9 @@ pub const HasExtensions = struct {
     str3: ?[]const u8 = null,
 
     pub const _desc_table = .{
-        .str1 = fd(1, .String),
-        .str2 = fd(2, .String),
-        .str3 = fd(3, .String),
+        .str1 = fd(1, .{ .scalar = .string }),
+        .str2 = fd(2, .{ .scalar = .string }),
+        .str3 = fd(3, .{ .scalar = .string }),
     };
 
     pub fn encode(
@@ -584,18 +584,18 @@ pub const Complex = struct {
     a_repeated_string: std.ArrayListUnmanaged([]const u8),
 
     pub const _desc_table = .{
-        .a_string = fd(1, .String),
-        .an_out_of_order_bool = fd(9, .{ .Varint = .Simple }),
-        .a_nested_message = fd(4, .{ .SubMessage = {} }),
-        .a_repeated_message = fd(5, .{ .List = .{ .SubMessage = {} } }),
-        .a_repeated_string = fd(7, .{ .List = .String }),
+        .a_string = fd(1, .{ .scalar = .string }),
+        .an_out_of_order_bool = fd(9, .{ .scalar = .bool }),
+        .a_nested_message = fd(4, .submessage),
+        .a_repeated_message = fd(5, .{ .list = .submessage }),
+        .a_repeated_string = fd(7, .{ .list = .{ .scalar = .string } }),
     };
 
     pub const Nested = struct {
         an_int: i32,
 
         pub const _desc_table = .{
-            .an_int = fd(2, .{ .Varint = .Simple }),
+            .an_int = fd(2, .{ .scalar = .int32 }),
         };
 
         pub fn encode(
@@ -722,7 +722,7 @@ pub const IsExtension = struct {
     ext1: ?[]const u8 = null,
 
     pub const _desc_table = .{
-        .ext1 = fd(1, .String),
+        .ext1 = fd(1, .{ .scalar = .string }),
     };
 
     pub fn encode(
@@ -857,12 +857,12 @@ pub const DefaultValues = struct {
     bytes_field: ?[]const u8 = "moo",
 
     pub const _desc_table = .{
-        .string_field = fd(1, .String),
-        .bool_field = fd(2, .{ .Varint = .Simple }),
-        .int_field = fd(3, .{ .Varint = .Simple }),
-        .enum_field = fd(4, .{ .Varint = .Simple }),
-        .empty_field = fd(6, .String),
-        .bytes_field = fd(8, .Bytes),
+        .string_field = fd(1, .{ .scalar = .string }),
+        .bool_field = fd(2, .{ .scalar = .bool }),
+        .int_field = fd(3, .{ .scalar = .int64 }),
+        .enum_field = fd(4, .@"enum"),
+        .empty_field = fd(6, .{ .scalar = .string }),
+        .bytes_field = fd(8, .{ .scalar = .bytes }),
     };
 
     pub const Enum = enum(i32) {
@@ -942,14 +942,14 @@ pub const FloatingPointFields = struct {
     default_double_field: ?f64 = 2,
 
     pub const _desc_table = .{
-        .optional_float_field = fd(1, .{ .FixedInt = .i32 }),
-        .required_float_field = fd(2, .{ .FixedInt = .i32 }),
-        .repeated_float_field = fd(3, .{ .List = .{ .FixedInt = .i32 } }),
-        .default_float_field = fd(4, .{ .FixedInt = .i32 }),
-        .optional_double_field = fd(5, .{ .FixedInt = .i64 }),
-        .required_double_field = fd(6, .{ .FixedInt = .i64 }),
-        .repeated_double_field = fd(7, .{ .List = .{ .FixedInt = .i64 } }),
-        .default_double_field = fd(8, .{ .FixedInt = .i64 }),
+        .optional_float_field = fd(1, .{ .scalar = .float }),
+        .required_float_field = fd(2, .{ .scalar = .float }),
+        .repeated_float_field = fd(3, .{ .list = .{ .scalar = .float } }),
+        .default_float_field = fd(4, .{ .scalar = .float }),
+        .optional_double_field = fd(5, .{ .scalar = .double }),
+        .required_double_field = fd(6, .{ .scalar = .double }),
+        .repeated_double_field = fd(7, .{ .list = .{ .scalar = .double } }),
+        .default_double_field = fd(8, .{ .scalar = .double }),
     };
 
     pub fn encode(
@@ -1020,11 +1020,11 @@ pub const TestClone = struct {
     unused: ?[]const u8 = null,
 
     pub const _desc_table = .{
-        .str = fd(1, .String),
-        .simple1 = fd(3, .{ .SubMessage = {} }),
-        .simple2 = fd(5, .{ .List = .{ .SubMessage = {} } }),
-        .bytes_field = fd(6, .Bytes),
-        .unused = fd(7, .String),
+        .str = fd(1, .{ .scalar = .string }),
+        .simple1 = fd(3, .submessage),
+        .simple2 = fd(5, .{ .list = .submessage }),
+        .bytes_field = fd(6, .{ .scalar = .bytes }),
+        .unused = fd(7, .{ .scalar = .string }),
     };
 
     pub fn encode(
@@ -1091,7 +1091,7 @@ pub const CloneExtension = struct {
     ext: ?[]const u8 = null,
 
     pub const _desc_table = .{
-        .ext = fd(2, .String),
+        .ext = fd(2, .{ .scalar = .string }),
     };
 
     pub fn encode(
@@ -1160,9 +1160,9 @@ pub const TestGroup = struct {
     optional_simple: ?Simple2 = null,
 
     pub const _desc_table = .{
-        .id = fd(6, .String),
-        .required_simple = fd(7, .{ .SubMessage = {} }),
-        .optional_simple = fd(8, .{ .SubMessage = {} }),
+        .id = fd(6, .{ .scalar = .string }),
+        .required_simple = fd(7, .submessage),
+        .optional_simple = fd(8, .submessage),
     };
 
     pub fn encode(
@@ -1229,7 +1229,7 @@ pub const TestReservedNames = struct {
     extension: ?i32 = null,
 
     pub const _desc_table = .{
-        .extension = fd(1, .{ .Varint = .Simple }),
+        .extension = fd(1, .{ .scalar = .int32 }),
     };
 
     pub fn encode(
@@ -1371,8 +1371,8 @@ pub const TestMessageWithOneof = struct {
         pone: []const u8,
         pthree: []const u8,
         pub const _desc_table = .{
-            .pone = fd(3, .String),
-            .pthree = fd(5, .String),
+            .pone = fd(3, .{ .scalar = .string }),
+            .pthree = fd(5, .{ .scalar = .string }),
         };
     };
 
@@ -1384,8 +1384,8 @@ pub const TestMessageWithOneof = struct {
         rone: TestMessageWithOneof,
         rtwo: []const u8,
         pub const _desc_table = .{
-            .rone = fd(6, .{ .SubMessage = {} }),
-            .rtwo = fd(7, .String),
+            .rone = fd(6, .submessage),
+            .rtwo = fd(7, .{ .scalar = .string }),
         };
     };
 
@@ -1397,8 +1397,8 @@ pub const TestMessageWithOneof = struct {
         aone: i32,
         atwo: i32,
         pub const _desc_table = .{
-            .aone = fd(10, .{ .Varint = .Simple }),
-            .atwo = fd(11, .{ .Varint = .Simple }),
+            .aone = fd(10, .{ .scalar = .int32 }),
+            .atwo = fd(11, .{ .scalar = .int32 }),
         };
     };
 
@@ -1410,18 +1410,18 @@ pub const TestMessageWithOneof = struct {
         bone: i32,
         btwo: i32,
         pub const _desc_table = .{
-            .bone = fd(12, .{ .Varint = .Simple }),
-            .btwo = fd(13, .{ .Varint = .Simple }),
+            .bone = fd(12, .{ .scalar = .int32 }),
+            .btwo = fd(13, .{ .scalar = .int32 }),
         };
     };
 
     pub const _desc_table = .{
-        .normal_field = fd(8, .{ .Varint = .Simple }),
-        .repeated_field = fd(9, .{ .List = .String }),
-        .partial_oneof = fd(null, .{ .OneOf = partial_oneof_union }),
-        .recursive_oneof = fd(null, .{ .OneOf = recursive_oneof_union }),
-        .default_oneof_a = fd(null, .{ .OneOf = default_oneof_a_union }),
-        .default_oneof_b = fd(null, .{ .OneOf = default_oneof_b_union }),
+        .normal_field = fd(8, .{ .scalar = .bool }),
+        .repeated_field = fd(9, .{ .list = .{ .scalar = .string } }),
+        .partial_oneof = fd(null, .{ .oneof = partial_oneof_union }),
+        .recursive_oneof = fd(null, .{ .oneof = recursive_oneof_union }),
+        .default_oneof_a = fd(null, .{ .oneof = default_oneof_a_union }),
+        .default_oneof_b = fd(null, .{ .oneof = default_oneof_b_union }),
     };
 
     pub fn encode(
@@ -1489,8 +1489,8 @@ pub const TestEndsWithBytes = struct {
     data: ?[]const u8 = null,
 
     pub const _desc_table = .{
-        .value = fd(1, .{ .Varint = .Simple }),
-        .data = fd(2, .Bytes),
+        .value = fd(1, .{ .scalar = .int32 }),
+        .data = fd(2, .{ .scalar = .bytes }),
     };
 
     pub fn encode(
@@ -1568,18 +1568,18 @@ pub const TestMapFieldsNoBinary = struct {
     map_string_testmapfields: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringTestmapfieldsEntry),
 
     pub const _desc_table = .{
-        .map_string_string = fd(1, .{ .List = .{ .SubMessage = {} } }),
-        .map_string_int32 = fd(2, .{ .List = .{ .SubMessage = {} } }),
-        .map_string_int64 = fd(3, .{ .List = .{ .SubMessage = {} } }),
-        .map_string_bool = fd(4, .{ .List = .{ .SubMessage = {} } }),
-        .map_string_double = fd(5, .{ .List = .{ .SubMessage = {} } }),
-        .map_string_enum = fd(6, .{ .List = .{ .SubMessage = {} } }),
-        .map_string_msg = fd(7, .{ .List = .{ .SubMessage = {} } }),
-        .map_int32_string = fd(8, .{ .List = .{ .SubMessage = {} } }),
-        .map_int64_string = fd(9, .{ .List = .{ .SubMessage = {} } }),
-        .map_bool_string = fd(10, .{ .List = .{ .SubMessage = {} } }),
-        .test_map_fields = fd(11, .{ .SubMessage = {} }),
-        .map_string_testmapfields = fd(12, .{ .List = .{ .SubMessage = {} } }),
+        .map_string_string = fd(1, .{ .list = .submessage }),
+        .map_string_int32 = fd(2, .{ .list = .submessage }),
+        .map_string_int64 = fd(3, .{ .list = .submessage }),
+        .map_string_bool = fd(4, .{ .list = .submessage }),
+        .map_string_double = fd(5, .{ .list = .submessage }),
+        .map_string_enum = fd(6, .{ .list = .submessage }),
+        .map_string_msg = fd(7, .{ .list = .submessage }),
+        .map_int32_string = fd(8, .{ .list = .submessage }),
+        .map_int64_string = fd(9, .{ .list = .submessage }),
+        .map_bool_string = fd(10, .{ .list = .submessage }),
+        .test_map_fields = fd(11, .submessage),
+        .map_string_testmapfields = fd(12, .{ .list = .submessage }),
     };
 
     pub const MapStringStringEntry = struct {
@@ -1587,8 +1587,8 @@ pub const TestMapFieldsNoBinary = struct {
         value: ?[]const u8 = null,
 
         pub const _desc_table = .{
-            .key = fd(1, .String),
-            .value = fd(2, .String),
+            .key = fd(1, .{ .scalar = .string }),
+            .value = fd(2, .{ .scalar = .string }),
         };
 
         pub fn encode(
@@ -1656,8 +1656,8 @@ pub const TestMapFieldsNoBinary = struct {
         value: ?i32 = null,
 
         pub const _desc_table = .{
-            .key = fd(1, .String),
-            .value = fd(2, .{ .Varint = .Simple }),
+            .key = fd(1, .{ .scalar = .string }),
+            .value = fd(2, .{ .scalar = .int32 }),
         };
 
         pub fn encode(
@@ -1725,8 +1725,8 @@ pub const TestMapFieldsNoBinary = struct {
         value: ?i64 = null,
 
         pub const _desc_table = .{
-            .key = fd(1, .String),
-            .value = fd(2, .{ .Varint = .Simple }),
+            .key = fd(1, .{ .scalar = .string }),
+            .value = fd(2, .{ .scalar = .int64 }),
         };
 
         pub fn encode(
@@ -1794,8 +1794,8 @@ pub const TestMapFieldsNoBinary = struct {
         value: ?bool = null,
 
         pub const _desc_table = .{
-            .key = fd(1, .String),
-            .value = fd(2, .{ .Varint = .Simple }),
+            .key = fd(1, .{ .scalar = .string }),
+            .value = fd(2, .{ .scalar = .bool }),
         };
 
         pub fn encode(
@@ -1863,8 +1863,8 @@ pub const TestMapFieldsNoBinary = struct {
         value: ?f64 = null,
 
         pub const _desc_table = .{
-            .key = fd(1, .String),
-            .value = fd(2, .{ .FixedInt = .i64 }),
+            .key = fd(1, .{ .scalar = .string }),
+            .value = fd(2, .{ .scalar = .double }),
         };
 
         pub fn encode(
@@ -1932,8 +1932,8 @@ pub const TestMapFieldsNoBinary = struct {
         value: ?MapValueEnumNoBinary = null,
 
         pub const _desc_table = .{
-            .key = fd(1, .String),
-            .value = fd(2, .{ .Varint = .Simple }),
+            .key = fd(1, .{ .scalar = .string }),
+            .value = fd(2, .@"enum"),
         };
 
         pub fn encode(
@@ -2001,8 +2001,8 @@ pub const TestMapFieldsNoBinary = struct {
         value: ?MapValueMessageNoBinary = null,
 
         pub const _desc_table = .{
-            .key = fd(1, .String),
-            .value = fd(2, .{ .SubMessage = {} }),
+            .key = fd(1, .{ .scalar = .string }),
+            .value = fd(2, .submessage),
         };
 
         pub fn encode(
@@ -2070,8 +2070,8 @@ pub const TestMapFieldsNoBinary = struct {
         value: ?[]const u8 = null,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .Varint = .Simple }),
-            .value = fd(2, .String),
+            .key = fd(1, .{ .scalar = .int32 }),
+            .value = fd(2, .{ .scalar = .string }),
         };
 
         pub fn encode(
@@ -2139,8 +2139,8 @@ pub const TestMapFieldsNoBinary = struct {
         value: ?[]const u8 = null,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .Varint = .Simple }),
-            .value = fd(2, .String),
+            .key = fd(1, .{ .scalar = .int64 }),
+            .value = fd(2, .{ .scalar = .string }),
         };
 
         pub fn encode(
@@ -2208,8 +2208,8 @@ pub const TestMapFieldsNoBinary = struct {
         value: ?[]const u8 = null,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .Varint = .Simple }),
-            .value = fd(2, .String),
+            .key = fd(1, .{ .scalar = .bool }),
+            .value = fd(2, .{ .scalar = .string }),
         };
 
         pub fn encode(
@@ -2277,8 +2277,8 @@ pub const TestMapFieldsNoBinary = struct {
         value: ?TestMapFieldsNoBinary = null,
 
         pub const _desc_table = .{
-            .key = fd(1, .String),
-            .value = fd(2, .{ .SubMessage = {} }),
+            .key = fd(1, .{ .scalar = .string }),
+            .value = fd(2, .submessage),
         };
 
         pub fn encode(
@@ -2405,7 +2405,7 @@ pub const MapValueMessageNoBinary = struct {
     foo: ?i32 = null,
 
     pub const _desc_table = .{
-        .foo = fd(1, .{ .Varint = .Simple }),
+        .foo = fd(1, .{ .scalar = .int32 }),
     };
 
     pub fn encode(
@@ -2478,7 +2478,7 @@ pub const Deeply = struct {
             count: ?i32 = null,
 
             pub const _desc_table = .{
-                .count = fd(1, .{ .Varint = .Simple }),
+                .count = fd(1, .{ .scalar = .int32 }),
             };
 
             pub fn encode(
