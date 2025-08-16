@@ -9,7 +9,7 @@ pub const Tile = struct {
     layers: std.ArrayListUnmanaged(Tile.Layer),
 
     pub const _desc_table = .{
-        .layers = fd(3, .{ .List = .{ .SubMessage = {} } }),
+        .layers = fd(3, .{ .list = .submessage }),
     };
 
     pub const GeomType = enum(i32) {
@@ -30,13 +30,13 @@ pub const Tile = struct {
         bool_value: ?bool = null,
 
         pub const _desc_table = .{
-            .string_value = fd(1, .String),
-            .float_value = fd(2, .{ .FixedInt = .i32 }),
-            .double_value = fd(3, .{ .FixedInt = .i64 }),
-            .int_value = fd(4, .{ .Varint = .Simple }),
-            .uint_value = fd(5, .{ .Varint = .Simple }),
-            .sint_value = fd(6, .{ .Varint = .ZigZagOptimized }),
-            .bool_value = fd(7, .{ .Varint = .Simple }),
+            .string_value = fd(1, .{ .scalar = .string }),
+            .float_value = fd(2, .{ .scalar = .float }),
+            .double_value = fd(3, .{ .scalar = .double }),
+            .int_value = fd(4, .{ .scalar = .int64 }),
+            .uint_value = fd(5, .{ .scalar = .uint64 }),
+            .sint_value = fd(6, .{ .scalar = .sint64 }),
+            .bool_value = fd(7, .{ .scalar = .bool }),
         };
 
         pub fn encode(
@@ -106,10 +106,10 @@ pub const Tile = struct {
         geometry: std.ArrayListUnmanaged(u32),
 
         pub const _desc_table = .{
-            .id = fd(1, .{ .Varint = .Simple }),
-            .tags = fd(2, .{ .PackedList = .{ .Varint = .Simple } }),
-            .type = fd(3, .{ .Varint = .Simple }),
-            .geometry = fd(4, .{ .PackedList = .{ .Varint = .Simple } }),
+            .id = fd(1, .{ .scalar = .uint64 }),
+            .tags = fd(2, .{ .packed_list = .{ .scalar = .uint32 } }),
+            .type = fd(3, .@"enum"),
+            .geometry = fd(4, .{ .packed_list = .{ .scalar = .uint32 } }),
         };
 
         pub fn encode(
@@ -181,12 +181,12 @@ pub const Tile = struct {
         extent: ?u32 = 4096,
 
         pub const _desc_table = .{
-            .version = fd(15, .{ .Varint = .Simple }),
-            .name = fd(1, .String),
-            .features = fd(2, .{ .List = .{ .SubMessage = {} } }),
-            .keys = fd(3, .{ .List = .String }),
-            .values = fd(4, .{ .List = .{ .SubMessage = {} } }),
-            .extent = fd(5, .{ .Varint = .Simple }),
+            .version = fd(15, .{ .scalar = .uint32 }),
+            .name = fd(1, .{ .scalar = .string }),
+            .features = fd(2, .{ .list = .submessage }),
+            .keys = fd(3, .{ .list = .{ .scalar = .string } }),
+            .values = fd(4, .{ .list = .submessage }),
+            .extent = fd(5, .{ .scalar = .uint32 }),
         };
 
         pub fn encode(

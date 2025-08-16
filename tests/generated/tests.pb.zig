@@ -36,12 +36,12 @@ pub const FixedSizes = struct {
     float: f32 = 0,
 
     pub const _desc_table = .{
-        .sfixed64 = fd(1, .{ .FixedInt = .i64 }),
-        .sfixed32 = fd(2, .{ .FixedInt = .i32 }),
-        .fixed32 = fd(3, .{ .FixedInt = .i32 }),
-        .fixed64 = fd(4, .{ .FixedInt = .i64 }),
-        .double = fd(5, .{ .FixedInt = .i64 }),
-        .float = fd(6, .{ .FixedInt = .i32 }),
+        .sfixed64 = fd(1, .{ .scalar = .sfixed64 }),
+        .sfixed32 = fd(2, .{ .scalar = .sfixed32 }),
+        .fixed32 = fd(3, .{ .scalar = .fixed32 }),
+        .fixed64 = fd(4, .{ .scalar = .fixed64 }),
+        .double = fd(5, .{ .scalar = .double }),
+        .float = fd(6, .{ .scalar = .float }),
     };
 
     pub fn encode(
@@ -115,7 +115,7 @@ pub const WithEnum = struct {
     value: WithEnum.SomeEnum = @enumFromInt(0),
 
     pub const _desc_table = .{
-        .value = fd(1, .{ .Varint = .Simple }),
+        .value = fd(1, .@"enum"),
     };
 
     pub const SomeEnum = enum(i32) {
@@ -190,7 +190,7 @@ pub const WithEnumShadow = struct {
     value: WithEnumShadow.SomeEnum = @enumFromInt(0),
 
     pub const _desc_table = .{
-        .value = fd(1, .{ .Varint = .Simple }),
+        .value = fd(1, .@"enum"),
     };
 
     pub const SomeEnum = enum(i32) {
@@ -264,7 +264,7 @@ pub const RepeatedEnum = struct {
     value: std.ArrayListUnmanaged(TopLevelEnum),
 
     pub const _desc_table = .{
-        .value = fd(1, .{ .List = .{ .Varint = .Simple } }),
+        .value = fd(1, .{ .list = .@"enum" }),
     };
 
     pub fn encode(
@@ -340,16 +340,16 @@ pub const Packed = struct {
     enum_list: std.ArrayListUnmanaged(TopLevelEnum),
 
     pub const _desc_table = .{
-        .int32_list = fd(1, .{ .PackedList = .{ .Varint = .Simple } }),
-        .uint32_list = fd(2, .{ .PackedList = .{ .Varint = .Simple } }),
-        .sint32_list = fd(3, .{ .PackedList = .{ .Varint = .ZigZagOptimized } }),
-        .float_list = fd(4, .{ .PackedList = .{ .FixedInt = .i32 } }),
-        .double_list = fd(5, .{ .PackedList = .{ .FixedInt = .i64 } }),
-        .int64_list = fd(6, .{ .PackedList = .{ .Varint = .Simple } }),
-        .sint64_list = fd(7, .{ .PackedList = .{ .Varint = .ZigZagOptimized } }),
-        .uint64_list = fd(8, .{ .PackedList = .{ .Varint = .Simple } }),
-        .bool_list = fd(9, .{ .PackedList = .{ .Varint = .Simple } }),
-        .enum_list = fd(10, .{ .PackedList = .{ .Varint = .Simple } }),
+        .int32_list = fd(1, .{ .packed_list = .{ .scalar = .int32 } }),
+        .uint32_list = fd(2, .{ .packed_list = .{ .scalar = .uint32 } }),
+        .sint32_list = fd(3, .{ .packed_list = .{ .scalar = .sint32 } }),
+        .float_list = fd(4, .{ .packed_list = .{ .scalar = .float } }),
+        .double_list = fd(5, .{ .packed_list = .{ .scalar = .double } }),
+        .int64_list = fd(6, .{ .packed_list = .{ .scalar = .int64 } }),
+        .sint64_list = fd(7, .{ .packed_list = .{ .scalar = .sint64 } }),
+        .uint64_list = fd(8, .{ .packed_list = .{ .scalar = .uint64 } }),
+        .bool_list = fd(9, .{ .packed_list = .{ .scalar = .bool } }),
+        .enum_list = fd(10, .{ .packed_list = .@"enum" }),
     };
 
     pub fn encode(
@@ -425,16 +425,16 @@ pub const UnPacked = struct {
     enum_list: std.ArrayListUnmanaged(TopLevelEnum),
 
     pub const _desc_table = .{
-        .int32_list = fd(1, .{ .List = .{ .Varint = .Simple } }),
-        .uint32_list = fd(2, .{ .List = .{ .Varint = .Simple } }),
-        .sint32_list = fd(3, .{ .List = .{ .Varint = .ZigZagOptimized } }),
-        .float_list = fd(4, .{ .List = .{ .FixedInt = .i32 } }),
-        .double_list = fd(5, .{ .List = .{ .FixedInt = .i64 } }),
-        .int64_list = fd(6, .{ .List = .{ .Varint = .Simple } }),
-        .sint64_list = fd(7, .{ .List = .{ .Varint = .ZigZagOptimized } }),
-        .uint64_list = fd(8, .{ .List = .{ .Varint = .Simple } }),
-        .bool_list = fd(9, .{ .List = .{ .Varint = .Simple } }),
-        .enum_list = fd(10, .{ .List = .{ .Varint = .Simple } }),
+        .int32_list = fd(1, .{ .list = .{ .scalar = .int32 } }),
+        .uint32_list = fd(2, .{ .list = .{ .scalar = .uint32 } }),
+        .sint32_list = fd(3, .{ .list = .{ .scalar = .sint32 } }),
+        .float_list = fd(4, .{ .list = .{ .scalar = .float } }),
+        .double_list = fd(5, .{ .list = .{ .scalar = .double } }),
+        .int64_list = fd(6, .{ .list = .{ .scalar = .int64 } }),
+        .sint64_list = fd(7, .{ .list = .{ .scalar = .sint64 } }),
+        .uint64_list = fd(8, .{ .list = .{ .scalar = .uint64 } }),
+        .bool_list = fd(9, .{ .list = .{ .scalar = .bool } }),
+        .enum_list = fd(10, .{ .list = .@"enum" }),
     };
 
     pub fn encode(
@@ -501,7 +501,7 @@ pub const WithSubmessages = struct {
     with_enum: ?WithEnum = null,
 
     pub const _desc_table = .{
-        .with_enum = fd(1, .{ .SubMessage = {} }),
+        .with_enum = fd(1, .submessage),
     };
 
     pub fn encode(
@@ -568,7 +568,7 @@ pub const WithStrings = struct {
     name: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .name = fd(1, .String),
+        .name = fd(1, .{ .scalar = .string }),
     };
 
     pub fn encode(
@@ -635,7 +635,7 @@ pub const WithRepeatedStrings = struct {
     name: std.ArrayListUnmanaged([]const u8),
 
     pub const _desc_table = .{
-        .name = fd(1, .{ .List = .String }),
+        .name = fd(1, .{ .list = .{ .scalar = .string } }),
     };
 
     pub fn encode(
@@ -702,7 +702,7 @@ pub const WithBytes = struct {
     byte_field: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .byte_field = fd(1, .Bytes),
+        .byte_field = fd(1, .{ .scalar = .bytes }),
     };
 
     pub fn encode(
@@ -769,7 +769,7 @@ pub const WithRepeatedBytes = struct {
     byte_field: std.ArrayListUnmanaged([]const u8),
 
     pub const _desc_table = .{
-        .byte_field = fd(1, .{ .List = .Bytes }),
+        .byte_field = fd(1, .{ .list = .{ .scalar = .bytes } }),
     };
 
     pub fn encode(

@@ -9,7 +9,7 @@ pub const WouldYouParseThisForMePlease = struct {
     field: ?Test = null,
 
     pub const _desc_table = .{
-        .field = fd(1, .{ .SubMessage = {} }),
+        .field = fd(1, .submessage),
     };
 
     pub fn encode(
@@ -76,7 +76,7 @@ pub const Test = struct {
     field: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .field = fd(1, .String),
+        .field = fd(1, .{ .scalar = .string }),
     };
 
     pub fn encode(

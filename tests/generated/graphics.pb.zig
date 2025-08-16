@@ -14,12 +14,12 @@ pub const InventoryItem = struct {
     id: i32 = 0,
 
     pub const _desc_table = .{
-        .slot = fd(1, .{ .Varint = .Simple }),
-        .name = fd(2, .String),
-        .image = fd(3, .{ .Varint = .Simple }),
-        .quantity = fd(4, .{ .Varint = .Simple }),
-        .description = fd(5, .String),
-        .id = fd(6, .{ .Varint = .Simple }),
+        .slot = fd(1, .{ .scalar = .int32 }),
+        .name = fd(2, .{ .scalar = .string }),
+        .image = fd(3, .{ .scalar = .int32 }),
+        .quantity = fd(4, .{ .scalar = .int32 }),
+        .description = fd(5, .{ .scalar = .string }),
+        .id = fd(6, .{ .scalar = .int32 }),
     };
 
     pub fn encode(
@@ -98,19 +98,19 @@ pub const Character = struct {
     enabled: bool = false,
 
     pub const _desc_table = .{
-        .id = fd(1, .String),
-        .class = fd(2, .{ .Varint = .Simple }),
-        .gender = fd(3, .{ .Varint = .Simple }),
-        .race = fd(4, .{ .Varint = .Simple }),
-        .head = fd(5, .{ .Varint = .Simple }),
-        .body = fd(6, .{ .Varint = .Simple }),
-        .helmet = fd(7, .{ .Varint = .Simple }),
-        .right_hand = fd(8, .{ .Varint = .Simple }),
-        .nick = fd(9, .String),
-        .left_hand = fd(10, .{ .Varint = .Simple }),
-        .color = fd(11, .String),
-        .clan = fd(12, .String),
-        .enabled = fd(13, .{ .Varint = .Simple }),
+        .id = fd(1, .{ .scalar = .string }),
+        .class = fd(2, .{ .scalar = .int32 }),
+        .gender = fd(3, .{ .scalar = .int32 }),
+        .race = fd(4, .{ .scalar = .int32 }),
+        .head = fd(5, .{ .scalar = .int32 }),
+        .body = fd(6, .{ .scalar = .int32 }),
+        .helmet = fd(7, .{ .scalar = .int32 }),
+        .right_hand = fd(8, .{ .scalar = .int32 }),
+        .nick = fd(9, .{ .scalar = .string }),
+        .left_hand = fd(10, .{ .scalar = .int32 }),
+        .color = fd(11, .{ .scalar = .string }),
+        .clan = fd(12, .{ .scalar = .string }),
+        .enabled = fd(13, .{ .scalar = .bool }),
     };
 
     pub fn encode(
@@ -179,9 +179,9 @@ pub const Alignment = struct {
     color: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .id = fd(1, .String),
-        .name = fd(2, .String),
-        .color = fd(3, .String),
+        .id = fd(1, .{ .scalar = .string }),
+        .name = fd(2, .{ .scalar = .string }),
+        .color = fd(3, .{ .scalar = .string }),
     };
 
     pub fn encode(
@@ -253,12 +253,12 @@ pub const Index = struct {
     name: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .id = fd(1, .{ .Varint = .Simple }),
-        .grh = fd(2, .{ .PackedList = .{ .Varint = .Simple } }),
-        .offset_x = fd(3, .{ .Varint = .Simple }),
-        .offset_y = fd(4, .{ .Varint = .Simple }),
-        .animations = fd(5, .{ .List = .{ .SubMessage = {} } }),
-        .name = fd(6, .String),
+        .id = fd(1, .{ .scalar = .int32 }),
+        .grh = fd(2, .{ .packed_list = .{ .scalar = .int32 } }),
+        .offset_x = fd(3, .{ .scalar = .int32 }),
+        .offset_y = fd(4, .{ .scalar = .int32 }),
+        .animations = fd(5, .{ .list = .submessage }),
+        .name = fd(6, .{ .scalar = .string }),
     };
 
     pub const AnimationsEntry = struct {
@@ -266,8 +266,8 @@ pub const Index = struct {
         value: i32 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .String),
-            .value = fd(2, .{ .Varint = .Simple }),
+            .key = fd(1, .{ .scalar = .string }),
+            .value = fd(2, .{ .scalar = .int32 }),
         };
 
         pub fn encode(
@@ -395,8 +395,8 @@ pub const StoredChunk = struct {
     entities: std.ArrayListUnmanaged(MapEntity),
 
     pub const _desc_table = .{
-        .chunk_id = fd(1, .{ .Varint = .Simple }),
-        .entities = fd(2, .{ .List = .{ .SubMessage = {} } }),
+        .chunk_id = fd(1, .{ .scalar = .int32 }),
+        .entities = fd(2, .{ .list = .submessage }),
     };
 
     pub fn encode(
@@ -469,13 +469,13 @@ pub const MapEntity = struct {
     vertical_graphic: bool = false,
 
     pub const _desc_table = .{
-        .x = fd(1, .{ .Varint = .Simple }),
-        .y = fd(2, .{ .Varint = .Simple }),
-        .light = fd(3, .{ .SubMessage = {} }),
-        .collider = fd(4, .{ .SubMessage = {} }),
-        .graphic_id = fd(5, .{ .Varint = .Simple }),
-        .entity_id = fd(6, .String),
-        .vertical_graphic = fd(7, .{ .Varint = .Simple }),
+        .x = fd(1, .{ .scalar = .int32 }),
+        .y = fd(2, .{ .scalar = .int32 }),
+        .light = fd(3, .submessage),
+        .collider = fd(4, .submessage),
+        .graphic_id = fd(5, .{ .scalar = .int32 }),
+        .entity_id = fd(6, .{ .scalar = .string }),
+        .vertical_graphic = fd(7, .{ .scalar = .bool }),
     };
 
     pub fn encode(
@@ -546,11 +546,11 @@ pub const Light = struct {
     fall_off: f32 = 0,
 
     pub const _desc_table = .{
-        .hue = fd(1, .{ .FixedInt = .i32 }),
-        .height = fd(2, .{ .FixedInt = .i32 }),
-        .radius = fd(3, .{ .FixedInt = .i32 }),
-        .saturation = fd(4, .{ .FixedInt = .i32 }),
-        .fall_off = fd(5, .{ .FixedInt = .i32 }),
+        .hue = fd(1, .{ .scalar = .float }),
+        .height = fd(2, .{ .scalar = .float }),
+        .radius = fd(3, .{ .scalar = .float }),
+        .saturation = fd(4, .{ .scalar = .float }),
+        .fall_off = fd(5, .{ .scalar = .float }),
     };
 
     pub fn encode(
@@ -618,8 +618,8 @@ pub const Point = struct {
     y: i32 = 0,
 
     pub const _desc_table = .{
-        .x = fd(1, .{ .Varint = .Simple }),
-        .y = fd(2, .{ .Varint = .Simple }),
+        .x = fd(1, .{ .scalar = .int32 }),
+        .y = fd(2, .{ .scalar = .int32 }),
     };
 
     pub fn encode(
@@ -686,7 +686,7 @@ pub const Shape = struct {
     points: std.ArrayListUnmanaged(Point),
 
     pub const _desc_table = .{
-        .points = fd(1, .{ .List = .{ .SubMessage = {} } }),
+        .points = fd(1, .{ .list = .submessage }),
     };
 
     pub fn encode(
@@ -767,21 +767,21 @@ pub const Npc = struct {
     visual: ?Character = null,
 
     pub const _desc_table = .{
-        .x = fd(1, .{ .Varint = .Simple }),
-        .y = fd(2, .{ .Varint = .Simple }),
-        .items = fd(3, .{ .List = .{ .SubMessage = {} } }),
-        .name = fd(4, .String),
-        .alignment = fd(5, .String),
-        .ai = fd(6, .String),
-        .min_hp = fd(7, .{ .Varint = .Simple }),
-        .max_hp = fd(8, .{ .Varint = .Simple }),
-        .min_mana = fd(9, .{ .Varint = .Simple }),
-        .max_mana = fd(10, .{ .Varint = .Simple }),
-        .min_strenght = fd(11, .{ .Varint = .Simple }),
-        .max_strenght = fd(12, .{ .Varint = .Simple }),
-        .skills = fd(13, .{ .List = .{ .SubMessage = {} } }),
-        .abilities = fd(14, .{ .List = .{ .SubMessage = {} } }),
-        .visual = fd(15, .{ .SubMessage = {} }),
+        .x = fd(1, .{ .scalar = .int32 }),
+        .y = fd(2, .{ .scalar = .int32 }),
+        .items = fd(3, .{ .list = .submessage }),
+        .name = fd(4, .{ .scalar = .string }),
+        .alignment = fd(5, .{ .scalar = .string }),
+        .ai = fd(6, .{ .scalar = .string }),
+        .min_hp = fd(7, .{ .scalar = .int32 }),
+        .max_hp = fd(8, .{ .scalar = .int32 }),
+        .min_mana = fd(9, .{ .scalar = .int32 }),
+        .max_mana = fd(10, .{ .scalar = .int32 }),
+        .min_strenght = fd(11, .{ .scalar = .int32 }),
+        .max_strenght = fd(12, .{ .scalar = .int32 }),
+        .skills = fd(13, .{ .list = .submessage }),
+        .abilities = fd(14, .{ .list = .submessage }),
+        .visual = fd(15, .submessage),
     };
 
     pub const SkillsEntry = struct {
@@ -789,8 +789,8 @@ pub const Npc = struct {
         value: i32 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .Varint = .Simple }),
-            .value = fd(2, .{ .Varint = .Simple }),
+            .key = fd(1, .{ .scalar = .int32 }),
+            .value = fd(2, .{ .scalar = .int32 }),
         };
 
         pub fn encode(
@@ -858,8 +858,8 @@ pub const Npc = struct {
         value: i32 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .Varint = .Simple }),
-            .value = fd(2, .{ .Varint = .Simple }),
+            .key = fd(1, .{ .scalar = .int32 }),
+            .value = fd(2, .{ .scalar = .int32 }),
         };
 
         pub fn encode(
@@ -994,15 +994,15 @@ pub const Tile = struct {
     layer4: i32 = 0,
 
     pub const _desc_table = .{
-        .x = fd(1, .{ .Varint = .Simple }),
-        .y = fd(2, .{ .Varint = .Simple }),
-        .tileset_grh = fd(3, .{ .Varint = .Simple }),
-        .tileset = fd(4, .{ .Varint = .Simple }),
-        .flags = fd(5, .{ .Varint = .Simple }),
-        .blocked = fd(6, .{ .Varint = .Simple }),
-        .layer2 = fd(7, .{ .Varint = .Simple }),
-        .layer3 = fd(8, .{ .Varint = .Simple }),
-        .layer4 = fd(9, .{ .Varint = .Simple }),
+        .x = fd(1, .{ .scalar = .int32 }),
+        .y = fd(2, .{ .scalar = .int32 }),
+        .tileset_grh = fd(3, .{ .scalar = .int32 }),
+        .tileset = fd(4, .{ .scalar = .int32 }),
+        .flags = fd(5, .{ .scalar = .int32 }),
+        .blocked = fd(6, .{ .scalar = .int32 }),
+        .layer2 = fd(7, .{ .scalar = .int32 }),
+        .layer3 = fd(8, .{ .scalar = .int32 }),
+        .layer4 = fd(9, .{ .scalar = .int32 }),
     };
 
     pub fn encode(
@@ -1072,10 +1072,10 @@ pub const MapItem = struct {
     amount: i32 = 0,
 
     pub const _desc_table = .{
-        .x = fd(1, .{ .Varint = .Simple }),
-        .y = fd(2, .{ .Varint = .Simple }),
-        .item = fd(3, .{ .Varint = .Simple }),
-        .amount = fd(4, .{ .Varint = .Simple }),
+        .x = fd(1, .{ .scalar = .int32 }),
+        .y = fd(2, .{ .scalar = .int32 }),
+        .item = fd(3, .{ .scalar = .int32 }),
+        .amount = fd(4, .{ .scalar = .int32 }),
     };
 
     pub fn encode(
@@ -1151,16 +1151,16 @@ pub const GraphicsDB = struct {
     spine: std.ArrayListUnmanaged(Spine),
 
     pub const _desc_table = .{
-        .textures = fd(1, .{ .List = .{ .SubMessage = {} } }),
-        .graphics = fd(2, .{ .List = .{ .SubMessage = {} } }),
-        .bodies = fd(4, .{ .List = .{ .SubMessage = {} } }),
-        .fxs = fd(5, .{ .List = .{ .SubMessage = {} } }),
-        .heads = fd(6, .{ .List = .{ .SubMessage = {} } }),
-        .helmets = fd(7, .{ .List = .{ .SubMessage = {} } }),
-        .shields = fd(8, .{ .List = .{ .SubMessage = {} } }),
-        .weapons = fd(9, .{ .List = .{ .SubMessage = {} } }),
-        .scripts = fd(10, .{ .List = .{ .SubMessage = {} } }),
-        .spine = fd(11, .{ .List = .{ .SubMessage = {} } }),
+        .textures = fd(1, .{ .list = .submessage }),
+        .graphics = fd(2, .{ .list = .submessage }),
+        .bodies = fd(4, .{ .list = .submessage }),
+        .fxs = fd(5, .{ .list = .submessage }),
+        .heads = fd(6, .{ .list = .submessage }),
+        .helmets = fd(7, .{ .list = .submessage }),
+        .shields = fd(8, .{ .list = .submessage }),
+        .weapons = fd(9, .{ .list = .submessage }),
+        .scripts = fd(10, .{ .list = .submessage }),
+        .spine = fd(11, .{ .list = .submessage }),
     };
 
     pub fn encode(
@@ -1228,8 +1228,8 @@ pub const Script = struct {
     code: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .path = fd(1, .String),
-        .code = fd(2, .String),
+        .path = fd(1, .{ .scalar = .string }),
+        .code = fd(2, .{ .scalar = .string }),
     };
 
     pub fn encode(
@@ -1300,11 +1300,11 @@ pub const SubTexture = struct {
     height: i32 = 0,
 
     pub const _desc_table = .{
-        .diffuse = fd(1, .String),
-        .normal = fd(2, .String),
-        .emmisive = fd(3, .String),
-        .width = fd(4, .{ .Varint = .Simple }),
-        .height = fd(5, .{ .Varint = .Simple }),
+        .diffuse = fd(1, .{ .scalar = .string }),
+        .normal = fd(2, .{ .scalar = .string }),
+        .emmisive = fd(3, .{ .scalar = .string }),
+        .width = fd(4, .{ .scalar = .int32 }),
+        .height = fd(5, .{ .scalar = .int32 }),
     };
 
     pub fn encode(
@@ -1378,14 +1378,14 @@ pub const Texture = struct {
     dxt5: ?SubTexture = null,
 
     pub const _desc_table = .{
-        .diffuse = fd(1, .String),
-        .normal = fd(2, .String),
-        .emmisive = fd(3, .String),
-        .width = fd(4, .{ .Varint = .Simple }),
-        .height = fd(5, .{ .Varint = .Simple }),
-        .dxt1 = fd(6, .{ .SubMessage = {} }),
-        .dxt3 = fd(7, .{ .SubMessage = {} }),
-        .dxt5 = fd(8, .{ .SubMessage = {} }),
+        .diffuse = fd(1, .{ .scalar = .string }),
+        .normal = fd(2, .{ .scalar = .string }),
+        .emmisive = fd(3, .{ .scalar = .string }),
+        .width = fd(4, .{ .scalar = .int32 }),
+        .height = fd(5, .{ .scalar = .int32 }),
+        .dxt1 = fd(6, .submessage),
+        .dxt3 = fd(7, .submessage),
+        .dxt5 = fd(8, .submessage),
     };
 
     pub fn encode(
@@ -1461,15 +1461,15 @@ pub const Graphic = struct {
         sprite: Sprite,
         animation: Animation,
         pub const _desc_table = .{
-            .sprite = fd(2, .{ .SubMessage = {} }),
-            .animation = fd(3, .{ .SubMessage = {} }),
+            .sprite = fd(2, .submessage),
+            .animation = fd(3, .submessage),
         };
     };
 
     pub const _desc_table = .{
-        .id = fd(1, .{ .Varint = .Simple }),
-        .name = fd(4, .String),
-        .type = fd(null, .{ .OneOf = type_union }),
+        .id = fd(1, .{ .scalar = .int32 }),
+        .name = fd(4, .{ .scalar = .string }),
+        .type = fd(null, .{ .oneof = type_union }),
     };
 
     pub fn encode(
@@ -1542,13 +1542,13 @@ pub const Sprite = struct {
     pivot_y: i32 = 0,
 
     pub const _desc_table = .{
-        .texture = fd(1, .{ .Varint = .Simple }),
-        .x = fd(2, .{ .Varint = .Simple }),
-        .y = fd(3, .{ .Varint = .Simple }),
-        .w = fd(4, .{ .Varint = .Simple }),
-        .h = fd(5, .{ .Varint = .Simple }),
-        .pivot_x = fd(6, .{ .Varint = .Simple }),
-        .pivot_y = fd(7, .{ .Varint = .Simple }),
+        .texture = fd(1, .{ .scalar = .int32 }),
+        .x = fd(2, .{ .scalar = .int32 }),
+        .y = fd(3, .{ .scalar = .int32 }),
+        .w = fd(4, .{ .scalar = .int32 }),
+        .h = fd(5, .{ .scalar = .int32 }),
+        .pivot_x = fd(6, .{ .scalar = .int32 }),
+        .pivot_y = fd(7, .{ .scalar = .int32 }),
     };
 
     pub fn encode(
@@ -1616,8 +1616,8 @@ pub const Animation = struct {
     speed: f32 = 0,
 
     pub const _desc_table = .{
-        .frames = fd(1, .{ .PackedList = .{ .Varint = .Simple } }),
-        .speed = fd(2, .{ .FixedInt = .i32 }),
+        .frames = fd(1, .{ .packed_list = .{ .scalar = .int32 } }),
+        .speed = fd(2, .{ .scalar = .float }),
     };
 
     pub fn encode(
@@ -1686,9 +1686,9 @@ pub const Spine = struct {
     atlas: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .name = fd(1, .String),
-        .json = fd(2, .String),
-        .atlas = fd(3, .String),
+        .name = fd(1, .{ .scalar = .string }),
+        .json = fd(2, .{ .scalar = .string }),
+        .atlas = fd(3, .{ .scalar = .string }),
     };
 
     pub fn encode(

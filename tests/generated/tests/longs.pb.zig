@@ -18,16 +18,16 @@ pub const LongsMessage = struct {
     uint64_field_max: u64 = 0,
 
     pub const _desc_table = .{
-        .fixed64_field_min = fd(1, .{ .FixedInt = .i64 }),
-        .fixed64_field_max = fd(2, .{ .FixedInt = .i64 }),
-        .int64_field_min = fd(3, .{ .Varint = .Simple }),
-        .int64_field_max = fd(4, .{ .Varint = .Simple }),
-        .sfixed64_field_min = fd(5, .{ .FixedInt = .i64 }),
-        .sfixed64_field_max = fd(6, .{ .FixedInt = .i64 }),
-        .sint64_field_min = fd(7, .{ .Varint = .ZigZagOptimized }),
-        .sint64_field_max = fd(8, .{ .Varint = .ZigZagOptimized }),
-        .uint64_field_min = fd(9, .{ .Varint = .Simple }),
-        .uint64_field_max = fd(10, .{ .Varint = .Simple }),
+        .fixed64_field_min = fd(1, .{ .scalar = .fixed64 }),
+        .fixed64_field_max = fd(2, .{ .scalar = .fixed64 }),
+        .int64_field_min = fd(3, .{ .scalar = .int64 }),
+        .int64_field_max = fd(4, .{ .scalar = .int64 }),
+        .sfixed64_field_min = fd(5, .{ .scalar = .sfixed64 }),
+        .sfixed64_field_max = fd(6, .{ .scalar = .sfixed64 }),
+        .sint64_field_min = fd(7, .{ .scalar = .sint64 }),
+        .sint64_field_max = fd(8, .{ .scalar = .sint64 }),
+        .uint64_field_min = fd(9, .{ .scalar = .uint64 }),
+        .uint64_field_max = fd(10, .{ .scalar = .uint64 }),
     };
 
     pub fn encode(
