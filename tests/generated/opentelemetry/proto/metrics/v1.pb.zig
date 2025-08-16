@@ -26,7 +26,7 @@ pub const MetricsData = struct {
     resource_metrics: std.ArrayListUnmanaged(ResourceMetrics),
 
     pub const _desc_table = .{
-        .resource_metrics = fd(1, .{ .List = .{ .SubMessage = {} } }),
+        .resource_metrics = fd(1, .{ .list = .submessage }),
     };
 
     pub fn encode(
@@ -95,9 +95,9 @@ pub const ResourceMetrics = struct {
     schema_url: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .resource = fd(1, .{ .SubMessage = {} }),
-        .scope_metrics = fd(2, .{ .List = .{ .SubMessage = {} } }),
-        .schema_url = fd(3, .String),
+        .resource = fd(1, .submessage),
+        .scope_metrics = fd(2, .{ .list = .submessage }),
+        .schema_url = fd(3, .{ .scalar = .string }),
     };
 
     pub fn encode(
@@ -166,9 +166,9 @@ pub const ScopeMetrics = struct {
     schema_url: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .scope = fd(1, .{ .SubMessage = {} }),
-        .metrics = fd(2, .{ .List = .{ .SubMessage = {} } }),
-        .schema_url = fd(3, .String),
+        .scope = fd(1, .submessage),
+        .metrics = fd(2, .{ .list = .submessage }),
+        .schema_url = fd(3, .{ .scalar = .string }),
     };
 
     pub fn encode(
@@ -252,20 +252,20 @@ pub const Metric = struct {
         exponential_histogram: ExponentialHistogram,
         summary: Summary,
         pub const _desc_table = .{
-            .gauge = fd(5, .{ .SubMessage = {} }),
-            .sum = fd(7, .{ .SubMessage = {} }),
-            .histogram = fd(9, .{ .SubMessage = {} }),
-            .exponential_histogram = fd(10, .{ .SubMessage = {} }),
-            .summary = fd(11, .{ .SubMessage = {} }),
+            .gauge = fd(5, .submessage),
+            .sum = fd(7, .submessage),
+            .histogram = fd(9, .submessage),
+            .exponential_histogram = fd(10, .submessage),
+            .summary = fd(11, .submessage),
         };
     };
 
     pub const _desc_table = .{
-        .name = fd(1, .String),
-        .description = fd(2, .String),
-        .unit = fd(3, .String),
-        .metadata = fd(12, .{ .List = .{ .SubMessage = {} } }),
-        .data = fd(null, .{ .OneOf = data_union }),
+        .name = fd(1, .{ .scalar = .string }),
+        .description = fd(2, .{ .scalar = .string }),
+        .unit = fd(3, .{ .scalar = .string }),
+        .metadata = fd(12, .{ .list = .submessage }),
+        .data = fd(null, .{ .oneof = data_union }),
     };
 
     pub fn encode(
@@ -332,7 +332,7 @@ pub const Gauge = struct {
     data_points: std.ArrayListUnmanaged(NumberDataPoint),
 
     pub const _desc_table = .{
-        .data_points = fd(1, .{ .List = .{ .SubMessage = {} } }),
+        .data_points = fd(1, .{ .list = .submessage }),
     };
 
     pub fn encode(
@@ -401,9 +401,9 @@ pub const Sum = struct {
     is_monotonic: bool = false,
 
     pub const _desc_table = .{
-        .data_points = fd(1, .{ .List = .{ .SubMessage = {} } }),
-        .aggregation_temporality = fd(2, .{ .Varint = .Simple }),
-        .is_monotonic = fd(3, .{ .Varint = .Simple }),
+        .data_points = fd(1, .{ .list = .submessage }),
+        .aggregation_temporality = fd(2, .@"enum"),
+        .is_monotonic = fd(3, .{ .scalar = .bool }),
     };
 
     pub fn encode(
@@ -471,8 +471,8 @@ pub const Histogram = struct {
     aggregation_temporality: AggregationTemporality = @enumFromInt(0),
 
     pub const _desc_table = .{
-        .data_points = fd(1, .{ .List = .{ .SubMessage = {} } }),
-        .aggregation_temporality = fd(2, .{ .Varint = .Simple }),
+        .data_points = fd(1, .{ .list = .submessage }),
+        .aggregation_temporality = fd(2, .@"enum"),
     };
 
     pub fn encode(
@@ -540,8 +540,8 @@ pub const ExponentialHistogram = struct {
     aggregation_temporality: AggregationTemporality = @enumFromInt(0),
 
     pub const _desc_table = .{
-        .data_points = fd(1, .{ .List = .{ .SubMessage = {} } }),
-        .aggregation_temporality = fd(2, .{ .Varint = .Simple }),
+        .data_points = fd(1, .{ .list = .submessage }),
+        .aggregation_temporality = fd(2, .@"enum"),
     };
 
     pub fn encode(
@@ -608,7 +608,7 @@ pub const Summary = struct {
     data_points: std.ArrayListUnmanaged(SummaryDataPoint),
 
     pub const _desc_table = .{
-        .data_points = fd(1, .{ .List = .{ .SubMessage = {} } }),
+        .data_points = fd(1, .{ .list = .submessage }),
     };
 
     pub fn encode(
@@ -687,18 +687,18 @@ pub const NumberDataPoint = struct {
         as_double: f64,
         as_int: i64,
         pub const _desc_table = .{
-            .as_double = fd(4, .{ .FixedInt = .i64 }),
-            .as_int = fd(6, .{ .FixedInt = .i64 }),
+            .as_double = fd(4, .{ .scalar = .double }),
+            .as_int = fd(6, .{ .scalar = .sfixed64 }),
         };
     };
 
     pub const _desc_table = .{
-        .attributes = fd(7, .{ .List = .{ .SubMessage = {} } }),
-        .start_time_unix_nano = fd(2, .{ .FixedInt = .i64 }),
-        .time_unix_nano = fd(3, .{ .FixedInt = .i64 }),
-        .exemplars = fd(5, .{ .List = .{ .SubMessage = {} } }),
-        .flags = fd(8, .{ .Varint = .Simple }),
-        .value = fd(null, .{ .OneOf = value_union }),
+        .attributes = fd(7, .{ .list = .submessage }),
+        .start_time_unix_nano = fd(2, .{ .scalar = .fixed64 }),
+        .time_unix_nano = fd(3, .{ .scalar = .fixed64 }),
+        .exemplars = fd(5, .{ .list = .submessage }),
+        .flags = fd(8, .{ .scalar = .uint32 }),
+        .value = fd(null, .{ .oneof = value_union }),
     };
 
     pub fn encode(
@@ -775,17 +775,17 @@ pub const HistogramDataPoint = struct {
     max: ?f64 = null,
 
     pub const _desc_table = .{
-        .attributes = fd(9, .{ .List = .{ .SubMessage = {} } }),
-        .start_time_unix_nano = fd(2, .{ .FixedInt = .i64 }),
-        .time_unix_nano = fd(3, .{ .FixedInt = .i64 }),
-        .count = fd(4, .{ .FixedInt = .i64 }),
-        .sum = fd(5, .{ .FixedInt = .i64 }),
-        .bucket_counts = fd(6, .{ .PackedList = .{ .FixedInt = .i64 } }),
-        .explicit_bounds = fd(7, .{ .PackedList = .{ .FixedInt = .i64 } }),
-        .exemplars = fd(8, .{ .List = .{ .SubMessage = {} } }),
-        .flags = fd(10, .{ .Varint = .Simple }),
-        .min = fd(11, .{ .FixedInt = .i64 }),
-        .max = fd(12, .{ .FixedInt = .i64 }),
+        .attributes = fd(9, .{ .list = .submessage }),
+        .start_time_unix_nano = fd(2, .{ .scalar = .fixed64 }),
+        .time_unix_nano = fd(3, .{ .scalar = .fixed64 }),
+        .count = fd(4, .{ .scalar = .fixed64 }),
+        .sum = fd(5, .{ .scalar = .double }),
+        .bucket_counts = fd(6, .{ .packed_list = .{ .scalar = .fixed64 } }),
+        .explicit_bounds = fd(7, .{ .packed_list = .{ .scalar = .double } }),
+        .exemplars = fd(8, .{ .list = .submessage }),
+        .flags = fd(10, .{ .scalar = .uint32 }),
+        .min = fd(11, .{ .scalar = .double }),
+        .max = fd(12, .{ .scalar = .double }),
     };
 
     pub fn encode(
@@ -865,20 +865,20 @@ pub const ExponentialHistogramDataPoint = struct {
     zero_threshold: f64 = 0,
 
     pub const _desc_table = .{
-        .attributes = fd(1, .{ .List = .{ .SubMessage = {} } }),
-        .start_time_unix_nano = fd(2, .{ .FixedInt = .i64 }),
-        .time_unix_nano = fd(3, .{ .FixedInt = .i64 }),
-        .count = fd(4, .{ .FixedInt = .i64 }),
-        .sum = fd(5, .{ .FixedInt = .i64 }),
-        .scale = fd(6, .{ .Varint = .ZigZagOptimized }),
-        .zero_count = fd(7, .{ .FixedInt = .i64 }),
-        .positive = fd(8, .{ .SubMessage = {} }),
-        .negative = fd(9, .{ .SubMessage = {} }),
-        .flags = fd(10, .{ .Varint = .Simple }),
-        .exemplars = fd(11, .{ .List = .{ .SubMessage = {} } }),
-        .min = fd(12, .{ .FixedInt = .i64 }),
-        .max = fd(13, .{ .FixedInt = .i64 }),
-        .zero_threshold = fd(14, .{ .FixedInt = .i64 }),
+        .attributes = fd(1, .{ .list = .submessage }),
+        .start_time_unix_nano = fd(2, .{ .scalar = .fixed64 }),
+        .time_unix_nano = fd(3, .{ .scalar = .fixed64 }),
+        .count = fd(4, .{ .scalar = .fixed64 }),
+        .sum = fd(5, .{ .scalar = .double }),
+        .scale = fd(6, .{ .scalar = .sint32 }),
+        .zero_count = fd(7, .{ .scalar = .fixed64 }),
+        .positive = fd(8, .submessage),
+        .negative = fd(9, .submessage),
+        .flags = fd(10, .{ .scalar = .uint32 }),
+        .exemplars = fd(11, .{ .list = .submessage }),
+        .min = fd(12, .{ .scalar = .double }),
+        .max = fd(13, .{ .scalar = .double }),
+        .zero_threshold = fd(14, .{ .scalar = .double }),
     };
 
     pub const Buckets = struct {
@@ -886,8 +886,8 @@ pub const ExponentialHistogramDataPoint = struct {
         bucket_counts: std.ArrayListUnmanaged(u64),
 
         pub const _desc_table = .{
-            .offset = fd(1, .{ .Varint = .ZigZagOptimized }),
-            .bucket_counts = fd(2, .{ .PackedList = .{ .Varint = .Simple } }),
+            .offset = fd(1, .{ .scalar = .sint32 }),
+            .bucket_counts = fd(2, .{ .packed_list = .{ .scalar = .uint64 } }),
         };
 
         pub fn encode(
@@ -1020,13 +1020,13 @@ pub const SummaryDataPoint = struct {
     flags: u32 = 0,
 
     pub const _desc_table = .{
-        .attributes = fd(7, .{ .List = .{ .SubMessage = {} } }),
-        .start_time_unix_nano = fd(2, .{ .FixedInt = .i64 }),
-        .time_unix_nano = fd(3, .{ .FixedInt = .i64 }),
-        .count = fd(4, .{ .FixedInt = .i64 }),
-        .sum = fd(5, .{ .FixedInt = .i64 }),
-        .quantile_values = fd(6, .{ .List = .{ .SubMessage = {} } }),
-        .flags = fd(8, .{ .Varint = .Simple }),
+        .attributes = fd(7, .{ .list = .submessage }),
+        .start_time_unix_nano = fd(2, .{ .scalar = .fixed64 }),
+        .time_unix_nano = fd(3, .{ .scalar = .fixed64 }),
+        .count = fd(4, .{ .scalar = .fixed64 }),
+        .sum = fd(5, .{ .scalar = .double }),
+        .quantile_values = fd(6, .{ .list = .submessage }),
+        .flags = fd(8, .{ .scalar = .uint32 }),
     };
 
     pub const ValueAtQuantile = struct {
@@ -1034,8 +1034,8 @@ pub const SummaryDataPoint = struct {
         value: f64 = 0,
 
         pub const _desc_table = .{
-            .quantile = fd(1, .{ .FixedInt = .i64 }),
-            .value = fd(2, .{ .FixedInt = .i64 }),
+            .quantile = fd(1, .{ .scalar = .double }),
+            .value = fd(2, .{ .scalar = .double }),
         };
 
         pub fn encode(
@@ -1173,17 +1173,17 @@ pub const Exemplar = struct {
         as_double: f64,
         as_int: i64,
         pub const _desc_table = .{
-            .as_double = fd(3, .{ .FixedInt = .i64 }),
-            .as_int = fd(6, .{ .FixedInt = .i64 }),
+            .as_double = fd(3, .{ .scalar = .double }),
+            .as_int = fd(6, .{ .scalar = .sfixed64 }),
         };
     };
 
     pub const _desc_table = .{
-        .filtered_attributes = fd(7, .{ .List = .{ .SubMessage = {} } }),
-        .time_unix_nano = fd(2, .{ .FixedInt = .i64 }),
-        .span_id = fd(4, .Bytes),
-        .trace_id = fd(5, .Bytes),
-        .value = fd(null, .{ .OneOf = value_union }),
+        .filtered_attributes = fd(7, .{ .list = .submessage }),
+        .time_unix_nano = fd(2, .{ .scalar = .fixed64 }),
+        .span_id = fd(4, .{ .scalar = .bytes }),
+        .trace_id = fd(5, .{ .scalar = .bytes }),
+        .value = fd(null, .{ .oneof = value_union }),
     };
 
     pub fn encode(

@@ -14,10 +14,10 @@ pub const Version = struct {
     suffix: ?[]const u8 = null,
 
     pub const _desc_table = .{
-        .major = fd(1, .{ .Varint = .Simple }),
-        .minor = fd(2, .{ .Varint = .Simple }),
-        .patch = fd(3, .{ .Varint = .Simple }),
-        .suffix = fd(4, .String),
+        .major = fd(1, .{ .scalar = .int32 }),
+        .minor = fd(2, .{ .scalar = .int32 }),
+        .patch = fd(3, .{ .scalar = .int32 }),
+        .suffix = fd(4, .{ .scalar = .string }),
     };
 
     pub fn encode(
@@ -87,10 +87,10 @@ pub const CodeGeneratorRequest = struct {
     compiler_version: ?Version = null,
 
     pub const _desc_table = .{
-        .file_to_generate = fd(1, .{ .List = .String }),
-        .parameter = fd(2, .String),
-        .proto_file = fd(15, .{ .List = .{ .SubMessage = {} } }),
-        .compiler_version = fd(3, .{ .SubMessage = {} }),
+        .file_to_generate = fd(1, .{ .list = .{ .scalar = .string } }),
+        .parameter = fd(2, .{ .scalar = .string }),
+        .proto_file = fd(15, .{ .list = .submessage }),
+        .compiler_version = fd(3, .submessage),
     };
 
     pub fn encode(
@@ -159,9 +159,9 @@ pub const CodeGeneratorResponse = struct {
     file: std.ArrayListUnmanaged(CodeGeneratorResponse.File),
 
     pub const _desc_table = .{
-        .@"error" = fd(1, .String),
-        .supported_features = fd(2, .{ .Varint = .Simple }),
-        .file = fd(15, .{ .List = .{ .SubMessage = {} } }),
+        .@"error" = fd(1, .{ .scalar = .string }),
+        .supported_features = fd(2, .{ .scalar = .uint64 }),
+        .file = fd(15, .{ .list = .submessage }),
     };
 
     pub const Feature = enum(i32) {
@@ -177,10 +177,10 @@ pub const CodeGeneratorResponse = struct {
         generated_code_info: ?google_protobuf.GeneratedCodeInfo = null,
 
         pub const _desc_table = .{
-            .name = fd(1, .String),
-            .insertion_point = fd(2, .String),
-            .content = fd(15, .String),
-            .generated_code_info = fd(16, .{ .SubMessage = {} }),
+            .name = fd(1, .{ .scalar = .string }),
+            .insertion_point = fd(2, .{ .scalar = .string }),
+            .content = fd(15, .{ .scalar = .string }),
+            .generated_code_info = fd(16, .submessage),
         };
 
         pub fn encode(

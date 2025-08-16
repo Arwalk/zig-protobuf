@@ -87,17 +87,20 @@ fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
         if (are_optionals_equal != null) {
             if (!are_optionals_equal.?) return false;
         } else switch (@field(T._desc_table, structInfo.name).ftype) {
-            .List, .PackedList => |list_type| {
+            .list, .packed_list => |list_type| {
                 if (field1.items.len != field2.items.len) return false;
                 for (field1.items, field2.items) |array1_el, array2_el| {
                     if (!switch (list_type) {
-                        .String, .Bytes => std.mem.eql(u8, array1_el, array2_el),
-                        .Varint, .FixedInt => _compare_numerics(array1_el, array2_el),
-                        .SubMessage => compare_pb_structs(array1_el, array2_el),
+                        .scalar => |scalar| switch (scalar) {
+                            .string, .bytes => std.mem.eql(u8, array1_el, array2_el),
+                            else => _compare_numerics(array1_el, array2_el),
+                        },
+                        .@"enum" => _compare_numerics(array1_el, array2_el),
+                        .submessage => compare_pb_structs(array1_el, array2_el),
                     }) return false;
                 }
             },
-            .OneOf => {
+            .oneof => {
                 const union_info = switch (@typeInfo(@TypeOf(field1))) {
                     .@"union" => |u| u,
                     else => @compileError("Oneof should have .@\"union\" type"),
@@ -119,16 +122,22 @@ fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
                             @TypeOf(field1)._desc_table,
                             field_info.name,
                         ).ftype) {
-                            .String, .Bytes => std.mem.eql(
-                                u8,
+                            .scalar => |scalar| switch (scalar) {
+                                .string, .bytes => std.mem.eql(
+                                    u8,
+                                    @field(field1, field_info.name),
+                                    @field(field2, field_info.name),
+                                ),
+                                else => _compare_numerics(
+                                    @field(field1, field_info.name),
+                                    @field(field2, field_info.name),
+                                ),
+                            },
+                            .@"enum" => _compare_numerics(
                                 @field(field1, field_info.name),
                                 @field(field2, field_info.name),
                             ),
-                            .Varint, .FixedInt => _compare_numerics(
-                                @field(field1, field_info.name),
-                                @field(field2, field_info.name),
-                            ),
-                            .SubMessage => compare_pb_structs(
+                            .submessage => compare_pb_structs(
                                 @field(field1, field_info.name),
                                 @field(field2, field_info.name),
                             ),
@@ -137,14 +146,19 @@ fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
                     }
                 }
             },
-            .String, .Bytes => {
-                if (!std.mem.eql(u8, field1, field2)) return false;
-            },
-            .SubMessage => {
+            .submessage => {
                 if (!compare_pb_structs(field1, field2)) return false;
             },
-            .Varint, .FixedInt => {
+            .@"enum" => {
                 if (!_compare_numerics(field1, field2)) return false;
+            },
+            .scalar => |scalar| switch (scalar) {
+                .string, .bytes => {
+                    if (!std.mem.eql(u8, field1, field2)) return false;
+                },
+                else => {
+                    if (!_compare_numerics(field1, field2)) return false;
+                },
             },
         }
     }

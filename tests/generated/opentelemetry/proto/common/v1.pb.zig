@@ -26,18 +26,18 @@ pub const AnyValue = struct {
         kvlist_value: KeyValueList,
         bytes_value: []const u8,
         pub const _desc_table = .{
-            .string_value = fd(1, .String),
-            .bool_value = fd(2, .{ .Varint = .Simple }),
-            .int_value = fd(3, .{ .Varint = .Simple }),
-            .double_value = fd(4, .{ .FixedInt = .i64 }),
-            .array_value = fd(5, .{ .SubMessage = {} }),
-            .kvlist_value = fd(6, .{ .SubMessage = {} }),
-            .bytes_value = fd(7, .Bytes),
+            .string_value = fd(1, .{ .scalar = .string }),
+            .bool_value = fd(2, .{ .scalar = .bool }),
+            .int_value = fd(3, .{ .scalar = .int64 }),
+            .double_value = fd(4, .{ .scalar = .double }),
+            .array_value = fd(5, .submessage),
+            .kvlist_value = fd(6, .submessage),
+            .bytes_value = fd(7, .{ .scalar = .bytes }),
         };
     };
 
     pub const _desc_table = .{
-        .value = fd(null, .{ .OneOf = value_union }),
+        .value = fd(null, .{ .oneof = value_union }),
     };
 
     pub fn encode(
@@ -104,7 +104,7 @@ pub const ArrayValue = struct {
     values: std.ArrayListUnmanaged(AnyValue),
 
     pub const _desc_table = .{
-        .values = fd(1, .{ .List = .{ .SubMessage = {} } }),
+        .values = fd(1, .{ .list = .submessage }),
     };
 
     pub fn encode(
@@ -171,7 +171,7 @@ pub const KeyValueList = struct {
     values: std.ArrayListUnmanaged(KeyValue),
 
     pub const _desc_table = .{
-        .values = fd(1, .{ .List = .{ .SubMessage = {} } }),
+        .values = fd(1, .{ .list = .submessage }),
     };
 
     pub fn encode(
@@ -239,8 +239,8 @@ pub const KeyValue = struct {
     value: ?AnyValue = null,
 
     pub const _desc_table = .{
-        .key = fd(1, .String),
-        .value = fd(2, .{ .SubMessage = {} }),
+        .key = fd(1, .{ .scalar = .string }),
+        .value = fd(2, .submessage),
     };
 
     pub fn encode(
@@ -310,10 +310,10 @@ pub const InstrumentationScope = struct {
     dropped_attributes_count: u32 = 0,
 
     pub const _desc_table = .{
-        .name = fd(1, .String),
-        .version = fd(2, .String),
-        .attributes = fd(3, .{ .List = .{ .SubMessage = {} } }),
-        .dropped_attributes_count = fd(4, .{ .Varint = .Simple }),
+        .name = fd(1, .{ .scalar = .string }),
+        .version = fd(2, .{ .scalar = .string }),
+        .attributes = fd(3, .{ .list = .submessage }),
+        .dropped_attributes_count = fd(4, .{ .scalar = .uint32 }),
     };
 
     pub fn encode(

@@ -12,8 +12,8 @@ pub const Resource = struct {
     dropped_attributes_count: u32 = 0,
 
     pub const _desc_table = .{
-        .attributes = fd(1, .{ .List = .{ .SubMessage = {} } }),
-        .dropped_attributes_count = fd(2, .{ .Varint = .Simple }),
+        .attributes = fd(1, .{ .list = .submessage }),
+        .dropped_attributes_count = fd(2, .{ .scalar = .uint32 }),
     };
 
     pub fn encode(

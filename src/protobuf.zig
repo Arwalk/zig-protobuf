@@ -5,69 +5,110 @@ const log = std.log.scoped(.zig_protobuf);
 pub const json = @import("json.zig");
 pub const wire = @import("wire.zig");
 
-/// Type of encoding for a Varint value.
-const VarintEncoding = enum { Simple, ZigZagOptimized };
-
 pub const DecodingError = error{ NotEnoughData, InvalidInput };
 
-/// Enum describing the different field types available.
-pub const FieldTypeTag = enum { Varint, FixedInt, SubMessage, String, Bytes, List, PackedList, OneOf };
-
-/// Enum describing how much bits a FixedInt will use.
-pub const FixedSize = enum(u1) { i32, i64 };
-
-/// Enum describing the content type of a repeated field.
-pub const ListTypeTag = enum {
-    Varint,
-    String,
-    Bytes,
-    FixedInt,
-    SubMessage,
-};
-
-/// Tagged union for repeated fields, giving the details of the underlying type.
-pub const ListType = union(ListTypeTag) {
-    Varint: VarintEncoding,
-    String,
-    Bytes,
-    FixedInt: FixedSize,
-    SubMessage,
-};
-
 /// Main tagged union holding the details of any field type.
-pub const FieldType = union(FieldTypeTag) {
-    Varint: VarintEncoding,
-    FixedInt: FixedSize,
-    SubMessage,
-    String,
-    Bytes,
-    List: ListType,
-    PackedList: ListType,
-    OneOf: type,
+pub const FieldType = union(enum) {
+    scalar: Scalar,
+    @"enum": void,
+    submessage: void,
+    list: List,
+    packed_list: List,
+    oneof: type,
 
-    pub fn toWireType(comptime ftype: FieldType) wire.Type {
+    pub fn toWire(comptime ftype: FieldType) wire.Type {
         return switch (comptime ftype) {
-            .Varint => .varint,
-            .FixedInt => |size| switch (comptime size) {
-                .i64 => .i64,
-                .i32 => .i32,
+            .scalar => |s| s.toWire(),
+            .submessage, .packed_list => .len,
+            .list => |inner| switch (comptime inner) {
+                .scalar => |s| s.toWire(),
+                .@"enum" => .varint,
+                .submessage => .len,
             },
-            .String, .SubMessage, .PackedList, .Bytes => .len,
-            .List => |inner| switch (comptime inner) {
-                .Varint => .varint,
-                .FixedInt => |size| switch (comptime size) {
-                    .i64 => .i64,
-                    .i32 => .i32,
-                },
-                .String, .SubMessage, .Bytes => .len,
-            },
-            .OneOf => @compileError("Shouldn't pass a .OneOf field to this function here."),
+            .@"enum" => .varint,
+            .oneof => @compileError("Shouldn't pass a .oneof field to this function here."),
         };
     }
+
+    pub const Tag = std.meta.Tag(FieldType);
+
+    pub const Scalar =
+        enum {
+            /// Uses variable-length encoding. Inefficient for encoding negative
+            /// numbers -- if your field is likely to have negative values, use
+            /// `sint32` instead.
+            int32,
+            /// Uses variable-length encoding. Inefficient for encoding negative
+            /// numbers -- if your field is likely to have negative values, use
+            /// `sint64` instead.
+            int64,
+            /// Uses variable-length encoding.
+            uint32,
+            /// Uses variable-length encoding.
+            uint64,
+            /// Uses variable-length encoding. Signed int value. These more
+            /// efficiently encode negative numbers than regular `int32`s.
+            sint32,
+            /// Uses variable-length encoding. Signed int value. These more
+            /// efficiently encode negative numbers than regular `int64`s.
+            sint64,
+            bool,
+
+            /// Uses IEEE 754 single-precision format.
+            float,
+            /// Uses IEEE 754 double-precision format.
+            double,
+            /// Always four bytes. More efficient than uint32 if values are often
+            /// greater than 2^28.
+            fixed32,
+            /// Always eight bytes. More efficient than uint64 if values are often
+            /// greater than 2^56.
+            fixed64,
+            /// Always four bytes.
+            sfixed32,
+            /// Always eight bytes.
+            sfixed64,
+
+            /// UTF-8 or 7-bit ASCII. Cannot be longer than 2^32.
+            string,
+            /// Arbitrary sequence of bytes. Cannot be longer than 2^32.
+            bytes,
+
+            pub fn isZigZag(self: @This()) bool {
+                return switch (self) {
+                    .sint32, .sint64 => true,
+                    else => false,
+                };
+            }
+
+            pub fn toWire(self: @This()) wire.Type {
+                return switch (self) {
+                    .int32,
+                    .int64,
+                    .uint32,
+                    .uint64,
+                    .sint32,
+                    .sint64,
+                    .bool,
+                    => .varint,
+                    .float, .fixed32, .sfixed32 => .i32,
+                    .double, .fixed64, .sfixed64 => .i64,
+                    .string, .bytes => .len,
+                };
+            }
+        };
+
+    pub const List = union(enum) {
+        scalar: Scalar,
+        @"enum": void,
+        submessage: void,
+
+        pub const Tag = std.meta.Tag(List);
+    };
 };
 
 /// Structure describing a field. Most of the relevant informations are
-/// In the FieldType data. Tag is optional as OneOf fields are "virtual" fields.
+/// In the FieldType data. Tag is optional as oneof fields are "virtual" fields.
 pub const FieldDescriptor = struct {
     field_number: ?u32,
     ftype: FieldType,
@@ -98,22 +139,31 @@ fn writeRawVarint(writer: std.io.AnyWriter, value: u64) std.io.AnyWriter.Error!v
 fn writeAsVarint(
     writer: std.io.AnyWriter,
     int: anytype,
-    comptime varint_type: VarintEncoding,
+    comptime scalar_type: FieldType.Scalar,
 ) std.io.AnyWriter.Error!void {
-    const type_of_val = @TypeOf(int);
     const val: u64 = blk: {
-        switch (@typeInfo(type_of_val).int.signedness) {
-            .signed => {
-                switch (varint_type) {
-                    .ZigZagOptimized => {
-                        break :blk wire.ZigZag.encode(int);
-                    },
-                    .Simple => {
-                        break :blk @bitCast(@as(i64, @intCast(int)));
-                    },
+        if (comptime scalar_type.isZigZag()) {
+            break :blk wire.ZigZag.encode(int);
+        }
+
+        const Int = @TypeOf(int);
+        const int_ti = @typeInfo(Int);
+        switch (comptime int_ti) {
+            .int => |i| {
+                if (comptime i.signedness == .signed) {
+                    break :blk @bitCast(@as(i64, @intCast(int)));
+                } else {
+                    break :blk @as(u64, @intCast(int));
                 }
             },
-            .unsigned => break :blk @as(u64, @intCast(int)),
+            .comptime_int => {
+                if (comptime int < 0) {
+                    break :blk @bitCast(@as(i64, @intCast(int)));
+                } else {
+                    break :blk @as(u64, @intCast(int));
+                }
+            },
+            else => unreachable,
         }
     };
 
@@ -122,11 +172,14 @@ fn writeAsVarint(
 
 /// Write a value of any complex type that can be transfered as a varint
 /// Only serves as an indirection to manage Enum and Booleans properly.
-fn writeVarint(writer: std.io.AnyWriter, value: anytype, comptime varint_type: VarintEncoding) std.io.AnyWriter.Error!void {
+fn writeVarint(
+    writer: std.io.AnyWriter,
+    value: anytype,
+    comptime scalar_type: FieldType.Scalar,
+) std.io.AnyWriter.Error!void {
     switch (@typeInfo(@TypeOf(value))) {
-        .@"enum" => try writeAsVarint(writer, @as(i32, @intFromEnum(value)), varint_type),
-        .bool => try writeAsVarint(writer, @as(u8, if (value) 1 else 0), varint_type),
-        .int => try writeAsVarint(writer, value, varint_type),
+        .bool => try writeAsVarint(writer, @as(u8, if (value) 1 else 0), scalar_type),
+        .int => try writeAsVarint(writer, value, scalar_type),
         else => @compileError("Should not pass a value of type " ++ @typeInfo(@TypeOf(value)) ++ "here"),
     }
 }
@@ -202,7 +255,7 @@ fn writePackedVarintList(
     allocator: std.mem.Allocator,
     value_list: anytype,
     comptime field: FieldDescriptor,
-    comptime varint_type: VarintEncoding,
+    comptime scalar_type: FieldType.Scalar,
 ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
     if (value_list.items.len > 0) {
         try writeTag(writer, field);
@@ -213,7 +266,31 @@ fn writePackedVarintList(
         const w = temp_buffer.writer(allocator);
 
         for (value_list.items) |item| {
-            try writeVarint(w.any(), item, varint_type);
+            try writeVarint(w.any(), item, scalar_type);
+        }
+
+        const size_encoded: u64 = temp_buffer.items.len;
+        try writeRawVarint(writer, size_encoded);
+        try writer.writeAll(temp_buffer.items);
+    }
+}
+
+fn writePackedEnumList(
+    writer: std.io.AnyWriter,
+    allocator: std.mem.Allocator,
+    value_list: anytype,
+    comptime field: FieldDescriptor,
+) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    if (value_list.items.len > 0) {
+        try writeTag(writer, field);
+
+        var temp_buffer: std.ArrayListUnmanaged(u8) = .empty;
+        defer temp_buffer.deinit(allocator);
+
+        const w = temp_buffer.writer(allocator);
+
+        for (value_list.items) |item| {
+            try writeRawVarint(w.any(), @bitCast(@as(i64, @intFromEnum(item))));
         }
 
         const size_encoded: u64 = temp_buffer.items.len;
@@ -242,6 +319,7 @@ fn writePackedStringList(
     comptime field: FieldDescriptor,
     value_list: anytype,
 ) std.io.AnyWriter!void {
+    // TODO: find examples about how to encode and decode packed strings. the documentation is ambiguous
     if (value_list.items.len > 0) {
         try writeTag(writer, field);
 
@@ -264,7 +342,7 @@ fn writePackedStringList(
 /// Writes the full tag of the field, if there is any.
 fn writeTag(writer: std.io.AnyWriter, comptime field: FieldDescriptor) std.io.AnyWriter.Error!void {
     const tag: wire.Tag = .{
-        .type = comptime field.ftype.toWireType(),
+        .type = comptime field.ftype.toWire(),
         .field = field.field_number.?,
     };
     _ = try tag.encode(writer);
@@ -297,74 +375,94 @@ fn writeValue(
         },
     };
 
-    switch (field.ftype) {
-        .Varint => |varint_type| {
+    switch (comptime field.ftype) {
+        .scalar => |scalar| switch (comptime scalar) {
+            .float, .double, .fixed32, .fixed64, .sfixed32, .sfixed64 => {
+                if (!is_default_scalar_value or force_append) {
+                    try writeTag(writer, field);
+                    try writeFixed(writer, value);
+                }
+            },
+            .string, .bytes => {
+                if (!is_default_scalar_value or force_append) {
+                    try writeTag(writer, field);
+                    try writeRawVarint(writer, value.len);
+                    try writer.writeAll(value);
+                }
+            },
+            else => {
+                if (!is_default_scalar_value or force_append) {
+                    try writeTag(writer, field);
+                    try writeVarint(writer, value, scalar);
+                }
+            },
+        },
+        .@"enum" => {
             if (!is_default_scalar_value or force_append) {
                 try writeTag(writer, field);
-                try writeVarint(writer, value, varint_type);
+                try writeRawVarint(writer, @bitCast(@as(i64, @intFromEnum(value))));
             }
         },
-        .FixedInt => {
-            if (!is_default_scalar_value or force_append) {
-                try writeTag(writer, field);
-                try writeFixed(writer, value);
-            }
-        },
-        .SubMessage => {
+        .submessage => {
             if (!is_default_scalar_value or force_append) {
                 try writeTag(writer, field);
                 try writeSubmessage(writer, allocator, value);
             }
         },
-        .String, .Bytes => {
-            if (!is_default_scalar_value or force_append) {
-                try writeTag(writer, field);
-                try writeRawVarint(writer, value.len);
-                try writer.writeAll(value);
+        .packed_list => |list_type| {
+            switch (comptime list_type) {
+                .scalar => |scalar| switch (comptime scalar) {
+                    .float, .double, .fixed32, .fixed64, .sfixed32, .sfixed64 => {
+                        try writePackedFixedList(writer, allocator, field, value);
+                    },
+                    .string, .bytes => {
+                        try writePackedStringList(writer, allocator, field, value);
+                    },
+                    else => {
+                        try writePackedVarintList(writer, allocator, value, field, scalar);
+                    },
+                },
+                .@"enum" => {
+                    try writePackedEnumList(writer, allocator, value, field);
+                },
+                .submessage => @compileError("submessages are not suitable for `packed_list`s."),
             }
         },
-        .PackedList => |list_type| {
+        .list => |list_type| {
             switch (list_type) {
-                .FixedInt => {
-                    try writePackedFixedList(writer, allocator, field, value);
+                .scalar => |scalar| switch (comptime scalar) {
+                    .float, .double, .fixed32, .fixed64, .sfixed32, .sfixed64 => {
+                        for (value.items) |item| {
+                            try writeTag(writer, field);
+                            try writeFixed(writer, item);
+                        }
+                    },
+                    .string, .bytes => {
+                        for (value.items) |item| {
+                            try writeTag(writer, field);
+                            try writeRawVarint(writer, item.len);
+                            try writer.writeAll(item);
+                        }
+                    },
+                    else => {
+                        for (value.items) |item| {
+                            try writeTag(writer, field);
+                            try writeVarint(writer, item, scalar);
+                        }
+                    },
                 },
-                .Varint => |varint_type| {
-                    try writePackedVarintList(writer, allocator, value, field, varint_type);
-                },
-                .String, .Bytes => |varint_type| {
-                    // TODO: find examples about how to encode and decode packed strings. the documentation is ambiguous
-                    try writePackedStringList(writer, allocator, value, varint_type);
-                },
-                .SubMessage => @compileError("submessages are not suitable for PackedLists."),
-            }
-        },
-        .List => |list_type| {
-            switch (list_type) {
-                .FixedInt => {
-                    for (value.items) |item| {
-                        try writeTag(writer, field);
-                        try writeFixed(writer, item);
-                    }
-                },
-                .SubMessage => {
+                .submessage => {
                     try writeSubmessageList(writer, allocator, field, value);
                 },
-                .String, .Bytes => {
+                .@"enum" => {
                     for (value.items) |item| {
                         try writeTag(writer, field);
-                        try writeRawVarint(writer, item.len);
-                        try writer.writeAll(item);
-                    }
-                },
-                .Varint => |varint_type| {
-                    for (value.items) |item| {
-                        try writeTag(writer, field);
-                        try writeVarint(writer, item, varint_type);
+                        try writeRawVarint(writer, @bitCast(@as(i64, @intFromEnum(item))));
                     }
                 },
             }
         },
-        .OneOf => |union_type| {
+        .oneof => |union_type| {
             // iterate over union tags until one matches `active_union_tag` and then use the comptime information to append the value
             const active_union_tag = @tagName(value);
             inline for (@typeInfo(@TypeOf(union_type._desc_table)).@"struct".fields) |union_field| {
@@ -427,28 +525,21 @@ inline fn internal_init(comptime T: type, value: *T) !void {
         ));
     }
     inline for (@typeInfo(T).@"struct".fields) |field| {
-        switch (@field(T._desc_table, field.name).ftype) {
-            .String, .Bytes => {
+        switch (comptime @field(T._desc_table, field.name).ftype) {
+            .@"enum", .scalar => {
                 if (field.defaultValue()) |val| {
                     @field(value, field.name) = val;
                 } else {
                     @field(value, field.name) = get_field_default_value(field.type);
                 }
             },
-            .Varint, .FixedInt => {
-                if (field.defaultValue()) |val| {
-                    @field(value, field.name) = val;
-                } else {
-                    @field(value, field.name) = get_field_default_value(field.type);
-                }
-            },
-            .SubMessage => {
+            .submessage => {
                 @field(value, field.name) = null;
             },
-            .OneOf => {
+            .oneof => {
                 @field(value, field.name) = null;
             },
-            .List, .PackedList => {
+            .list, .packed_list => {
                 @field(value, field.name) = .empty;
             },
         }
@@ -491,19 +582,83 @@ fn dupeField(
     allocator: std.mem.Allocator,
 ) std.mem.Allocator.Error!@TypeOf(@field(original, field_name)) {
     switch (ftype) {
-        .Varint, .FixedInt => {
-            return @field(original, field_name);
+        .@"enum" => return @field(original, field_name),
+        .scalar => |scalar| switch (scalar) {
+            .string, .bytes => {
+                const Original = @TypeOf(original);
+                const Field = comptime @FieldType(Original, field_name);
+                const field_ti = comptime @typeInfo(Field);
+                if (comptime Field == []const u8) {
+                    if (comptime @typeInfo(Original) == .@"struct") {
+                        const field_info = std.meta.fieldInfo(
+                            Original,
+                            @field(std.meta.FieldEnum(Original), field_name),
+                        );
+                        if (comptime field_info.defaultValue()) |val| {
+                            if (val.ptr == @field(original, field_name).ptr) {
+                                return val;
+                            }
+                        }
+                    }
+                    return try allocator.dupe(u8, @field(original, field_name));
+                } else switch (comptime field_ti) {
+                    .optional => |o| {
+                        if (@field(original, field_name)) |val| {
+                            if (comptime o.child == []const u8) {
+                                if (comptime @typeInfo(Original) == .@"struct") {
+                                    const field_info = std.meta.fieldInfo(
+                                        Original,
+                                        @field(std.meta.FieldEnum(Original), field_name),
+                                    );
+                                    if (comptime field_info.defaultValue()) |default_opt| {
+                                        if (comptime default_opt) |default| {
+                                            if (default.ptr == val.ptr) {
+                                                return default;
+                                            }
+                                        }
+                                    }
+                                }
+                                return try allocator.dupe(u8, val);
+                            } else {
+                                @compileError(std.fmt.comptimePrint(
+                                    "invalid string/bytes type {s}",
+                                    .{@typeName(Field)},
+                                ));
+                            }
+                        } else {
+                            return null;
+                        }
+                    },
+                    else => @compileError(std.fmt.comptimePrint(
+                        "invalid string/bytes type {s}",
+                        .{@typeName(Field)},
+                    )),
+                }
+            },
+            else => return @field(original, field_name),
         },
-        .List => |list_type| {
+        .list => |list_type| {
             const capacity = @field(original, field_name).items.len;
             var list = try @TypeOf(@field(original, field_name)).initCapacity(allocator, capacity);
             switch (list_type) {
-                .SubMessage, .String => {
+                .submessage => {
                     for (@field(original, field_name).items) |item| {
                         try list.append(allocator, try item.dupe(allocator));
                     }
                 },
-                .Varint, .Bytes, .FixedInt => {
+                .scalar => |scalar| switch (scalar) {
+                    .string, .bytes => {
+                        for (@field(original, field_name).items) |item| {
+                            try list.append(allocator, try item.dupe(allocator));
+                        }
+                    },
+                    else => {
+                        for (@field(original, field_name).items) |item| {
+                            try list.append(allocator, item);
+                        }
+                    },
+                },
+                .@"enum" => {
                     for (@field(original, field_name).items) |item| {
                         try list.append(allocator, item);
                     }
@@ -511,7 +666,7 @@ fn dupeField(
             }
             return list;
         },
-        .PackedList => |_| {
+        .packed_list => |_| {
             const capacity = @field(original, field_name).items.len;
             var list = try @TypeOf(@field(original, field_name)).initCapacity(allocator, capacity);
 
@@ -521,58 +676,7 @@ fn dupeField(
 
             return list;
         },
-        .String, .Bytes => {
-            const Original = @TypeOf(original);
-            const Field = comptime @FieldType(Original, field_name);
-            const field_ti = comptime @typeInfo(Field);
-            if (comptime Field == []const u8) {
-                if (comptime @typeInfo(Original) == .@"struct") {
-                    const field_info = std.meta.fieldInfo(
-                        Original,
-                        @field(std.meta.FieldEnum(Original), field_name),
-                    );
-                    if (comptime field_info.defaultValue()) |val| {
-                        if (val.ptr == @field(original, field_name).ptr) {
-                            return val;
-                        }
-                    }
-                }
-                return try allocator.dupe(u8, @field(original, field_name));
-            } else switch (comptime field_ti) {
-                .optional => |o| {
-                    if (@field(original, field_name)) |val| {
-                        if (comptime o.child == []const u8) {
-                            if (comptime @typeInfo(Original) == .@"struct") {
-                                const field_info = std.meta.fieldInfo(
-                                    Original,
-                                    @field(std.meta.FieldEnum(Original), field_name),
-                                );
-                                if (comptime field_info.defaultValue()) |default_opt| {
-                                    if (comptime default_opt) |default| {
-                                        if (default.ptr == val.ptr) {
-                                            return default;
-                                        }
-                                    }
-                                }
-                            }
-                            return try allocator.dupe(u8, val);
-                        } else {
-                            @compileError(std.fmt.comptimePrint(
-                                "invalid string/bytes type {s}",
-                                .{@typeName(Field)},
-                            ));
-                        }
-                    } else {
-                        return null;
-                    }
-                },
-                else => @compileError(std.fmt.comptimePrint(
-                    "invalid string/bytes type {s}",
-                    .{@typeName(Field)},
-                )),
-            }
-        },
-        .SubMessage => {
+        .submessage => {
             const Field = comptime @TypeOf(@field(original, field_name));
             const field_ti = comptime @typeInfo(Field);
             switch (comptime field_ti) {
@@ -628,8 +732,8 @@ fn dupeField(
                 )),
             }
         },
-        .OneOf => |one_of| {
-            // if the value is set, inline-iterate over the possible OneOfs
+        .oneof => |one_of| {
+            // if the value is set, inline-iterate over the possible oneofs
             if (@field(original, field_name)) |union_value| {
                 const active = @tagName(union_value);
                 inline for (@typeInfo(@TypeOf(one_of._desc_table)).@"struct".fields) |union_field| {
@@ -679,7 +783,7 @@ fn deinitField(
             switch (p.size) {
                 .one => {
                     comptime std.debug.assert(child_ti == .@"struct");
-                    comptime std.debug.assert(desc.ftype == .SubMessage);
+                    comptime std.debug.assert(desc.ftype == .submessage);
                     @field(root, field_name).deinit(allocator);
                     allocator.destroy(@field(root, field_name));
                 },
@@ -687,10 +791,10 @@ fn deinitField(
                     comptime std.debug.assert(
                         // TODO: Use slices instead of `ArrayListUnmanaged`
                         // for (packed) lists.
-                        // desc.ftype == .List or
-                        // desc.ftype == .PackedList or
-                        desc.ftype == .String or
-                            desc.ftype == .Bytes,
+                        // desc.ftype == .list or
+                        // desc.ftype == .packed_list or
+                        (desc.ftype == .scalar and
+                            (desc.ftype.scalar == .string or desc.ftype.scalar == .bytes)),
                     );
                     const slc: []const p.child = @field(root, field_name);
                     if (slc.len == 0) return;
@@ -712,7 +816,7 @@ fn deinitField(
                         .@"struct" => {
                             // Maps cannot be repeated; this is guaranteed
                             // to be a slice of submessages.
-                            comptime std.debug.assert(desc.ftype == .List);
+                            comptime std.debug.assert(desc.ftype == .list);
                             for (slc) |*item| {
                                 item.deinit(allocator);
                             }
@@ -741,7 +845,7 @@ fn deinitField(
                 .pointer => |p| {
                     if (comptime p.size == .one) {
                         comptime std.debug.assert(@typeInfo(p.child) == .@"struct");
-                        comptime std.debug.assert(desc.ftype == .SubMessage);
+                        comptime std.debug.assert(desc.ftype == .submessage);
 
                         @field(root, field_name).?.deinit(allocator);
                         allocator.destroy(@field(root, field_name).?);
@@ -917,7 +1021,7 @@ fn FixedDecoderIterator(comptime T: type) type {
     };
 }
 
-fn VarintDecoderIterator(comptime T: type, comptime varint_type: VarintEncoding) type {
+fn VarintDecoderIterator(comptime T: type, comptime scalar_type: FieldType.Scalar) type {
     return struct {
         const Self = @This();
 
@@ -928,7 +1032,7 @@ fn VarintDecoderIterator(comptime T: type, comptime varint_type: VarintEncoding)
             if (self.current_index < self.input.len) {
                 const raw_value = try decode_varint(u64, self.input[self.current_index..]);
                 defer self.current_index += raw_value.size;
-                return try decode_varint_value(T, varint_type, raw_value.value);
+                return try decode_varint_value(T, scalar_type, raw_value.value);
             }
             return null;
         }
@@ -1012,28 +1116,32 @@ pub const WireDecoderIterator = struct {
 };
 
 /// Get a real varint of type T from a raw u64 data.
-fn decode_varint_value(comptime T: type, comptime varint_type: VarintEncoding, raw: u64) DecodingError!T {
-    return switch (varint_type) {
-        .ZigZagOptimized => switch (@typeInfo(T)) {
-            .int => wire.ZigZag.decode(T, raw),
-            .@"enum" => std.meta.intToEnum(T, wire.ZigZag.decode(i32, raw)) catch DecodingError.InvalidInput, // should never happen, enums are int32 simple?
-            else => @compileError("Invalid type passed"),
+fn decode_varint_value(comptime T: type, comptime scalar_type: FieldType.Scalar, raw: u64) DecodingError!T {
+    if (comptime scalar_type.isZigZag()) {
+        return wire.ZigZag.decode(T, raw);
+    }
+    if (comptime T == bool) {
+        return raw != 0;
+    }
+    if (comptime T == i64) {
+        return @bitCast(raw);
+    }
+    if (comptime T == i32) {
+        return std.math.cast(i32, @as(i64, @bitCast(raw))) orelse error.InvalidInput;
+    }
+    const ti = comptime @typeInfo(T);
+    switch (comptime ti) {
+        .int => |i| {
+            if (comptime i.signedness == .unsigned) {
+                return @as(T, @intCast(raw));
+            } else unreachable;
         },
-        .Simple => switch (@typeInfo(T)) {
-            .int => switch (T) {
-                u8, u16, u32, u64 => @as(T, @intCast(raw)),
-                i64 => @as(T, @bitCast(raw)),
-                i32 => std.math.cast(i32, @as(i64, @bitCast(raw))) orelse error.InvalidInput,
-                else => @compileError("Invalid type " ++ @typeName(T) ++ " passed"),
-            },
-            .bool => raw != 0,
-            .@"enum" => block: {
-                const as_u32: u32 = std.math.cast(u32, raw) orelse return DecodingError.InvalidInput;
-                break :block std.meta.intToEnum(T, @as(i32, @bitCast(as_u32))) catch DecodingError.InvalidInput;
-            },
-            else => @compileError("Invalid type " ++ @typeName(T) ++ " passed"),
+        .@"enum" => {
+            const as_u32: u32 = std.math.cast(u32, raw) orelse return DecodingError.InvalidInput;
+            return std.meta.intToEnum(T, @as(i32, @bitCast(as_u32))) catch DecodingError.InvalidInput;
         },
-    };
+        else => unreachable,
+    }
 }
 
 /// Get a real fixed value of type T from a raw u64 value.
@@ -1049,36 +1157,39 @@ fn decode_fixed_value(comptime T: type, raw: u64) T {
 /// this function receives a slice of a message and decodes one by one the elements of the packet list until the slice is exhausted
 fn decode_packed_list(
     slice: []const u8,
-    comptime list_type: ListType,
+    comptime list_type: FieldType.List,
     comptime T: type,
     array: *std.ArrayListUnmanaged(T),
     allocator: std.mem.Allocator,
 ) (DecodingError || std.mem.Allocator.Error)!void {
     switch (list_type) {
-        .FixedInt => {
-            switch (T) {
-                u32, i32, u64, i64, f32, f64 => {
-                    var fixed_iterator = FixedDecoderIterator(T){ .input = slice };
-                    while (fixed_iterator.next()) |value| {
-                        try array.append(allocator, value);
-                    }
-                },
-                else => @compileError("Type not accepted for FixedInt: " ++ @typeName(T)),
-            }
+        .scalar => |scalar| switch (scalar) {
+            .float, .double, .fixed32, .fixed64, .sfixed32, .sfixed64 => {
+                switch (T) {
+                    u32, i32, u64, i64, f32, f64 => {
+                        var fixed_iterator = FixedDecoderIterator(T){ .input = slice };
+                        while (fixed_iterator.next()) |value| {
+                            try array.append(allocator, value);
+                        }
+                    },
+                    else => @compileError("Type not accepted for FixedInt: " ++ @typeName(T)),
+                }
+            },
+            .string, .bytes => {
+                var varint_iterator = LengthDelimitedDecoderIterator{ .input = slice };
+                while (try varint_iterator.next()) |value| {
+                    try array.append(allocator, try allocator.dupe(u8, value));
+                }
+            },
+            else => {
+                var varint_iterator = VarintDecoderIterator(T, scalar){ .input = slice };
+                while (try varint_iterator.next()) |value| {
+                    try array.append(allocator, value);
+                }
+            },
         },
-        .Varint => |varint_type| {
-            var varint_iterator = VarintDecoderIterator(T, varint_type){ .input = slice };
-            while (try varint_iterator.next()) |value| {
-                try array.append(allocator, value);
-            }
-        },
-        .String => {
-            var varint_iterator = LengthDelimitedDecoderIterator{ .input = slice };
-            while (try varint_iterator.next()) |value| {
-                try array.append(allocator, try allocator.dupe(u8, value));
-            }
-        },
-        .Bytes, .SubMessage =>
+        .@"enum" => {},
+        .submessage =>
         // submessages are not suitable for packed lists yet, but the wire message can be malformed
         return error.InvalidInput,
     }
@@ -1092,15 +1203,26 @@ fn decode_value(
     allocator: std.mem.Allocator,
 ) (DecodingError || std.mem.Allocator.Error)!Decoded {
     return switch (ftype) {
-        .Varint => |varint_type| switch (extracted_data.data) {
-            .RawValue => |value| try decode_varint_value(Decoded, varint_type, value),
+        .scalar => |scalar| switch (scalar) {
+            .float, .double, .fixed32, .fixed64, .sfixed32, .sfixed64 => switch (extracted_data.data) {
+                .RawValue => |value| decode_fixed_value(Decoded, value),
+                .Slice => error.InvalidInput,
+            },
+            .string, .bytes => switch (extracted_data.data) {
+                .Slice => |slice| try allocator.dupe(u8, slice),
+                .RawValue => error.InvalidInput,
+            },
+            else => switch (extracted_data.data) {
+                .RawValue => |value| try decode_varint_value(Decoded, scalar, value),
+                .Slice => error.InvalidInput,
+            },
+        },
+        .@"enum" => switch (extracted_data.data) {
+            .RawValue => |value| try decode_varint_value(Decoded, .int32, value),
             .Slice => error.InvalidInput,
         },
-        .FixedInt => switch (extracted_data.data) {
-            .RawValue => |value| decode_fixed_value(Decoded, value),
-            .Slice => error.InvalidInput,
-        },
-        .SubMessage => switch (extracted_data.data) {
+
+        .submessage => switch (extracted_data.data) {
             .Slice => |slice| b: {
                 switch (comptime @typeInfo(Decoded)) {
                     .@"struct" => {
@@ -1144,11 +1266,7 @@ fn decode_value(
             },
             .RawValue => error.InvalidInput,
         },
-        .String, .Bytes => switch (extracted_data.data) {
-            .Slice => |slice| try allocator.dupe(u8, slice),
-            .RawValue => error.InvalidInput,
-        },
-        .List, .PackedList, .OneOf => {
+        .list, .packed_list, .oneof => {
             log.err("Invalid scalar type {any}\n", .{ftype});
             return error.InvalidInput;
         },
@@ -1164,7 +1282,7 @@ fn decode_data(
     allocator: std.mem.Allocator,
 ) (DecodingError || std.mem.Allocator.Error)!void {
     switch (field_desc.ftype) {
-        .Varint, .FixedInt, .SubMessage, .String, .Bytes => {
+        .scalar, .@"enum", .submessage => {
             // first try to release the current value
             deinitField(allocator, result, field.name);
 
@@ -1174,37 +1292,39 @@ fn decode_data(
                 else => @field(result, field.name) = try decode_value(field.type, field_desc.ftype, extracted_data, allocator),
             }
         },
-        .List, .PackedList => |list_type| {
+        .list, .packed_list => |list_type| {
             const child_type = @typeInfo(@TypeOf(@field(result, field.name).items)).pointer.child;
 
             switch (list_type) {
-                .Varint => |varint_type| {
-                    switch (extracted_data.data) {
-                        .RawValue => |value| try @field(result, field.name).append(allocator, try decode_varint_value(child_type, varint_type, value)),
-                        .Slice => |slice| try decode_packed_list(slice, list_type, child_type, &@field(result, field.name), allocator),
-                    }
-                },
-                .FixedInt => |_| {
-                    switch (extracted_data.data) {
+                .scalar => |scalar| switch (scalar) {
+                    .string, .bytes => switch (extracted_data.data) {
+                        .Slice => |slice| {
+                            try @field(result, field.name).append(allocator, try allocator.dupe(u8, slice));
+                        },
+                        .RawValue => return error.InvalidInput,
+                    },
+                    .float, .double, .fixed32, .fixed64, .sfixed32, .sfixed64 => switch (extracted_data.data) {
                         .RawValue => |value| try @field(result, field.name).append(allocator, decode_fixed_value(child_type, value)),
                         .Slice => |slice| try decode_packed_list(slice, list_type, child_type, &@field(result, field.name), allocator),
-                    }
+                    },
+                    else => switch (extracted_data.data) {
+                        .RawValue => |value| try @field(result, field.name).append(allocator, try decode_varint_value(child_type, scalar, value)),
+                        .Slice => |slice| try decode_packed_list(slice, list_type, child_type, &@field(result, field.name), allocator),
+                    },
                 },
-                .SubMessage => switch (extracted_data.data) {
+                .@"enum" => switch (extracted_data.data) {
+                    .RawValue => |value| try @field(result, field.name).append(allocator, try decode_varint_value(child_type, .int32, value)),
+                    .Slice => |slice| try decode_packed_list(slice, list_type, child_type, &@field(result, field.name), allocator),
+                },
+                .submessage => switch (extracted_data.data) {
                     .Slice => |slice| {
                         try @field(result, field.name).append(allocator, try child_type.decode(slice, allocator));
                     },
                     .RawValue => return error.InvalidInput,
                 },
-                .String, .Bytes => switch (extracted_data.data) {
-                    .Slice => |slice| {
-                        try @field(result, field.name).append(allocator, try allocator.dupe(u8, slice));
-                    },
-                    .RawValue => return error.InvalidInput,
-                },
             }
         },
-        .OneOf => |one_of| {
+        .oneof => |one_of| {
             // the following code:
             // 1. creates a compile time for iterating over all `one_of._desc_table` fields
             // 2. when a match is found, it creates the union value in the `field.name` property of the struct `result`. breaks the for at that point
@@ -1228,7 +1348,7 @@ inline fn is_tag_known(comptime field_desc: FieldDescriptor, tag_to_check: Extra
     if (field_desc.field_number) |field_number| {
         return field_number == tag_to_check.field_number;
     } else {
-        const desc_union = field_desc.ftype.OneOf._desc_table;
+        const desc_union = field_desc.ftype.oneof._desc_table;
         inline for (@typeInfo(@TypeOf(desc_union)).@"struct".fields) |union_field| {
             if (is_tag_known(@field(desc_union, union_field.name), tag_to_check)) {
                 return true;
@@ -1271,11 +1391,11 @@ test "get varint" {
 
     const w = pb.writer(std.testing.allocator);
 
-    try writeVarint(w.any(), @as(i32, 0x12c), .Simple);
-    try writeVarint(w.any(), @as(i32, 0x0), .Simple);
-    try writeVarint(w.any(), @as(i32, 0x1), .Simple);
-    try writeVarint(w.any(), @as(i32, 0xA1), .Simple);
-    try writeVarint(w.any(), @as(i32, 0xFF), .Simple);
+    try writeVarint(w.any(), @as(i32, 0x12c), .int32);
+    try writeVarint(w.any(), @as(i32, 0x0), .int32);
+    try writeVarint(w.any(), @as(i32, 0x1), .int32);
+    try writeVarint(w.any(), @as(i32, 0xA1), .int32);
+    try writeVarint(w.any(), @as(i32, 0xFF), .int32);
 
     try std.testing.expectEqualSlices(u8, &[_]u8{ 0b10101100, 0b00000010, 0x0, 0x1, 0xA1, 0x1, 0xFF, 0x01 }, pb.items);
 }
@@ -1319,9 +1439,9 @@ test "encode and decode multiple varints" {
     const list = &[_]u64{ 0, 1, 2, 3, 199, 0xff, 0xfa, 1231313, 999288361, 0, 0xfffffff, 0x80808080, 0xffffffff };
 
     for (list) |num|
-        try writeVarint(w.any(), num, .Simple);
+        try writeVarint(w.any(), num, .uint64);
 
-    var demo = VarintDecoderIterator(u64, .Simple){ .input = pb.items };
+    var demo = VarintDecoderIterator(u64, .uint64){ .input = pb.items };
 
     for (list) |num|
         try std.testing.expectEqual(num, (try demo.next()).?);
@@ -1330,7 +1450,7 @@ test "encode and decode multiple varints" {
 }
 
 test VarintDecoderIterator {
-    var demo = VarintDecoderIterator(u64, .Simple){ .input = "\x01\x02\x03\x04\xA1\x01" };
+    var demo = VarintDecoderIterator(u64, .uint64){ .input = "\x01\x02\x03\x04\xA1\x01" };
     try std.testing.expectEqual(demo.next(), 1);
     try std.testing.expectEqual(demo.next(), 2);
     try std.testing.expectEqual(demo.next(), 3);
@@ -1363,7 +1483,7 @@ test "unit varint packed - decode - multi-byte-varint" {
     var list: std.ArrayListUnmanaged(u32) = .empty;
     defer list.deinit(std.testing.allocator);
 
-    try decode_packed_list(bytes, .{ .Varint = .Simple }, u32, &list, std.testing.allocator);
+    try decode_packed_list(bytes, .{ .scalar = .uint32 }, u32, &list, std.testing.allocator);
 
     try std.testing.expectEqualSlices(u32, &[_]u32{ 3, 270, 86942 }, list.items);
 }
@@ -1404,17 +1524,17 @@ test "zigzag i32 - encode" {
 
     // -500 (.ZigZag)  encodes to {0xE7,0x07} which equals to 999 (.Simple)
 
-    try writeAsVarint(w.any(), @as(i32, -500), .ZigZagOptimized);
+    try writeAsVarint(w.any(), @as(i32, -500), .sint32);
     try std.testing.expectEqualSlices(u8, input, pb.items);
 }
 
 test "zigzag i32/i64 - decode" {
-    try std.testing.expectEqual(@as(i32, 1), try decode_varint_value(i32, .ZigZagOptimized, 2));
-    try std.testing.expectEqual(@as(i32, -2), try decode_varint_value(i32, .ZigZagOptimized, 3));
-    try std.testing.expectEqual(@as(i32, -500), try decode_varint_value(i32, .ZigZagOptimized, 999));
-    try std.testing.expectEqual(@as(i64, -500), try decode_varint_value(i64, .ZigZagOptimized, 999));
-    try std.testing.expectEqual(@as(i64, -500), try decode_varint_value(i64, .ZigZagOptimized, 999));
-    try std.testing.expectEqual(@as(i64, -0x80000000), try decode_varint_value(i64, .ZigZagOptimized, 0xffffffff));
+    try std.testing.expectEqual(@as(i32, 1), try decode_varint_value(i32, .sint32, 2));
+    try std.testing.expectEqual(@as(i32, -2), try decode_varint_value(i32, .sint32, 3));
+    try std.testing.expectEqual(@as(i32, -500), try decode_varint_value(i32, .sint32, 999));
+    try std.testing.expectEqual(@as(i64, -500), try decode_varint_value(i64, .sint64, 999));
+    try std.testing.expectEqual(@as(i64, -500), try decode_varint_value(i64, .sint64, 999));
+    try std.testing.expectEqual(@as(i64, -0x80000000), try decode_varint_value(i64, .sint64, 0xffffffff));
 }
 
 test "zigzag i64 - encode" {
@@ -1427,7 +1547,7 @@ test "zigzag i64 - encode" {
 
     // -500 (.ZigZag)  encodes to {0xE7,0x07} which equals to 999 (.Simple)
 
-    try writeAsVarint(w.any(), @as(i64, -500), .ZigZagOptimized);
+    try writeAsVarint(w.any(), @as(i64, -500), .sint64);
     try std.testing.expectEqualSlices(u8, input, pb.items);
 }
 
@@ -1445,18 +1565,18 @@ test "incorrect data - simple varint" {
     // possible valid varint width -- that data can make its way deep into the
     // decode_varint_value routine. This test checks that we handle such failures
     // gracefully rather than panicking.
-    const max_u64 = decode_varint_value(enum(i32) { a, b, c }, .Simple, (1 << 64) - 1);
-    const barely_too_big = decode_varint_value(enum(i32) { a, b, c }, .Simple, 1 << 32);
+    const max_u64 = decode_varint_value(enum(i32) { a, b, c }, .int32, (1 << 64) - 1);
+    const barely_too_big = decode_varint_value(enum(i32) { a, b, c }, .int32, 1 << 32);
 
     try std.testing.expectError(error.InvalidInput, max_u64);
     try std.testing.expectError(error.InvalidInput, barely_too_big);
 }
 
 test "correct data - simple varint" {
-    const enum_a = try decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, (1 << 32) - 1);
-    const enum_b = try decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, 0);
-    const enum_c = try decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, 1);
-    const enum_d = try decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, 2);
+    const enum_a = try decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .int32, (1 << 32) - 1);
+    const enum_b = try decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .int32, 0);
+    const enum_c = try decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .int32, 1);
+    const enum_d = try decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .int32, 2);
 
     try std.testing.expectEqual(.a, enum_a);
     try std.testing.expectEqual(.b, enum_b);
@@ -1467,11 +1587,11 @@ test "correct data - simple varint" {
 test "invalid enum values" {
     try std.testing.expectError(
         DecodingError.InvalidInput,
-        decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, (1 << 64) - 1),
+        decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .int32, (1 << 64) - 1),
     );
     try std.testing.expectError(
         DecodingError.InvalidInput,
-        decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .Simple, 4),
+        decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .int32, 4),
     );
 }
 

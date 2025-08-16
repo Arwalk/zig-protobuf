@@ -10,8 +10,8 @@ pub const SelfRefNode = struct {
     node: ?*SelfRefNode = null,
 
     pub const _desc_table = .{
-        .version = fd(1, .{ .Varint = .Simple }),
-        .node = fd(2, .{ .SubMessage = {} }),
+        .version = fd(1, .{ .scalar = .int32 }),
+        .node = fd(2, .submessage),
     };
 
     pub fn encode(

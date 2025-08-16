@@ -199,30 +199,31 @@ fn stringify_struct_field(
     }
 
     switch (field_descriptor.ftype) {
-        .Bytes => {
-            // ManagedString representing protobuf's "bytes" type
-            try print_bytes(value, jws);
+        .scalar => |scalar| switch (scalar) {
+            .bytes => try print_bytes(value, jws),
+            // `.string`s have their own jsonStringify implementation
+            .string => try jws.write(value),
+            else => try print_numeric(value, jws),
         },
-        .List, .PackedList => |list_type| {
+        .@"enum" => try print_numeric(value, jws),
+        .list, .packed_list => |list_type| {
             // ArrayListUnmanaged
             const slice = value.items;
             try jws.beginArray();
             for (slice) |el| {
                 switch (list_type) {
-                    .Varint, .FixedInt => {
-                        try print_numeric(el, jws);
+                    .scalar => |scalar| switch (scalar) {
+                        .bytes => try print_bytes(el, jws),
+                        .string => try jws.write(el),
+                        else => try print_numeric(el, jws),
                     },
-                    .Bytes => {
-                        try print_bytes(el, jws);
-                    },
-                    .String, .SubMessage => {
-                        try jws.write(el);
-                    },
+                    .@"enum" => try print_numeric(el, jws),
+                    .submessage => try jws.write(el),
                 }
             }
             try jws.endArray();
         },
-        .OneOf => |oneof| {
+        .oneof => |oneof| {
             // Tagged union type
             const union_info = @typeInfo(@TypeOf(value)).@"union";
             if (union_info.tag_type == null) {
@@ -238,19 +239,17 @@ fn stringify_struct_field(
                     const union_camel_case_name = comptime to_camel_case(union_field.name);
                     try jws.objectField(union_camel_case_name);
                     switch (@field(oneof._desc_table, union_field.name).ftype) {
-                        .Varint, .FixedInt => {
-                            try print_numeric(@field(value, union_field.name), jws);
+                        .scalar => |scalar| switch (scalar) {
+                            .bytes => try print_bytes(@field(value, union_field.name), jws),
+                            .string => try jws.write(@field(value, union_field.name)),
+                            else => try print_numeric(@field(value, union_field.name), jws),
                         },
-                        .Bytes => {
-                            try print_bytes(@field(value, union_field.name), jws);
-                        },
-                        .String, .SubMessage => {
-                            try jws.write(@field(value, union_field.name));
-                        },
-                        .List, .PackedList => {
+                        .@"enum" => try print_numeric(@field(value, union_field.name), jws),
+                        .submessage => try jws.write(@field(value, union_field.name)),
+                        .list, .packed_list => {
                             @compileError("Repeated fields are not allowed in oneof");
                         },
-                        .OneOf => {
+                        .oneof => {
                             @compileError("one oneof inside another? really?");
                         },
                     }
@@ -260,17 +259,10 @@ fn stringify_struct_field(
 
             try jws.endObject();
         },
-        .Varint, .FixedInt => {
-            try print_numeric(value, jws);
-        },
-        .SubMessage, .String => {
-            // .SubMessage's (generated structs) and .String's
-            //   (ManagedString's) have its own jsonStringify implementation
-            // Numeric types will be handled using default std.json parser
+        .submessage => {
+            // `.submessage`s (generated structs) have their own jsonStringify implementation
             try jws.write(value);
         },
-        // NOTE: You better not to use *else* here, see todo comment
-        //   at the end of parseStructField function above
     }
 }
 
@@ -286,7 +278,7 @@ fn parseStructField(
         T._desc_table,
         fieldInfo.name,
     ).ftype) {
-        .List, .PackedList => |list_type| list: {
+        .list, .packed_list => |list_type| list: {
             // repeated T -> ArrayListUnmanaged(T)
             switch (try source.peekNextTokenType()) {
                 .array_begin => {
@@ -302,8 +294,16 @@ fn parseStructField(
                         }
                         try array_list.ensureUnusedCapacity(allocator, 1);
                         array_list.appendAssumeCapacity(switch (list_type) {
-                            .Bytes => try parse_bytes(allocator, source, options),
-                            .Varint, .FixedInt, .SubMessage, .String => other: {
+                            .scalar => |scalar| switch (scalar) {
+                                .bytes => try parse_bytes(allocator, source, options),
+                                else => try std.json.innerParse(
+                                    child_type,
+                                    allocator,
+                                    source,
+                                    options,
+                                ),
+                            },
+                            .submessage, .@"enum" => other: {
                                 break :other try std.json.innerParse(
                                     child_type,
                                     allocator,
@@ -318,7 +318,7 @@ fn parseStructField(
                 else => return error.UnexpectedToken,
             }
         },
-        .OneOf => |oneof| oneof: {
+        .oneof => |oneof| oneof: {
             // oneof -> union
             var union_value: switch (@typeInfo(
                 @TypeOf(@field(result.*, fieldInfo.name)),
@@ -368,14 +368,16 @@ fn parseStructField(
                             oneof._desc_table,
                             union_field.name,
                         ).ftype) {
-                            .Bytes => bytes: {
-                                break :bytes try parse_bytes(
+                            .scalar => |scalar| switch (scalar) {
+                                .bytes => try parse_bytes(allocator, source, options),
+                                else => try std.json.innerParse(
+                                    union_field.type,
                                     allocator,
                                     source,
                                     options,
-                                );
+                                ),
                             },
-                            .Varint, .FixedInt, .SubMessage, .String => other: {
+                            .submessage, .@"enum" => other: {
                                 break :other try std.json.innerParse(
                                     union_field.type,
                                     allocator,
@@ -383,10 +385,10 @@ fn parseStructField(
                                     options,
                                 );
                             },
-                            .List, .PackedList => {
+                            .list, .packed_list => {
                                 @compileError("Repeated fields are not allowed in oneof");
                             },
-                            .OneOf => {
+                            .oneof => {
                                 @compileError("one oneof inside another? really?");
                             },
                         },
@@ -398,20 +400,23 @@ fn parseStructField(
                 }
             } else return error.UnknownField;
         },
-        .Bytes => bytes: {
-            // "bytes" -> ManagedString
-            break :bytes try parse_bytes(allocator, source, options);
-        },
-        .Varint, .FixedInt, .SubMessage, .String => other: {
-            // .SubMessage's (generated structs) and .String's
-            //   (ManagedString's) have its own jsonParse implementation
+        // `.submessage`s (generated structs) have their own jsonParse implementation
+        .@"enum", .submessage => try std.json.innerParse(
+            fieldInfo.type,
+            allocator,
+            source,
+            options,
+        ),
+        .scalar => |scalar| switch (scalar) {
+            .bytes => try parse_bytes(allocator, source, options),
+            // `.string`s have their own jsonParse implementation
             // Numeric types will be handled using default std.json parser
-            break :other try std.json.innerParse(
+            else => try std.json.innerParse(
                 fieldInfo.type,
                 allocator,
                 source,
                 options,
-            );
+            ),
         },
         // TODO: ATM there's no support for Timestamp, Duration
         //   and some other protobuf types (see progress at
