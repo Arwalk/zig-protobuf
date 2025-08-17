@@ -151,54 +151,176 @@ pub const ZigZag = struct {
         );
     }
 
-    pub fn decode(comptime T: type, zig_zag_int: u64) !T {
-        comptime {
-            switch (T) {
-                i32, i64 => {},
-                else => @compileError("should only pass i32 or i64 here"),
-            }
-        }
+    pub fn decode(raw_int: anytype) @TypeOf(raw_int) {
+        const RawInt = @TypeOf(raw_int);
+        comptime std.debug.assert(RawInt == i32 or RawInt == i64);
 
-        const v: T = block: {
-            var v = zig_zag_int >> 1;
-            if (zig_zag_int & 0x1 != 0) {
-                v = v ^ (~@as(u64, 0));
-            }
+        const unsigned: if (RawInt == i32) u32 else u64 = @bitCast(raw_int);
 
-            const bitcasted: i64 = @as(i64, @bitCast(v));
-
-            break :block std.math.cast(T, bitcasted) orelse return error.InvalidInput;
-        };
-
-        return v;
+        if (raw_int & 0x1 == 0) return @bitCast(unsigned >> 1);
+        return @bitCast(
+            (unsigned >> 1) ^ (comptime ~@as(@TypeOf(unsigned), 0)),
+        );
     }
 
     test decode {
-        try std.testing.expectEqual(@as(i32, 0), ZigZag.decode(i32, 0));
-        try std.testing.expectEqual(@as(i32, -1), ZigZag.decode(i32, 1));
-        try std.testing.expectEqual(@as(i32, 1), ZigZag.decode(i32, 2));
+        try std.testing.expectEqual(0, ZigZag.decode(@as(i32, 0)));
+        try std.testing.expectEqual(-1, ZigZag.decode(@as(i32, 1)));
+        try std.testing.expectEqual(1, ZigZag.decode(@as(i32, 2)));
         try std.testing.expectEqual(
-            @as(i32, std.math.maxInt(i32)),
-            ZigZag.decode(i32, 0xfffffffe),
+            std.math.maxInt(i32),
+            ZigZag.decode(@as(i32, @bitCast(@as(u32, 0xfffffffe)))),
         );
         try std.testing.expectEqual(
-            @as(i32, std.math.minInt(i32)),
-            ZigZag.decode(i32, 0xffffffff),
+            std.math.minInt(i32),
+            ZigZag.decode(@as(i32, @bitCast(@as(u32, 0xffffffff)))),
         );
+        try std.testing.expectEqual(-2, ZigZag.decode(@as(i32, 3)));
+        try std.testing.expectEqual(-500, ZigZag.decode(@as(i32, 999)));
 
-        try std.testing.expectEqual(@as(i64, 0), ZigZag.decode(i64, 0));
-        try std.testing.expectEqual(@as(i64, -1), ZigZag.decode(i64, 1));
-        try std.testing.expectEqual(@as(i64, 1), ZigZag.decode(i64, 2));
+        try std.testing.expectEqual(0, ZigZag.decode(@as(i64, 0)));
+        try std.testing.expectEqual(-1, ZigZag.decode(@as(i64, 1)));
+        try std.testing.expectEqual(1, ZigZag.decode(@as(i64, 2)));
         try std.testing.expectEqual(
-            @as(i64, std.math.maxInt(i64)),
-            ZigZag.decode(i64, 0xfffffffffffffffe),
+            std.math.maxInt(i64),
+            ZigZag.decode(@as(i64, @bitCast(@as(u64, 0xfffffffffffffffe)))),
         );
         try std.testing.expectEqual(
-            @as(i64, std.math.minInt(i64)),
-            ZigZag.decode(i64, 0xffffffffffffffff),
+            std.math.minInt(i64),
+            ZigZag.decode(@as(i64, @bitCast(@as(u64, 0xffffffffffffffff)))),
         );
+        try std.testing.expectEqual(-500, ZigZag.decode(@as(i64, 999)));
     }
 };
+
+/// Decode a non-slice scalar type from reader. Slice scalar types should be
+/// decoded by directly reading a slice from the reader.
+pub fn decodeScalar(
+    comptime scalar: protobuf.FieldType.Scalar,
+    reader: std.io.AnyReader,
+) (std.io.AnyReader.Error || protobuf.DecodingError)!scalar.toType() {
+    comptime std.debug.assert(!scalar.isSlice());
+
+    if (comptime scalar.isVariable()) {
+        const Result = if (comptime scalar == .int32)
+            i64
+        else
+            comptime scalar.toType();
+
+        var val: Result = 0;
+        const max_bytes: comptime_int = comptime b: {
+            var byte_count: usize = 0;
+            while (7 * byte_count < @bitSizeOf(Result)) {
+                byte_count += 1;
+            }
+
+            // Valid negative values for `int32`, e.g. -1, may be sent in the
+            // `int64` equivalent encoding.
+            if (scalar == .int32) byte_count = 10;
+            break :b byte_count;
+        };
+        for (0..max_bytes) |i| {
+            const b = try reader.readByte();
+            const num = b & 0x7F;
+            val |= @as(Result, num) << @intCast(7 * i);
+            if (b >> 7 == 0) break;
+        } else {
+            @branchHint(.cold);
+            return error.InvalidInput;
+        }
+
+        // As `int32` may receive `int64` equivalent encoding values, ensure
+        // that values actually fit within `int32` range.
+        if (comptime scalar == .int32) {
+            if (val < std.math.minInt(i32) or val > std.math.maxInt(i32)) {
+                return error.InvalidInput;
+            }
+            return @intCast(val);
+        }
+
+        if (comptime scalar.isZigZag()) {
+            val = ZigZag.decode(val);
+        }
+
+        return val;
+    }
+
+    if (comptime scalar.isFixed()) {
+        const Unsigned = if (@bitSizeOf(scalar.toType()) == 32)
+            u32
+        else
+            u64;
+
+        var val: Unsigned = 0;
+        for (0..@sizeOf(Unsigned)) |i| {
+            const b = try reader.readByte();
+            val |= @as(Unsigned, b) << @intCast(8 * i);
+        }
+        return @bitCast(val);
+    }
+
+    if (comptime scalar == .bool) {
+        const b = try reader.readByte();
+        if (b == 0) {
+            return false;
+        } else if (b == 1) {
+            return true;
+        } else {
+            @branchHint(.cold);
+            return error.InvalidInput;
+        }
+    }
+}
+
+test decodeScalar {
+    {
+        const bytes: []const u8 = &.{ 0xFF, 0xFF, 0xFF, 0xFF, 0x0F };
+        var fbs = std.io.fixedBufferStream(bytes);
+        const r = fbs.reader();
+
+        const decoded: u32 = try decodeScalar(.uint32, r.any());
+
+        try std.testing.expectEqual(std.math.maxInt(u32), decoded);
+    }
+
+    {
+        const bytes: []const u8 = &.{ 0xFF, 0xFF, 0xFF, 0xFF, 0x0F };
+        var fbs = std.io.fixedBufferStream(bytes);
+        const r = fbs.reader();
+
+        const decoded: i32 = try decodeScalar(.sint32, r.any());
+
+        try std.testing.expectEqual(std.math.minInt(i32), decoded);
+    }
+
+    { // Oversized `int32` value
+        const bytes: []const u8 = &.{
+            0xFF,
+            0xFF,
+            0xFF,
+            0xFF,
+            0xFF,
+            0xFF,
+            0xFF,
+            0xFF,
+            0x7F,
+        };
+        var fbs = std.io.fixedBufferStream(bytes);
+        const r = fbs.reader();
+
+        const max_u64 = decodeScalar(.int32, r.any());
+        try std.testing.expectError(error.InvalidInput, max_u64);
+    }
+
+    { // Barely oversized `int32` value
+        const bytes: []const u8 = &.{ 0xFF, 0xFF, 0xFF, 0xFF, 0x10 };
+        var fbs = std.io.fixedBufferStream(bytes);
+        const r = fbs.reader();
+
+        const barely_too_big = decodeScalar(.int32, r.any());
+        try std.testing.expectError(error.InvalidInput, barely_too_big);
+    }
+}
 
 test {
     _ = Tag;
