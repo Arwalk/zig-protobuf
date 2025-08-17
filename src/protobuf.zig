@@ -32,92 +32,111 @@ pub const FieldType = union(enum) {
 
     pub const Tag = std.meta.Tag(FieldType);
 
-    pub const Scalar =
-        enum {
-            /// Uses variable-length encoding. Inefficient for encoding negative
-            /// numbers -- if your field is likely to have negative values, use
-            /// `sint32` instead.
-            int32,
-            /// Uses variable-length encoding. Inefficient for encoding negative
-            /// numbers -- if your field is likely to have negative values, use
-            /// `sint64` instead.
-            int64,
-            /// Uses variable-length encoding.
-            uint32,
-            /// Uses variable-length encoding.
-            uint64,
-            /// Uses variable-length encoding. Signed int value. These more
-            /// efficiently encode negative numbers than regular `int32`s.
-            sint32,
-            /// Uses variable-length encoding. Signed int value. These more
-            /// efficiently encode negative numbers than regular `int64`s.
-            sint64,
-            bool,
+    pub const Scalar = enum {
+        /// Uses variable-length encoding. Inefficient for encoding negative
+        /// numbers -- if your field is likely to have negative values, use
+        /// `sint32` instead.
+        int32,
+        /// Uses variable-length encoding. Inefficient for encoding negative
+        /// numbers -- if your field is likely to have negative values, use
+        /// `sint64` instead.
+        int64,
+        /// Uses variable-length encoding.
+        uint32,
+        /// Uses variable-length encoding.
+        uint64,
+        /// Uses variable-length encoding. Signed int value. These more
+        /// efficiently encode negative numbers than regular `int32`s.
+        sint32,
+        /// Uses variable-length encoding. Signed int value. These more
+        /// efficiently encode negative numbers than regular `int64`s.
+        sint64,
+        bool,
 
-            /// Uses IEEE 754 single-precision format.
-            float,
-            /// Uses IEEE 754 double-precision format.
-            double,
-            /// Always four bytes. More efficient than uint32 if values are often
-            /// greater than 2^28.
-            fixed32,
-            /// Always eight bytes. More efficient than uint64 if values are often
-            /// greater than 2^56.
-            fixed64,
-            /// Always four bytes.
-            sfixed32,
-            /// Always eight bytes.
-            sfixed64,
+        /// Uses IEEE 754 single-precision format.
+        float,
+        /// Uses IEEE 754 double-precision format.
+        double,
+        /// Always four bytes. More efficient than uint32 if values are often
+        /// greater than 2^28.
+        fixed32,
+        /// Always eight bytes. More efficient than uint64 if values are often
+        /// greater than 2^56.
+        fixed64,
+        /// Always four bytes.
+        sfixed32,
+        /// Always eight bytes.
+        sfixed64,
 
-            /// UTF-8 or 7-bit ASCII. Cannot be longer than 2^32.
-            string,
-            /// Arbitrary sequence of bytes. Cannot be longer than 2^32.
-            bytes,
+        /// UTF-8 or 7-bit ASCII. Cannot be longer than 2^32.
+        string,
+        /// Arbitrary sequence of bytes. Cannot be longer than 2^32.
+        bytes,
 
-            pub fn isZigZag(self: @This()) bool {
-                return switch (self) {
-                    .sint32, .sint64 => true,
-                    else => false,
-                };
-            }
+        pub fn isZigZag(self: @This()) bool {
+            return switch (self) {
+                .sint32, .sint64 => true,
+                else => false,
+            };
+        }
 
-            pub fn isFixed(self: @This()) bool {
-                return switch (self) {
-                    .float,
-                    .fixed32,
-                    .sfixed32,
-                    .double,
-                    .fixed64,
-                    .sfixed64,
-                    => true,
-                    else => false,
-                };
-            }
+        pub fn isVariable(self: @This()) bool {
+            return switch (self) {
+                .int32, .int64, .uint32, .uint64, .sint32, .sint64 => true,
+                else => false,
+            };
+        }
 
-            pub fn isNumeric(self: @This()) bool {
-                return self != .string and self != .bytes;
-            }
+        pub fn isFixed(self: @This()) bool {
+            return switch (self) {
+                .float,
+                .fixed32,
+                .sfixed32,
+                .double,
+                .fixed64,
+                .sfixed64,
+                => true,
+                else => false,
+            };
+        }
 
-            pub fn isSlice(self: @This()) bool {
-                return self == .string or self == .bytes;
-            }
+        pub fn isNumeric(self: @This()) bool {
+            return self != .string and self != .bytes;
+        }
 
-            pub fn toWire(self: @This()) wire.Type {
-                return switch (self) {
-                    .int32,
-                    .int64,
-                    .uint32,
-                    .uint64,
-                    .sint32,
-                    .sint64,
-                    .bool,
-                    => .varint,
-                    .float, .fixed32, .sfixed32 => .fixed32,
-                    .double, .fixed64, .sfixed64 => .fixed64,
-                    .string, .bytes => .len,
-                };
-            }
-        };
+        pub fn isSlice(self: @This()) bool {
+            return self == .string or self == .bytes;
+        }
+
+        pub fn toWire(self: @This()) wire.Type {
+            return switch (self) {
+                .int32,
+                .int64,
+                .uint32,
+                .uint64,
+                .sint32,
+                .sint64,
+                .bool,
+                => .varint,
+                .float, .fixed32, .sfixed32 => .fixed32,
+                .double, .fixed64, .sfixed64 => .fixed64,
+                .string, .bytes => .len,
+            };
+        }
+
+        pub fn toType(self: @This()) type {
+            return switch (self) {
+                .int32, .sint32, .sfixed32 => i32,
+                .int64, .sint64, .sfixed64 => i64,
+                .uint32, .fixed32 => u32,
+                .uint64, .fixed64 => u64,
+                .bool => bool,
+                .float => f32,
+                .double => f64,
+                .string, .bytes => []const u8,
+            };
+        }
+    };
 
     pub const List = union(enum) {
         scalar: Scalar,
@@ -1034,24 +1053,6 @@ fn FixedDecoderIterator(comptime T: type) type {
     };
 }
 
-fn VarintDecoderIterator(comptime T: type, comptime scalar_type: FieldType.Scalar) type {
-    return struct {
-        const Self = @This();
-
-        input: []const u8,
-        current_index: usize = 0,
-
-        fn next(self: *Self) DecodingError!?T {
-            if (self.current_index < self.input.len) {
-                const raw_value = try decode_varint(u64, self.input[self.current_index..]);
-                defer self.current_index += raw_value.size;
-                return try decode_varint_value(T, scalar_type, raw_value.value);
-            }
-            return null;
-        }
-    };
-}
-
 const LengthDelimitedDecoderIterator = struct {
     const Self = @This();
 
@@ -1089,14 +1090,25 @@ pub const WireDecoderIterator = struct {
             state.current_index += if (tag.field > 2047) 3 else if (tag.field > 15) 2 else 1;
             const data: ExtractedData = switch (tag.wire_type) {
                 .varint => blk: { // VARINT
-                    const varint = try decode_varint(u64, state.input[state.current_index..]);
-                    state.current_index += varint.size;
-                    break :blk ExtractedData{
-                        .RawValue = varint.value,
+                    var len: usize = 0;
+                    for (0..10) |i| {
+                        if (state.input[state.current_index + i] >> 7 == 0) {
+                            len = i + 1;
+                            break;
+                        }
+                    } else {
+                        return DecodingError.InvalidInput;
+                    }
+                    const value: ExtractedData = .{
+                        .Slice = state.input[state.current_index..][0..len],
                     };
+                    state.current_index += len;
+                    break :blk value;
                 },
                 .fixed64 => blk: { // 64BIT
-                    const value = ExtractedData{ .RawValue = decode_fixed(u64, state.input[state.current_index .. state.current_index + 8]) };
+                    const value: ExtractedData = .{
+                        .Slice = state.input[state.current_index..][0..8],
+                    };
                     state.current_index += 8;
                     break :blk value;
                 },
@@ -1115,7 +1127,9 @@ pub const WireDecoderIterator = struct {
                 },
                 .sgroup, .egroup => return null,
                 .fixed32 => blk: { // 32BIT
-                    const value = ExtractedData{ .RawValue = decode_fixed(u32, state.input[state.current_index .. state.current_index + 4]) };
+                    const value: ExtractedData = .{
+                        .Slice = state.input[state.current_index..][0..4],
+                    };
                     state.current_index += 4;
                     break :blk value;
                 },
@@ -1128,45 +1142,6 @@ pub const WireDecoderIterator = struct {
     }
 };
 
-/// Get a real varint of type T from a raw u64 data.
-fn decode_varint_value(comptime T: type, comptime scalar_type: FieldType.Scalar, raw: u64) DecodingError!T {
-    if (comptime scalar_type.isZigZag()) {
-        return wire.ZigZag.decode(T, raw);
-    }
-    if (comptime T == bool) {
-        return raw != 0;
-    }
-    if (comptime T == i64) {
-        return @bitCast(raw);
-    }
-    if (comptime T == i32) {
-        return std.math.cast(i32, @as(i64, @bitCast(raw))) orelse error.InvalidInput;
-    }
-    const ti = comptime @typeInfo(T);
-    switch (comptime ti) {
-        .int => |i| {
-            if (comptime i.signedness == .unsigned) {
-                return @as(T, @intCast(raw));
-            } else unreachable;
-        },
-        .@"enum" => {
-            const as_u32: u32 = std.math.cast(u32, raw) orelse return DecodingError.InvalidInput;
-            return std.meta.intToEnum(T, @as(i32, @bitCast(as_u32))) catch DecodingError.InvalidInput;
-        },
-        else => unreachable,
-    }
-}
-
-/// Get a real fixed value of type T from a raw u64 value.
-fn decode_fixed_value(comptime T: type, raw: u64) T {
-    return switch (T) {
-        i32, u32, f32 => @as(T, @bitCast(@as(std.meta.Int(.unsigned, @bitSizeOf(T)), @truncate(raw)))),
-        i64, f64, u64 => @as(T, @bitCast(raw)),
-        bool => raw != 0,
-        else => @as(T, @bitCast(raw)),
-    };
-}
-
 /// this function receives a slice of a message and decodes one by one the elements of the packet list until the slice is exhausted
 fn decode_packed_list(
     slice: []const u8,
@@ -1175,34 +1150,43 @@ fn decode_packed_list(
     array: *std.ArrayListUnmanaged(T),
     allocator: std.mem.Allocator,
 ) (DecodingError || std.mem.Allocator.Error)!void {
+    errdefer array.deinit(allocator);
     switch (comptime list_type) {
         .scalar => |scalar| {
-            if (comptime scalar.isFixed()) {
-                switch (comptime T) {
-                    u32, i32, u64, i64, f32, f64 => {
-                        var fixed_iterator = FixedDecoderIterator(T){ .input = slice };
-                        while (fixed_iterator.next()) |value| {
-                            try array.append(allocator, value);
-                        }
-                    },
-                    else => @compileError("Type not accepted for FixedInt: " ++ @typeName(T)),
-                }
-            } else if (comptime scalar.isSlice()) {
+            if (comptime scalar.isSlice()) {
                 var varint_iterator = LengthDelimitedDecoderIterator{ .input = slice };
                 while (try varint_iterator.next()) |value| {
                     try array.append(allocator, try allocator.dupe(u8, value));
                 }
             } else {
-                var varint_iterator = VarintDecoderIterator(T, scalar){ .input = slice };
-                while (try varint_iterator.next()) |value| {
-                    try array.append(allocator, value);
+                var fbs = std.io.fixedBufferStream(slice);
+                const r = fbs.reader();
+                while (true) {
+                    try array.append(
+                        allocator,
+                        wire.decodeScalar(scalar, r.any()) catch |e|
+                            switch (e) {
+                                error.EndOfStream => break,
+                                error.InvalidInput => return error.InvalidInput,
+                                else => unreachable,
+                            },
+                    );
                 }
             }
         },
         .@"enum" => {
-            var varint_iterator = VarintDecoderIterator(T, .int32){ .input = slice };
-            while (try varint_iterator.next()) |value| {
-                try array.append(allocator, value);
+            var fbs = std.io.fixedBufferStream(slice);
+            const r = fbs.reader();
+            while (true) {
+                const i = wire.decodeScalar(.int32, r.any()) catch |e|
+                    switch (e) {
+                        error.EndOfStream => break,
+                        else => unreachable,
+                    };
+                try array.append(
+                    allocator,
+                    std.meta.intToEnum(T, i) catch return error.InvalidInput,
+                );
             }
         },
         .submessage =>
@@ -1220,26 +1204,47 @@ fn decode_value(
 ) (DecodingError || std.mem.Allocator.Error)!Decoded {
     switch (ftype) {
         .scalar => |scalar| {
-            if (comptime scalar.isFixed()) {
-                return switch (extracted_data.data) {
-                    .RawValue => |value| decode_fixed_value(Decoded, value),
-                    .Slice => error.InvalidInput,
-                };
-            } else if (comptime scalar.isSlice()) {
+            if (comptime scalar.isSlice()) {
                 return switch (extracted_data.data) {
                     .Slice => |slice| try allocator.dupe(u8, slice),
                     .RawValue => error.InvalidInput,
                 };
             } else {
-                return switch (extracted_data.data) {
-                    .RawValue => |value| try decode_varint_value(Decoded, scalar, value),
-                    .Slice => error.InvalidInput,
-                };
+                switch (extracted_data.data) {
+                    .Slice => |slice| {
+                        var fbs = std.io.fixedBufferStream(slice);
+                        const r = fbs.reader();
+                        return wire.decodeScalar(
+                            scalar,
+                            r.any(),
+                        ) catch |e| switch (e) {
+                            error.InvalidInput,
+                            error.EndOfStream,
+                            => return error.InvalidInput,
+                            else => unreachable,
+                        };
+                    },
+                    .RawValue => return error.InvalidInput,
+                }
             }
         },
-        .@"enum" => return switch (extracted_data.data) {
-            .RawValue => |value| try decode_varint_value(Decoded, .int32, value),
-            .Slice => error.InvalidInput,
+        .@"enum" => switch (extracted_data.data) {
+            .Slice => |slice| {
+                var fbs = std.io.fixedBufferStream(slice);
+                const r = fbs.reader();
+                const i = wire.decodeScalar(
+                    .int32,
+                    r.any(),
+                ) catch |e| switch (e) {
+                    error.InvalidInput,
+                    error.EndOfStream,
+                    => return error.InvalidInput,
+                    else => unreachable,
+                };
+                return std.meta.intToEnum(Decoded, i) catch
+                    return error.InvalidInput;
+            },
+            .RawValue => return error.InvalidInput,
         },
 
         .submessage => return switch (extracted_data.data) {
@@ -1308,8 +1313,18 @@ fn decode_data(
 
             // then apply the new value
             switch (@typeInfo(field.type)) {
-                .optional => |optional| @field(result, field.name) = try decode_value(optional.child, field_desc.ftype, extracted_data, allocator),
-                else => @field(result, field.name) = try decode_value(field.type, field_desc.ftype, extracted_data, allocator),
+                .optional => |optional| @field(result, field.name) = try decode_value(
+                    optional.child,
+                    field_desc.ftype,
+                    extracted_data,
+                    allocator,
+                ),
+                else => @field(result, field.name) = try decode_value(
+                    field.type,
+                    field_desc.ftype,
+                    extracted_data,
+                    allocator,
+                ),
             }
         },
         .list, .packed_list => |list_type| {
@@ -1324,21 +1339,16 @@ fn decode_data(
                             },
                             .RawValue => return error.InvalidInput,
                         }
-                    } else if (comptime scalar.isFixed()) {
-                        switch (extracted_data.data) {
-                            .RawValue => |value| try @field(result, field.name).append(allocator, decode_fixed_value(child_type, value)),
-                            .Slice => |slice| try decode_packed_list(slice, list_type, child_type, &@field(result, field.name), allocator),
-                        }
                     } else {
                         switch (extracted_data.data) {
-                            .RawValue => |value| try @field(result, field.name).append(allocator, try decode_varint_value(child_type, scalar, value)),
                             .Slice => |slice| try decode_packed_list(slice, list_type, child_type, &@field(result, field.name), allocator),
+                            .RawValue => return error.InvalidInput,
                         }
                     }
                 },
                 .@"enum" => switch (extracted_data.data) {
-                    .RawValue => |value| try @field(result, field.name).append(allocator, try decode_varint_value(child_type, .int32, value)),
                     .Slice => |slice| try decode_packed_list(slice, list_type, child_type, &@field(result, field.name), allocator),
+                    .RawValue => return error.InvalidInput,
                 },
                 .submessage => switch (extracted_data.data) {
                     .Slice => |slice| {
@@ -1399,7 +1409,8 @@ pub fn decode(
         inline for (@typeInfo(rootType).@"struct".fields) |field| {
             const v = @field(rootType._desc_table, field.name);
             if (is_tag_known(v, extracted_data)) {
-                break try decode_data(rootType, v, field, &result, extracted_data, allocator);
+                try decode_data(rootType, v, field, &result, extracted_data, allocator);
+                break;
             }
         } else {
             log.debug("Unknown field received in {s} {any}\n", .{ @typeName(T), extracted_data.tag });
@@ -1465,22 +1476,12 @@ test "encode and decode multiple varints" {
     for (list) |num|
         try writeVarint(w.any(), num, .uint64);
 
-    var demo = VarintDecoderIterator(u64, .uint64){ .input = pb.items };
-
-    for (list) |num|
-        try std.testing.expectEqual(num, (try demo.next()).?);
-
-    try std.testing.expectEqual(demo.next(), null);
-}
-
-test VarintDecoderIterator {
-    var demo = VarintDecoderIterator(u64, .uint64){ .input = "\x01\x02\x03\x04\xA1\x01" };
-    try std.testing.expectEqual(demo.next(), 1);
-    try std.testing.expectEqual(demo.next(), 2);
-    try std.testing.expectEqual(demo.next(), 3);
-    try std.testing.expectEqual(demo.next(), 4);
-    try std.testing.expectEqual(demo.next(), 0xA1);
-    try std.testing.expectEqual(demo.next(), null);
+    var fbs = std.io.fixedBufferStream(pb.items);
+    const r = fbs.reader();
+    for (list) |num| {
+        const decoded = try wire.decodeScalar(.uint64, r.any());
+        try std.testing.expectEqual(num, decoded);
+    }
 }
 
 // TODO: the following two tests should work
@@ -1552,15 +1553,6 @@ test "zigzag i32 - encode" {
     try std.testing.expectEqualSlices(u8, input, pb.items);
 }
 
-test "zigzag i32/i64 - decode" {
-    try std.testing.expectEqual(@as(i32, 1), try decode_varint_value(i32, .sint32, 2));
-    try std.testing.expectEqual(@as(i32, -2), try decode_varint_value(i32, .sint32, 3));
-    try std.testing.expectEqual(@as(i32, -500), try decode_varint_value(i32, .sint32, 999));
-    try std.testing.expectEqual(@as(i64, -500), try decode_varint_value(i64, .sint64, 999));
-    try std.testing.expectEqual(@as(i64, -500), try decode_varint_value(i64, .sint64, 999));
-    try std.testing.expectEqual(@as(i64, -0x80000000), try decode_varint_value(i64, .sint64, 0xffffffff));
-}
-
 test "zigzag i64 - encode" {
     var pb: std.ArrayListUnmanaged(u8) = .empty;
     defer pb.deinit(std.testing.allocator);
@@ -1580,43 +1572,6 @@ test "incorrect data - decode" {
     const value = decode_varint(u32, input);
 
     try std.testing.expectError(error.InvalidInput, value);
-}
-
-test "incorrect data - simple varint" {
-    // Incorrectly serialized protobufs can place a varint with a decoded value
-    // greater than std.math.maxInt(u32) into the slot an enum is supposed to
-    // fill. Since this library represents a decoded varint as a u64 -- the max
-    // possible valid varint width -- that data can make its way deep into the
-    // decode_varint_value routine. This test checks that we handle such failures
-    // gracefully rather than panicking.
-    const max_u64 = decode_varint_value(enum(i32) { a, b, c }, .int32, (1 << 64) - 1);
-    const barely_too_big = decode_varint_value(enum(i32) { a, b, c }, .int32, 1 << 32);
-
-    try std.testing.expectError(error.InvalidInput, max_u64);
-    try std.testing.expectError(error.InvalidInput, barely_too_big);
-}
-
-test "correct data - simple varint" {
-    const enum_a = try decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .int32, (1 << 32) - 1);
-    const enum_b = try decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .int32, 0);
-    const enum_c = try decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .int32, 1);
-    const enum_d = try decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .int32, 2);
-
-    try std.testing.expectEqual(.a, enum_a);
-    try std.testing.expectEqual(.b, enum_b);
-    try std.testing.expectEqual(.c, enum_c);
-    try std.testing.expectEqual(.d, enum_d);
-}
-
-test "invalid enum values" {
-    try std.testing.expectError(
-        DecodingError.InvalidInput,
-        decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .int32, (1 << 64) - 1),
-    );
-    try std.testing.expectError(
-        DecodingError.InvalidInput,
-        decode_varint_value(enum(i32) { a = -1, b = 0, c = 1, d = 2 }, .int32, 4),
-    );
 }
 
 test {
