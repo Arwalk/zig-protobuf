@@ -55,7 +55,7 @@ pub const FixedSizes = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -137,7 +137,7 @@ pub const WithEnum = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -211,7 +211,7 @@ pub const WithEnumShadow = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -261,10 +261,10 @@ pub const WithEnumShadow = struct {
 };
 
 pub const RepeatedEnum = struct {
-    value: std.ArrayListUnmanaged(TopLevelEnum),
+    value: std.ArrayListUnmanaged(TopLevelEnum) = .empty,
 
     pub const _desc_table = .{
-        .value = fd(1, .{ .list = .@"enum" }),
+        .value = fd(1, .{ .repeated = .@"enum" }),
     };
 
     pub fn encode(
@@ -278,7 +278,7 @@ pub const RepeatedEnum = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -328,28 +328,28 @@ pub const RepeatedEnum = struct {
 };
 
 pub const Packed = struct {
-    int32_list: std.ArrayListUnmanaged(i32),
-    uint32_list: std.ArrayListUnmanaged(u32),
-    sint32_list: std.ArrayListUnmanaged(i32),
-    float_list: std.ArrayListUnmanaged(f32),
-    double_list: std.ArrayListUnmanaged(f64),
-    int64_list: std.ArrayListUnmanaged(i64),
-    sint64_list: std.ArrayListUnmanaged(i64),
-    uint64_list: std.ArrayListUnmanaged(u64),
-    bool_list: std.ArrayListUnmanaged(bool),
-    enum_list: std.ArrayListUnmanaged(TopLevelEnum),
+    int32_list: std.ArrayListUnmanaged(i32) = .empty,
+    uint32_list: std.ArrayListUnmanaged(u32) = .empty,
+    sint32_list: std.ArrayListUnmanaged(i32) = .empty,
+    float_list: std.ArrayListUnmanaged(f32) = .empty,
+    double_list: std.ArrayListUnmanaged(f64) = .empty,
+    int64_list: std.ArrayListUnmanaged(i64) = .empty,
+    sint64_list: std.ArrayListUnmanaged(i64) = .empty,
+    uint64_list: std.ArrayListUnmanaged(u64) = .empty,
+    bool_list: std.ArrayListUnmanaged(bool) = .empty,
+    enum_list: std.ArrayListUnmanaged(TopLevelEnum) = .empty,
 
     pub const _desc_table = .{
-        .int32_list = fd(1, .{ .packed_list = .{ .scalar = .int32 } }),
-        .uint32_list = fd(2, .{ .packed_list = .{ .scalar = .uint32 } }),
-        .sint32_list = fd(3, .{ .packed_list = .{ .scalar = .sint32 } }),
-        .float_list = fd(4, .{ .packed_list = .{ .scalar = .float } }),
-        .double_list = fd(5, .{ .packed_list = .{ .scalar = .double } }),
-        .int64_list = fd(6, .{ .packed_list = .{ .scalar = .int64 } }),
-        .sint64_list = fd(7, .{ .packed_list = .{ .scalar = .sint64 } }),
-        .uint64_list = fd(8, .{ .packed_list = .{ .scalar = .uint64 } }),
-        .bool_list = fd(9, .{ .packed_list = .{ .scalar = .bool } }),
-        .enum_list = fd(10, .{ .packed_list = .@"enum" }),
+        .int32_list = fd(1, .{ .packed_repeated = .{ .scalar = .int32 } }),
+        .uint32_list = fd(2, .{ .packed_repeated = .{ .scalar = .uint32 } }),
+        .sint32_list = fd(3, .{ .packed_repeated = .{ .scalar = .sint32 } }),
+        .float_list = fd(4, .{ .packed_repeated = .{ .scalar = .float } }),
+        .double_list = fd(5, .{ .packed_repeated = .{ .scalar = .double } }),
+        .int64_list = fd(6, .{ .packed_repeated = .{ .scalar = .int64 } }),
+        .sint64_list = fd(7, .{ .packed_repeated = .{ .scalar = .sint64 } }),
+        .uint64_list = fd(8, .{ .packed_repeated = .{ .scalar = .uint64 } }),
+        .bool_list = fd(9, .{ .packed_repeated = .{ .scalar = .bool } }),
+        .enum_list = fd(10, .{ .packed_repeated = .@"enum" }),
     };
 
     pub fn encode(
@@ -363,7 +363,7 @@ pub const Packed = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -413,28 +413,28 @@ pub const Packed = struct {
 };
 
 pub const UnPacked = struct {
-    int32_list: std.ArrayListUnmanaged(i32),
-    uint32_list: std.ArrayListUnmanaged(u32),
-    sint32_list: std.ArrayListUnmanaged(i32),
-    float_list: std.ArrayListUnmanaged(f32),
-    double_list: std.ArrayListUnmanaged(f64),
-    int64_list: std.ArrayListUnmanaged(i64),
-    sint64_list: std.ArrayListUnmanaged(i64),
-    uint64_list: std.ArrayListUnmanaged(u64),
-    bool_list: std.ArrayListUnmanaged(bool),
-    enum_list: std.ArrayListUnmanaged(TopLevelEnum),
+    int32_list: std.ArrayListUnmanaged(i32) = .empty,
+    uint32_list: std.ArrayListUnmanaged(u32) = .empty,
+    sint32_list: std.ArrayListUnmanaged(i32) = .empty,
+    float_list: std.ArrayListUnmanaged(f32) = .empty,
+    double_list: std.ArrayListUnmanaged(f64) = .empty,
+    int64_list: std.ArrayListUnmanaged(i64) = .empty,
+    sint64_list: std.ArrayListUnmanaged(i64) = .empty,
+    uint64_list: std.ArrayListUnmanaged(u64) = .empty,
+    bool_list: std.ArrayListUnmanaged(bool) = .empty,
+    enum_list: std.ArrayListUnmanaged(TopLevelEnum) = .empty,
 
     pub const _desc_table = .{
-        .int32_list = fd(1, .{ .list = .{ .scalar = .int32 } }),
-        .uint32_list = fd(2, .{ .list = .{ .scalar = .uint32 } }),
-        .sint32_list = fd(3, .{ .list = .{ .scalar = .sint32 } }),
-        .float_list = fd(4, .{ .list = .{ .scalar = .float } }),
-        .double_list = fd(5, .{ .list = .{ .scalar = .double } }),
-        .int64_list = fd(6, .{ .list = .{ .scalar = .int64 } }),
-        .sint64_list = fd(7, .{ .list = .{ .scalar = .sint64 } }),
-        .uint64_list = fd(8, .{ .list = .{ .scalar = .uint64 } }),
-        .bool_list = fd(9, .{ .list = .{ .scalar = .bool } }),
-        .enum_list = fd(10, .{ .list = .@"enum" }),
+        .int32_list = fd(1, .{ .repeated = .{ .scalar = .int32 } }),
+        .uint32_list = fd(2, .{ .repeated = .{ .scalar = .uint32 } }),
+        .sint32_list = fd(3, .{ .repeated = .{ .scalar = .sint32 } }),
+        .float_list = fd(4, .{ .repeated = .{ .scalar = .float } }),
+        .double_list = fd(5, .{ .repeated = .{ .scalar = .double } }),
+        .int64_list = fd(6, .{ .repeated = .{ .scalar = .int64 } }),
+        .sint64_list = fd(7, .{ .repeated = .{ .scalar = .sint64 } }),
+        .uint64_list = fd(8, .{ .repeated = .{ .scalar = .uint64 } }),
+        .bool_list = fd(9, .{ .repeated = .{ .scalar = .bool } }),
+        .enum_list = fd(10, .{ .repeated = .@"enum" }),
     };
 
     pub fn encode(
@@ -448,7 +448,7 @@ pub const UnPacked = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -515,7 +515,7 @@ pub const WithSubmessages = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -582,7 +582,7 @@ pub const WithStrings = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -632,10 +632,10 @@ pub const WithStrings = struct {
 };
 
 pub const WithRepeatedStrings = struct {
-    name: std.ArrayListUnmanaged([]const u8),
+    name: std.ArrayListUnmanaged([]const u8) = .empty,
 
     pub const _desc_table = .{
-        .name = fd(1, .{ .list = .{ .scalar = .string } }),
+        .name = fd(1, .{ .repeated = .{ .scalar = .string } }),
     };
 
     pub fn encode(
@@ -649,7 +649,7 @@ pub const WithRepeatedStrings = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -716,7 +716,7 @@ pub const WithBytes = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -766,10 +766,10 @@ pub const WithBytes = struct {
 };
 
 pub const WithRepeatedBytes = struct {
-    byte_field: std.ArrayListUnmanaged([]const u8),
+    byte_field: std.ArrayListUnmanaged([]const u8) = .empty,
 
     pub const _desc_table = .{
-        .byte_field = fd(1, .{ .list = .{ .scalar = .bytes } }),
+        .byte_field = fd(1, .{ .repeated = .{ .scalar = .bytes } }),
     };
 
     pub fn encode(
@@ -783,7 +783,7 @@ pub const WithRepeatedBytes = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 

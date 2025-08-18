@@ -12,21 +12,23 @@ pub const FieldType = union(enum) {
     scalar: Scalar,
     @"enum": void,
     submessage: void,
-    list: List,
-    packed_list: List,
+    repeated: Repeated,
+    packed_repeated: Repeated,
     oneof: type,
 
     pub fn toWire(comptime ftype: FieldType) wire.Type {
         return switch (comptime ftype) {
             .scalar => |s| s.toWire(),
-            .submessage, .packed_list => .len,
-            .list => |inner| switch (comptime inner) {
+            .submessage, .packed_repeated => .len,
+            .repeated => |inner| switch (comptime inner) {
                 .scalar => |s| s.toWire(),
                 .@"enum" => .varint,
                 .submessage => .len,
             },
             .@"enum" => .varint,
-            .oneof => @compileError("Shouldn't pass a .oneof field to this function here."),
+            .oneof => @compileError(
+                "Shouldn't pass a .oneof field to this function here.",
+            ),
         };
     }
 
@@ -138,21 +140,26 @@ pub const FieldType = union(enum) {
         }
     };
 
-    pub const List = union(enum) {
+    pub const Repeated = union(enum) {
         scalar: Scalar,
         @"enum": void,
         submessage: void,
 
-        pub const Tag = std.meta.Tag(List);
+        pub const Tag = std.meta.Tag(Repeated);
+
+        pub fn toWire(self: @This()) wire.Type {
+            return switch (self) {
+                .scalar => |scalar| scalar.toWire(),
+                .@"enum" => .varint,
+                .submessage => .len,
+            };
+        }
     };
 };
 
 /// Structure describing a field. Most of the relevant informations are
 /// In the FieldType data. Tag is optional as oneof fields are "virtual" fields.
-pub const FieldDescriptor = struct {
-    field_number: ?u32,
-    ftype: FieldType,
-};
+pub const FieldDescriptor = struct { field_number: ?u32, ftype: FieldType };
 
 /// Helper function to build a FieldDescriptor. Makes code clearer, mostly.
 pub fn fd(comptime field_number: ?u32, comptime ftype: FieldType) FieldDescriptor {
@@ -446,8 +453,8 @@ fn writeValue(
                 try writeSubmessage(writer, allocator, value);
             }
         },
-        .packed_list => |list_type| {
-            switch (comptime list_type) {
+        .packed_repeated => |repeated| {
+            switch (comptime repeated) {
                 .scalar => |scalar| {
                     if (comptime scalar.isFixed()) {
                         try writePackedFixedList(writer, allocator, field, value);
@@ -463,8 +470,8 @@ fn writeValue(
                 .submessage => @compileError("submessages are not suitable for `packed_list`s."),
             }
         },
-        .list => |list_type| {
-            switch (comptime list_type) {
+        .repeated => |repeated| {
+            switch (comptime repeated) {
                 .scalar => |scalar| {
                     if (comptime scalar.isFixed()) {
                         for (value.items) |item| {
@@ -550,7 +557,7 @@ fn get_field_default_value(comptime for_type: anytype) for_type {
     };
 }
 
-inline fn internal_init(comptime T: type, value: *T) !void {
+inline fn internal_init(comptime T: type, value: *T) void {
     if (comptime @typeInfo(T) != .@"struct") {
         @compileError(std.fmt.comptimePrint(
             "Invalid internal init type {s}",
@@ -563,7 +570,8 @@ inline fn internal_init(comptime T: type, value: *T) !void {
                 if (field.defaultValue()) |val| {
                     @field(value, field.name) = val;
                 } else {
-                    @field(value, field.name) = get_field_default_value(field.type);
+                    @field(value, field.name) =
+                        get_field_default_value(field.type);
                 }
             },
             .submessage => {
@@ -572,7 +580,7 @@ inline fn internal_init(comptime T: type, value: *T) !void {
             .oneof => {
                 @field(value, field.name) = null;
             },
-            .list, .packed_list => {
+            .repeated, .packed_repeated => {
                 @field(value, field.name) = .empty;
             },
         }
@@ -584,12 +592,12 @@ pub fn init(comptime T: type, allocator: std.mem.Allocator) std.mem.Allocator.Er
     switch (comptime @typeInfo(@TypeOf(T))) {
         .pointer => |p| {
             const value = try allocator.create(p.child);
-            try internal_init(p.child, value);
+            internal_init(p.child, value);
             return value;
         },
         else => {
             var value: T = undefined;
-            try internal_init(T, &value);
+            internal_init(T, &value);
             return value;
         },
     }
@@ -670,10 +678,10 @@ fn dupeField(
             },
             else => return @field(original, field_name),
         },
-        .list => |list_type| {
+        .repeated => |repeated| {
             const capacity = @field(original, field_name).items.len;
             var list = try @TypeOf(@field(original, field_name)).initCapacity(allocator, capacity);
-            switch (list_type) {
+            switch (repeated) {
                 .submessage => {
                     for (@field(original, field_name).items) |item| {
                         try list.append(allocator, try item.dupe(allocator));
@@ -699,7 +707,7 @@ fn dupeField(
             }
             return list;
         },
-        .packed_list => |_| {
+        .packed_repeated => |_| {
             const capacity = @field(original, field_name).items.len;
             var list = try @TypeOf(@field(original, field_name)).initCapacity(allocator, capacity);
 
@@ -793,7 +801,42 @@ pub fn deinit(allocator: std.mem.Allocator, data: anytype) void {
     }
 }
 
-fn deinitField(
+/// Deinitialize active `oneof` field, if exists. Sets field to null.
+pub fn deinitOneof(
+    ptr_opt_oneof_field: anytype,
+    allocator: std.mem.Allocator,
+) void {
+    const ptr_opt_ti = @typeInfo(@TypeOf(ptr_opt_oneof_field));
+    comptime std.debug.assert(ptr_opt_ti == .pointer);
+    const opt_ti = @typeInfo(ptr_opt_ti.pointer.child);
+    comptime std.debug.assert(opt_ti == .optional);
+    const Oneof = opt_ti.optional.child;
+    comptime std.debug.assert(@TypeOf(ptr_opt_oneof_field) == *?Oneof);
+    comptime std.debug.assert(@typeInfo(Oneof) == .@"union");
+
+    if (ptr_opt_oneof_field.* == null) return;
+    defer ptr_opt_oneof_field.* = null;
+
+    switch (ptr_opt_oneof_field.*.?) {
+        inline else => |*active| {
+            const Active = @TypeOf(active.*);
+            if (comptime Active == []const u8) {
+                allocator.free(active.*);
+            }
+            // Non-string pointer field must be self-referential submessage.
+            else if (comptime @typeInfo(Active) == .pointer) {
+                active.deinit(allocator);
+                allocator.destroy(active);
+            }
+            // Submessage field.
+            else if (comptime @typeInfo(Active) == .@"struct") {
+                active.deinit(allocator);
+            }
+        },
+    }
+}
+
+pub fn deinitField(
     allocator: std.mem.Allocator,
     root: anytype,
     comptime field_name: []const u8,
@@ -824,8 +867,8 @@ fn deinitField(
                     comptime std.debug.assert(
                         // TODO: Use slices instead of `ArrayListUnmanaged`
                         // for (packed) lists.
-                        // desc.ftype == .list or
-                        // desc.ftype == .packed_list or
+                        // desc.ftype == .repeated or
+                        // desc.ftype == .packed_repeated or
                         (desc.ftype == .scalar and
                             (desc.ftype.scalar == .string or desc.ftype.scalar == .bytes)),
                     );
@@ -849,7 +892,7 @@ fn deinitField(
                         .@"struct" => {
                             // Maps cannot be repeated; this is guaranteed
                             // to be a slice of submessages.
-                            comptime std.debug.assert(desc.ftype == .list);
+                            comptime std.debug.assert(desc.ftype == .repeated);
                             for (slc) |*item| {
                                 item.deinit(allocator);
                             }
@@ -1073,349 +1116,25 @@ const LengthDelimitedDecoderIterator = struct {
     }
 };
 
-/// "Tokenizer" of a byte slice to raw pb data.
-pub const WireDecoderIterator = struct {
-    input: []const u8,
-    current_index: usize = 0,
-
-    /// Attempts at decoding the next pb_buffer data.
-    pub fn next(state: *WireDecoderIterator) DecodingError!?Extracted {
-        if (state.current_index < state.input.len) {
-            var fbs = std.io.fixedBufferStream(state.input[state.current_index..]);
-            const reader = fbs.reader();
-            const tag: wire.Tag = wire.Tag.decode(reader.any()) catch |e| switch (e) {
-                error.InvalidTag => return DecodingError.InvalidInput,
-                else => unreachable,
-            };
-            state.current_index += if (tag.field > 2047) 3 else if (tag.field > 15) 2 else 1;
-            const data: ExtractedData = switch (tag.wire_type) {
-                .varint => blk: { // VARINT
-                    var len: usize = 0;
-                    for (0..10) |i| {
-                        if (state.input[state.current_index + i] >> 7 == 0) {
-                            len = i + 1;
-                            break;
-                        }
-                    } else {
-                        return DecodingError.InvalidInput;
-                    }
-                    const value: ExtractedData = .{
-                        .Slice = state.input[state.current_index..][0..len],
-                    };
-                    state.current_index += len;
-                    break :blk value;
-                },
-                .fixed64 => blk: { // 64BIT
-                    const value: ExtractedData = .{
-                        .Slice = state.input[state.current_index..][0..8],
-                    };
-                    state.current_index += 8;
-                    break :blk value;
-                },
-                .len => blk: { // LEN PREFIXED MESSAGE
-                    const size = try decode_varint(u32, state.input[state.current_index..]);
-                    const start = (state.current_index + size.size);
-                    const end = start + size.value;
-
-                    if (state.input.len < start or state.input.len < end) {
-                        return error.NotEnoughData;
-                    }
-
-                    const value = ExtractedData{ .Slice = state.input[start..end] };
-                    state.current_index += size.value + size.size;
-                    break :blk value;
-                },
-                .sgroup, .egroup => return null,
-                .fixed32 => blk: { // 32BIT
-                    const value: ExtractedData = .{
-                        .Slice = state.input[state.current_index..][0..4],
-                    };
-                    state.current_index += 4;
-                    break :blk value;
-                },
-            };
-
-            return Extracted{ .tag = tag, .data = data, .field_number = tag.field };
-        } else {
-            return null;
-        }
-    }
-};
-
-/// this function receives a slice of a message and decodes one by one the elements of the packet list until the slice is exhausted
-fn decode_packed_list(
-    slice: []const u8,
-    comptime list_type: FieldType.List,
-    comptime T: type,
-    array: *std.ArrayListUnmanaged(T),
-    allocator: std.mem.Allocator,
-) (DecodingError || std.mem.Allocator.Error)!void {
-    errdefer array.deinit(allocator);
-    switch (comptime list_type) {
-        .scalar => |scalar| {
-            if (comptime scalar.isSlice()) {
-                var varint_iterator = LengthDelimitedDecoderIterator{ .input = slice };
-                while (try varint_iterator.next()) |value| {
-                    try array.append(allocator, try allocator.dupe(u8, value));
-                }
-            } else {
-                var fbs = std.io.fixedBufferStream(slice);
-                const r = fbs.reader();
-                while (true) {
-                    try array.append(
-                        allocator,
-                        wire.decodeScalar(scalar, r.any()) catch |e|
-                            switch (e) {
-                                error.EndOfStream => break,
-                                error.InvalidInput => return error.InvalidInput,
-                                else => unreachable,
-                            },
-                    );
-                }
-            }
-        },
-        .@"enum" => {
-            var fbs = std.io.fixedBufferStream(slice);
-            const r = fbs.reader();
-            while (true) {
-                const i = wire.decodeScalar(.int32, r.any()) catch |e|
-                    switch (e) {
-                        error.EndOfStream => break,
-                        else => unreachable,
-                    };
-                try array.append(
-                    allocator,
-                    std.meta.intToEnum(T, i) catch return error.InvalidInput,
-                );
-            }
-        },
-        .submessage =>
-        // submessages are not suitable for packed lists yet, but the wire message can be malformed
-        return error.InvalidInput,
-    }
-}
-
-/// decode_value receives
-fn decode_value(
-    comptime Decoded: type,
-    comptime ftype: FieldType,
-    extracted_data: Extracted,
-    allocator: std.mem.Allocator,
-) (DecodingError || std.mem.Allocator.Error)!Decoded {
-    switch (ftype) {
-        .scalar => |scalar| {
-            if (comptime scalar.isSlice()) {
-                return switch (extracted_data.data) {
-                    .Slice => |slice| try allocator.dupe(u8, slice),
-                    .RawValue => error.InvalidInput,
-                };
-            } else {
-                switch (extracted_data.data) {
-                    .Slice => |slice| {
-                        var fbs = std.io.fixedBufferStream(slice);
-                        const r = fbs.reader();
-                        return wire.decodeScalar(
-                            scalar,
-                            r.any(),
-                        ) catch |e| switch (e) {
-                            error.InvalidInput,
-                            error.EndOfStream,
-                            => return error.InvalidInput,
-                            else => unreachable,
-                        };
-                    },
-                    .RawValue => return error.InvalidInput,
-                }
-            }
-        },
-        .@"enum" => switch (extracted_data.data) {
-            .Slice => |slice| {
-                var fbs = std.io.fixedBufferStream(slice);
-                const r = fbs.reader();
-                const i = wire.decodeScalar(
-                    .int32,
-                    r.any(),
-                ) catch |e| switch (e) {
-                    error.InvalidInput,
-                    error.EndOfStream,
-                    => return error.InvalidInput,
-                    else => unreachable,
-                };
-                return std.meta.intToEnum(Decoded, i) catch
-                    return error.InvalidInput;
-            },
-            .RawValue => return error.InvalidInput,
-        },
-
-        .submessage => return switch (extracted_data.data) {
-            .Slice => |slice| b: {
-                switch (comptime @typeInfo(Decoded)) {
-                    .@"struct" => {
-                        break :b try decode(Decoded, slice, allocator);
-                    },
-                    .pointer => |p| {
-                        comptime std.debug.assert(p.size == .one);
-                        const result: *p.child = try allocator.create(p.child);
-                        errdefer allocator.destroy(result);
-                        result.* = try decode(p.child, slice, allocator);
-                        break :b result;
-                    },
-                    .optional => |o| {
-                        const Inner = o.child;
-                        switch (comptime @typeInfo(Inner)) {
-                            .@"struct" => {
-                                break :b try decode(Inner, slice, allocator);
-                            },
-                            .pointer => |p| {
-                                comptime std.debug.assert(p.size == .one);
-                                const result: *p.child = try allocator.create(p.child);
-                                errdefer allocator.destroy(result);
-                                result.* = try decode(p.child, slice, allocator);
-                                break :b result;
-                            },
-                            else => {
-                                @compileError(std.fmt.comptimePrint(
-                                    "invalid submessage field {s}",
-                                    .{@typeName(Decoded)},
-                                ));
-                            },
-                        }
-                    },
-                    else => {
-                        @compileError(std.fmt.comptimePrint(
-                            "invalid submessage field {s}",
-                            .{@typeName(Decoded)},
-                        ));
-                    },
-                }
-            },
-            .RawValue => return error.InvalidInput,
-        },
-        .list, .packed_list, .oneof => {
-            log.err("Invalid scalar type {any}\n", .{ftype});
-            return error.InvalidInput;
-        },
-    }
-}
-
-fn decode_data(
-    comptime T: type,
-    comptime field_desc: FieldDescriptor,
-    comptime field: std.builtin.Type.StructField,
-    result: *T,
-    extracted_data: Extracted,
-    allocator: std.mem.Allocator,
-) (DecodingError || std.mem.Allocator.Error)!void {
-    switch (comptime field_desc.ftype) {
-        .scalar, .@"enum", .submessage => {
-            // first try to release the current value
-            deinitField(allocator, result, field.name);
-
-            // then apply the new value
-            switch (@typeInfo(field.type)) {
-                .optional => |optional| @field(result, field.name) = try decode_value(
-                    optional.child,
-                    field_desc.ftype,
-                    extracted_data,
-                    allocator,
-                ),
-                else => @field(result, field.name) = try decode_value(
-                    field.type,
-                    field_desc.ftype,
-                    extracted_data,
-                    allocator,
-                ),
-            }
-        },
-        .list, .packed_list => |list_type| {
-            const child_type = @typeInfo(@TypeOf(@field(result, field.name).items)).pointer.child;
-
-            switch (comptime list_type) {
-                .scalar => |scalar| {
-                    if (comptime scalar.isSlice()) {
-                        switch (extracted_data.data) {
-                            .Slice => |slice| {
-                                try @field(result, field.name).append(allocator, try allocator.dupe(u8, slice));
-                            },
-                            .RawValue => return error.InvalidInput,
-                        }
-                    } else {
-                        switch (extracted_data.data) {
-                            .Slice => |slice| try decode_packed_list(slice, list_type, child_type, &@field(result, field.name), allocator),
-                            .RawValue => return error.InvalidInput,
-                        }
-                    }
-                },
-                .@"enum" => switch (extracted_data.data) {
-                    .Slice => |slice| try decode_packed_list(slice, list_type, child_type, &@field(result, field.name), allocator),
-                    .RawValue => return error.InvalidInput,
-                },
-                .submessage => switch (extracted_data.data) {
-                    .Slice => |slice| {
-                        try @field(result, field.name).append(allocator, try child_type.decode(slice, allocator));
-                    },
-                    .RawValue => return error.InvalidInput,
-                },
-            }
-        },
-        .oneof => |one_of| {
-            // the following code:
-            // 1. creates a compile time for iterating over all `one_of._desc_table` fields
-            // 2. when a match is found, it creates the union value in the `field.name` property of the struct `result`. breaks the for at that point
-            const desc_union = one_of._desc_table;
-            inline for (@typeInfo(one_of).@"union".fields) |union_field| {
-                const v = @field(desc_union, union_field.name);
-                if (is_tag_known(v, extracted_data)) {
-                    // deinit the current value of the enum to prevent leaks
-                    deinitField(allocator, result, field.name);
-
-                    // and decode & assign the new value
-                    const value = try decode_value(union_field.type, v.ftype, extracted_data, allocator);
-                    @field(result, field.name) = @unionInit(one_of, union_field.name, value);
-                }
-            }
-        },
-    }
-}
-
-inline fn is_tag_known(comptime field_desc: FieldDescriptor, tag_to_check: Extracted) bool {
-    if (field_desc.field_number) |field_number| {
-        return field_number == tag_to_check.field_number;
-    } else {
-        const desc_union = field_desc.ftype.oneof._desc_table;
-        inline for (@typeInfo(@TypeOf(desc_union)).@"struct".fields) |union_field| {
-            if (is_tag_known(@field(desc_union, union_field.name), tag_to_check)) {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
 /// public decoding function meant to be embedded in message structures
 /// Iterates over the input and try to fill the resulting structure accordingly.
 pub fn decode(
     comptime T: type,
     input: []const u8,
     allocator: std.mem.Allocator,
-) (DecodingError || std.mem.Allocator.Error)!T {
-    var result = try init(T, allocator);
+) (DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!T {
+    var result: T = undefined;
+    internal_init(T, &result);
 
-    var iterator = WireDecoderIterator{ .input = input };
+    var fbs = std.io.fixedBufferStream(input);
+    const r = fbs.reader();
 
-    while (try iterator.next()) |extracted_data| {
-        const rootType = T;
-        inline for (@typeInfo(rootType).@"struct".fields) |field| {
-            const v = @field(rootType._desc_table, field.name);
-            if (is_tag_known(v, extracted_data)) {
-                try decode_data(rootType, v, field, &result, extracted_data, allocator);
-                break;
-            }
-        } else {
-            log.debug("Unknown field received in {s} {any}\n", .{ @typeName(T), extracted_data.tag });
-        }
-    }
+    try wire.decodeMessage(
+        &result,
+        allocator,
+        r.any(),
+        input.len,
+    );
 
     return result;
 }
@@ -1479,7 +1198,7 @@ test "encode and decode multiple varints" {
     var fbs = std.io.fixedBufferStream(pb.items);
     const r = fbs.reader();
     for (list) |num| {
-        const decoded = try wire.decodeScalar(.uint64, r.any());
+        const decoded, _ = try wire.decodeScalar(.uint64, r.any());
         try std.testing.expectEqual(num, decoded);
     }
 }
@@ -1500,17 +1219,6 @@ test FixedDecoderIterator {
     var demo = FixedDecoderIterator(i64){ .input = &[_]u8{ 133, 255, 255, 255, 255, 255, 255, 255 } };
     try std.testing.expectEqual(demo.next(), -123);
     try std.testing.expectEqual(demo.next(), null);
-}
-
-// length delimited message including a list of varints
-test "unit varint packed - decode - multi-byte-varint" {
-    const bytes = &[_]u8{ 0x03, 0x8e, 0x02, 0x9e, 0xa7, 0x05 };
-    var list: std.ArrayListUnmanaged(u32) = .empty;
-    defer list.deinit(std.testing.allocator);
-
-    try decode_packed_list(bytes, .{ .scalar = .uint32 }, u32, &list, std.testing.allocator);
-
-    try std.testing.expectEqualSlices(u32, &[_]u32{ 3, 270, 86942 }, list.items);
 }
 
 test "decode fixed" {

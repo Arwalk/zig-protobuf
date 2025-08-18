@@ -206,12 +206,12 @@ fn stringify_struct_field(
             else => try print_numeric(value, jws),
         },
         .@"enum" => try print_numeric(value, jws),
-        .list, .packed_list => |list_type| {
+        .repeated, .packed_repeated => |repeated| {
             // ArrayListUnmanaged
             const slice = value.items;
             try jws.beginArray();
             for (slice) |el| {
-                switch (list_type) {
+                switch (repeated) {
                     .scalar => |scalar| switch (scalar) {
                         .bytes => try print_bytes(el, jws),
                         .string => try jws.write(el),
@@ -246,7 +246,7 @@ fn stringify_struct_field(
                         },
                         .@"enum" => try print_numeric(@field(value, union_field.name), jws),
                         .submessage => try jws.write(@field(value, union_field.name)),
-                        .list, .packed_list => {
+                        .repeated, .packed_repeated => {
                             @compileError("Repeated fields are not allowed in oneof");
                         },
                         .oneof => {
@@ -278,7 +278,7 @@ fn parseStructField(
         T._desc_table,
         fieldInfo.name,
     ).ftype) {
-        .list, .packed_list => |list_type| list: {
+        .repeated, .packed_repeated => |repeated| list: {
             // repeated T -> ArrayListUnmanaged(T)
             switch (try source.peekNextTokenType()) {
                 .array_begin => {
@@ -293,7 +293,7 @@ fn parseStructField(
                             break;
                         }
                         try array_list.ensureUnusedCapacity(allocator, 1);
-                        array_list.appendAssumeCapacity(switch (list_type) {
+                        array_list.appendAssumeCapacity(switch (repeated) {
                             .scalar => |scalar| switch (scalar) {
                                 .bytes => try parse_bytes(allocator, source, options),
                                 else => try std.json.innerParse(
@@ -385,7 +385,7 @@ fn parseStructField(
                                     options,
                                 );
                             },
-                            .list, .packed_list => {
+                            .repeated, .packed_repeated => {
                                 @compileError("Repeated fields are not allowed in oneof");
                             },
                             .oneof => {

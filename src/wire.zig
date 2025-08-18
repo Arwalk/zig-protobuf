@@ -2,6 +2,7 @@
 const std = @import("std");
 
 const protobuf = @import("protobuf.zig");
+const log = std.log.scoped(.zig_protobuf);
 
 /// Wire type.
 pub const Type = enum(u3) {
@@ -73,25 +74,31 @@ pub const Tag = packed struct(u32) {
     /// Decode from byte stream to tag. Unlike normal `varint` types, the
     /// encoding for a tag is guaranteed not to use ZigZag encoding, as the
     /// tag will always be unsigned.
-    pub fn decode(reader: std.io.AnyReader) !Tag {
+    pub fn decode(reader: std.io.AnyReader) !struct {
+        /// Decoded tag.
+        Tag,
+        /// Number of bytes consumed from reader.
+        usize,
+    } {
         var raw_result: u32 = 0;
 
         // Guaranteed that a tag will take less than 5 bytes in stream. Any
         // more bytes will result in an invalid field number (exceeding proto
         // limits), and as such should be considered an invalid tag.
-        for (0..4) |i| {
+        const consumed = for (0..4) |i| {
             const b = try reader.readByte();
             const num = b & 0x7F;
             raw_result |= @as(u32, num) << @intCast(7 * i);
-            if (b >> 7 == 0) break;
-        } else {
+            if (b >> 7 == 0) break i + 1;
+        } else b: {
             const b = try reader.readByte();
             if (b & 0xF0 > 0) {
                 @branchHint(.cold);
                 return error.InvalidInput;
             }
             raw_result |= @as(u32, b) << @intCast(7 * 4);
-        }
+            break :b 5;
+        };
 
         const invalid_wire_type = (raw_result & 0x7) > 5;
         if (invalid_wire_type) {
@@ -99,15 +106,16 @@ pub const Tag = packed struct(u32) {
             return error.InvalidTag;
         }
 
-        return @bitCast(@as(u32, @intCast(raw_result)));
+        return .{ @bitCast(@as(u32, @intCast(raw_result))), consumed };
     }
 
     test decode {
         const bytes: []const u8 = &.{ 0xFD, 0xFF, 0xFF, 0xFF, 0x0F };
         var fbs = std.io.fixedBufferStream(bytes);
         const r = fbs.reader();
-        const tag: Tag = try decode(r.any());
+        const tag: Tag, const consumed = try decode(r.any());
 
+        try std.testing.expectEqual(5, consumed);
         try std.testing.expectEqual(.fixed32, tag.wire_type);
         try std.testing.expectEqual(0x1FFFFFFF, tag.field);
     }
@@ -198,7 +206,12 @@ pub const ZigZag = struct {
 pub fn decodeScalar(
     comptime scalar: protobuf.FieldType.Scalar,
     reader: std.io.AnyReader,
-) (std.io.AnyReader.Error || protobuf.DecodingError)!scalar.toType() {
+) (std.io.AnyReader.Error || protobuf.DecodingError)!struct {
+    /// Resulting decoded scalar.
+    scalar.toType(),
+    /// Number of bytes consumed from reader.
+    usize,
+} {
     comptime std.debug.assert(!scalar.isSlice());
 
     if (comptime scalar.isVariable()) {
@@ -219,22 +232,22 @@ pub fn decodeScalar(
             if (scalar == .int32) byte_count = 10;
             break :b byte_count;
         };
-        for (0..max_bytes) |i| {
+        const consumed = for (0..max_bytes) |i| {
             const b = try reader.readByte();
             const num = b & 0x7F;
             val |= @as(Result, num) << @intCast(7 * i);
-            if (b >> 7 == 0) break;
+            if (b >> 7 == 0) break i + 1;
         } else {
             @branchHint(.cold);
             return error.InvalidInput;
-        }
+        };
 
         // As `int32` may receive `int64` equivalent encoding values, ensure
         // that values actually fit within `int32` range.
         if (comptime scalar == .int32) {
             // Encoded as `int32`
             if (val & @as(i64, @bitCast(@as(u64, 0xFFFFFFFF00000000))) == 0) {
-                return @truncate(val);
+                return .{ @truncate(val), consumed };
             }
 
             if (val < std.math.minInt(i32) or val > std.math.maxInt(i32)) {
@@ -242,14 +255,14 @@ pub fn decodeScalar(
                 return error.InvalidInput;
             }
 
-            return @intCast(val);
+            return .{ @intCast(val), consumed };
         }
 
         if (comptime scalar.isZigZag()) {
             val = ZigZag.decode(val);
         }
 
-        return val;
+        return .{ val, consumed };
     }
 
     if (comptime scalar.isFixed()) {
@@ -263,15 +276,15 @@ pub fn decodeScalar(
             const b = try reader.readByte();
             val |= @as(Unsigned, b) << @intCast(8 * i);
         }
-        return @bitCast(val);
+        return .{ @bitCast(val), @sizeOf(Unsigned) };
     }
 
     if (comptime scalar == .bool) {
         const b = try reader.readByte();
         if (b == 0) {
-            return false;
+            return .{ false, 1 };
         } else if (b == 1) {
-            return true;
+            return .{ true, 1 };
         } else {
             @branchHint(.cold);
             return error.InvalidInput;
@@ -285,8 +298,9 @@ test decodeScalar {
         var fbs = std.io.fixedBufferStream(bytes);
         const r = fbs.reader();
 
-        const decoded: u32 = try decodeScalar(.uint32, r.any());
+        const decoded: u32, const consumed = try decodeScalar(.uint32, r.any());
 
+        try std.testing.expectEqual(5, consumed);
         try std.testing.expectEqual(std.math.maxInt(u32), decoded);
     }
 
@@ -295,8 +309,9 @@ test decodeScalar {
         var fbs = std.io.fixedBufferStream(bytes);
         const r = fbs.reader();
 
-        const decoded: i32 = try decodeScalar(.sint32, r.any());
+        const decoded: i32, const consumed = try decodeScalar(.sint32, r.any());
 
+        try std.testing.expectEqual(5, consumed);
         try std.testing.expectEqual(std.math.minInt(i32), decoded);
     }
 
@@ -344,7 +359,8 @@ test decodeScalar {
         var fbs = std.io.fixedBufferStream(bytes);
         const r = fbs.reader();
 
-        const decoded = try decodeScalar(.int32, r.any());
+        const decoded: i32, const consumed = try decodeScalar(.int32, r.any());
+        try std.testing.expectEqual(10, consumed);
         try std.testing.expectEqual(-1, decoded);
     }
 
@@ -359,9 +375,709 @@ test decodeScalar {
         var fbs = std.io.fixedBufferStream(bytes);
         const r = fbs.reader();
 
-        const decoded = try decodeScalar(.int32, r.any());
+        const decoded: i32, const consumed = try decodeScalar(.int32, r.any());
+        try std.testing.expectEqual(5, consumed);
         try std.testing.expectEqual(-1, decoded);
     }
+}
+
+/// Decode a repeated field from reader. Return number of consumed bytes.
+pub fn decodeRepeated(
+    result: anytype,
+    allocator: std.mem.Allocator,
+    comptime field: protobuf.FieldType.Repeated,
+    reader: std.io.AnyReader,
+    options: struct {
+        /// Number of bytes to parse. Provided for length-delimited records
+        /// or packed repeated fields.
+        bytes: ?usize = null,
+    },
+) (std.io.AnyReader.Error || std.mem.Allocator.Error || protobuf.DecodingError)!usize {
+    comptime std.debug.assert(@typeInfo(@TypeOf(result)) == .pointer);
+    const ResultList = comptime @typeInfo(@TypeOf(result)).pointer.child;
+    const Result = comptime @typeInfo(
+        @FieldType(ResultList, "items"),
+    ).pointer.child;
+    comptime std.debug.assert(ResultList == std.ArrayListUnmanaged(Result));
+
+    const current_capacity = result.capacity;
+    errdefer result.shrinkAndFree(allocator, current_capacity);
+
+    const current_items = result.items.len;
+    errdefer result.shrinkRetainingCapacity(current_items);
+
+    switch (comptime field) {
+        .scalar => |scalar| {
+            if (comptime scalar.isSlice()) {
+                // string/bytes are length-delimited, and cannot be packed.
+                std.debug.assert(options.bytes != null);
+
+                const bytes = try allocator.alloc(u8, options.bytes.?);
+                errdefer allocator.free(bytes);
+
+                const read = try reader.readAll(bytes);
+                if (read < options.bytes.?) {
+                    @branchHint(.cold);
+                    return error.NotEnoughData;
+                }
+                try result.append(allocator, bytes);
+                return bytes.len;
+            }
+            // Packed repeated scalar.
+            else if (options.bytes) |bytes| {
+                var consumed: usize = 0;
+                while (consumed < bytes) {
+                    const decoded, const c = try decodeScalar(scalar, reader);
+                    try result.append(allocator, decoded);
+                    consumed += c;
+                }
+                if (consumed != bytes) {
+                    @branchHint(.cold);
+                    return error.InvalidInput;
+                }
+                return bytes;
+            }
+            // Unpacked repeated scalar.
+            else {
+                const decoded, const consumed =
+                    try decodeScalar(scalar, reader);
+                try result.append(allocator, decoded);
+                return consumed;
+            }
+        },
+        .@"enum" => {
+            // Packed repeated enum.
+            if (options.bytes) |bytes| {
+                var consumed: usize = 0;
+                while (consumed < bytes) {
+                    const raw, const c = try decodeScalar(.int32, reader);
+                    const decoded = std.meta.intToEnum(Result, raw) catch {
+                        @branchHint(.cold);
+                        return error.InvalidInput;
+                    };
+                    try result.append(allocator, decoded);
+                    consumed += c;
+                }
+                if (consumed > bytes) {
+                    @branchHint(.cold);
+                    return error.InvalidInput;
+                }
+                return consumed;
+            }
+            // Unpacked repeated enum.
+            else {
+                const raw, const consumed = try decodeScalar(.int32, reader);
+                const decoded = std.meta.intToEnum(Result, raw) catch {
+                    @branchHint(.cold);
+                    return error.InvalidInput;
+                };
+                try result.append(allocator, decoded);
+                return consumed;
+            }
+        },
+        .submessage => {
+            // Submessages are length-delimited, and cannot be packed.
+            std.debug.assert(options.bytes != null);
+
+            try result.append(allocator, try .init(allocator));
+            errdefer result.items[result.items.len - 1].deinit(allocator);
+            const msg = &result.items[result.items.len - 1];
+            try decodeMessage(msg, allocator, reader, options.bytes.?);
+            return options.bytes.?;
+        },
+    }
+}
+
+test decodeRepeated {
+    // length delimited message including a list of varints
+    {
+        const bytes: []const u8 = &.{ 0x03, 0x8e, 0x02, 0x9e, 0xa7, 0x05 };
+        var list: std.ArrayListUnmanaged(u32) = .empty;
+        defer list.deinit(std.testing.allocator);
+
+        var fbs = std.io.fixedBufferStream(bytes);
+        const r = fbs.reader();
+
+        const consumed = try decodeRepeated(
+            &list,
+            std.testing.allocator,
+            .{ .scalar = .uint32 },
+            r.any(),
+            .{
+                .bytes = bytes.len,
+            },
+        );
+        try std.testing.expectEqual(bytes.len, consumed);
+        try std.testing.expectEqualSlices(u32, &.{ 3, 270, 86942 }, list.items);
+    }
+}
+
+/// Decode a message from reader.
+pub fn decodeMessage(
+    result: anytype,
+    allocator: std.mem.Allocator,
+    reader: std.io.AnyReader,
+    bytes: usize,
+) (std.io.AnyReader.Error || std.mem.Allocator.Error || protobuf.DecodingError)!void {
+    comptime std.debug.assert(@typeInfo(@TypeOf(result)) == .pointer);
+    const Result = comptime @typeInfo(@TypeOf(result)).pointer.child;
+    const ResultField = std.meta.FieldEnum(Result);
+    comptime std.debug.assert(@TypeOf(result) == *Result);
+    const desc_table = Result._desc_table;
+
+    var consumed: usize = 0;
+    while (consumed < bytes) {
+        const tag: Tag, const tag_c = try Tag.decode(reader);
+        consumed += tag_c;
+
+        @setEvalBranchQuota(40_000);
+        inline for (@typeInfo(@TypeOf(desc_table)).@"struct".fields) |field| {
+            const field_desc: protobuf.FieldDescriptor =
+                comptime @field(desc_table, field.name);
+            const field_info: std.builtin.Type.StructField =
+                std.meta.fieldInfo(Result, @field(ResultField, field.name));
+
+            if (comptime field_desc.ftype != .oneof) {
+                if (comptime field_desc.field_number == null)
+                    comptime continue;
+                const fnum = comptime field_desc.field_number.?;
+                if (fnum != tag.field) comptime continue;
+                if (comptime field_desc.ftype == .packed_repeated) {
+                    // Packed repeated fields may be encoded as non-packed.
+                    if (tag.wire_type != .len and
+                        tag.wire_type != field_desc.ftype.packed_repeated.toWire())
+                    {
+                        @branchHint(.cold);
+                        return error.InvalidInput;
+                    }
+                } else if (comptime field_desc.ftype == .repeated) {
+                    // Non-packed repeated fields may be encoded as packed.
+                    if (tag.wire_type != .len and
+                        tag.wire_type != field_desc.ftype.repeated.toWire())
+                    {
+                        @branchHint(.cold);
+                        return error.InvalidInput;
+                    }
+                } else if (tag.wire_type != comptime field_desc.ftype.toWire()) {
+                    @branchHint(.cold);
+                    return error.InvalidInput;
+                }
+            }
+
+            const Field = comptime @FieldType(Result, field.name);
+            const field_ti = comptime @typeInfo(Field);
+
+            switch (comptime field_desc.ftype) {
+                .scalar => |scalar| {
+                    if (comptime scalar.isSlice()) {
+                        if (tag.wire_type != .len) {
+                            @branchHint(.cold);
+                            return error.InvalidInput;
+                        }
+                        std.debug.assert(tag.wire_type == .len);
+                        const len, const len_c =
+                            try decodeScalar(.int32, reader);
+                        consumed += len_c;
+                        if (len < 0) {
+                            @branchHint(.cold);
+                            return error.InvalidInput;
+                        }
+
+                        const new: []u8 = if (len > 0)
+                            try allocator.alloc(u8, @intCast(len))
+                        else
+                            &.{};
+                        errdefer if (len > 0) allocator.free(new);
+
+                        if (len > 0) {
+                            const read = try reader.readAll(new);
+                            if (read < len) {
+                                @branchHint(.cold);
+                                return error.NotEnoughData;
+                            }
+                            consumed += @intCast(len);
+                        }
+
+                        // Free potentially existing string/bytes before
+                        // replacing field.
+                        if (comptime Field == []const u8) {
+                            const existing: []const u8 =
+                                @field(result, field.name);
+                            if (comptime field_info.defaultValue()) |default| {
+                                if (default.ptr != existing.ptr and
+                                    existing.len > 0)
+                                {
+                                    allocator.free(existing);
+                                }
+                            } else if (existing.len > 0) {
+                                allocator.free(existing);
+                            }
+                        } else if (comptime Field == ?[]const u8) {
+                            if (@field(result, field.name)) |existing| {
+                                if (existing.len > 0) {
+                                    if (comptime field_info.defaultValue()) |opt| {
+                                        if (comptime opt != null) {
+                                            if (opt.?.ptr != existing.ptr) {
+                                                allocator.free(existing);
+                                            }
+                                        }
+                                    } else {
+                                        allocator.free(existing);
+                                    }
+                                }
+                            }
+                        } else unreachable;
+
+                        @field(result, field.name) = new;
+                    } else {
+                        const val, const c = try decodeScalar(scalar, reader);
+                        consumed += c;
+                        @field(result, field.name) = val;
+                    }
+                },
+                .@"enum" => {
+                    const raw, const c = try decodeScalar(.int32, reader);
+                    consumed += c;
+                    const decoded = b: {
+                        if (comptime field_ti == .optional) {
+                            break :b std.meta.intToEnum(
+                                field_ti.optional.child,
+                                raw,
+                            );
+                        } else {
+                            break :b std.meta.intToEnum(Field, raw);
+                        }
+                    } catch {
+                        @branchHint(.cold);
+                        return error.InvalidInput;
+                    };
+                    @field(result, field.name) = decoded;
+                },
+                .packed_repeated => |repeated| {
+                    const is_null = if (comptime field_ti == .optional) b: {
+                        if (@field(result, field.name) == null) {
+                            @field(result, field.name) = .empty;
+                            break :b true;
+                        }
+                        break :b false;
+                    } else false;
+                    errdefer if (comptime field_ti == .optional) {
+                        if (is_null) {
+                            @field(result, field.name) = null;
+                        }
+                    };
+
+                    // Packed encoding.
+                    if (tag.wire_type == .len) {
+                        const len, const c = try decodeScalar(.int32, reader);
+                        consumed += c;
+
+                        consumed += try decodeRepeated(
+                            if (comptime field_ti == .optional)
+                                &@field(result, field.name).?
+                            else
+                                &@field(result, field.name),
+                            allocator,
+                            repeated,
+                            reader,
+                            .{ .bytes = @intCast(len) },
+                        );
+                    }
+                    // Unpacked encoding, despite packed repeated field.
+                    else {
+                        consumed += try decodeRepeated(
+                            if (comptime field_ti == .optional)
+                                &@field(result, field.name).?
+                            else
+                                &@field(result, field.name),
+                            allocator,
+                            repeated,
+                            reader,
+                            .{},
+                        );
+                    }
+                },
+                .repeated => |repeated| {
+                    const is_null = if (comptime field_ti == .optional) b: {
+                        if (@field(result, field.name) == null) {
+                            @field(result, field.name) = .empty;
+                            break :b true;
+                        }
+                        break :b false;
+                    } else false;
+                    errdefer if (comptime field_ti == .optional) {
+                        if (is_null) {
+                            @field(result, field.name) = null;
+                        }
+                    };
+                    const len: ?usize = if (tag.wire_type == .len) b: {
+                        const len, const c = try decodeScalar(.int32, reader);
+                        consumed += c;
+                        break :b @intCast(len);
+                    } else null;
+                    consumed += try decodeRepeated(
+                        &@field(result, field.name),
+                        allocator,
+                        repeated,
+                        reader,
+                        .{ .bytes = len },
+                    );
+                },
+                .submessage => {
+                    std.debug.assert(tag.wire_type == .len);
+
+                    const len, const c = try decodeScalar(.int32, reader);
+                    consumed += c;
+                    if (len < 0) {
+                        @branchHint(.cold);
+                        return error.InvalidInput;
+                    }
+
+                    // All submessages must be optional; submessages always
+                    // have an explicit field presence, which means the
+                    // absence of a submessage in wire encoding must always
+                    // refer to the *lack of* a submessage rather than a
+                    // "default" submessage.
+                    std.debug.assert(field_ti == .optional);
+                    const inner_ti = @typeInfo(field_ti.optional.child);
+
+                    if (comptime inner_ti == .pointer) {
+                        const SubMessage = inner_ti.pointer.child;
+                        const is_null = b: {
+                            if (@field(result, field.name) == null) {
+                                @field(result, field.name) =
+                                    try allocator.create(SubMessage);
+                                errdefer allocator.destroy(
+                                    @field(result, field.name).?,
+                                );
+
+                                @field(result, field.name).?.* =
+                                    try .init(allocator);
+                                break :b true;
+                            }
+                            break :b false;
+                        };
+                        errdefer if (is_null) {
+                            @field(result, field.name).?.deinit(allocator);
+                            allocator.destroy(@field(result, field.name).?);
+                            @field(result, field.name) = null;
+                        };
+
+                        if (len > 0) {
+                            try decodeMessage(
+                                @field(result, field.name).?,
+                                allocator,
+                                reader,
+                                @intCast(len),
+                            );
+                            consumed += @intCast(len);
+                        }
+                    } else {
+                        const is_null = b: {
+                            if (@field(result, field.name) == null) {
+                                @field(result, field.name) =
+                                    try .init(allocator);
+                                break :b true;
+                            }
+                            break :b false;
+                        };
+                        errdefer if (is_null) {
+                            @field(result, field.name).?.deinit(allocator);
+                            @field(result, field.name) = null;
+                        };
+
+                        if (len > 0) {
+                            try decodeMessage(
+                                &@field(result, field.name).?,
+                                allocator,
+                                reader,
+                                @intCast(len),
+                            );
+                            consumed += @intCast(len);
+                        }
+                    }
+                },
+                .oneof => |OneOf| {
+                    // All oneof fields are necessarily optional, as none of
+                    // the fields are active by default.
+                    comptime std.debug.assert(field_ti == .optional);
+                    comptime std.debug.assert(
+                        field_ti.optional.child == OneOf,
+                    );
+                    const oneof_ti = comptime @typeInfo(OneOf).@"union";
+
+                    const inner_desc_table = comptime OneOf._desc_table;
+                    oo_fields: inline for (oneof_ti.fields) |oo_field| {
+                        const inner_desc: protobuf.FieldDescriptor =
+                            comptime @field(inner_desc_table, oo_field.name);
+
+                        if (comptime inner_desc.field_number == null)
+                            comptime continue :oo_fields;
+                        if (inner_desc.field_number.? != tag.field) {
+                            comptime continue :oo_fields;
+                        }
+
+                        if (inner_desc.ftype.toWire() != tag.wire_type) {
+                            @branchHint(.cold);
+                            return error.InvalidInput;
+                        }
+
+                        const oo_field_ti = @typeInfo(oo_field.type);
+                        switch (comptime inner_desc.ftype) {
+                            .scalar => |scalar| {
+                                if (comptime scalar.isSlice()) {
+                                    std.debug.assert(tag.wire_type == .len);
+
+                                    // `oneof` fields are always non-optional
+                                    // as `oneof` has explicit presence.
+                                    std.debug.assert(
+                                        oo_field.type == []const u8,
+                                    );
+
+                                    std.debug.assert(tag.wire_type == .len);
+                                    const len, const len_c =
+                                        try decodeScalar(.int32, reader);
+                                    consumed += len_c;
+
+                                    if (len < 0) {
+                                        @branchHint(.cold);
+                                        return error.InvalidInput;
+                                    }
+
+                                    const new: []u8 = if (len > 0)
+                                        try allocator.alloc(u8, @intCast(len))
+                                    else
+                                        &.{};
+                                    errdefer if (len > 0) allocator.free(new);
+
+                                    if (len > 0) {
+                                        const read = try reader.readAll(new);
+                                        if (read < len) {
+                                            @branchHint(.cold);
+                                            return error.NotEnoughData;
+                                        }
+                                        consumed += @intCast(len);
+                                    }
+
+                                    // Free potentially existing union field
+                                    // just before replacing.
+                                    protobuf.deinitOneof(
+                                        &@field(result, field.name),
+                                        allocator,
+                                    );
+
+                                    @field(result, field.name) = @unionInit(
+                                        OneOf,
+                                        oo_field.name,
+                                        new,
+                                    );
+                                } else {
+                                    const val, const c =
+                                        try decodeScalar(scalar, reader);
+                                    consumed += c;
+                                    @field(result, field.name) = @unionInit(
+                                        OneOf,
+                                        oo_field.name,
+                                        val,
+                                    );
+                                }
+                            },
+                            .@"enum" => {
+                                const raw, const c =
+                                    try decodeScalar(.int32, reader);
+                                consumed += c;
+                                const decoded = std.meta.intToEnum(
+                                    oo_field.type,
+                                    raw,
+                                ) catch {
+                                    @branchHint(.cold);
+                                    return error.InvalidInput;
+                                };
+
+                                // Free potentially existing union field just
+                                // before replacing.
+                                protobuf.deinitOneof(
+                                    &@field(result, field.name),
+                                    allocator,
+                                );
+
+                                @field(result, field.name) = @unionInit(
+                                    OneOf,
+                                    oo_field.name,
+                                    decoded,
+                                );
+                            },
+                            .submessage => {
+                                std.debug.assert(tag.wire_type == .len);
+
+                                const len, const c =
+                                    try decodeScalar(.int32, reader);
+                                consumed += c;
+
+                                if (len < 0) {
+                                    @branchHint(.cold);
+                                    return error.InvalidInput;
+                                }
+
+                                // Submessages are non-optional, as `oneof`s
+                                // also have explicit presence.
+                                comptime std.debug.assert(
+                                    oo_field_ti == .@"struct" or
+                                        oo_field_ti == .pointer,
+                                );
+
+                                const SubMessage =
+                                    if (comptime oo_field_ti == .pointer)
+                                        oo_field_ti.pointer.child
+                                    else
+                                        oo_field.type;
+
+                                if (@field(result, field.name) != null) {
+                                    // If a matching submessage field already
+                                    // exists, the incoming submessage is
+                                    // merged. Otherwise, the existing field
+                                    // is freed and set to null.
+                                    const incoming_tag = comptime @field(
+                                        std.meta.Tag(OneOf),
+                                        oo_field.name,
+                                    );
+                                    if (std.meta.activeTag(
+                                        @field(result, field.name).?,
+                                    ) != incoming_tag) {
+                                        protobuf.deinitOneof(
+                                            &@field(result, field.name),
+                                            allocator,
+                                        );
+
+                                        std.debug.assert(@field(
+                                            result,
+                                            field.name,
+                                        ) == null);
+                                    }
+                                }
+                                const is_null =
+                                    @field(result, field.name) == null;
+                                if (comptime oo_field_ti == .pointer) {
+                                    if (is_null) {
+                                        @field(result, field.name) = @unionInit(
+                                            OneOf,
+                                            oo_field.name,
+                                            try allocator.create(SubMessage),
+                                        );
+                                        @field(
+                                            @field(result, field.name).?,
+                                            oo_field.name,
+                                        ) = try .init(allocator);
+                                    }
+                                    errdefer if (is_null) {
+                                        @field(@field(
+                                            result,
+                                            field.name,
+                                        ).?, oo_field.name).deinit(allocator);
+                                        allocator.destroy(
+                                            @field(result, field.name).?,
+                                        );
+                                        @field(result, field.name) = null;
+                                    };
+
+                                    if (len > 0) {
+                                        try decodeMessage(
+                                            @field(
+                                                @field(result, field.name).?,
+                                                oo_field.name,
+                                            ),
+                                            allocator,
+                                            reader,
+                                            @intCast(len),
+                                        );
+                                        consumed += @intCast(len);
+                                    }
+                                } else {
+                                    if (is_null) {
+                                        @field(result, field.name) =
+                                            @unionInit(
+                                                OneOf,
+                                                oo_field.name,
+                                                try .init(allocator),
+                                            );
+                                    }
+                                    errdefer if (is_null) {
+                                        @field(
+                                            @field(result, field.name).?,
+                                            oo_field.name,
+                                        ).deinit(allocator);
+                                        @field(result, field.name) = null;
+                                    };
+
+                                    if (len > 0) {
+                                        try decodeMessage(
+                                            &@field(
+                                                @field(result, field.name).?,
+                                                oo_field.name,
+                                            ),
+                                            allocator,
+                                            reader,
+                                            @intCast(len),
+                                        );
+                                        consumed += @intCast(len);
+                                    }
+                                }
+                            },
+                            .oneof,
+                            .repeated,
+                            .packed_repeated,
+                            => unreachable,
+                        }
+                        break :oo_fields;
+                    } else consumed += try skipField(reader, tag);
+                },
+            }
+            comptime break;
+        } else consumed += try skipField(reader, tag);
+    }
+    if (consumed != bytes) {
+        @branchHint(.cold);
+        return error.InvalidInput;
+    }
+}
+
+fn skipField(reader: std.io.AnyReader, tag: Tag) !usize {
+    var consumed: usize = 0;
+
+    // If field number was not found, skip unknown field.
+    log.debug(
+        "Unknown field received in {any}\n",
+        .{tag},
+    );
+    switch (tag.wire_type) {
+        .fixed32 => {
+            try reader.skipBytes(4, .{});
+            consumed += 4;
+        },
+        .fixed64 => {
+            try reader.skipBytes(8, .{});
+            consumed += 8;
+        },
+        .len => {
+            const skip, const c = try decodeScalar(.int32, reader);
+            consumed += c;
+            if (skip < 0) {
+                @branchHint(.cold);
+                return error.InvalidInput;
+            }
+            try reader.skipBytes(@intCast(skip), .{});
+            consumed += @intCast(skip);
+        },
+        .varint => {
+            _, const c = try decodeScalar(.uint64, reader);
+            consumed += c;
+        },
+        .sgroup, .egroup => {
+            // `sgroup`/`egroup` not supported.
+        },
+    }
+
+    return consumed;
 }
 
 test {

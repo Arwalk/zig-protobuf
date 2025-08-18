@@ -51,7 +51,7 @@ pub const AnyValue = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -101,10 +101,10 @@ pub const AnyValue = struct {
 };
 
 pub const ArrayValue = struct {
-    values: std.ArrayListUnmanaged(AnyValue),
+    values: std.ArrayListUnmanaged(AnyValue) = .empty,
 
     pub const _desc_table = .{
-        .values = fd(1, .{ .list = .submessage }),
+        .values = fd(1, .{ .repeated = .submessage }),
     };
 
     pub fn encode(
@@ -118,7 +118,7 @@ pub const ArrayValue = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -168,10 +168,10 @@ pub const ArrayValue = struct {
 };
 
 pub const KeyValueList = struct {
-    values: std.ArrayListUnmanaged(KeyValue),
+    values: std.ArrayListUnmanaged(KeyValue) = .empty,
 
     pub const _desc_table = .{
-        .values = fd(1, .{ .list = .submessage }),
+        .values = fd(1, .{ .repeated = .submessage }),
     };
 
     pub fn encode(
@@ -185,7 +185,7 @@ pub const KeyValueList = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -254,7 +254,7 @@ pub const KeyValue = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -306,13 +306,13 @@ pub const KeyValue = struct {
 pub const InstrumentationScope = struct {
     name: []const u8 = &.{},
     version: []const u8 = &.{},
-    attributes: std.ArrayListUnmanaged(KeyValue),
+    attributes: std.ArrayListUnmanaged(KeyValue) = .empty,
     dropped_attributes_count: u32 = 0,
 
     pub const _desc_table = .{
         .name = fd(1, .{ .scalar = .string }),
         .version = fd(2, .{ .scalar = .string }),
-        .attributes = fd(3, .{ .list = .submessage }),
+        .attributes = fd(3, .{ .repeated = .submessage }),
         .dropped_attributes_count = fd(4, .{ .scalar = .uint32 }),
     };
 
@@ -327,7 +327,7 @@ pub const InstrumentationScope = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 

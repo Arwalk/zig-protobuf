@@ -23,10 +23,10 @@ pub const DataPointFlags = enum(i32) {
 };
 
 pub const MetricsData = struct {
-    resource_metrics: std.ArrayListUnmanaged(ResourceMetrics),
+    resource_metrics: std.ArrayListUnmanaged(ResourceMetrics) = .empty,
 
     pub const _desc_table = .{
-        .resource_metrics = fd(1, .{ .list = .submessage }),
+        .resource_metrics = fd(1, .{ .repeated = .submessage }),
     };
 
     pub fn encode(
@@ -40,7 +40,7 @@ pub const MetricsData = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -91,12 +91,12 @@ pub const MetricsData = struct {
 
 pub const ResourceMetrics = struct {
     resource: ?opentelemetry_proto_resource_v1.Resource = null,
-    scope_metrics: std.ArrayListUnmanaged(ScopeMetrics),
+    scope_metrics: std.ArrayListUnmanaged(ScopeMetrics) = .empty,
     schema_url: []const u8 = &.{},
 
     pub const _desc_table = .{
         .resource = fd(1, .submessage),
-        .scope_metrics = fd(2, .{ .list = .submessage }),
+        .scope_metrics = fd(2, .{ .repeated = .submessage }),
         .schema_url = fd(3, .{ .scalar = .string }),
     };
 
@@ -111,7 +111,7 @@ pub const ResourceMetrics = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -162,12 +162,12 @@ pub const ResourceMetrics = struct {
 
 pub const ScopeMetrics = struct {
     scope: ?opentelemetry_proto_common_v1.InstrumentationScope = null,
-    metrics: std.ArrayListUnmanaged(Metric),
+    metrics: std.ArrayListUnmanaged(Metric) = .empty,
     schema_url: []const u8 = &.{},
 
     pub const _desc_table = .{
         .scope = fd(1, .submessage),
-        .metrics = fd(2, .{ .list = .submessage }),
+        .metrics = fd(2, .{ .repeated = .submessage }),
         .schema_url = fd(3, .{ .scalar = .string }),
     };
 
@@ -182,7 +182,7 @@ pub const ScopeMetrics = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -235,7 +235,7 @@ pub const Metric = struct {
     name: []const u8 = &.{},
     description: []const u8 = &.{},
     unit: []const u8 = &.{},
-    metadata: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue),
+    metadata: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue) = .empty,
     data: ?data_union,
 
     pub const _data_case = enum {
@@ -264,7 +264,7 @@ pub const Metric = struct {
         .name = fd(1, .{ .scalar = .string }),
         .description = fd(2, .{ .scalar = .string }),
         .unit = fd(3, .{ .scalar = .string }),
-        .metadata = fd(12, .{ .list = .submessage }),
+        .metadata = fd(12, .{ .repeated = .submessage }),
         .data = fd(null, .{ .oneof = data_union }),
     };
 
@@ -279,7 +279,7 @@ pub const Metric = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -329,10 +329,10 @@ pub const Metric = struct {
 };
 
 pub const Gauge = struct {
-    data_points: std.ArrayListUnmanaged(NumberDataPoint),
+    data_points: std.ArrayListUnmanaged(NumberDataPoint) = .empty,
 
     pub const _desc_table = .{
-        .data_points = fd(1, .{ .list = .submessage }),
+        .data_points = fd(1, .{ .repeated = .submessage }),
     };
 
     pub fn encode(
@@ -346,7 +346,7 @@ pub const Gauge = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -396,12 +396,12 @@ pub const Gauge = struct {
 };
 
 pub const Sum = struct {
-    data_points: std.ArrayListUnmanaged(NumberDataPoint),
+    data_points: std.ArrayListUnmanaged(NumberDataPoint) = .empty,
     aggregation_temporality: AggregationTemporality = @enumFromInt(0),
     is_monotonic: bool = false,
 
     pub const _desc_table = .{
-        .data_points = fd(1, .{ .list = .submessage }),
+        .data_points = fd(1, .{ .repeated = .submessage }),
         .aggregation_temporality = fd(2, .@"enum"),
         .is_monotonic = fd(3, .{ .scalar = .bool }),
     };
@@ -417,7 +417,7 @@ pub const Sum = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -467,11 +467,11 @@ pub const Sum = struct {
 };
 
 pub const Histogram = struct {
-    data_points: std.ArrayListUnmanaged(HistogramDataPoint),
+    data_points: std.ArrayListUnmanaged(HistogramDataPoint) = .empty,
     aggregation_temporality: AggregationTemporality = @enumFromInt(0),
 
     pub const _desc_table = .{
-        .data_points = fd(1, .{ .list = .submessage }),
+        .data_points = fd(1, .{ .repeated = .submessage }),
         .aggregation_temporality = fd(2, .@"enum"),
     };
 
@@ -486,7 +486,7 @@ pub const Histogram = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -536,11 +536,11 @@ pub const Histogram = struct {
 };
 
 pub const ExponentialHistogram = struct {
-    data_points: std.ArrayListUnmanaged(ExponentialHistogramDataPoint),
+    data_points: std.ArrayListUnmanaged(ExponentialHistogramDataPoint) = .empty,
     aggregation_temporality: AggregationTemporality = @enumFromInt(0),
 
     pub const _desc_table = .{
-        .data_points = fd(1, .{ .list = .submessage }),
+        .data_points = fd(1, .{ .repeated = .submessage }),
         .aggregation_temporality = fd(2, .@"enum"),
     };
 
@@ -555,7 +555,7 @@ pub const ExponentialHistogram = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -605,10 +605,10 @@ pub const ExponentialHistogram = struct {
 };
 
 pub const Summary = struct {
-    data_points: std.ArrayListUnmanaged(SummaryDataPoint),
+    data_points: std.ArrayListUnmanaged(SummaryDataPoint) = .empty,
 
     pub const _desc_table = .{
-        .data_points = fd(1, .{ .list = .submessage }),
+        .data_points = fd(1, .{ .repeated = .submessage }),
     };
 
     pub fn encode(
@@ -622,7 +622,7 @@ pub const Summary = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -672,10 +672,10 @@ pub const Summary = struct {
 };
 
 pub const NumberDataPoint = struct {
-    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue),
+    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue) = .empty,
     start_time_unix_nano: u64 = 0,
     time_unix_nano: u64 = 0,
-    exemplars: std.ArrayListUnmanaged(Exemplar),
+    exemplars: std.ArrayListUnmanaged(Exemplar) = .empty,
     flags: u32 = 0,
     value: ?value_union,
 
@@ -693,10 +693,10 @@ pub const NumberDataPoint = struct {
     };
 
     pub const _desc_table = .{
-        .attributes = fd(7, .{ .list = .submessage }),
+        .attributes = fd(7, .{ .repeated = .submessage }),
         .start_time_unix_nano = fd(2, .{ .scalar = .fixed64 }),
         .time_unix_nano = fd(3, .{ .scalar = .fixed64 }),
-        .exemplars = fd(5, .{ .list = .submessage }),
+        .exemplars = fd(5, .{ .repeated = .submessage }),
         .flags = fd(8, .{ .scalar = .uint32 }),
         .value = fd(null, .{ .oneof = value_union }),
     };
@@ -712,7 +712,7 @@ pub const NumberDataPoint = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -762,27 +762,27 @@ pub const NumberDataPoint = struct {
 };
 
 pub const HistogramDataPoint = struct {
-    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue),
+    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue) = .empty,
     start_time_unix_nano: u64 = 0,
     time_unix_nano: u64 = 0,
     count: u64 = 0,
     sum: ?f64 = null,
-    bucket_counts: std.ArrayListUnmanaged(u64),
-    explicit_bounds: std.ArrayListUnmanaged(f64),
-    exemplars: std.ArrayListUnmanaged(Exemplar),
+    bucket_counts: std.ArrayListUnmanaged(u64) = .empty,
+    explicit_bounds: std.ArrayListUnmanaged(f64) = .empty,
+    exemplars: std.ArrayListUnmanaged(Exemplar) = .empty,
     flags: u32 = 0,
     min: ?f64 = null,
     max: ?f64 = null,
 
     pub const _desc_table = .{
-        .attributes = fd(9, .{ .list = .submessage }),
+        .attributes = fd(9, .{ .repeated = .submessage }),
         .start_time_unix_nano = fd(2, .{ .scalar = .fixed64 }),
         .time_unix_nano = fd(3, .{ .scalar = .fixed64 }),
         .count = fd(4, .{ .scalar = .fixed64 }),
         .sum = fd(5, .{ .scalar = .double }),
-        .bucket_counts = fd(6, .{ .packed_list = .{ .scalar = .fixed64 } }),
-        .explicit_bounds = fd(7, .{ .packed_list = .{ .scalar = .double } }),
-        .exemplars = fd(8, .{ .list = .submessage }),
+        .bucket_counts = fd(6, .{ .packed_repeated = .{ .scalar = .fixed64 } }),
+        .explicit_bounds = fd(7, .{ .packed_repeated = .{ .scalar = .double } }),
+        .exemplars = fd(8, .{ .repeated = .submessage }),
         .flags = fd(10, .{ .scalar = .uint32 }),
         .min = fd(11, .{ .scalar = .double }),
         .max = fd(12, .{ .scalar = .double }),
@@ -799,7 +799,7 @@ pub const HistogramDataPoint = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -849,7 +849,7 @@ pub const HistogramDataPoint = struct {
 };
 
 pub const ExponentialHistogramDataPoint = struct {
-    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue),
+    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue) = .empty,
     start_time_unix_nano: u64 = 0,
     time_unix_nano: u64 = 0,
     count: u64 = 0,
@@ -859,13 +859,13 @@ pub const ExponentialHistogramDataPoint = struct {
     positive: ?ExponentialHistogramDataPoint.Buckets = null,
     negative: ?ExponentialHistogramDataPoint.Buckets = null,
     flags: u32 = 0,
-    exemplars: std.ArrayListUnmanaged(Exemplar),
+    exemplars: std.ArrayListUnmanaged(Exemplar) = .empty,
     min: ?f64 = null,
     max: ?f64 = null,
     zero_threshold: f64 = 0,
 
     pub const _desc_table = .{
-        .attributes = fd(1, .{ .list = .submessage }),
+        .attributes = fd(1, .{ .repeated = .submessage }),
         .start_time_unix_nano = fd(2, .{ .scalar = .fixed64 }),
         .time_unix_nano = fd(3, .{ .scalar = .fixed64 }),
         .count = fd(4, .{ .scalar = .fixed64 }),
@@ -875,7 +875,7 @@ pub const ExponentialHistogramDataPoint = struct {
         .positive = fd(8, .submessage),
         .negative = fd(9, .submessage),
         .flags = fd(10, .{ .scalar = .uint32 }),
-        .exemplars = fd(11, .{ .list = .submessage }),
+        .exemplars = fd(11, .{ .repeated = .submessage }),
         .min = fd(12, .{ .scalar = .double }),
         .max = fd(13, .{ .scalar = .double }),
         .zero_threshold = fd(14, .{ .scalar = .double }),
@@ -883,11 +883,11 @@ pub const ExponentialHistogramDataPoint = struct {
 
     pub const Buckets = struct {
         offset: i32 = 0,
-        bucket_counts: std.ArrayListUnmanaged(u64),
+        bucket_counts: std.ArrayListUnmanaged(u64) = .empty,
 
         pub const _desc_table = .{
             .offset = fd(1, .{ .scalar = .sint32 }),
-            .bucket_counts = fd(2, .{ .packed_list = .{ .scalar = .uint64 } }),
+            .bucket_counts = fd(2, .{ .packed_repeated = .{ .scalar = .uint64 } }),
         };
 
         pub fn encode(
@@ -901,7 +901,7 @@ pub const ExponentialHistogramDataPoint = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -961,7 +961,7 @@ pub const ExponentialHistogramDataPoint = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1011,21 +1011,21 @@ pub const ExponentialHistogramDataPoint = struct {
 };
 
 pub const SummaryDataPoint = struct {
-    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue),
+    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue) = .empty,
     start_time_unix_nano: u64 = 0,
     time_unix_nano: u64 = 0,
     count: u64 = 0,
     sum: f64 = 0,
-    quantile_values: std.ArrayListUnmanaged(SummaryDataPoint.ValueAtQuantile),
+    quantile_values: std.ArrayListUnmanaged(SummaryDataPoint.ValueAtQuantile) = .empty,
     flags: u32 = 0,
 
     pub const _desc_table = .{
-        .attributes = fd(7, .{ .list = .submessage }),
+        .attributes = fd(7, .{ .repeated = .submessage }),
         .start_time_unix_nano = fd(2, .{ .scalar = .fixed64 }),
         .time_unix_nano = fd(3, .{ .scalar = .fixed64 }),
         .count = fd(4, .{ .scalar = .fixed64 }),
         .sum = fd(5, .{ .scalar = .double }),
-        .quantile_values = fd(6, .{ .list = .submessage }),
+        .quantile_values = fd(6, .{ .repeated = .submessage }),
         .flags = fd(8, .{ .scalar = .uint32 }),
     };
 
@@ -1049,7 +1049,7 @@ pub const SummaryDataPoint = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -1109,7 +1109,7 @@ pub const SummaryDataPoint = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1159,7 +1159,7 @@ pub const SummaryDataPoint = struct {
 };
 
 pub const Exemplar = struct {
-    filtered_attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue),
+    filtered_attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue) = .empty,
     time_unix_nano: u64 = 0,
     span_id: []const u8 = &.{},
     trace_id: []const u8 = &.{},
@@ -1179,7 +1179,7 @@ pub const Exemplar = struct {
     };
 
     pub const _desc_table = .{
-        .filtered_attributes = fd(7, .{ .list = .submessage }),
+        .filtered_attributes = fd(7, .{ .repeated = .submessage }),
         .time_unix_nano = fd(2, .{ .scalar = .fixed64 }),
         .span_id = fd(4, .{ .scalar = .bytes }),
         .trace_id = fd(5, .{ .scalar = .bytes }),
@@ -1197,7 +1197,7 @@ pub const Exemplar = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 

@@ -37,74 +37,74 @@ pub const TestAllTypesProto3 = struct {
     optional_aliased_enum: TestAllTypesProto3.AliasedEnum = @enumFromInt(0),
     optional_string_piece: []const u8 = &.{},
     optional_cord: []const u8 = &.{},
-    repeated_int32: std.ArrayListUnmanaged(i32),
-    repeated_int64: std.ArrayListUnmanaged(i64),
-    repeated_uint32: std.ArrayListUnmanaged(u32),
-    repeated_uint64: std.ArrayListUnmanaged(u64),
-    repeated_sint32: std.ArrayListUnmanaged(i32),
-    repeated_sint64: std.ArrayListUnmanaged(i64),
-    repeated_fixed32: std.ArrayListUnmanaged(u32),
-    repeated_fixed64: std.ArrayListUnmanaged(u64),
-    repeated_sfixed32: std.ArrayListUnmanaged(i32),
-    repeated_sfixed64: std.ArrayListUnmanaged(i64),
-    repeated_float: std.ArrayListUnmanaged(f32),
-    repeated_double: std.ArrayListUnmanaged(f64),
-    repeated_bool: std.ArrayListUnmanaged(bool),
-    repeated_string: std.ArrayListUnmanaged([]const u8),
-    repeated_bytes: std.ArrayListUnmanaged([]const u8),
-    repeated_nested_message: std.ArrayListUnmanaged(TestAllTypesProto3.NestedMessage),
-    repeated_foreign_message: std.ArrayListUnmanaged(ForeignMessage),
-    repeated_nested_enum: std.ArrayListUnmanaged(TestAllTypesProto3.NestedEnum),
-    repeated_foreign_enum: std.ArrayListUnmanaged(ForeignEnum),
-    repeated_string_piece: std.ArrayListUnmanaged([]const u8),
-    repeated_cord: std.ArrayListUnmanaged([]const u8),
-    packed_int32: std.ArrayListUnmanaged(i32),
-    packed_int64: std.ArrayListUnmanaged(i64),
-    packed_uint32: std.ArrayListUnmanaged(u32),
-    packed_uint64: std.ArrayListUnmanaged(u64),
-    packed_sint32: std.ArrayListUnmanaged(i32),
-    packed_sint64: std.ArrayListUnmanaged(i64),
-    packed_fixed32: std.ArrayListUnmanaged(u32),
-    packed_fixed64: std.ArrayListUnmanaged(u64),
-    packed_sfixed32: std.ArrayListUnmanaged(i32),
-    packed_sfixed64: std.ArrayListUnmanaged(i64),
-    packed_float: std.ArrayListUnmanaged(f32),
-    packed_double: std.ArrayListUnmanaged(f64),
-    packed_bool: std.ArrayListUnmanaged(bool),
-    packed_nested_enum: std.ArrayListUnmanaged(TestAllTypesProto3.NestedEnum),
-    unpacked_int32: std.ArrayListUnmanaged(i32),
-    unpacked_int64: std.ArrayListUnmanaged(i64),
-    unpacked_uint32: std.ArrayListUnmanaged(u32),
-    unpacked_uint64: std.ArrayListUnmanaged(u64),
-    unpacked_sint32: std.ArrayListUnmanaged(i32),
-    unpacked_sint64: std.ArrayListUnmanaged(i64),
-    unpacked_fixed32: std.ArrayListUnmanaged(u32),
-    unpacked_fixed64: std.ArrayListUnmanaged(u64),
-    unpacked_sfixed32: std.ArrayListUnmanaged(i32),
-    unpacked_sfixed64: std.ArrayListUnmanaged(i64),
-    unpacked_float: std.ArrayListUnmanaged(f32),
-    unpacked_double: std.ArrayListUnmanaged(f64),
-    unpacked_bool: std.ArrayListUnmanaged(bool),
-    unpacked_nested_enum: std.ArrayListUnmanaged(TestAllTypesProto3.NestedEnum),
-    map_int32_int32: std.ArrayListUnmanaged(TestAllTypesProto3.MapInt32Int32Entry),
-    map_int64_int64: std.ArrayListUnmanaged(TestAllTypesProto3.MapInt64Int64Entry),
-    map_uint32_uint32: std.ArrayListUnmanaged(TestAllTypesProto3.MapUint32Uint32Entry),
-    map_uint64_uint64: std.ArrayListUnmanaged(TestAllTypesProto3.MapUint64Uint64Entry),
-    map_sint32_sint32: std.ArrayListUnmanaged(TestAllTypesProto3.MapSint32Sint32Entry),
-    map_sint64_sint64: std.ArrayListUnmanaged(TestAllTypesProto3.MapSint64Sint64Entry),
-    map_fixed32_fixed32: std.ArrayListUnmanaged(TestAllTypesProto3.MapFixed32Fixed32Entry),
-    map_fixed64_fixed64: std.ArrayListUnmanaged(TestAllTypesProto3.MapFixed64Fixed64Entry),
-    map_sfixed32_sfixed32: std.ArrayListUnmanaged(TestAllTypesProto3.MapSfixed32Sfixed32Entry),
-    map_sfixed64_sfixed64: std.ArrayListUnmanaged(TestAllTypesProto3.MapSfixed64Sfixed64Entry),
-    map_int32_float: std.ArrayListUnmanaged(TestAllTypesProto3.MapInt32FloatEntry),
-    map_int32_double: std.ArrayListUnmanaged(TestAllTypesProto3.MapInt32DoubleEntry),
-    map_bool_bool: std.ArrayListUnmanaged(TestAllTypesProto3.MapBoolBoolEntry),
-    map_string_string: std.ArrayListUnmanaged(TestAllTypesProto3.MapStringStringEntry),
-    map_string_bytes: std.ArrayListUnmanaged(TestAllTypesProto3.MapStringBytesEntry),
-    map_string_nested_message: std.ArrayListUnmanaged(TestAllTypesProto3.MapStringNestedMessageEntry),
-    map_string_foreign_message: std.ArrayListUnmanaged(TestAllTypesProto3.MapStringForeignMessageEntry),
-    map_string_nested_enum: std.ArrayListUnmanaged(TestAllTypesProto3.MapStringNestedEnumEntry),
-    map_string_foreign_enum: std.ArrayListUnmanaged(TestAllTypesProto3.MapStringForeignEnumEntry),
+    repeated_int32: std.ArrayListUnmanaged(i32) = .empty,
+    repeated_int64: std.ArrayListUnmanaged(i64) = .empty,
+    repeated_uint32: std.ArrayListUnmanaged(u32) = .empty,
+    repeated_uint64: std.ArrayListUnmanaged(u64) = .empty,
+    repeated_sint32: std.ArrayListUnmanaged(i32) = .empty,
+    repeated_sint64: std.ArrayListUnmanaged(i64) = .empty,
+    repeated_fixed32: std.ArrayListUnmanaged(u32) = .empty,
+    repeated_fixed64: std.ArrayListUnmanaged(u64) = .empty,
+    repeated_sfixed32: std.ArrayListUnmanaged(i32) = .empty,
+    repeated_sfixed64: std.ArrayListUnmanaged(i64) = .empty,
+    repeated_float: std.ArrayListUnmanaged(f32) = .empty,
+    repeated_double: std.ArrayListUnmanaged(f64) = .empty,
+    repeated_bool: std.ArrayListUnmanaged(bool) = .empty,
+    repeated_string: std.ArrayListUnmanaged([]const u8) = .empty,
+    repeated_bytes: std.ArrayListUnmanaged([]const u8) = .empty,
+    repeated_nested_message: std.ArrayListUnmanaged(TestAllTypesProto3.NestedMessage) = .empty,
+    repeated_foreign_message: std.ArrayListUnmanaged(ForeignMessage) = .empty,
+    repeated_nested_enum: std.ArrayListUnmanaged(TestAllTypesProto3.NestedEnum) = .empty,
+    repeated_foreign_enum: std.ArrayListUnmanaged(ForeignEnum) = .empty,
+    repeated_string_piece: std.ArrayListUnmanaged([]const u8) = .empty,
+    repeated_cord: std.ArrayListUnmanaged([]const u8) = .empty,
+    packed_int32: std.ArrayListUnmanaged(i32) = .empty,
+    packed_int64: std.ArrayListUnmanaged(i64) = .empty,
+    packed_uint32: std.ArrayListUnmanaged(u32) = .empty,
+    packed_uint64: std.ArrayListUnmanaged(u64) = .empty,
+    packed_sint32: std.ArrayListUnmanaged(i32) = .empty,
+    packed_sint64: std.ArrayListUnmanaged(i64) = .empty,
+    packed_fixed32: std.ArrayListUnmanaged(u32) = .empty,
+    packed_fixed64: std.ArrayListUnmanaged(u64) = .empty,
+    packed_sfixed32: std.ArrayListUnmanaged(i32) = .empty,
+    packed_sfixed64: std.ArrayListUnmanaged(i64) = .empty,
+    packed_float: std.ArrayListUnmanaged(f32) = .empty,
+    packed_double: std.ArrayListUnmanaged(f64) = .empty,
+    packed_bool: std.ArrayListUnmanaged(bool) = .empty,
+    packed_nested_enum: std.ArrayListUnmanaged(TestAllTypesProto3.NestedEnum) = .empty,
+    unpacked_int32: std.ArrayListUnmanaged(i32) = .empty,
+    unpacked_int64: std.ArrayListUnmanaged(i64) = .empty,
+    unpacked_uint32: std.ArrayListUnmanaged(u32) = .empty,
+    unpacked_uint64: std.ArrayListUnmanaged(u64) = .empty,
+    unpacked_sint32: std.ArrayListUnmanaged(i32) = .empty,
+    unpacked_sint64: std.ArrayListUnmanaged(i64) = .empty,
+    unpacked_fixed32: std.ArrayListUnmanaged(u32) = .empty,
+    unpacked_fixed64: std.ArrayListUnmanaged(u64) = .empty,
+    unpacked_sfixed32: std.ArrayListUnmanaged(i32) = .empty,
+    unpacked_sfixed64: std.ArrayListUnmanaged(i64) = .empty,
+    unpacked_float: std.ArrayListUnmanaged(f32) = .empty,
+    unpacked_double: std.ArrayListUnmanaged(f64) = .empty,
+    unpacked_bool: std.ArrayListUnmanaged(bool) = .empty,
+    unpacked_nested_enum: std.ArrayListUnmanaged(TestAllTypesProto3.NestedEnum) = .empty,
+    map_int32_int32: std.ArrayListUnmanaged(TestAllTypesProto3.MapInt32Int32Entry) = .empty,
+    map_int64_int64: std.ArrayListUnmanaged(TestAllTypesProto3.MapInt64Int64Entry) = .empty,
+    map_uint32_uint32: std.ArrayListUnmanaged(TestAllTypesProto3.MapUint32Uint32Entry) = .empty,
+    map_uint64_uint64: std.ArrayListUnmanaged(TestAllTypesProto3.MapUint64Uint64Entry) = .empty,
+    map_sint32_sint32: std.ArrayListUnmanaged(TestAllTypesProto3.MapSint32Sint32Entry) = .empty,
+    map_sint64_sint64: std.ArrayListUnmanaged(TestAllTypesProto3.MapSint64Sint64Entry) = .empty,
+    map_fixed32_fixed32: std.ArrayListUnmanaged(TestAllTypesProto3.MapFixed32Fixed32Entry) = .empty,
+    map_fixed64_fixed64: std.ArrayListUnmanaged(TestAllTypesProto3.MapFixed64Fixed64Entry) = .empty,
+    map_sfixed32_sfixed32: std.ArrayListUnmanaged(TestAllTypesProto3.MapSfixed32Sfixed32Entry) = .empty,
+    map_sfixed64_sfixed64: std.ArrayListUnmanaged(TestAllTypesProto3.MapSfixed64Sfixed64Entry) = .empty,
+    map_int32_float: std.ArrayListUnmanaged(TestAllTypesProto3.MapInt32FloatEntry) = .empty,
+    map_int32_double: std.ArrayListUnmanaged(TestAllTypesProto3.MapInt32DoubleEntry) = .empty,
+    map_bool_bool: std.ArrayListUnmanaged(TestAllTypesProto3.MapBoolBoolEntry) = .empty,
+    map_string_string: std.ArrayListUnmanaged(TestAllTypesProto3.MapStringStringEntry) = .empty,
+    map_string_bytes: std.ArrayListUnmanaged(TestAllTypesProto3.MapStringBytesEntry) = .empty,
+    map_string_nested_message: std.ArrayListUnmanaged(TestAllTypesProto3.MapStringNestedMessageEntry) = .empty,
+    map_string_foreign_message: std.ArrayListUnmanaged(TestAllTypesProto3.MapStringForeignMessageEntry) = .empty,
+    map_string_nested_enum: std.ArrayListUnmanaged(TestAllTypesProto3.MapStringNestedEnumEntry) = .empty,
+    map_string_foreign_enum: std.ArrayListUnmanaged(TestAllTypesProto3.MapStringForeignEnumEntry) = .empty,
     optional_bool_wrapper: ?google_protobuf.BoolValue = null,
     optional_int32_wrapper: ?google_protobuf.Int32Value = null,
     optional_int64_wrapper: ?google_protobuf.Int64Value = null,
@@ -114,15 +114,15 @@ pub const TestAllTypesProto3 = struct {
     optional_double_wrapper: ?google_protobuf.DoubleValue = null,
     optional_string_wrapper: ?google_protobuf.StringValue = null,
     optional_bytes_wrapper: ?google_protobuf.BytesValue = null,
-    repeated_bool_wrapper: std.ArrayListUnmanaged(google_protobuf.BoolValue),
-    repeated_int32_wrapper: std.ArrayListUnmanaged(google_protobuf.Int32Value),
-    repeated_int64_wrapper: std.ArrayListUnmanaged(google_protobuf.Int64Value),
-    repeated_uint32_wrapper: std.ArrayListUnmanaged(google_protobuf.UInt32Value),
-    repeated_uint64_wrapper: std.ArrayListUnmanaged(google_protobuf.UInt64Value),
-    repeated_float_wrapper: std.ArrayListUnmanaged(google_protobuf.FloatValue),
-    repeated_double_wrapper: std.ArrayListUnmanaged(google_protobuf.DoubleValue),
-    repeated_string_wrapper: std.ArrayListUnmanaged(google_protobuf.StringValue),
-    repeated_bytes_wrapper: std.ArrayListUnmanaged(google_protobuf.BytesValue),
+    repeated_bool_wrapper: std.ArrayListUnmanaged(google_protobuf.BoolValue) = .empty,
+    repeated_int32_wrapper: std.ArrayListUnmanaged(google_protobuf.Int32Value) = .empty,
+    repeated_int64_wrapper: std.ArrayListUnmanaged(google_protobuf.Int64Value) = .empty,
+    repeated_uint32_wrapper: std.ArrayListUnmanaged(google_protobuf.UInt32Value) = .empty,
+    repeated_uint64_wrapper: std.ArrayListUnmanaged(google_protobuf.UInt64Value) = .empty,
+    repeated_float_wrapper: std.ArrayListUnmanaged(google_protobuf.FloatValue) = .empty,
+    repeated_double_wrapper: std.ArrayListUnmanaged(google_protobuf.DoubleValue) = .empty,
+    repeated_string_wrapper: std.ArrayListUnmanaged(google_protobuf.StringValue) = .empty,
+    repeated_bytes_wrapper: std.ArrayListUnmanaged(google_protobuf.BytesValue) = .empty,
     optional_duration: ?google_protobuf.Duration = null,
     optional_timestamp: ?google_protobuf.Timestamp = null,
     optional_field_mask: ?google_protobuf.FieldMask = null,
@@ -130,13 +130,13 @@ pub const TestAllTypesProto3 = struct {
     optional_any: ?google_protobuf.Any = null,
     optional_value: ?google_protobuf.Value = null,
     optional_null_value: google_protobuf.NullValue = @enumFromInt(0),
-    repeated_duration: std.ArrayListUnmanaged(google_protobuf.Duration),
-    repeated_timestamp: std.ArrayListUnmanaged(google_protobuf.Timestamp),
-    repeated_fieldmask: std.ArrayListUnmanaged(google_protobuf.FieldMask),
-    repeated_struct: std.ArrayListUnmanaged(google_protobuf.Struct),
-    repeated_any: std.ArrayListUnmanaged(google_protobuf.Any),
-    repeated_value: std.ArrayListUnmanaged(google_protobuf.Value),
-    repeated_list_value: std.ArrayListUnmanaged(google_protobuf.ListValue),
+    repeated_duration: std.ArrayListUnmanaged(google_protobuf.Duration) = .empty,
+    repeated_timestamp: std.ArrayListUnmanaged(google_protobuf.Timestamp) = .empty,
+    repeated_fieldmask: std.ArrayListUnmanaged(google_protobuf.FieldMask) = .empty,
+    repeated_struct: std.ArrayListUnmanaged(google_protobuf.Struct) = .empty,
+    repeated_any: std.ArrayListUnmanaged(google_protobuf.Any) = .empty,
+    repeated_value: std.ArrayListUnmanaged(google_protobuf.Value) = .empty,
+    repeated_list_value: std.ArrayListUnmanaged(google_protobuf.ListValue) = .empty,
     fieldname1: i32 = 0,
     field_name2: i32 = 0,
     _field_name3: i32 = 0,
@@ -217,74 +217,74 @@ pub const TestAllTypesProto3 = struct {
         .optional_aliased_enum = fd(23, .@"enum"),
         .optional_string_piece = fd(24, .{ .scalar = .string }),
         .optional_cord = fd(25, .{ .scalar = .string }),
-        .repeated_int32 = fd(31, .{ .packed_list = .{ .scalar = .int32 } }),
-        .repeated_int64 = fd(32, .{ .packed_list = .{ .scalar = .int64 } }),
-        .repeated_uint32 = fd(33, .{ .packed_list = .{ .scalar = .uint32 } }),
-        .repeated_uint64 = fd(34, .{ .packed_list = .{ .scalar = .uint64 } }),
-        .repeated_sint32 = fd(35, .{ .packed_list = .{ .scalar = .sint32 } }),
-        .repeated_sint64 = fd(36, .{ .packed_list = .{ .scalar = .sint64 } }),
-        .repeated_fixed32 = fd(37, .{ .packed_list = .{ .scalar = .fixed32 } }),
-        .repeated_fixed64 = fd(38, .{ .packed_list = .{ .scalar = .fixed64 } }),
-        .repeated_sfixed32 = fd(39, .{ .packed_list = .{ .scalar = .sfixed32 } }),
-        .repeated_sfixed64 = fd(40, .{ .packed_list = .{ .scalar = .sfixed64 } }),
-        .repeated_float = fd(41, .{ .packed_list = .{ .scalar = .float } }),
-        .repeated_double = fd(42, .{ .packed_list = .{ .scalar = .double } }),
-        .repeated_bool = fd(43, .{ .packed_list = .{ .scalar = .bool } }),
-        .repeated_string = fd(44, .{ .list = .{ .scalar = .string } }),
-        .repeated_bytes = fd(45, .{ .list = .{ .scalar = .bytes } }),
-        .repeated_nested_message = fd(48, .{ .list = .submessage }),
-        .repeated_foreign_message = fd(49, .{ .list = .submessage }),
-        .repeated_nested_enum = fd(51, .{ .list = .@"enum" }),
-        .repeated_foreign_enum = fd(52, .{ .list = .@"enum" }),
-        .repeated_string_piece = fd(54, .{ .list = .{ .scalar = .string } }),
-        .repeated_cord = fd(55, .{ .list = .{ .scalar = .string } }),
-        .packed_int32 = fd(75, .{ .packed_list = .{ .scalar = .int32 } }),
-        .packed_int64 = fd(76, .{ .packed_list = .{ .scalar = .int64 } }),
-        .packed_uint32 = fd(77, .{ .packed_list = .{ .scalar = .uint32 } }),
-        .packed_uint64 = fd(78, .{ .packed_list = .{ .scalar = .uint64 } }),
-        .packed_sint32 = fd(79, .{ .packed_list = .{ .scalar = .sint32 } }),
-        .packed_sint64 = fd(80, .{ .packed_list = .{ .scalar = .sint64 } }),
-        .packed_fixed32 = fd(81, .{ .packed_list = .{ .scalar = .fixed32 } }),
-        .packed_fixed64 = fd(82, .{ .packed_list = .{ .scalar = .fixed64 } }),
-        .packed_sfixed32 = fd(83, .{ .packed_list = .{ .scalar = .sfixed32 } }),
-        .packed_sfixed64 = fd(84, .{ .packed_list = .{ .scalar = .sfixed64 } }),
-        .packed_float = fd(85, .{ .packed_list = .{ .scalar = .float } }),
-        .packed_double = fd(86, .{ .packed_list = .{ .scalar = .double } }),
-        .packed_bool = fd(87, .{ .packed_list = .{ .scalar = .bool } }),
-        .packed_nested_enum = fd(88, .{ .packed_list = .@"enum" }),
-        .unpacked_int32 = fd(89, .{ .list = .{ .scalar = .int32 } }),
-        .unpacked_int64 = fd(90, .{ .list = .{ .scalar = .int64 } }),
-        .unpacked_uint32 = fd(91, .{ .list = .{ .scalar = .uint32 } }),
-        .unpacked_uint64 = fd(92, .{ .list = .{ .scalar = .uint64 } }),
-        .unpacked_sint32 = fd(93, .{ .list = .{ .scalar = .sint32 } }),
-        .unpacked_sint64 = fd(94, .{ .list = .{ .scalar = .sint64 } }),
-        .unpacked_fixed32 = fd(95, .{ .list = .{ .scalar = .fixed32 } }),
-        .unpacked_fixed64 = fd(96, .{ .list = .{ .scalar = .fixed64 } }),
-        .unpacked_sfixed32 = fd(97, .{ .list = .{ .scalar = .sfixed32 } }),
-        .unpacked_sfixed64 = fd(98, .{ .list = .{ .scalar = .sfixed64 } }),
-        .unpacked_float = fd(99, .{ .list = .{ .scalar = .float } }),
-        .unpacked_double = fd(100, .{ .list = .{ .scalar = .double } }),
-        .unpacked_bool = fd(101, .{ .list = .{ .scalar = .bool } }),
-        .unpacked_nested_enum = fd(102, .{ .list = .@"enum" }),
-        .map_int32_int32 = fd(56, .{ .list = .submessage }),
-        .map_int64_int64 = fd(57, .{ .list = .submessage }),
-        .map_uint32_uint32 = fd(58, .{ .list = .submessage }),
-        .map_uint64_uint64 = fd(59, .{ .list = .submessage }),
-        .map_sint32_sint32 = fd(60, .{ .list = .submessage }),
-        .map_sint64_sint64 = fd(61, .{ .list = .submessage }),
-        .map_fixed32_fixed32 = fd(62, .{ .list = .submessage }),
-        .map_fixed64_fixed64 = fd(63, .{ .list = .submessage }),
-        .map_sfixed32_sfixed32 = fd(64, .{ .list = .submessage }),
-        .map_sfixed64_sfixed64 = fd(65, .{ .list = .submessage }),
-        .map_int32_float = fd(66, .{ .list = .submessage }),
-        .map_int32_double = fd(67, .{ .list = .submessage }),
-        .map_bool_bool = fd(68, .{ .list = .submessage }),
-        .map_string_string = fd(69, .{ .list = .submessage }),
-        .map_string_bytes = fd(70, .{ .list = .submessage }),
-        .map_string_nested_message = fd(71, .{ .list = .submessage }),
-        .map_string_foreign_message = fd(72, .{ .list = .submessage }),
-        .map_string_nested_enum = fd(73, .{ .list = .submessage }),
-        .map_string_foreign_enum = fd(74, .{ .list = .submessage }),
+        .repeated_int32 = fd(31, .{ .packed_repeated = .{ .scalar = .int32 } }),
+        .repeated_int64 = fd(32, .{ .packed_repeated = .{ .scalar = .int64 } }),
+        .repeated_uint32 = fd(33, .{ .packed_repeated = .{ .scalar = .uint32 } }),
+        .repeated_uint64 = fd(34, .{ .packed_repeated = .{ .scalar = .uint64 } }),
+        .repeated_sint32 = fd(35, .{ .packed_repeated = .{ .scalar = .sint32 } }),
+        .repeated_sint64 = fd(36, .{ .packed_repeated = .{ .scalar = .sint64 } }),
+        .repeated_fixed32 = fd(37, .{ .packed_repeated = .{ .scalar = .fixed32 } }),
+        .repeated_fixed64 = fd(38, .{ .packed_repeated = .{ .scalar = .fixed64 } }),
+        .repeated_sfixed32 = fd(39, .{ .packed_repeated = .{ .scalar = .sfixed32 } }),
+        .repeated_sfixed64 = fd(40, .{ .packed_repeated = .{ .scalar = .sfixed64 } }),
+        .repeated_float = fd(41, .{ .packed_repeated = .{ .scalar = .float } }),
+        .repeated_double = fd(42, .{ .packed_repeated = .{ .scalar = .double } }),
+        .repeated_bool = fd(43, .{ .packed_repeated = .{ .scalar = .bool } }),
+        .repeated_string = fd(44, .{ .repeated = .{ .scalar = .string } }),
+        .repeated_bytes = fd(45, .{ .repeated = .{ .scalar = .bytes } }),
+        .repeated_nested_message = fd(48, .{ .repeated = .submessage }),
+        .repeated_foreign_message = fd(49, .{ .repeated = .submessage }),
+        .repeated_nested_enum = fd(51, .{ .repeated = .@"enum" }),
+        .repeated_foreign_enum = fd(52, .{ .repeated = .@"enum" }),
+        .repeated_string_piece = fd(54, .{ .repeated = .{ .scalar = .string } }),
+        .repeated_cord = fd(55, .{ .repeated = .{ .scalar = .string } }),
+        .packed_int32 = fd(75, .{ .packed_repeated = .{ .scalar = .int32 } }),
+        .packed_int64 = fd(76, .{ .packed_repeated = .{ .scalar = .int64 } }),
+        .packed_uint32 = fd(77, .{ .packed_repeated = .{ .scalar = .uint32 } }),
+        .packed_uint64 = fd(78, .{ .packed_repeated = .{ .scalar = .uint64 } }),
+        .packed_sint32 = fd(79, .{ .packed_repeated = .{ .scalar = .sint32 } }),
+        .packed_sint64 = fd(80, .{ .packed_repeated = .{ .scalar = .sint64 } }),
+        .packed_fixed32 = fd(81, .{ .packed_repeated = .{ .scalar = .fixed32 } }),
+        .packed_fixed64 = fd(82, .{ .packed_repeated = .{ .scalar = .fixed64 } }),
+        .packed_sfixed32 = fd(83, .{ .packed_repeated = .{ .scalar = .sfixed32 } }),
+        .packed_sfixed64 = fd(84, .{ .packed_repeated = .{ .scalar = .sfixed64 } }),
+        .packed_float = fd(85, .{ .packed_repeated = .{ .scalar = .float } }),
+        .packed_double = fd(86, .{ .packed_repeated = .{ .scalar = .double } }),
+        .packed_bool = fd(87, .{ .packed_repeated = .{ .scalar = .bool } }),
+        .packed_nested_enum = fd(88, .{ .packed_repeated = .@"enum" }),
+        .unpacked_int32 = fd(89, .{ .repeated = .{ .scalar = .int32 } }),
+        .unpacked_int64 = fd(90, .{ .repeated = .{ .scalar = .int64 } }),
+        .unpacked_uint32 = fd(91, .{ .repeated = .{ .scalar = .uint32 } }),
+        .unpacked_uint64 = fd(92, .{ .repeated = .{ .scalar = .uint64 } }),
+        .unpacked_sint32 = fd(93, .{ .repeated = .{ .scalar = .sint32 } }),
+        .unpacked_sint64 = fd(94, .{ .repeated = .{ .scalar = .sint64 } }),
+        .unpacked_fixed32 = fd(95, .{ .repeated = .{ .scalar = .fixed32 } }),
+        .unpacked_fixed64 = fd(96, .{ .repeated = .{ .scalar = .fixed64 } }),
+        .unpacked_sfixed32 = fd(97, .{ .repeated = .{ .scalar = .sfixed32 } }),
+        .unpacked_sfixed64 = fd(98, .{ .repeated = .{ .scalar = .sfixed64 } }),
+        .unpacked_float = fd(99, .{ .repeated = .{ .scalar = .float } }),
+        .unpacked_double = fd(100, .{ .repeated = .{ .scalar = .double } }),
+        .unpacked_bool = fd(101, .{ .repeated = .{ .scalar = .bool } }),
+        .unpacked_nested_enum = fd(102, .{ .repeated = .@"enum" }),
+        .map_int32_int32 = fd(56, .{ .repeated = .submessage }),
+        .map_int64_int64 = fd(57, .{ .repeated = .submessage }),
+        .map_uint32_uint32 = fd(58, .{ .repeated = .submessage }),
+        .map_uint64_uint64 = fd(59, .{ .repeated = .submessage }),
+        .map_sint32_sint32 = fd(60, .{ .repeated = .submessage }),
+        .map_sint64_sint64 = fd(61, .{ .repeated = .submessage }),
+        .map_fixed32_fixed32 = fd(62, .{ .repeated = .submessage }),
+        .map_fixed64_fixed64 = fd(63, .{ .repeated = .submessage }),
+        .map_sfixed32_sfixed32 = fd(64, .{ .repeated = .submessage }),
+        .map_sfixed64_sfixed64 = fd(65, .{ .repeated = .submessage }),
+        .map_int32_float = fd(66, .{ .repeated = .submessage }),
+        .map_int32_double = fd(67, .{ .repeated = .submessage }),
+        .map_bool_bool = fd(68, .{ .repeated = .submessage }),
+        .map_string_string = fd(69, .{ .repeated = .submessage }),
+        .map_string_bytes = fd(70, .{ .repeated = .submessage }),
+        .map_string_nested_message = fd(71, .{ .repeated = .submessage }),
+        .map_string_foreign_message = fd(72, .{ .repeated = .submessage }),
+        .map_string_nested_enum = fd(73, .{ .repeated = .submessage }),
+        .map_string_foreign_enum = fd(74, .{ .repeated = .submessage }),
         .optional_bool_wrapper = fd(201, .submessage),
         .optional_int32_wrapper = fd(202, .submessage),
         .optional_int64_wrapper = fd(203, .submessage),
@@ -294,15 +294,15 @@ pub const TestAllTypesProto3 = struct {
         .optional_double_wrapper = fd(207, .submessage),
         .optional_string_wrapper = fd(208, .submessage),
         .optional_bytes_wrapper = fd(209, .submessage),
-        .repeated_bool_wrapper = fd(211, .{ .list = .submessage }),
-        .repeated_int32_wrapper = fd(212, .{ .list = .submessage }),
-        .repeated_int64_wrapper = fd(213, .{ .list = .submessage }),
-        .repeated_uint32_wrapper = fd(214, .{ .list = .submessage }),
-        .repeated_uint64_wrapper = fd(215, .{ .list = .submessage }),
-        .repeated_float_wrapper = fd(216, .{ .list = .submessage }),
-        .repeated_double_wrapper = fd(217, .{ .list = .submessage }),
-        .repeated_string_wrapper = fd(218, .{ .list = .submessage }),
-        .repeated_bytes_wrapper = fd(219, .{ .list = .submessage }),
+        .repeated_bool_wrapper = fd(211, .{ .repeated = .submessage }),
+        .repeated_int32_wrapper = fd(212, .{ .repeated = .submessage }),
+        .repeated_int64_wrapper = fd(213, .{ .repeated = .submessage }),
+        .repeated_uint32_wrapper = fd(214, .{ .repeated = .submessage }),
+        .repeated_uint64_wrapper = fd(215, .{ .repeated = .submessage }),
+        .repeated_float_wrapper = fd(216, .{ .repeated = .submessage }),
+        .repeated_double_wrapper = fd(217, .{ .repeated = .submessage }),
+        .repeated_string_wrapper = fd(218, .{ .repeated = .submessage }),
+        .repeated_bytes_wrapper = fd(219, .{ .repeated = .submessage }),
         .optional_duration = fd(301, .submessage),
         .optional_timestamp = fd(302, .submessage),
         .optional_field_mask = fd(303, .submessage),
@@ -310,13 +310,13 @@ pub const TestAllTypesProto3 = struct {
         .optional_any = fd(305, .submessage),
         .optional_value = fd(306, .submessage),
         .optional_null_value = fd(307, .@"enum"),
-        .repeated_duration = fd(311, .{ .list = .submessage }),
-        .repeated_timestamp = fd(312, .{ .list = .submessage }),
-        .repeated_fieldmask = fd(313, .{ .list = .submessage }),
-        .repeated_struct = fd(324, .{ .list = .submessage }),
-        .repeated_any = fd(315, .{ .list = .submessage }),
-        .repeated_value = fd(316, .{ .list = .submessage }),
-        .repeated_list_value = fd(317, .{ .list = .submessage }),
+        .repeated_duration = fd(311, .{ .repeated = .submessage }),
+        .repeated_timestamp = fd(312, .{ .repeated = .submessage }),
+        .repeated_fieldmask = fd(313, .{ .repeated = .submessage }),
+        .repeated_struct = fd(324, .{ .repeated = .submessage }),
+        .repeated_any = fd(315, .{ .repeated = .submessage }),
+        .repeated_value = fd(316, .{ .repeated = .submessage }),
+        .repeated_list_value = fd(317, .{ .repeated = .submessage }),
         .fieldname1 = fd(401, .{ .scalar = .int32 }),
         .field_name2 = fd(402, .{ .scalar = .int32 }),
         ._field_name3 = fd(403, .{ .scalar = .int32 }),
@@ -371,7 +371,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -440,7 +440,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -509,7 +509,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -578,7 +578,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -647,7 +647,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -716,7 +716,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -785,7 +785,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -854,7 +854,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -923,7 +923,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -992,7 +992,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -1061,7 +1061,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -1130,7 +1130,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -1199,7 +1199,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -1268,7 +1268,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -1337,7 +1337,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -1406,7 +1406,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -1475,7 +1475,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -1544,7 +1544,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -1613,7 +1613,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -1682,7 +1682,7 @@ pub const TestAllTypesProto3 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -1742,7 +1742,7 @@ pub const TestAllTypesProto3 = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1809,7 +1809,7 @@ pub const ForeignMessage = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1872,7 +1872,7 @@ pub const NullHypothesisProto3 = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1941,7 +1941,7 @@ pub const EnumOnlyProto3 = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 

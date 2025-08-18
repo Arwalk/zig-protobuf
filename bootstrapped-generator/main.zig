@@ -344,17 +344,23 @@ const GenerationContext = struct {
         file: descriptor.FileDescriptorProto,
         nullable: bool,
     ) !?[]const u8 {
+        const is_proto3 = is_proto3_file(file);
+
         // ArrayLists need to be initialized
         const repeated = isRepeated(field);
-        if (repeated) return null;
-
-        const is_proto3 = is_proto3_file(file);
+        if (repeated) {
+            if (field.default_value) |default| {
+                return default;
+            } else if (is_proto3) {
+                return ".empty";
+            } else return null;
+        }
 
         if (nullable and field.default_value == null) {
             return "null";
         }
 
-        // proto3 does not support explicit default values, the default scalar values are used instead
+        // proto3 does not support explicit default values, the default scalar values are used instead.
         if (is_proto3) {
             return switch (field.type.?) {
                 .TYPE_SINT32,
@@ -377,7 +383,9 @@ const GenerationContext = struct {
             };
         }
 
-        if (field.default_value == null) return null;
+        if (field.default_value == null) {
+            return null;
+        }
 
         return switch (field.type.?) {
             .TYPE_SINT32,
@@ -432,9 +440,9 @@ const GenerationContext = struct {
 
         if (isRepeated(field)) {
             if (isPacked(file, field)) {
-                prefix = ".{ .packed_list = ";
+                prefix = ".{ .packed_repeated = ";
             } else {
-                prefix = ".{ .list = ";
+                prefix = ".{ .repeated = ";
             }
             postfix = "}";
         }
@@ -662,7 +670,7 @@ const GenerationContext = struct {
                 \\    pub fn decode(
                 \\        input: []const u8,
                 \\        allocator: std.mem.Allocator,
-                \\    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {{
+                \\    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {{
                 \\        return protobuf.decode(@This(), input, allocator);
                 \\    }}
                 \\

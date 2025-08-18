@@ -8,11 +8,11 @@ const fd = protobuf.fd;
 const opentelemetry_proto_common_v1 = @import("../common/v1.pb.zig");
 
 pub const Resource = struct {
-    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue),
+    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue) = .empty,
     dropped_attributes_count: u32 = 0,
 
     pub const _desc_table = .{
-        .attributes = fd(1, .{ .list = .submessage }),
+        .attributes = fd(1, .{ .repeated = .submessage }),
         .dropped_attributes_count = fd(2, .{ .scalar = .uint32 }),
     };
 
@@ -27,7 +27,7 @@ pub const Resource = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
