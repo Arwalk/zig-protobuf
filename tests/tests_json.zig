@@ -87,10 +87,10 @@ fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
         if (are_optionals_equal != null) {
             if (!are_optionals_equal.?) return false;
         } else switch (@field(T._desc_table, structInfo.name).ftype) {
-            .list, .packed_list => |list_type| {
+            .repeated, .packed_repeated => |repeated| {
                 if (field1.items.len != field2.items.len) return false;
                 for (field1.items, field2.items) |array1_el, array2_el| {
-                    if (!switch (list_type) {
+                    if (!switch (repeated) {
                         .scalar => |scalar| switch (scalar) {
                             .string, .bytes => std.mem.eql(u8, array1_el, array2_el),
                             else => _compare_numerics(array1_el, array2_el),

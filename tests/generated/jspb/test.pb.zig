@@ -34,7 +34,7 @@ pub const Empty = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -101,7 +101,7 @@ pub const EnumContainer = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -157,7 +157,7 @@ pub const Simple1 = struct {
 
     pub const _desc_table = .{
         .a_string = fd(1, .{ .scalar = .string }),
-        .a_repeated_string = fd(2, .{ .list = .{ .scalar = .string } }),
+        .a_repeated_string = fd(2, .{ .repeated = .{ .scalar = .string } }),
         .a_boolean = fd(3, .{ .scalar = .bool }),
     };
 
@@ -172,7 +172,7 @@ pub const Simple1 = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -227,7 +227,7 @@ pub const Simple2 = struct {
 
     pub const _desc_table = .{
         .a_string = fd(1, .{ .scalar = .string }),
-        .a_repeated_string = fd(2, .{ .list = .{ .scalar = .string } }),
+        .a_repeated_string = fd(2, .{ .repeated = .{ .scalar = .string } }),
     };
 
     pub fn encode(
@@ -241,7 +241,7 @@ pub const Simple2 = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -314,7 +314,7 @@ pub const SpecialCases = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -374,8 +374,8 @@ pub const OptionalFields = struct {
         .a_string = fd(1, .{ .scalar = .string }),
         .a_bool = fd(2, .{ .scalar = .bool }),
         .a_nested_message = fd(3, .submessage),
-        .a_repeated_message = fd(4, .{ .list = .submessage }),
-        .a_repeated_string = fd(5, .{ .list = .{ .scalar = .string } }),
+        .a_repeated_message = fd(4, .{ .repeated = .submessage }),
+        .a_repeated_string = fd(5, .{ .repeated = .{ .scalar = .string } }),
     };
 
     pub const Nested = struct {
@@ -396,7 +396,7 @@ pub const OptionalFields = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -456,7 +456,7 @@ pub const OptionalFields = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -527,7 +527,7 @@ pub const HasExtensions = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -587,8 +587,8 @@ pub const Complex = struct {
         .a_string = fd(1, .{ .scalar = .string }),
         .an_out_of_order_bool = fd(9, .{ .scalar = .bool }),
         .a_nested_message = fd(4, .submessage),
-        .a_repeated_message = fd(5, .{ .list = .submessage }),
-        .a_repeated_string = fd(7, .{ .list = .{ .scalar = .string } }),
+        .a_repeated_message = fd(5, .{ .repeated = .submessage }),
+        .a_repeated_string = fd(7, .{ .repeated = .{ .scalar = .string } }),
     };
 
     pub const Nested = struct {
@@ -609,7 +609,7 @@ pub const Complex = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -669,7 +669,7 @@ pub const Complex = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -736,7 +736,7 @@ pub const IsExtension = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -799,7 +799,7 @@ pub const IndirectExtension = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -882,7 +882,7 @@ pub const DefaultValues = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -944,11 +944,11 @@ pub const FloatingPointFields = struct {
     pub const _desc_table = .{
         .optional_float_field = fd(1, .{ .scalar = .float }),
         .required_float_field = fd(2, .{ .scalar = .float }),
-        .repeated_float_field = fd(3, .{ .list = .{ .scalar = .float } }),
+        .repeated_float_field = fd(3, .{ .repeated = .{ .scalar = .float } }),
         .default_float_field = fd(4, .{ .scalar = .float }),
         .optional_double_field = fd(5, .{ .scalar = .double }),
         .required_double_field = fd(6, .{ .scalar = .double }),
-        .repeated_double_field = fd(7, .{ .list = .{ .scalar = .double } }),
+        .repeated_double_field = fd(7, .{ .repeated = .{ .scalar = .double } }),
         .default_double_field = fd(8, .{ .scalar = .double }),
     };
 
@@ -963,7 +963,7 @@ pub const FloatingPointFields = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1022,7 +1022,7 @@ pub const TestClone = struct {
     pub const _desc_table = .{
         .str = fd(1, .{ .scalar = .string }),
         .simple1 = fd(3, .submessage),
-        .simple2 = fd(5, .{ .list = .submessage }),
+        .simple2 = fd(5, .{ .repeated = .submessage }),
         .bytes_field = fd(6, .{ .scalar = .bytes }),
         .unused = fd(7, .{ .scalar = .string }),
     };
@@ -1038,7 +1038,7 @@ pub const TestClone = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1105,7 +1105,7 @@ pub const CloneExtension = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1176,7 +1176,7 @@ pub const TestGroup = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1243,7 +1243,7 @@ pub const TestReservedNames = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1306,7 +1306,7 @@ pub const TestReservedNamesExtension = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1417,7 +1417,7 @@ pub const TestMessageWithOneof = struct {
 
     pub const _desc_table = .{
         .normal_field = fd(8, .{ .scalar = .bool }),
-        .repeated_field = fd(9, .{ .list = .{ .scalar = .string } }),
+        .repeated_field = fd(9, .{ .repeated = .{ .scalar = .string } }),
         .partial_oneof = fd(null, .{ .oneof = partial_oneof_union }),
         .recursive_oneof = fd(null, .{ .oneof = recursive_oneof_union }),
         .default_oneof_a = fd(null, .{ .oneof = default_oneof_a_union }),
@@ -1435,7 +1435,7 @@ pub const TestMessageWithOneof = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1504,7 +1504,7 @@ pub const TestEndsWithBytes = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1568,18 +1568,18 @@ pub const TestMapFieldsNoBinary = struct {
     map_string_testmapfields: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringTestmapfieldsEntry),
 
     pub const _desc_table = .{
-        .map_string_string = fd(1, .{ .list = .submessage }),
-        .map_string_int32 = fd(2, .{ .list = .submessage }),
-        .map_string_int64 = fd(3, .{ .list = .submessage }),
-        .map_string_bool = fd(4, .{ .list = .submessage }),
-        .map_string_double = fd(5, .{ .list = .submessage }),
-        .map_string_enum = fd(6, .{ .list = .submessage }),
-        .map_string_msg = fd(7, .{ .list = .submessage }),
-        .map_int32_string = fd(8, .{ .list = .submessage }),
-        .map_int64_string = fd(9, .{ .list = .submessage }),
-        .map_bool_string = fd(10, .{ .list = .submessage }),
+        .map_string_string = fd(1, .{ .repeated = .submessage }),
+        .map_string_int32 = fd(2, .{ .repeated = .submessage }),
+        .map_string_int64 = fd(3, .{ .repeated = .submessage }),
+        .map_string_bool = fd(4, .{ .repeated = .submessage }),
+        .map_string_double = fd(5, .{ .repeated = .submessage }),
+        .map_string_enum = fd(6, .{ .repeated = .submessage }),
+        .map_string_msg = fd(7, .{ .repeated = .submessage }),
+        .map_int32_string = fd(8, .{ .repeated = .submessage }),
+        .map_int64_string = fd(9, .{ .repeated = .submessage }),
+        .map_bool_string = fd(10, .{ .repeated = .submessage }),
         .test_map_fields = fd(11, .submessage),
-        .map_string_testmapfields = fd(12, .{ .list = .submessage }),
+        .map_string_testmapfields = fd(12, .{ .repeated = .submessage }),
     };
 
     pub const MapStringStringEntry = struct {
@@ -1602,7 +1602,7 @@ pub const TestMapFieldsNoBinary = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -1671,7 +1671,7 @@ pub const TestMapFieldsNoBinary = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -1740,7 +1740,7 @@ pub const TestMapFieldsNoBinary = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -1809,7 +1809,7 @@ pub const TestMapFieldsNoBinary = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -1878,7 +1878,7 @@ pub const TestMapFieldsNoBinary = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -1947,7 +1947,7 @@ pub const TestMapFieldsNoBinary = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -2016,7 +2016,7 @@ pub const TestMapFieldsNoBinary = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -2085,7 +2085,7 @@ pub const TestMapFieldsNoBinary = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -2154,7 +2154,7 @@ pub const TestMapFieldsNoBinary = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -2223,7 +2223,7 @@ pub const TestMapFieldsNoBinary = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -2292,7 +2292,7 @@ pub const TestMapFieldsNoBinary = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -2352,7 +2352,7 @@ pub const TestMapFieldsNoBinary = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -2419,7 +2419,7 @@ pub const MapValueMessageNoBinary = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -2492,7 +2492,7 @@ pub const Deeply = struct {
             pub fn decode(
                 input: []const u8,
                 allocator: std.mem.Allocator,
-            ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+            ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
                 return protobuf.decode(@This(), input, allocator);
             }
 
@@ -2552,7 +2552,7 @@ pub const Deeply = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -2612,7 +2612,7 @@ pub const Deeply = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 

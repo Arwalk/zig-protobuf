@@ -9,7 +9,7 @@ pub const Tile = struct {
     layers: std.ArrayListUnmanaged(Tile.Layer),
 
     pub const _desc_table = .{
-        .layers = fd(3, .{ .list = .submessage }),
+        .layers = fd(3, .{ .repeated = .submessage }),
     };
 
     pub const GeomType = enum(i32) {
@@ -50,7 +50,7 @@ pub const Tile = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -107,9 +107,9 @@ pub const Tile = struct {
 
         pub const _desc_table = .{
             .id = fd(1, .{ .scalar = .uint64 }),
-            .tags = fd(2, .{ .packed_list = .{ .scalar = .uint32 } }),
+            .tags = fd(2, .{ .packed_repeated = .{ .scalar = .uint32 } }),
             .type = fd(3, .@"enum"),
-            .geometry = fd(4, .{ .packed_list = .{ .scalar = .uint32 } }),
+            .geometry = fd(4, .{ .packed_repeated = .{ .scalar = .uint32 } }),
         };
 
         pub fn encode(
@@ -123,7 +123,7 @@ pub const Tile = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -183,9 +183,9 @@ pub const Tile = struct {
         pub const _desc_table = .{
             .version = fd(15, .{ .scalar = .uint32 }),
             .name = fd(1, .{ .scalar = .string }),
-            .features = fd(2, .{ .list = .submessage }),
-            .keys = fd(3, .{ .list = .{ .scalar = .string } }),
-            .values = fd(4, .{ .list = .submessage }),
+            .features = fd(2, .{ .repeated = .submessage }),
+            .keys = fd(3, .{ .repeated = .{ .scalar = .string } }),
+            .values = fd(4, .{ .repeated = .submessage }),
             .extent = fd(5, .{ .scalar = .uint32 }),
         };
 
@@ -200,7 +200,7 @@ pub const Tile = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -260,7 +260,7 @@ pub const Tile = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
