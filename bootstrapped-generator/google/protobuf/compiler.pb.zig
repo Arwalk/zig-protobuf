@@ -31,7 +31,7 @@ pub const Version = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -81,15 +81,15 @@ pub const Version = struct {
 };
 
 pub const CodeGeneratorRequest = struct {
-    file_to_generate: std.ArrayListUnmanaged([]const u8),
+    file_to_generate: std.ArrayListUnmanaged([]const u8) = .empty,
     parameter: ?[]const u8 = null,
-    proto_file: std.ArrayListUnmanaged(google_protobuf.FileDescriptorProto),
+    proto_file: std.ArrayListUnmanaged(google_protobuf.FileDescriptorProto) = .empty,
     compiler_version: ?Version = null,
 
     pub const _desc_table = .{
-        .file_to_generate = fd(1, .{ .list = .{ .scalar = .string } }),
+        .file_to_generate = fd(1, .{ .repeated = .{ .scalar = .string } }),
         .parameter = fd(2, .{ .scalar = .string }),
-        .proto_file = fd(15, .{ .list = .submessage }),
+        .proto_file = fd(15, .{ .repeated = .submessage }),
         .compiler_version = fd(3, .submessage),
     };
 
@@ -104,7 +104,7 @@ pub const CodeGeneratorRequest = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -156,12 +156,12 @@ pub const CodeGeneratorRequest = struct {
 pub const CodeGeneratorResponse = struct {
     @"error": ?[]const u8 = null,
     supported_features: ?u64 = null,
-    file: std.ArrayListUnmanaged(CodeGeneratorResponse.File),
+    file: std.ArrayListUnmanaged(CodeGeneratorResponse.File) = .empty,
 
     pub const _desc_table = .{
         .@"error" = fd(1, .{ .scalar = .string }),
         .supported_features = fd(2, .{ .scalar = .uint64 }),
-        .file = fd(15, .{ .list = .submessage }),
+        .file = fd(15, .{ .repeated = .submessage }),
     };
 
     pub const Feature = enum(i32) {
@@ -194,7 +194,7 @@ pub const CodeGeneratorResponse = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -254,7 +254,7 @@ pub const CodeGeneratorResponse = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 

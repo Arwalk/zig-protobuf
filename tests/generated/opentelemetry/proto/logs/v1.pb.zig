@@ -45,10 +45,10 @@ pub const LogRecordFlags = enum(i32) {
 };
 
 pub const LogsData = struct {
-    resource_logs: std.ArrayListUnmanaged(ResourceLogs),
+    resource_logs: std.ArrayListUnmanaged(ResourceLogs) = .empty,
 
     pub const _desc_table = .{
-        .resource_logs = fd(1, .{ .list = .submessage }),
+        .resource_logs = fd(1, .{ .repeated = .submessage }),
     };
 
     pub fn encode(
@@ -62,7 +62,7 @@ pub const LogsData = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -113,12 +113,12 @@ pub const LogsData = struct {
 
 pub const ResourceLogs = struct {
     resource: ?opentelemetry_proto_resource_v1.Resource = null,
-    scope_logs: std.ArrayListUnmanaged(ScopeLogs),
+    scope_logs: std.ArrayListUnmanaged(ScopeLogs) = .empty,
     schema_url: []const u8 = &.{},
 
     pub const _desc_table = .{
         .resource = fd(1, .submessage),
-        .scope_logs = fd(2, .{ .list = .submessage }),
+        .scope_logs = fd(2, .{ .repeated = .submessage }),
         .schema_url = fd(3, .{ .scalar = .string }),
     };
 
@@ -133,7 +133,7 @@ pub const ResourceLogs = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -184,12 +184,12 @@ pub const ResourceLogs = struct {
 
 pub const ScopeLogs = struct {
     scope: ?opentelemetry_proto_common_v1.InstrumentationScope = null,
-    log_records: std.ArrayListUnmanaged(LogRecord),
+    log_records: std.ArrayListUnmanaged(LogRecord) = .empty,
     schema_url: []const u8 = &.{},
 
     pub const _desc_table = .{
         .scope = fd(1, .submessage),
-        .log_records = fd(2, .{ .list = .submessage }),
+        .log_records = fd(2, .{ .repeated = .submessage }),
         .schema_url = fd(3, .{ .scalar = .string }),
     };
 
@@ -204,7 +204,7 @@ pub const ScopeLogs = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -259,7 +259,7 @@ pub const LogRecord = struct {
     severity_number: SeverityNumber = @enumFromInt(0),
     severity_text: []const u8 = &.{},
     body: ?opentelemetry_proto_common_v1.AnyValue = null,
-    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue),
+    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue) = .empty,
     dropped_attributes_count: u32 = 0,
     flags: u32 = 0,
     trace_id: []const u8 = &.{},
@@ -271,7 +271,7 @@ pub const LogRecord = struct {
         .severity_number = fd(2, .@"enum"),
         .severity_text = fd(3, .{ .scalar = .string }),
         .body = fd(5, .submessage),
-        .attributes = fd(6, .{ .list = .submessage }),
+        .attributes = fd(6, .{ .repeated = .submessage }),
         .dropped_attributes_count = fd(7, .{ .scalar = .uint32 }),
         .flags = fd(8, .{ .scalar = .fixed32 }),
         .trace_id = fd(9, .{ .scalar = .bytes }),
@@ -289,7 +289,7 @@ pub const LogRecord = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 

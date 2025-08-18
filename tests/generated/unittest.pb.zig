@@ -253,29 +253,29 @@ pub const TestAllTypes = struct {
         .optional_string_piece = fd(24, .{ .scalar = .string }),
         .optional_cord = fd(25, .{ .scalar = .string }),
         .optional_lazy_message = fd(27, .submessage),
-        .repeated_int32 = fd(31, .{ .list = .{ .scalar = .int32 } }),
-        .repeated_int64 = fd(32, .{ .list = .{ .scalar = .int64 } }),
-        .repeated_uint32 = fd(33, .{ .list = .{ .scalar = .uint32 } }),
-        .repeated_uint64 = fd(34, .{ .list = .{ .scalar = .uint64 } }),
-        .repeated_sint32 = fd(35, .{ .list = .{ .scalar = .sint32 } }),
-        .repeated_sint64 = fd(36, .{ .list = .{ .scalar = .sint64 } }),
-        .repeated_fixed32 = fd(37, .{ .list = .{ .scalar = .fixed32 } }),
-        .repeated_fixed64 = fd(38, .{ .list = .{ .scalar = .fixed64 } }),
-        .repeated_sfixed32 = fd(39, .{ .list = .{ .scalar = .sfixed32 } }),
-        .repeated_sfixed64 = fd(40, .{ .list = .{ .scalar = .sfixed64 } }),
-        .repeated_float = fd(41, .{ .list = .{ .scalar = .float } }),
-        .repeated_double = fd(42, .{ .list = .{ .scalar = .double } }),
-        .repeated_bool = fd(43, .{ .list = .{ .scalar = .bool } }),
-        .repeated_string = fd(44, .{ .list = .{ .scalar = .string } }),
-        .repeated_bytes = fd(45, .{ .list = .{ .scalar = .bytes } }),
-        .RepeatedGroup_a = fd(47, .{ .list = .{ .scalar = .int32 } }),
-        .repeated_nested_message = fd(48, .{ .list = .submessage }),
-        .repeated_foreign_message = fd(49, .{ .list = .submessage }),
-        .repeated_nested_enum = fd(51, .{ .list = .@"enum" }),
-        .repeated_foreign_enum = fd(52, .{ .list = .@"enum" }),
-        .repeated_string_piece = fd(54, .{ .list = .{ .scalar = .string } }),
-        .repeated_cord = fd(55, .{ .list = .{ .scalar = .string } }),
-        .repeated_lazy_message = fd(57, .{ .list = .submessage }),
+        .repeated_int32 = fd(31, .{ .repeated = .{ .scalar = .int32 } }),
+        .repeated_int64 = fd(32, .{ .repeated = .{ .scalar = .int64 } }),
+        .repeated_uint32 = fd(33, .{ .repeated = .{ .scalar = .uint32 } }),
+        .repeated_uint64 = fd(34, .{ .repeated = .{ .scalar = .uint64 } }),
+        .repeated_sint32 = fd(35, .{ .repeated = .{ .scalar = .sint32 } }),
+        .repeated_sint64 = fd(36, .{ .repeated = .{ .scalar = .sint64 } }),
+        .repeated_fixed32 = fd(37, .{ .repeated = .{ .scalar = .fixed32 } }),
+        .repeated_fixed64 = fd(38, .{ .repeated = .{ .scalar = .fixed64 } }),
+        .repeated_sfixed32 = fd(39, .{ .repeated = .{ .scalar = .sfixed32 } }),
+        .repeated_sfixed64 = fd(40, .{ .repeated = .{ .scalar = .sfixed64 } }),
+        .repeated_float = fd(41, .{ .repeated = .{ .scalar = .float } }),
+        .repeated_double = fd(42, .{ .repeated = .{ .scalar = .double } }),
+        .repeated_bool = fd(43, .{ .repeated = .{ .scalar = .bool } }),
+        .repeated_string = fd(44, .{ .repeated = .{ .scalar = .string } }),
+        .repeated_bytes = fd(45, .{ .repeated = .{ .scalar = .bytes } }),
+        .RepeatedGroup_a = fd(47, .{ .repeated = .{ .scalar = .int32 } }),
+        .repeated_nested_message = fd(48, .{ .repeated = .submessage }),
+        .repeated_foreign_message = fd(49, .{ .repeated = .submessage }),
+        .repeated_nested_enum = fd(51, .{ .repeated = .@"enum" }),
+        .repeated_foreign_enum = fd(52, .{ .repeated = .@"enum" }),
+        .repeated_string_piece = fd(54, .{ .repeated = .{ .scalar = .string } }),
+        .repeated_cord = fd(55, .{ .repeated = .{ .scalar = .string } }),
+        .repeated_lazy_message = fd(57, .{ .repeated = .submessage }),
         .default_int32 = fd(61, .{ .scalar = .int32 }),
         .default_int64 = fd(62, .{ .scalar = .int64 }),
         .default_uint32 = fd(63, .{ .scalar = .uint32 }),
@@ -324,7 +324,7 @@ pub const TestAllTypes = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -384,7 +384,7 @@ pub const TestAllTypes = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -443,7 +443,7 @@ pub const NestedTestAllTypes = struct {
     pub const _desc_table = .{
         .child = fd(1, .submessage),
         .payload = fd(2, .submessage),
-        .repeated_child = fd(3, .{ .list = .submessage }),
+        .repeated_child = fd(3, .{ .repeated = .submessage }),
         .lazy_child = fd(4, .submessage),
         .eager_child = fd(5, .submessage),
     };
@@ -459,7 +459,7 @@ pub const NestedTestAllTypes = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -528,7 +528,7 @@ pub const TestDeprecatedFields = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -591,7 +591,7 @@ pub const TestDeprecatedMessage = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -660,7 +660,7 @@ pub const ForeignMessage = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -723,7 +723,7 @@ pub const TestReservedFields = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -786,7 +786,7 @@ pub const TestAllExtensions = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -855,7 +855,7 @@ pub const TestGroup = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -918,7 +918,7 @@ pub const TestGroupExtension = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -981,7 +981,7 @@ pub const TestNestedExtension = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1052,7 +1052,7 @@ pub const TestChildExtension = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1139,7 +1139,7 @@ pub const TestChildExtensionData = struct {
             pub fn decode(
                 input: []const u8,
                 allocator: std.mem.Allocator,
-            ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+            ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
                 return protobuf.decode(@This(), input, allocator);
             }
 
@@ -1199,7 +1199,7 @@ pub const TestChildExtensionData = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -1259,7 +1259,7 @@ pub const TestChildExtensionData = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1328,7 +1328,7 @@ pub const TestNestedChildExtension = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1397,7 +1397,7 @@ pub const TestNestedChildExtensionData = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1530,7 +1530,7 @@ pub const TestRequired = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1587,7 +1587,7 @@ pub const TestRequiredForeign = struct {
 
     pub const _desc_table = .{
         .optional_message = fd(1, .submessage),
-        .repeated_message = fd(2, .{ .list = .submessage }),
+        .repeated_message = fd(2, .{ .repeated = .submessage }),
         .dummy = fd(3, .{ .scalar = .int32 }),
         .optional_lazy_message = fd(4, .submessage),
     };
@@ -1603,7 +1603,7 @@ pub const TestRequiredForeign = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1659,7 +1659,7 @@ pub const TestRequiredMessage = struct {
 
     pub const _desc_table = .{
         .optional_message = fd(1, .submessage),
-        .repeated_message = fd(2, .{ .list = .submessage }),
+        .repeated_message = fd(2, .{ .repeated = .submessage }),
         .required_message = fd(3, .submessage),
     };
 
@@ -1674,7 +1674,7 @@ pub const TestRequiredMessage = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1745,7 +1745,7 @@ pub const TestNestedRequiredForeign = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1812,7 +1812,7 @@ pub const TestForeignNested = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1875,7 +1875,7 @@ pub const TestEmptyMessage = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1938,7 +1938,7 @@ pub const TestEmptyMessageWithExtensions = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -2015,7 +2015,7 @@ pub const TestPickleNestedMessage = struct {
             pub fn decode(
                 input: []const u8,
                 allocator: std.mem.Allocator,
-            ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+            ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
                 return protobuf.decode(@This(), input, allocator);
             }
 
@@ -2075,7 +2075,7 @@ pub const TestPickleNestedMessage = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -2135,7 +2135,7 @@ pub const TestPickleNestedMessage = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -2198,7 +2198,7 @@ pub const TestMultipleExtensionRanges = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -2267,7 +2267,7 @@ pub const TestReallyLargeTagNumber = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -2336,7 +2336,7 @@ pub const TestRecursiveMessage = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -2414,7 +2414,7 @@ pub const TestMutualRecursionA = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -2474,7 +2474,7 @@ pub const TestMutualRecursionA = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -2543,7 +2543,7 @@ pub const TestMutualRecursionB = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -2617,7 +2617,7 @@ pub const TestIsInitialized = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -2677,7 +2677,7 @@ pub const TestIsInitialized = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -2744,7 +2744,7 @@ pub const TestDupFieldNumber = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -2811,7 +2811,7 @@ pub const TestEagerMessage = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -2878,7 +2878,7 @@ pub const TestLazyMessage = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -2956,7 +2956,7 @@ pub const TestEagerMaybeLazy = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -3016,7 +3016,7 @@ pub const TestEagerMaybeLazy = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -3077,8 +3077,8 @@ pub const TestNestedMessageHasBits = struct {
         nestedmessage_repeated_foreignmessage: std.ArrayListUnmanaged(ForeignMessage),
 
         pub const _desc_table = .{
-            .nestedmessage_repeated_int32 = fd(1, .{ .list = .{ .scalar = .int32 } }),
-            .nestedmessage_repeated_foreignmessage = fd(2, .{ .list = .submessage }),
+            .nestedmessage_repeated_int32 = fd(1, .{ .repeated = .{ .scalar = .int32 } }),
+            .nestedmessage_repeated_foreignmessage = fd(2, .{ .repeated = .submessage }),
         };
 
         pub fn encode(
@@ -3092,7 +3092,7 @@ pub const TestNestedMessageHasBits = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -3152,7 +3152,7 @@ pub const TestNestedMessageHasBits = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -3222,12 +3222,12 @@ pub const TestCamelCaseFieldNames = struct {
         .MessageField = fd(4, .submessage),
         .StringPieceField = fd(5, .{ .scalar = .string }),
         .CordField = fd(6, .{ .scalar = .string }),
-        .RepeatedPrimitiveField = fd(7, .{ .list = .{ .scalar = .int32 } }),
-        .RepeatedStringField = fd(8, .{ .list = .{ .scalar = .string } }),
-        .RepeatedEnumField = fd(9, .{ .list = .@"enum" }),
-        .RepeatedMessageField = fd(10, .{ .list = .submessage }),
-        .RepeatedStringPieceField = fd(11, .{ .list = .{ .scalar = .string } }),
-        .RepeatedCordField = fd(12, .{ .list = .{ .scalar = .string } }),
+        .RepeatedPrimitiveField = fd(7, .{ .repeated = .{ .scalar = .int32 } }),
+        .RepeatedStringField = fd(8, .{ .repeated = .{ .scalar = .string } }),
+        .RepeatedEnumField = fd(9, .{ .repeated = .@"enum" }),
+        .RepeatedMessageField = fd(10, .{ .repeated = .submessage }),
+        .RepeatedStringPieceField = fd(11, .{ .repeated = .{ .scalar = .string } }),
+        .RepeatedCordField = fd(12, .{ .repeated = .{ .scalar = .string } }),
     };
 
     pub fn encode(
@@ -3241,7 +3241,7 @@ pub const TestCamelCaseFieldNames = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -3323,7 +3323,7 @@ pub const TestFieldOrderings = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -3383,7 +3383,7 @@ pub const TestFieldOrderings = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -3450,7 +3450,7 @@ pub const TestExtensionOrderings1 = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -3524,7 +3524,7 @@ pub const TestExtensionOrderings2 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -3584,7 +3584,7 @@ pub const TestExtensionOrderings2 = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -3703,7 +3703,7 @@ pub const TestExtremeDefaultValues = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -3770,7 +3770,7 @@ pub const SparseEnumMessage = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -3837,7 +3837,7 @@ pub const OneString = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -3890,7 +3890,7 @@ pub const MoreString = struct {
     data: std.ArrayListUnmanaged([]const u8),
 
     pub const _desc_table = .{
-        .data = fd(1, .{ .list = .{ .scalar = .string } }),
+        .data = fd(1, .{ .repeated = .{ .scalar = .string } }),
     };
 
     pub fn encode(
@@ -3904,7 +3904,7 @@ pub const MoreString = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -3971,7 +3971,7 @@ pub const OneBytes = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -4024,7 +4024,7 @@ pub const MoreBytes = struct {
     data: std.ArrayListUnmanaged([]const u8),
 
     pub const _desc_table = .{
-        .data = fd(1, .{ .list = .{ .scalar = .bytes } }),
+        .data = fd(1, .{ .repeated = .{ .scalar = .bytes } }),
     };
 
     pub fn encode(
@@ -4038,7 +4038,7 @@ pub const MoreBytes = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -4167,7 +4167,7 @@ pub const ManyOptionalString = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -4234,7 +4234,7 @@ pub const Int32Message = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -4301,7 +4301,7 @@ pub const Uint32Message = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -4368,7 +4368,7 @@ pub const Int64Message = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -4435,7 +4435,7 @@ pub const Uint64Message = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -4502,7 +4502,7 @@ pub const BoolMessage = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -4591,7 +4591,7 @@ pub const TestOneof = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -4666,7 +4666,7 @@ pub const TestOneofBackwardsCompatible = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -4815,7 +4815,7 @@ pub const TestOneof2 = struct {
 
         pub const _desc_table = .{
             .moo_int = fd(1, .{ .scalar = .int64 }),
-            .corge_int = fd(2, .{ .list = .{ .scalar = .int32 } }),
+            .corge_int = fd(2, .{ .repeated = .{ .scalar = .int32 } }),
         };
 
         pub fn encode(
@@ -4829,7 +4829,7 @@ pub const TestOneof2 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -4889,7 +4889,7 @@ pub const TestOneof2 = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -4979,7 +4979,7 @@ pub const TestRequiredOneof = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -5039,7 +5039,7 @@ pub const TestRequiredOneof = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -5105,20 +5105,20 @@ pub const TestPackedTypes = struct {
     packed_enum: std.ArrayListUnmanaged(ForeignEnum),
 
     pub const _desc_table = .{
-        .packed_int32 = fd(90, .{ .packed_list = .{ .scalar = .int32 } }),
-        .packed_int64 = fd(91, .{ .packed_list = .{ .scalar = .int64 } }),
-        .packed_uint32 = fd(92, .{ .packed_list = .{ .scalar = .uint32 } }),
-        .packed_uint64 = fd(93, .{ .packed_list = .{ .scalar = .uint64 } }),
-        .packed_sint32 = fd(94, .{ .packed_list = .{ .scalar = .sint32 } }),
-        .packed_sint64 = fd(95, .{ .packed_list = .{ .scalar = .sint64 } }),
-        .packed_fixed32 = fd(96, .{ .packed_list = .{ .scalar = .fixed32 } }),
-        .packed_fixed64 = fd(97, .{ .packed_list = .{ .scalar = .fixed64 } }),
-        .packed_sfixed32 = fd(98, .{ .packed_list = .{ .scalar = .sfixed32 } }),
-        .packed_sfixed64 = fd(99, .{ .packed_list = .{ .scalar = .sfixed64 } }),
-        .packed_float = fd(100, .{ .packed_list = .{ .scalar = .float } }),
-        .packed_double = fd(101, .{ .packed_list = .{ .scalar = .double } }),
-        .packed_bool = fd(102, .{ .packed_list = .{ .scalar = .bool } }),
-        .packed_enum = fd(103, .{ .packed_list = .@"enum" }),
+        .packed_int32 = fd(90, .{ .packed_repeated = .{ .scalar = .int32 } }),
+        .packed_int64 = fd(91, .{ .packed_repeated = .{ .scalar = .int64 } }),
+        .packed_uint32 = fd(92, .{ .packed_repeated = .{ .scalar = .uint32 } }),
+        .packed_uint64 = fd(93, .{ .packed_repeated = .{ .scalar = .uint64 } }),
+        .packed_sint32 = fd(94, .{ .packed_repeated = .{ .scalar = .sint32 } }),
+        .packed_sint64 = fd(95, .{ .packed_repeated = .{ .scalar = .sint64 } }),
+        .packed_fixed32 = fd(96, .{ .packed_repeated = .{ .scalar = .fixed32 } }),
+        .packed_fixed64 = fd(97, .{ .packed_repeated = .{ .scalar = .fixed64 } }),
+        .packed_sfixed32 = fd(98, .{ .packed_repeated = .{ .scalar = .sfixed32 } }),
+        .packed_sfixed64 = fd(99, .{ .packed_repeated = .{ .scalar = .sfixed64 } }),
+        .packed_float = fd(100, .{ .packed_repeated = .{ .scalar = .float } }),
+        .packed_double = fd(101, .{ .packed_repeated = .{ .scalar = .double } }),
+        .packed_bool = fd(102, .{ .packed_repeated = .{ .scalar = .bool } }),
+        .packed_enum = fd(103, .{ .packed_repeated = .@"enum" }),
     };
 
     pub fn encode(
@@ -5132,7 +5132,7 @@ pub const TestPackedTypes = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -5198,20 +5198,20 @@ pub const TestUnpackedTypes = struct {
     unpacked_enum: std.ArrayListUnmanaged(ForeignEnum),
 
     pub const _desc_table = .{
-        .unpacked_int32 = fd(90, .{ .list = .{ .scalar = .int32 } }),
-        .unpacked_int64 = fd(91, .{ .list = .{ .scalar = .int64 } }),
-        .unpacked_uint32 = fd(92, .{ .list = .{ .scalar = .uint32 } }),
-        .unpacked_uint64 = fd(93, .{ .list = .{ .scalar = .uint64 } }),
-        .unpacked_sint32 = fd(94, .{ .list = .{ .scalar = .sint32 } }),
-        .unpacked_sint64 = fd(95, .{ .list = .{ .scalar = .sint64 } }),
-        .unpacked_fixed32 = fd(96, .{ .list = .{ .scalar = .fixed32 } }),
-        .unpacked_fixed64 = fd(97, .{ .list = .{ .scalar = .fixed64 } }),
-        .unpacked_sfixed32 = fd(98, .{ .list = .{ .scalar = .sfixed32 } }),
-        .unpacked_sfixed64 = fd(99, .{ .list = .{ .scalar = .sfixed64 } }),
-        .unpacked_float = fd(100, .{ .list = .{ .scalar = .float } }),
-        .unpacked_double = fd(101, .{ .list = .{ .scalar = .double } }),
-        .unpacked_bool = fd(102, .{ .list = .{ .scalar = .bool } }),
-        .unpacked_enum = fd(103, .{ .list = .@"enum" }),
+        .unpacked_int32 = fd(90, .{ .repeated = .{ .scalar = .int32 } }),
+        .unpacked_int64 = fd(91, .{ .repeated = .{ .scalar = .int64 } }),
+        .unpacked_uint32 = fd(92, .{ .repeated = .{ .scalar = .uint32 } }),
+        .unpacked_uint64 = fd(93, .{ .repeated = .{ .scalar = .uint64 } }),
+        .unpacked_sint32 = fd(94, .{ .repeated = .{ .scalar = .sint32 } }),
+        .unpacked_sint64 = fd(95, .{ .repeated = .{ .scalar = .sint64 } }),
+        .unpacked_fixed32 = fd(96, .{ .repeated = .{ .scalar = .fixed32 } }),
+        .unpacked_fixed64 = fd(97, .{ .repeated = .{ .scalar = .fixed64 } }),
+        .unpacked_sfixed32 = fd(98, .{ .repeated = .{ .scalar = .sfixed32 } }),
+        .unpacked_sfixed64 = fd(99, .{ .repeated = .{ .scalar = .sfixed64 } }),
+        .unpacked_float = fd(100, .{ .repeated = .{ .scalar = .float } }),
+        .unpacked_double = fd(101, .{ .repeated = .{ .scalar = .double } }),
+        .unpacked_bool = fd(102, .{ .repeated = .{ .scalar = .bool } }),
+        .unpacked_enum = fd(103, .{ .repeated = .@"enum" }),
     };
 
     pub fn encode(
@@ -5225,7 +5225,7 @@ pub const TestUnpackedTypes = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -5288,7 +5288,7 @@ pub const TestPackedExtensions = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -5351,7 +5351,7 @@ pub const TestUnpackedExtensions = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -5415,8 +5415,8 @@ pub const TestDynamicExtensions = struct {
         .dynamic_enum_extension = fd(2002, .@"enum"),
         .message_extension = fd(2003, .submessage),
         .dynamic_message_extension = fd(2004, .submessage),
-        .repeated_extension = fd(2005, .{ .list = .{ .scalar = .string } }),
-        .packed_extension = fd(2006, .{ .packed_list = .{ .scalar = .sint32 } }),
+        .repeated_extension = fd(2005, .{ .repeated = .{ .scalar = .string } }),
+        .packed_extension = fd(2006, .{ .packed_repeated = .{ .scalar = .sint32 } }),
     };
 
     pub const DynamicEnumType = enum(i32) {
@@ -5444,7 +5444,7 @@ pub const TestDynamicExtensions = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -5504,7 +5504,7 @@ pub const TestDynamicExtensions = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -5562,12 +5562,12 @@ pub const TestRepeatedScalarDifferentTagSizes = struct {
     repeated_uint64: std.ArrayListUnmanaged(u64),
 
     pub const _desc_table = .{
-        .repeated_fixed32 = fd(12, .{ .list = .{ .scalar = .fixed32 } }),
-        .repeated_int32 = fd(13, .{ .list = .{ .scalar = .int32 } }),
-        .repeated_fixed64 = fd(2046, .{ .list = .{ .scalar = .fixed64 } }),
-        .repeated_int64 = fd(2047, .{ .list = .{ .scalar = .int64 } }),
-        .repeated_float = fd(262142, .{ .list = .{ .scalar = .float } }),
-        .repeated_uint64 = fd(262143, .{ .list = .{ .scalar = .uint64 } }),
+        .repeated_fixed32 = fd(12, .{ .repeated = .{ .scalar = .fixed32 } }),
+        .repeated_int32 = fd(13, .{ .repeated = .{ .scalar = .int32 } }),
+        .repeated_fixed64 = fd(2046, .{ .repeated = .{ .scalar = .fixed64 } }),
+        .repeated_int64 = fd(2047, .{ .repeated = .{ .scalar = .int64 } }),
+        .repeated_float = fd(262142, .{ .repeated = .{ .scalar = .float } }),
+        .repeated_uint64 = fd(262143, .{ .repeated = .{ .scalar = .uint64 } }),
     };
 
     pub fn encode(
@@ -5581,7 +5581,7 @@ pub const TestRepeatedScalarDifferentTagSizes = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -5640,7 +5640,7 @@ pub const TestParsingMerge = struct {
     pub const _desc_table = .{
         .required_all_types = fd(1, .submessage),
         .optional_all_types = fd(2, .submessage),
-        .repeated_all_types = fd(3, .{ .list = .submessage }),
+        .repeated_all_types = fd(3, .{ .repeated = .submessage }),
         .optional_group_all_types = fd(11, .submessage),
         .repeated_group_all_types = fd(21, .submessage),
     };
@@ -5655,13 +5655,13 @@ pub const TestParsingMerge = struct {
         ext2: std.ArrayListUnmanaged(TestAllTypes),
 
         pub const _desc_table = .{
-            .field1 = fd(1, .{ .list = .submessage }),
-            .field2 = fd(2, .{ .list = .submessage }),
-            .field3 = fd(3, .{ .list = .submessage }),
+            .field1 = fd(1, .{ .repeated = .submessage }),
+            .field2 = fd(2, .{ .repeated = .submessage }),
+            .field3 = fd(3, .{ .repeated = .submessage }),
             .Group1_field1 = fd(11, .submessage),
             .Group2_field1 = fd(21, .submessage),
-            .ext1 = fd(1000, .{ .list = .submessage }),
-            .ext2 = fd(1001, .{ .list = .submessage }),
+            .ext1 = fd(1000, .{ .repeated = .submessage }),
+            .ext2 = fd(1001, .{ .repeated = .submessage }),
         };
 
         pub fn encode(
@@ -5675,7 +5675,7 @@ pub const TestParsingMerge = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -5735,7 +5735,7 @@ pub const TestParsingMerge = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -5802,7 +5802,7 @@ pub const TestMergeException = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -5869,7 +5869,7 @@ pub const TestCommentInjectionMessage = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -5946,7 +5946,7 @@ pub const TestMessageSize = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -6009,7 +6009,7 @@ pub const FooRequest = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -6072,7 +6072,7 @@ pub const FooResponse = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -6135,7 +6135,7 @@ pub const FooClientMessage = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -6198,7 +6198,7 @@ pub const FooServerMessage = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -6261,7 +6261,7 @@ pub const BarRequest = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -6324,7 +6324,7 @@ pub const BarResponse = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -6403,7 +6403,7 @@ pub const TestJsonName = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -6487,14 +6487,14 @@ pub const TestHugeFieldNumbers = struct {
     pub const _desc_table = .{
         .optional_int32 = fd(536870000, .{ .scalar = .int32 }),
         .fixed_32 = fd(536870001, .{ .scalar = .int32 }),
-        .repeated_int32 = fd(536870002, .{ .list = .{ .scalar = .int32 } }),
-        .packed_int32 = fd(536870003, .{ .packed_list = .{ .scalar = .int32 } }),
+        .repeated_int32 = fd(536870002, .{ .repeated = .{ .scalar = .int32 } }),
+        .packed_int32 = fd(536870003, .{ .packed_repeated = .{ .scalar = .int32 } }),
         .optional_enum = fd(536870004, .@"enum"),
         .optional_string = fd(536870005, .{ .scalar = .string }),
         .optional_bytes = fd(536870006, .{ .scalar = .bytes }),
         .optional_message = fd(536870007, .submessage),
         .group_a = fd(536870009, .{ .scalar = .int32 }),
-        .string_string_map = fd(536870010, .{ .list = .submessage }),
+        .string_string_map = fd(536870010, .{ .repeated = .submessage }),
         .oneof_field = fd(null, .{ .oneof = oneof_field_union }),
     };
 
@@ -6518,7 +6518,7 @@ pub const TestHugeFieldNumbers = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -6578,7 +6578,7 @@ pub const TestHugeFieldNumbers = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -6661,7 +6661,7 @@ pub const TestExtensionInsideTable = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -6728,7 +6728,7 @@ pub const TestNestedGroupExtensionInnerExtension = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -6801,7 +6801,7 @@ pub const TestExtensionRangeSerialize = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -6874,7 +6874,7 @@ pub const TestVerifyInt32Simple = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -6937,7 +6937,7 @@ pub const TestVerifyInt32 = struct {
         .optional_int32_63 = fd(63, .{ .scalar = .int32 }),
         .optional_int32_64 = fd(64, .{ .scalar = .int32 }),
         .optional_all_types = fd(9, .submessage),
-        .repeated_all_types = fd(10, .{ .list = .submessage }),
+        .repeated_all_types = fd(10, .{ .repeated = .submessage }),
     };
 
     pub fn encode(
@@ -6951,7 +6951,7 @@ pub const TestVerifyInt32 = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -7020,7 +7020,7 @@ pub const TestVerifyMostlyInt32 = struct {
         .optional_int32_63 = fd(63, .{ .scalar = .int32 }),
         .optional_int32_64 = fd(64, .{ .scalar = .int32 }),
         .optional_all_types = fd(9, .submessage),
-        .repeated_all_types = fd(10, .{ .list = .submessage }),
+        .repeated_all_types = fd(10, .{ .repeated = .submessage }),
     };
 
     pub fn encode(
@@ -7034,7 +7034,7 @@ pub const TestVerifyMostlyInt32 = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -7105,7 +7105,7 @@ pub const TestVerifyMostlyInt32BigFieldNumber = struct {
         .optional_int32_63 = fd(63, .{ .scalar = .int32 }),
         .optional_int32_64 = fd(64, .{ .scalar = .int32 }),
         .optional_all_types = fd(9, .submessage),
-        .repeated_all_types = fd(10, .{ .list = .submessage }),
+        .repeated_all_types = fd(10, .{ .repeated = .submessage }),
     };
 
     pub fn encode(
@@ -7119,7 +7119,7 @@ pub const TestVerifyMostlyInt32BigFieldNumber = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -7192,7 +7192,7 @@ pub const TestVerifyUint32Simple = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -7255,7 +7255,7 @@ pub const TestVerifyUint32 = struct {
         .optional_uint32_63 = fd(63, .{ .scalar = .uint32 }),
         .optional_uint32_64 = fd(64, .{ .scalar = .uint32 }),
         .optional_all_types = fd(9, .submessage),
-        .repeated_all_types = fd(10, .{ .list = .submessage }),
+        .repeated_all_types = fd(10, .{ .repeated = .submessage }),
     };
 
     pub fn encode(
@@ -7269,7 +7269,7 @@ pub const TestVerifyUint32 = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -7332,7 +7332,7 @@ pub const TestVerifyOneUint32 = struct {
         .optional_int32_63 = fd(63, .{ .scalar = .int32 }),
         .optional_int32_64 = fd(64, .{ .scalar = .int32 }),
         .optional_all_types = fd(9, .submessage),
-        .repeated_all_types = fd(10, .{ .list = .submessage }),
+        .repeated_all_types = fd(10, .{ .repeated = .submessage }),
     };
 
     pub fn encode(
@@ -7346,7 +7346,7 @@ pub const TestVerifyOneUint32 = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -7411,7 +7411,7 @@ pub const TestVerifyOneInt32BigFieldNumber = struct {
         .optional_int64_63 = fd(63, .{ .scalar = .int64 }),
         .optional_int64_64 = fd(64, .{ .scalar = .int64 }),
         .optional_all_types = fd(9, .submessage),
-        .repeated_all_types = fd(10, .{ .list = .submessage }),
+        .repeated_all_types = fd(10, .{ .repeated = .submessage }),
     };
 
     pub fn encode(
@@ -7425,7 +7425,7 @@ pub const TestVerifyOneInt32BigFieldNumber = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -7492,7 +7492,7 @@ pub const TestVerifyInt32BigFieldNumber = struct {
         .optional_int32_63 = fd(63, .{ .scalar = .int32 }),
         .optional_int32_64 = fd(64, .{ .scalar = .int32 }),
         .optional_all_types = fd(9, .submessage),
-        .repeated_all_types = fd(10, .{ .list = .submessage }),
+        .repeated_all_types = fd(10, .{ .repeated = .submessage }),
     };
 
     pub fn encode(
@@ -7506,7 +7506,7 @@ pub const TestVerifyInt32BigFieldNumber = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -7573,7 +7573,7 @@ pub const TestVerifyUint32BigFieldNumber = struct {
         .optional_uint32_63 = fd(63, .{ .scalar = .uint32 }),
         .optional_uint32_64 = fd(64, .{ .scalar = .uint32 }),
         .optional_all_types = fd(9, .submessage),
-        .repeated_all_types = fd(10, .{ .list = .submessage }),
+        .repeated_all_types = fd(10, .{ .repeated = .submessage }),
     };
 
     pub fn encode(
@@ -7587,7 +7587,7 @@ pub const TestVerifyUint32BigFieldNumber = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -7665,7 +7665,7 @@ pub const TestVerifyBigFieldNumberUint32 = struct {
             .optional_uint32_63 = fd(63, .{ .scalar = .uint32 }),
             .optional_uint32_64 = fd(64, .{ .scalar = .uint32 }),
             .optional_nested = fd(9, .submessage),
-            .repeated_nested = fd(10, .{ .list = .submessage }),
+            .repeated_nested = fd(10, .{ .repeated = .submessage }),
         };
 
         pub fn encode(
@@ -7679,7 +7679,7 @@ pub const TestVerifyBigFieldNumberUint32 = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -7739,7 +7739,7 @@ pub const TestVerifyBigFieldNumberUint32 = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -7831,39 +7831,39 @@ pub const EnumParseTester = struct {
         .optional_seq_small_0_lowfield = fd(1, .@"enum"),
         .optional_seq_small_0_midfield = fd(1001, .@"enum"),
         .optional_seq_small_0_hifield = fd(1000001, .@"enum"),
-        .repeated_seq_small_0_lowfield = fd(2, .{ .list = .@"enum" }),
-        .repeated_seq_small_0_midfield = fd(1002, .{ .list = .@"enum" }),
-        .repeated_seq_small_0_hifield = fd(1000002, .{ .list = .@"enum" }),
-        .packed_seq_small_0_lowfield = fd(3, .{ .packed_list = .@"enum" }),
-        .packed_seq_small_0_midfield = fd(1003, .{ .packed_list = .@"enum" }),
-        .packed_seq_small_0_hifield = fd(1000003, .{ .packed_list = .@"enum" }),
+        .repeated_seq_small_0_lowfield = fd(2, .{ .repeated = .@"enum" }),
+        .repeated_seq_small_0_midfield = fd(1002, .{ .repeated = .@"enum" }),
+        .repeated_seq_small_0_hifield = fd(1000002, .{ .repeated = .@"enum" }),
+        .packed_seq_small_0_lowfield = fd(3, .{ .packed_repeated = .@"enum" }),
+        .packed_seq_small_0_midfield = fd(1003, .{ .packed_repeated = .@"enum" }),
+        .packed_seq_small_0_hifield = fd(1000003, .{ .packed_repeated = .@"enum" }),
         .optional_seq_small_1_lowfield = fd(4, .@"enum"),
         .optional_seq_small_1_midfield = fd(1004, .@"enum"),
         .optional_seq_small_1_hifield = fd(1000004, .@"enum"),
-        .repeated_seq_small_1_lowfield = fd(5, .{ .list = .@"enum" }),
-        .repeated_seq_small_1_midfield = fd(1005, .{ .list = .@"enum" }),
-        .repeated_seq_small_1_hifield = fd(1000005, .{ .list = .@"enum" }),
-        .packed_seq_small_1_lowfield = fd(6, .{ .packed_list = .@"enum" }),
-        .packed_seq_small_1_midfield = fd(1006, .{ .packed_list = .@"enum" }),
-        .packed_seq_small_1_hifield = fd(1000006, .{ .packed_list = .@"enum" }),
+        .repeated_seq_small_1_lowfield = fd(5, .{ .repeated = .@"enum" }),
+        .repeated_seq_small_1_midfield = fd(1005, .{ .repeated = .@"enum" }),
+        .repeated_seq_small_1_hifield = fd(1000005, .{ .repeated = .@"enum" }),
+        .packed_seq_small_1_lowfield = fd(6, .{ .packed_repeated = .@"enum" }),
+        .packed_seq_small_1_midfield = fd(1006, .{ .packed_repeated = .@"enum" }),
+        .packed_seq_small_1_hifield = fd(1000006, .{ .packed_repeated = .@"enum" }),
         .optional_seq_large_lowfield = fd(7, .@"enum"),
         .optional_seq_large_midfield = fd(1007, .@"enum"),
         .optional_seq_large_hifield = fd(1000007, .@"enum"),
-        .repeated_seq_large_lowfield = fd(8, .{ .list = .@"enum" }),
-        .repeated_seq_large_midfield = fd(1008, .{ .list = .@"enum" }),
-        .repeated_seq_large_hifield = fd(1000008, .{ .list = .@"enum" }),
-        .packed_seq_large_lowfield = fd(9, .{ .packed_list = .@"enum" }),
-        .packed_seq_large_midfield = fd(1009, .{ .packed_list = .@"enum" }),
-        .packed_seq_large_hifield = fd(1000009, .{ .packed_list = .@"enum" }),
+        .repeated_seq_large_lowfield = fd(8, .{ .repeated = .@"enum" }),
+        .repeated_seq_large_midfield = fd(1008, .{ .repeated = .@"enum" }),
+        .repeated_seq_large_hifield = fd(1000008, .{ .repeated = .@"enum" }),
+        .packed_seq_large_lowfield = fd(9, .{ .packed_repeated = .@"enum" }),
+        .packed_seq_large_midfield = fd(1009, .{ .packed_repeated = .@"enum" }),
+        .packed_seq_large_hifield = fd(1000009, .{ .packed_repeated = .@"enum" }),
         .optional_arbitrary_lowfield = fd(10, .@"enum"),
         .optional_arbitrary_midfield = fd(1010, .@"enum"),
         .optional_arbitrary_hifield = fd(1000010, .@"enum"),
-        .repeated_arbitrary_lowfield = fd(11, .{ .list = .@"enum" }),
-        .repeated_arbitrary_midfield = fd(1011, .{ .list = .@"enum" }),
-        .repeated_arbitrary_hifield = fd(1000011, .{ .list = .@"enum" }),
-        .packed_arbitrary_lowfield = fd(12, .{ .packed_list = .@"enum" }),
-        .packed_arbitrary_midfield = fd(1012, .{ .packed_list = .@"enum" }),
-        .packed_arbitrary_hifield = fd(1000012, .{ .packed_list = .@"enum" }),
+        .repeated_arbitrary_lowfield = fd(11, .{ .repeated = .@"enum" }),
+        .repeated_arbitrary_midfield = fd(1011, .{ .repeated = .@"enum" }),
+        .repeated_arbitrary_hifield = fd(1000011, .{ .repeated = .@"enum" }),
+        .packed_arbitrary_lowfield = fd(12, .{ .packed_repeated = .@"enum" }),
+        .packed_arbitrary_midfield = fd(1012, .{ .packed_repeated = .@"enum" }),
+        .packed_arbitrary_hifield = fd(1000012, .{ .packed_repeated = .@"enum" }),
         .other_field = fd(99, .{ .scalar = .int32 }),
     };
 
@@ -7941,7 +7941,7 @@ pub const EnumParseTester = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 

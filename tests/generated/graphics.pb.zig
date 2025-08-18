@@ -33,7 +33,7 @@ pub const InventoryItem = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -124,7 +124,7 @@ pub const Character = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -195,7 +195,7 @@ pub const Alignment = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -246,18 +246,18 @@ pub const Alignment = struct {
 
 pub const Index = struct {
     id: i32 = 0,
-    grh: std.ArrayListUnmanaged(i32),
+    grh: std.ArrayListUnmanaged(i32) = .empty,
     offset_x: i32 = 0,
     offset_y: i32 = 0,
-    animations: std.ArrayListUnmanaged(Index.AnimationsEntry),
+    animations: std.ArrayListUnmanaged(Index.AnimationsEntry) = .empty,
     name: []const u8 = &.{},
 
     pub const _desc_table = .{
         .id = fd(1, .{ .scalar = .int32 }),
-        .grh = fd(2, .{ .packed_list = .{ .scalar = .int32 } }),
+        .grh = fd(2, .{ .packed_repeated = .{ .scalar = .int32 } }),
         .offset_x = fd(3, .{ .scalar = .int32 }),
         .offset_y = fd(4, .{ .scalar = .int32 }),
-        .animations = fd(5, .{ .list = .submessage }),
+        .animations = fd(5, .{ .repeated = .submessage }),
         .name = fd(6, .{ .scalar = .string }),
     };
 
@@ -281,7 +281,7 @@ pub const Index = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -341,7 +341,7 @@ pub const Index = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -392,11 +392,11 @@ pub const Index = struct {
 
 pub const StoredChunk = struct {
     chunk_id: i32 = 0,
-    entities: std.ArrayListUnmanaged(MapEntity),
+    entities: std.ArrayListUnmanaged(MapEntity) = .empty,
 
     pub const _desc_table = .{
         .chunk_id = fd(1, .{ .scalar = .int32 }),
-        .entities = fd(2, .{ .list = .submessage }),
+        .entities = fd(2, .{ .repeated = .submessage }),
     };
 
     pub fn encode(
@@ -410,7 +410,7 @@ pub const StoredChunk = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -489,7 +489,7 @@ pub const MapEntity = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -564,7 +564,7 @@ pub const Light = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -633,7 +633,7 @@ pub const Point = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -683,10 +683,10 @@ pub const Point = struct {
 };
 
 pub const Shape = struct {
-    points: std.ArrayListUnmanaged(Point),
+    points: std.ArrayListUnmanaged(Point) = .empty,
 
     pub const _desc_table = .{
-        .points = fd(1, .{ .list = .submessage }),
+        .points = fd(1, .{ .repeated = .submessage }),
     };
 
     pub fn encode(
@@ -700,7 +700,7 @@ pub const Shape = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -752,7 +752,7 @@ pub const Shape = struct {
 pub const Npc = struct {
     x: i32 = 0,
     y: i32 = 0,
-    items: std.ArrayListUnmanaged(InventoryItem),
+    items: std.ArrayListUnmanaged(InventoryItem) = .empty,
     name: []const u8 = &.{},
     alignment: []const u8 = &.{},
     ai: []const u8 = &.{},
@@ -762,14 +762,14 @@ pub const Npc = struct {
     max_mana: i32 = 0,
     min_strenght: i32 = 0,
     max_strenght: i32 = 0,
-    skills: std.ArrayListUnmanaged(Npc.SkillsEntry),
-    abilities: std.ArrayListUnmanaged(Npc.AbilitiesEntry),
+    skills: std.ArrayListUnmanaged(Npc.SkillsEntry) = .empty,
+    abilities: std.ArrayListUnmanaged(Npc.AbilitiesEntry) = .empty,
     visual: ?Character = null,
 
     pub const _desc_table = .{
         .x = fd(1, .{ .scalar = .int32 }),
         .y = fd(2, .{ .scalar = .int32 }),
-        .items = fd(3, .{ .list = .submessage }),
+        .items = fd(3, .{ .repeated = .submessage }),
         .name = fd(4, .{ .scalar = .string }),
         .alignment = fd(5, .{ .scalar = .string }),
         .ai = fd(6, .{ .scalar = .string }),
@@ -779,8 +779,8 @@ pub const Npc = struct {
         .max_mana = fd(10, .{ .scalar = .int32 }),
         .min_strenght = fd(11, .{ .scalar = .int32 }),
         .max_strenght = fd(12, .{ .scalar = .int32 }),
-        .skills = fd(13, .{ .list = .submessage }),
-        .abilities = fd(14, .{ .list = .submessage }),
+        .skills = fd(13, .{ .repeated = .submessage }),
+        .abilities = fd(14, .{ .repeated = .submessage }),
         .visual = fd(15, .submessage),
     };
 
@@ -804,7 +804,7 @@ pub const Npc = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -873,7 +873,7 @@ pub const Npc = struct {
         pub fn decode(
             input: []const u8,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), input, allocator);
         }
 
@@ -933,7 +933,7 @@ pub const Npc = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1016,7 +1016,7 @@ pub const Tile = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1089,7 +1089,7 @@ pub const MapItem = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1139,28 +1139,28 @@ pub const MapItem = struct {
 };
 
 pub const GraphicsDB = struct {
-    textures: std.ArrayListUnmanaged(Texture),
-    graphics: std.ArrayListUnmanaged(Graphic),
-    bodies: std.ArrayListUnmanaged(Index),
-    fxs: std.ArrayListUnmanaged(Index),
-    heads: std.ArrayListUnmanaged(Index),
-    helmets: std.ArrayListUnmanaged(Index),
-    shields: std.ArrayListUnmanaged(Index),
-    weapons: std.ArrayListUnmanaged(Index),
-    scripts: std.ArrayListUnmanaged(Script),
-    spine: std.ArrayListUnmanaged(Spine),
+    textures: std.ArrayListUnmanaged(Texture) = .empty,
+    graphics: std.ArrayListUnmanaged(Graphic) = .empty,
+    bodies: std.ArrayListUnmanaged(Index) = .empty,
+    fxs: std.ArrayListUnmanaged(Index) = .empty,
+    heads: std.ArrayListUnmanaged(Index) = .empty,
+    helmets: std.ArrayListUnmanaged(Index) = .empty,
+    shields: std.ArrayListUnmanaged(Index) = .empty,
+    weapons: std.ArrayListUnmanaged(Index) = .empty,
+    scripts: std.ArrayListUnmanaged(Script) = .empty,
+    spine: std.ArrayListUnmanaged(Spine) = .empty,
 
     pub const _desc_table = .{
-        .textures = fd(1, .{ .list = .submessage }),
-        .graphics = fd(2, .{ .list = .submessage }),
-        .bodies = fd(4, .{ .list = .submessage }),
-        .fxs = fd(5, .{ .list = .submessage }),
-        .heads = fd(6, .{ .list = .submessage }),
-        .helmets = fd(7, .{ .list = .submessage }),
-        .shields = fd(8, .{ .list = .submessage }),
-        .weapons = fd(9, .{ .list = .submessage }),
-        .scripts = fd(10, .{ .list = .submessage }),
-        .spine = fd(11, .{ .list = .submessage }),
+        .textures = fd(1, .{ .repeated = .submessage }),
+        .graphics = fd(2, .{ .repeated = .submessage }),
+        .bodies = fd(4, .{ .repeated = .submessage }),
+        .fxs = fd(5, .{ .repeated = .submessage }),
+        .heads = fd(6, .{ .repeated = .submessage }),
+        .helmets = fd(7, .{ .repeated = .submessage }),
+        .shields = fd(8, .{ .repeated = .submessage }),
+        .weapons = fd(9, .{ .repeated = .submessage }),
+        .scripts = fd(10, .{ .repeated = .submessage }),
+        .spine = fd(11, .{ .repeated = .submessage }),
     };
 
     pub fn encode(
@@ -1174,7 +1174,7 @@ pub const GraphicsDB = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1243,7 +1243,7 @@ pub const Script = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1318,7 +1318,7 @@ pub const SubTexture = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1399,7 +1399,7 @@ pub const Texture = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1483,7 +1483,7 @@ pub const Graphic = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1562,7 +1562,7 @@ pub const Sprite = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1612,11 +1612,11 @@ pub const Sprite = struct {
 };
 
 pub const Animation = struct {
-    frames: std.ArrayListUnmanaged(i32),
+    frames: std.ArrayListUnmanaged(i32) = .empty,
     speed: f32 = 0,
 
     pub const _desc_table = .{
-        .frames = fd(1, .{ .packed_list = .{ .scalar = .int32 } }),
+        .frames = fd(1, .{ .packed_repeated = .{ .scalar = .int32 } }),
         .speed = fd(2, .{ .scalar = .float }),
     };
 
@@ -1631,7 +1631,7 @@ pub const Animation = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
@@ -1702,7 +1702,7 @@ pub const Spine = struct {
     pub fn decode(
         input: []const u8,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), input, allocator);
     }
 
