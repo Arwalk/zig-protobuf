@@ -232,9 +232,16 @@ pub fn decodeScalar(
         // As `int32` may receive `int64` equivalent encoding values, ensure
         // that values actually fit within `int32` range.
         if (comptime scalar == .int32) {
+            // Encoded as `int32`
+            if (val & @as(i64, @bitCast(@as(u64, 0xFFFFFFFF00000000))) == 0) {
+                return @truncate(val);
+            }
+
             if (val < std.math.minInt(i32) or val > std.math.maxInt(i32)) {
+                @branchHint(.cold);
                 return error.InvalidInput;
             }
+
             return @intCast(val);
         }
 
@@ -319,6 +326,41 @@ test decodeScalar {
 
         const barely_too_big = decodeScalar(.int32, r.any());
         try std.testing.expectError(error.InvalidInput, barely_too_big);
+    }
+
+    { // Valid `int32` encoded as `int64`
+        const bytes: []const u8 = &.{
+            0xFF,
+            0xFF,
+            0xFF,
+            0xFF,
+            0xFF,
+            0xFF,
+            0xFF,
+            0xFF,
+            0xFF,
+            0x01,
+        };
+        var fbs = std.io.fixedBufferStream(bytes);
+        const r = fbs.reader();
+
+        const decoded = try decodeScalar(.int32, r.any());
+        try std.testing.expectEqual(-1, decoded);
+    }
+
+    { // Valid `int32` encoded as `int32`
+        const bytes: []const u8 = &.{
+            0xFF,
+            0xFF,
+            0xFF,
+            0xFF,
+            0x0F,
+        };
+        var fbs = std.io.fixedBufferStream(bytes);
+        const r = fbs.reader();
+
+        const decoded = try decodeScalar(.int32, r.any());
+        try std.testing.expectEqual(-1, decoded);
     }
 }
 
