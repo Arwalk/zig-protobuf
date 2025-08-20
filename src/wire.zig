@@ -482,8 +482,17 @@ pub fn decodeRepeated(
             try result.append(allocator, try .init(allocator));
             errdefer result.items[result.items.len - 1].deinit(allocator);
             const msg = &result.items[result.items.len - 1];
-            try decodeMessage(msg, allocator, reader, options.bytes.?);
-            return options.bytes.?;
+            const consumed = try decodeMessage(
+                msg,
+                allocator,
+                reader,
+                .{ .bytes = options.bytes },
+            );
+            if (consumed > options.bytes.?) {
+                @branchHint(.cold);
+                return error.InvalidInput;
+            }
+            return consumed;
         },
     }
 }
@@ -508,7 +517,11 @@ test decodeRepeated {
             },
         );
         try std.testing.expectEqual(bytes.len, consumed);
-        try std.testing.expectEqualSlices(u32, &.{ 3, 270, 86942 }, list.items);
+        try std.testing.expectEqualSlices(
+            u32,
+            &.{ 3, 270, 86942 },
+            list.items,
+        );
     }
 }
 
@@ -517,8 +530,11 @@ pub fn decodeMessage(
     result: anytype,
     allocator: std.mem.Allocator,
     reader: std.io.AnyReader,
-    bytes: usize,
-) (std.io.AnyReader.Error || std.mem.Allocator.Error || protobuf.DecodingError)!void {
+    options: struct {
+        /// Number of bytes to parse. Provided for all submessages.
+        bytes: ?usize = null,
+    },
+) (std.io.AnyReader.Error || std.mem.Allocator.Error || protobuf.DecodingError)!usize {
     comptime std.debug.assert(@typeInfo(@TypeOf(result)) == .pointer);
     const Result = comptime @typeInfo(@TypeOf(result)).pointer.child;
     const ResultField = std.meta.FieldEnum(Result);
@@ -526,8 +542,19 @@ pub fn decodeMessage(
     const desc_table = Result._desc_table;
 
     var consumed: usize = 0;
-    while (consumed < bytes) {
-        const tag: Tag, const tag_c = try Tag.decode(reader);
+    main_loop: while (true) {
+        const tag: Tag, const tag_c = b: {
+            if (options.bytes) |b| {
+                if (consumed < b) {
+                    break :b try Tag.decode(reader);
+                } else break :main_loop;
+            } else {
+                break :b Tag.decode(reader) catch |e| switch (e) {
+                    error.EndOfStream => break :main_loop,
+                    else => return e,
+                };
+            }
+        };
         consumed += tag_c;
 
         @setEvalBranchQuota(40_000);
@@ -764,13 +791,17 @@ pub fn decodeMessage(
                         };
 
                         if (len > 0) {
-                            try decodeMessage(
+                            const message_consumed = try decodeMessage(
                                 @field(result, field.name).?,
                                 allocator,
                                 reader,
-                                @intCast(len),
+                                .{ .bytes = @intCast(len) },
                             );
-                            consumed += @intCast(len);
+                            if (message_consumed > len) {
+                                @branchHint(.cold);
+                                return error.InvalidInput;
+                            }
+                            consumed += message_consumed;
                         }
                     } else {
                         const is_null = b: {
@@ -787,13 +818,17 @@ pub fn decodeMessage(
                         };
 
                         if (len > 0) {
-                            try decodeMessage(
+                            const message_consumed = try decodeMessage(
                                 &@field(result, field.name).?,
                                 allocator,
                                 reader,
-                                @intCast(len),
+                                .{ .bytes = @intCast(len) },
                             );
-                            consumed += @intCast(len);
+                            if (message_consumed > len) {
+                                @branchHint(.cold);
+                                return error.InvalidInput;
+                            }
+                            consumed += message_consumed;
                         }
                     }
                 },
@@ -981,16 +1016,20 @@ pub fn decodeMessage(
                                     };
 
                                     if (len > 0) {
-                                        try decodeMessage(
+                                        const m_consumed = try decodeMessage(
                                             @field(
                                                 @field(result, field.name).?,
                                                 oo_field.name,
                                             ),
                                             allocator,
                                             reader,
-                                            @intCast(len),
+                                            .{ .bytes = @intCast(len) },
                                         );
-                                        consumed += @intCast(len);
+                                        if (m_consumed > len) {
+                                            @branchHint(.cold);
+                                            return error.InvalidInput;
+                                        }
+                                        consumed += m_consumed;
                                     }
                                 } else {
                                     if (is_null) {
@@ -1010,16 +1049,20 @@ pub fn decodeMessage(
                                     };
 
                                     if (len > 0) {
-                                        try decodeMessage(
+                                        const m_consumed = try decodeMessage(
                                             &@field(
                                                 @field(result, field.name).?,
                                                 oo_field.name,
                                             ),
                                             allocator,
                                             reader,
-                                            @intCast(len),
+                                            .{ .bytes = @intCast(len) },
                                         );
-                                        consumed += @intCast(len);
+                                        if (m_consumed > len) {
+                                            @branchHint(.cold);
+                                            return error.InvalidInput;
+                                        }
+                                        consumed += m_consumed;
                                     }
                                 }
                             },
@@ -1035,10 +1078,7 @@ pub fn decodeMessage(
             comptime break;
         } else consumed += try skipField(reader, tag);
     }
-    if (consumed != bytes) {
-        @branchHint(.cold);
-        return error.InvalidInput;
-    }
+    return consumed;
 }
 
 fn skipField(reader: std.io.AnyReader, tag: Tag) !usize {

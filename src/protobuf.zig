@@ -1129,12 +1129,7 @@ pub fn decode(
     var fbs = std.io.fixedBufferStream(input);
     const r = fbs.reader();
 
-    try wire.decodeMessage(
-        &result,
-        allocator,
-        r.any(),
-        input.len,
-    );
+    _ = try wire.decodeMessage(&result, allocator, r.any(), .{});
 
     return result;
 }
