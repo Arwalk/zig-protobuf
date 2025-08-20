@@ -9,12 +9,12 @@ const unittest = @import("./generated/unittest.pb.zig");
 const longName = @import("./generated/some/really/long/name/which/does/not/really/make/any/sense/but/sometimes/we/still/see/stuff/like/this.pb.zig");
 
 test "leak in allocated string" {
-    var demo = try longName.WouldYouParseThisForMePlease.init(testing.allocator);
+    var demo: longName.WouldYouParseThisForMePlease = .{};
     defer demo.deinit(std.testing.allocator);
 
     // allocate a "dynamic" string
     const allocated = try testing.allocator.dupe(u8, "asd");
-    // copy the allocated string
+    // move the allocated string
     demo.field = .{ .field = allocated };
 
     var obtained: std.ArrayListUnmanaged(u8) = .empty;
@@ -30,7 +30,7 @@ test "leak in list of allocated bytes" {
     var my_bytes = try std.ArrayListUnmanaged([]const u8).initCapacity(testing.allocator, 1);
     try my_bytes.append(std.testing.allocator, try std.testing.allocator.dupe(u8, "abcdef"));
 
-    var msg = tests.WithRepeatedBytes{
+    var msg: tests.WithRepeatedBytes = .{
         .byte_field = my_bytes,
     };
     defer msg.deinit(std.testing.allocator);

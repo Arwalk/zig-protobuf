@@ -36,10 +36,6 @@ pub const Message = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -84,7 +80,7 @@ pub const Message = struct {
 pub const OneofContainer = struct {
     regular_field: []const u8 = &.{},
     enum_field: Enum = @enumFromInt(0),
-    some_oneof: ?some_oneof_union,
+    some_oneof: ?some_oneof_union = null,
 
     pub const _some_oneof_case = enum {
         string_in_oneof,
@@ -124,10 +120,6 @@ pub const OneofContainer = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {

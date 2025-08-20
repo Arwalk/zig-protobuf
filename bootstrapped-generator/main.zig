@@ -42,7 +42,7 @@ const GenerationContext = struct {
     pub fn init(allocator: std.mem.Allocator, request: plugin.CodeGeneratorRequest) !GenerationContext {
         return .{
             .req = request,
-            .res = try .init(allocator),
+            .res = .{},
             .known_packages = .init(allocator),
             .fqn_lines = .init(allocator),
             .message_deps = .init(allocator),
@@ -84,7 +84,7 @@ const GenerationContext = struct {
 
         var it = self.fqn_lines.iterator();
         while (it.next()) |entry| {
-            var ret = try plugin.CodeGeneratorResponse.File.init(allocator);
+            var ret: plugin.CodeGeneratorResponse.File = .{};
             var name_buf: [std.fs.max_path_bytes]u8 = undefined;
 
             ret.name = try allocator.dupe(u8, packageToFileName(entry.key_ptr.*, &name_buf));
@@ -343,14 +343,14 @@ const GenerationContext = struct {
     ) !?[]const u8 {
         const is_proto3 = is_proto3_file(file);
 
-        // ArrayLists need to be initialized
+        // All repeated fields, across proto2/proto3/editions, have a default
+        // of empty. Repeated fields cannot be marked required (or optional)
+        // in proto2.
         const repeated = isRepeated(field);
         if (repeated) {
             if (field.default_value) |default| {
                 return default;
-            } else if (is_proto3) {
-                return ".empty";
-            } else return null;
+            } else return ".empty";
         }
 
         if (nullable and field.default_value == null) {
@@ -556,7 +556,10 @@ const GenerationContext = struct {
                     const oneof_name = oneof.name.?;
                     try lines.append(try std.fmt.allocPrint(
                         allocator,
-                        "    {s}: ?{s}_union,\n",
+                        // Oneof fields across proto2, proto3, and editions
+                        // are "not set" by default, which is represented as
+                        // the null value here.
+                        "    {s}: ?{s}_union = null,\n",
                         .{ try escapeName(allocator, oneof_name), oneof_name },
                     ));
                 }
@@ -669,10 +672,6 @@ const GenerationContext = struct {
                 \\        allocator: std.mem.Allocator,
                 \\    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {{
                 \\        return protobuf.decode(@This(), reader, allocator);
-                \\    }}
-                \\
-                \\    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {{
-                \\        return protobuf.init(@This(), allocator);
                 \\    }}
                 \\
                 \\    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {{

@@ -35,10 +35,6 @@ pub const Version = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -81,9 +77,9 @@ pub const Version = struct {
 };
 
 pub const CodeGeneratorRequest = struct {
-    file_to_generate: std.ArrayListUnmanaged([]const u8),
+    file_to_generate: std.ArrayListUnmanaged([]const u8) = .empty,
     parameter: ?[]const u8 = null,
-    proto_file: std.ArrayListUnmanaged(google_protobuf.FileDescriptorProto),
+    proto_file: std.ArrayListUnmanaged(google_protobuf.FileDescriptorProto) = .empty,
     compiler_version: ?Version = null,
 
     pub const _desc_table = .{
@@ -106,10 +102,6 @@ pub const CodeGeneratorRequest = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -156,7 +148,7 @@ pub const CodeGeneratorRequest = struct {
 pub const CodeGeneratorResponse = struct {
     @"error": ?[]const u8 = null,
     supported_features: ?u64 = null,
-    file: std.ArrayListUnmanaged(CodeGeneratorResponse.File),
+    file: std.ArrayListUnmanaged(CodeGeneratorResponse.File) = .empty,
 
     pub const _desc_table = .{
         .@"error" = fd(1, .{ .scalar = .string }),
@@ -196,10 +188,6 @@ pub const CodeGeneratorResponse = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -256,10 +244,6 @@ pub const CodeGeneratorResponse = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
