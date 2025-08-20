@@ -38,10 +38,6 @@ pub const Empty = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -105,10 +101,6 @@ pub const EnumContainer = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -152,7 +144,7 @@ pub const EnumContainer = struct {
 
 pub const Simple1 = struct {
     a_string: []const u8,
-    a_repeated_string: std.ArrayListUnmanaged([]const u8),
+    a_repeated_string: std.ArrayListUnmanaged([]const u8) = .empty,
     a_boolean: ?bool = null,
 
     pub const _desc_table = .{
@@ -174,10 +166,6 @@ pub const Simple1 = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -223,7 +211,7 @@ pub const Simple1 = struct {
 
 pub const Simple2 = struct {
     a_string: []const u8,
-    a_repeated_string: std.ArrayListUnmanaged([]const u8),
+    a_repeated_string: std.ArrayListUnmanaged([]const u8) = .empty,
 
     pub const _desc_table = .{
         .a_string = fd(1, .{ .scalar = .string }),
@@ -243,10 +231,6 @@ pub const Simple2 = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -318,10 +302,6 @@ pub const SpecialCases = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -367,8 +347,8 @@ pub const OptionalFields = struct {
     a_string: ?[]const u8 = null,
     a_bool: bool,
     a_nested_message: ?OptionalFields.Nested = null,
-    a_repeated_message: std.ArrayListUnmanaged(OptionalFields.Nested),
-    a_repeated_string: std.ArrayListUnmanaged([]const u8),
+    a_repeated_message: std.ArrayListUnmanaged(OptionalFields.Nested) = .empty,
+    a_repeated_string: std.ArrayListUnmanaged([]const u8) = .empty,
 
     pub const _desc_table = .{
         .a_string = fd(1, .{ .scalar = .string }),
@@ -398,10 +378,6 @@ pub const OptionalFields = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -458,10 +434,6 @@ pub const OptionalFields = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -531,10 +503,6 @@ pub const HasExtensions = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -580,8 +548,8 @@ pub const Complex = struct {
     a_string: []const u8,
     an_out_of_order_bool: bool,
     a_nested_message: ?Complex.Nested = null,
-    a_repeated_message: std.ArrayListUnmanaged(Complex.Nested),
-    a_repeated_string: std.ArrayListUnmanaged([]const u8),
+    a_repeated_message: std.ArrayListUnmanaged(Complex.Nested) = .empty,
+    a_repeated_string: std.ArrayListUnmanaged([]const u8) = .empty,
 
     pub const _desc_table = .{
         .a_string = fd(1, .{ .scalar = .string }),
@@ -611,10 +579,6 @@ pub const Complex = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -671,10 +635,6 @@ pub const Complex = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -740,10 +700,6 @@ pub const IsExtension = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -801,10 +757,6 @@ pub const IndirectExtension = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -886,10 +838,6 @@ pub const DefaultValues = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -934,11 +882,11 @@ pub const DefaultValues = struct {
 pub const FloatingPointFields = struct {
     optional_float_field: ?f32 = null,
     required_float_field: f32,
-    repeated_float_field: std.ArrayListUnmanaged(f32),
+    repeated_float_field: std.ArrayListUnmanaged(f32) = .empty,
     default_float_field: ?f32 = 2,
     optional_double_field: ?f64 = null,
     required_double_field: f64,
-    repeated_double_field: std.ArrayListUnmanaged(f64),
+    repeated_double_field: std.ArrayListUnmanaged(f64) = .empty,
     default_double_field: ?f64 = 2,
 
     pub const _desc_table = .{
@@ -965,10 +913,6 @@ pub const FloatingPointFields = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1015,7 +959,7 @@ pub const FloatingPointFields = struct {
 pub const TestClone = struct {
     str: ?[]const u8 = null,
     simple1: ?Simple1 = null,
-    simple2: std.ArrayListUnmanaged(Simple1),
+    simple2: std.ArrayListUnmanaged(Simple1) = .empty,
     bytes_field: ?[]const u8 = null,
     unused: ?[]const u8 = null,
 
@@ -1040,10 +984,6 @@ pub const TestClone = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1107,10 +1047,6 @@ pub const CloneExtension = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1180,10 +1116,6 @@ pub const TestGroup = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -1247,10 +1179,6 @@ pub const TestReservedNames = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -1310,10 +1238,6 @@ pub const TestReservedNamesExtension = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -1357,11 +1281,11 @@ pub const TestReservedNamesExtension = struct {
 
 pub const TestMessageWithOneof = struct {
     normal_field: ?bool = null,
-    repeated_field: std.ArrayListUnmanaged([]const u8),
-    partial_oneof: ?partial_oneof_union,
-    recursive_oneof: ?recursive_oneof_union,
-    default_oneof_a: ?default_oneof_a_union,
-    default_oneof_b: ?default_oneof_b_union,
+    repeated_field: std.ArrayListUnmanaged([]const u8) = .empty,
+    partial_oneof: ?partial_oneof_union = null,
+    recursive_oneof: ?recursive_oneof_union = null,
+    default_oneof_a: ?default_oneof_a_union = null,
+    default_oneof_b: ?default_oneof_b_union = null,
 
     pub const _partial_oneof_case = enum {
         pone,
@@ -1439,10 +1363,6 @@ pub const TestMessageWithOneof = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -1508,10 +1428,6 @@ pub const TestEndsWithBytes = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -1554,18 +1470,18 @@ pub const TestEndsWithBytes = struct {
 };
 
 pub const TestMapFieldsNoBinary = struct {
-    map_string_string: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringStringEntry),
-    map_string_int32: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringInt32Entry),
-    map_string_int64: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringInt64Entry),
-    map_string_bool: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringBoolEntry),
-    map_string_double: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringDoubleEntry),
-    map_string_enum: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringEnumEntry),
-    map_string_msg: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringMsgEntry),
-    map_int32_string: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapInt32StringEntry),
-    map_int64_string: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapInt64StringEntry),
-    map_bool_string: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapBoolStringEntry),
+    map_string_string: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringStringEntry) = .empty,
+    map_string_int32: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringInt32Entry) = .empty,
+    map_string_int64: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringInt64Entry) = .empty,
+    map_string_bool: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringBoolEntry) = .empty,
+    map_string_double: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringDoubleEntry) = .empty,
+    map_string_enum: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringEnumEntry) = .empty,
+    map_string_msg: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringMsgEntry) = .empty,
+    map_int32_string: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapInt32StringEntry) = .empty,
+    map_int64_string: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapInt64StringEntry) = .empty,
+    map_bool_string: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapBoolStringEntry) = .empty,
     test_map_fields: ?*TestMapFieldsNoBinary = null,
-    map_string_testmapfields: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringTestmapfieldsEntry),
+    map_string_testmapfields: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringTestmapfieldsEntry) = .empty,
 
     pub const _desc_table = .{
         .map_string_string = fd(1, .{ .repeated = .submessage }),
@@ -1604,10 +1520,6 @@ pub const TestMapFieldsNoBinary = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1675,10 +1587,6 @@ pub const TestMapFieldsNoBinary = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -1742,10 +1650,6 @@ pub const TestMapFieldsNoBinary = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1813,10 +1717,6 @@ pub const TestMapFieldsNoBinary = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -1880,10 +1780,6 @@ pub const TestMapFieldsNoBinary = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1951,10 +1847,6 @@ pub const TestMapFieldsNoBinary = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -2018,10 +1910,6 @@ pub const TestMapFieldsNoBinary = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -2089,10 +1977,6 @@ pub const TestMapFieldsNoBinary = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -2156,10 +2040,6 @@ pub const TestMapFieldsNoBinary = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -2227,10 +2107,6 @@ pub const TestMapFieldsNoBinary = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -2296,10 +2172,6 @@ pub const TestMapFieldsNoBinary = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -2354,10 +2226,6 @@ pub const TestMapFieldsNoBinary = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -2421,10 +2289,6 @@ pub const MapValueMessageNoBinary = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -2496,10 +2360,6 @@ pub const Deeply = struct {
                 return protobuf.decode(@This(), reader, allocator);
             }
 
-            pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-                return protobuf.init(@This(), allocator);
-            }
-
             pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
                 return protobuf.deinit(allocator, self);
             }
@@ -2556,10 +2416,6 @@ pub const Deeply = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -2614,10 +2470,6 @@ pub const Deeply = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {

@@ -3,7 +3,7 @@ const ArrayList = std.ArrayList;
 const Packed = @import("../../generated/tests.pb.zig").Packed;
 
 pub fn get(allocator: std.mem.Allocator) !Packed {
-    var instance = try Packed.init(allocator);
+    var instance: Packed = .{};
 
     try instance.int32_list.append(allocator, -1);
     try instance.int32_list.append(allocator, 2);
@@ -49,7 +49,7 @@ pub fn get(allocator: std.mem.Allocator) !Packed {
 }
 
 pub fn get2(allocator: std.mem.Allocator) !Packed {
-    var instance = try Packed.init(allocator);
+    var instance: Packed = .{};
 
     try instance.int32_list.append(allocator, -1);
     try instance.int32_list.append(allocator, 2);

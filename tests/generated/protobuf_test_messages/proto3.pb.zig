@@ -155,7 +155,7 @@ pub const TestAllTypesProto3 = struct {
     field__Name16: i32 = 0,
     field_name17__: i32 = 0,
     Field_name18__: i32 = 0,
-    oneof_field: ?oneof_field_union,
+    oneof_field: ?oneof_field_union = null,
 
     pub const _oneof_field_case = enum {
         oneof_uint32,
@@ -375,10 +375,6 @@ pub const TestAllTypesProto3 = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -442,10 +438,6 @@ pub const TestAllTypesProto3 = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -513,10 +505,6 @@ pub const TestAllTypesProto3 = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -580,10 +568,6 @@ pub const TestAllTypesProto3 = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -651,10 +635,6 @@ pub const TestAllTypesProto3 = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -718,10 +698,6 @@ pub const TestAllTypesProto3 = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -789,10 +765,6 @@ pub const TestAllTypesProto3 = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -856,10 +828,6 @@ pub const TestAllTypesProto3 = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -927,10 +895,6 @@ pub const TestAllTypesProto3 = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -994,10 +958,6 @@ pub const TestAllTypesProto3 = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1065,10 +1025,6 @@ pub const TestAllTypesProto3 = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -1132,10 +1088,6 @@ pub const TestAllTypesProto3 = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1203,10 +1155,6 @@ pub const TestAllTypesProto3 = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -1270,10 +1218,6 @@ pub const TestAllTypesProto3 = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1341,10 +1285,6 @@ pub const TestAllTypesProto3 = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -1408,10 +1348,6 @@ pub const TestAllTypesProto3 = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1479,10 +1415,6 @@ pub const TestAllTypesProto3 = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -1546,10 +1478,6 @@ pub const TestAllTypesProto3 = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1617,10 +1545,6 @@ pub const TestAllTypesProto3 = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -1686,10 +1610,6 @@ pub const TestAllTypesProto3 = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -1744,10 +1664,6 @@ pub const TestAllTypesProto3 = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1813,10 +1729,6 @@ pub const ForeignMessage = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -1874,10 +1786,6 @@ pub const NullHypothesisProto3 = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1943,10 +1851,6 @@ pub const EnumOnlyProto3 = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {

@@ -6,7 +6,7 @@ const protobuf = @import("protobuf");
 const fd = protobuf.fd;
 
 pub const FileDescriptorSet = struct {
-    file: std.ArrayListUnmanaged(FileDescriptorProto),
+    file: std.ArrayListUnmanaged(FileDescriptorProto) = .empty,
 
     pub const _desc_table = .{
         .file = fd(1, .{ .repeated = .submessage }),
@@ -25,10 +25,6 @@ pub const FileDescriptorSet = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -75,13 +71,13 @@ pub const FileDescriptorSet = struct {
 pub const FileDescriptorProto = struct {
     name: ?[]const u8 = null,
     package: ?[]const u8 = null,
-    dependency: std.ArrayListUnmanaged([]const u8),
-    public_dependency: std.ArrayListUnmanaged(i32),
-    weak_dependency: std.ArrayListUnmanaged(i32),
-    message_type: std.ArrayListUnmanaged(DescriptorProto),
-    enum_type: std.ArrayListUnmanaged(EnumDescriptorProto),
-    service: std.ArrayListUnmanaged(ServiceDescriptorProto),
-    extension: std.ArrayListUnmanaged(FieldDescriptorProto),
+    dependency: std.ArrayListUnmanaged([]const u8) = .empty,
+    public_dependency: std.ArrayListUnmanaged(i32) = .empty,
+    weak_dependency: std.ArrayListUnmanaged(i32) = .empty,
+    message_type: std.ArrayListUnmanaged(DescriptorProto) = .empty,
+    enum_type: std.ArrayListUnmanaged(EnumDescriptorProto) = .empty,
+    service: std.ArrayListUnmanaged(ServiceDescriptorProto) = .empty,
+    extension: std.ArrayListUnmanaged(FieldDescriptorProto) = .empty,
     options: ?FileOptions = null,
     source_code_info: ?SourceCodeInfo = null,
     syntax: ?[]const u8 = null,
@@ -116,10 +112,6 @@ pub const FileDescriptorProto = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -165,15 +157,15 @@ pub const FileDescriptorProto = struct {
 
 pub const DescriptorProto = struct {
     name: ?[]const u8 = null,
-    field: std.ArrayListUnmanaged(FieldDescriptorProto),
-    extension: std.ArrayListUnmanaged(FieldDescriptorProto),
-    nested_type: std.ArrayListUnmanaged(DescriptorProto),
-    enum_type: std.ArrayListUnmanaged(EnumDescriptorProto),
-    extension_range: std.ArrayListUnmanaged(DescriptorProto.ExtensionRange),
-    oneof_decl: std.ArrayListUnmanaged(OneofDescriptorProto),
+    field: std.ArrayListUnmanaged(FieldDescriptorProto) = .empty,
+    extension: std.ArrayListUnmanaged(FieldDescriptorProto) = .empty,
+    nested_type: std.ArrayListUnmanaged(DescriptorProto) = .empty,
+    enum_type: std.ArrayListUnmanaged(EnumDescriptorProto) = .empty,
+    extension_range: std.ArrayListUnmanaged(DescriptorProto.ExtensionRange) = .empty,
+    oneof_decl: std.ArrayListUnmanaged(OneofDescriptorProto) = .empty,
     options: ?MessageOptions = null,
-    reserved_range: std.ArrayListUnmanaged(DescriptorProto.ReservedRange),
-    reserved_name: std.ArrayListUnmanaged([]const u8),
+    reserved_range: std.ArrayListUnmanaged(DescriptorProto.ReservedRange) = .empty,
+    reserved_name: std.ArrayListUnmanaged([]const u8) = .empty,
 
     pub const _desc_table = .{
         .name = fd(1, .{ .scalar = .string }),
@@ -212,10 +204,6 @@ pub const DescriptorProto = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -283,10 +271,6 @@ pub const DescriptorProto = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -343,10 +327,6 @@ pub const DescriptorProto = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -389,8 +369,8 @@ pub const DescriptorProto = struct {
 };
 
 pub const ExtensionRangeOptions = struct {
-    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption),
-    declaration: std.ArrayListUnmanaged(ExtensionRangeOptions.Declaration),
+    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
+    declaration: std.ArrayListUnmanaged(ExtensionRangeOptions.Declaration) = .empty,
     verification: ?ExtensionRangeOptions.VerificationState = .UNVERIFIED,
 
     pub const _desc_table = .{
@@ -437,10 +417,6 @@ pub const ExtensionRangeOptions = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -495,10 +471,6 @@ pub const ExtensionRangeOptions = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -613,10 +585,6 @@ pub const FieldDescriptorProto = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -682,10 +650,6 @@ pub const OneofDescriptorProto = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -729,10 +693,10 @@ pub const OneofDescriptorProto = struct {
 
 pub const EnumDescriptorProto = struct {
     name: ?[]const u8 = null,
-    value: std.ArrayListUnmanaged(EnumValueDescriptorProto),
+    value: std.ArrayListUnmanaged(EnumValueDescriptorProto) = .empty,
     options: ?EnumOptions = null,
-    reserved_range: std.ArrayListUnmanaged(EnumDescriptorProto.EnumReservedRange),
-    reserved_name: std.ArrayListUnmanaged([]const u8),
+    reserved_range: std.ArrayListUnmanaged(EnumDescriptorProto.EnumReservedRange) = .empty,
+    reserved_name: std.ArrayListUnmanaged([]const u8) = .empty,
 
     pub const _desc_table = .{
         .name = fd(1, .{ .scalar = .string }),
@@ -764,10 +728,6 @@ pub const EnumDescriptorProto = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -824,10 +784,6 @@ pub const EnumDescriptorProto = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -897,10 +853,6 @@ pub const EnumValueDescriptorProto = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -944,7 +896,7 @@ pub const EnumValueDescriptorProto = struct {
 
 pub const ServiceDescriptorProto = struct {
     name: ?[]const u8 = null,
-    method: std.ArrayListUnmanaged(MethodDescriptorProto),
+    method: std.ArrayListUnmanaged(MethodDescriptorProto) = .empty,
     options: ?ServiceOptions = null,
 
     pub const _desc_table = .{
@@ -966,10 +918,6 @@ pub const ServiceDescriptorProto = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1045,10 +993,6 @@ pub const MethodDescriptorProto = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -1111,7 +1055,7 @@ pub const FileOptions = struct {
     php_namespace: ?[]const u8 = null,
     php_metadata_namespace: ?[]const u8 = null,
     ruby_package: ?[]const u8 = null,
-    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption),
+    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .java_package = fd(1, .{ .scalar = .string }),
@@ -1157,10 +1101,6 @@ pub const FileOptions = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1210,7 +1150,7 @@ pub const MessageOptions = struct {
     deprecated: ?bool = false,
     map_entry: ?bool = null,
     deprecated_legacy_json_field_conflicts: ?bool = null,
-    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption),
+    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .message_set_wire_format = fd(1, .{ .scalar = .bool }),
@@ -1234,10 +1174,6 @@ pub const MessageOptions = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1292,8 +1228,8 @@ pub const FieldOptions = struct {
     debug_redact: ?bool = false,
     retention: ?FieldOptions.OptionRetention = null,
     target: ?FieldOptions.OptionTargetType = null,
-    targets: std.ArrayListUnmanaged(FieldOptions.OptionTargetType),
-    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption),
+    targets: std.ArrayListUnmanaged(FieldOptions.OptionTargetType) = .empty,
+    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .ctype = fd(1, .@"enum"),
@@ -1360,10 +1296,6 @@ pub const FieldOptions = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -1406,7 +1338,7 @@ pub const FieldOptions = struct {
 };
 
 pub const OneofOptions = struct {
-    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption),
+    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
@@ -1425,10 +1357,6 @@ pub const OneofOptions = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1476,7 +1404,7 @@ pub const EnumOptions = struct {
     allow_alias: ?bool = null,
     deprecated: ?bool = false,
     deprecated_legacy_json_field_conflicts: ?bool = null,
-    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption),
+    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .allow_alias = fd(2, .{ .scalar = .bool }),
@@ -1498,10 +1426,6 @@ pub const EnumOptions = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1547,7 +1471,7 @@ pub const EnumOptions = struct {
 
 pub const EnumValueOptions = struct {
     deprecated: ?bool = false,
-    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption),
+    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .deprecated = fd(1, .{ .scalar = .bool }),
@@ -1567,10 +1491,6 @@ pub const EnumValueOptions = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1616,7 +1536,7 @@ pub const EnumValueOptions = struct {
 
 pub const ServiceOptions = struct {
     deprecated: ?bool = false,
-    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption),
+    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .deprecated = fd(33, .{ .scalar = .bool }),
@@ -1636,10 +1556,6 @@ pub const ServiceOptions = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1686,7 +1602,7 @@ pub const ServiceOptions = struct {
 pub const MethodOptions = struct {
     deprecated: ?bool = false,
     idempotency_level: ?MethodOptions.IdempotencyLevel = .IDEMPOTENCY_UNKNOWN,
-    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption),
+    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .deprecated = fd(33, .{ .scalar = .bool }),
@@ -1714,10 +1630,6 @@ pub const MethodOptions = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1762,7 +1674,7 @@ pub const MethodOptions = struct {
 };
 
 pub const UninterpretedOption = struct {
-    name: std.ArrayListUnmanaged(UninterpretedOption.NamePart),
+    name: std.ArrayListUnmanaged(UninterpretedOption.NamePart) = .empty,
     identifier_value: ?[]const u8 = null,
     positive_int_value: ?u64 = null,
     negative_int_value: ?i64 = null,
@@ -1802,10 +1714,6 @@ pub const UninterpretedOption = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1862,10 +1770,6 @@ pub const UninterpretedOption = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1910,18 +1814,18 @@ pub const UninterpretedOption = struct {
 };
 
 pub const SourceCodeInfo = struct {
-    location: std.ArrayListUnmanaged(SourceCodeInfo.Location),
+    location: std.ArrayListUnmanaged(SourceCodeInfo.Location) = .empty,
 
     pub const _desc_table = .{
         .location = fd(1, .{ .repeated = .submessage }),
     };
 
     pub const Location = struct {
-        path: std.ArrayListUnmanaged(i32),
-        span: std.ArrayListUnmanaged(i32),
+        path: std.ArrayListUnmanaged(i32) = .empty,
+        span: std.ArrayListUnmanaged(i32) = .empty,
         leading_comments: ?[]const u8 = null,
         trailing_comments: ?[]const u8 = null,
-        leading_detached_comments: std.ArrayListUnmanaged([]const u8),
+        leading_detached_comments: std.ArrayListUnmanaged([]const u8) = .empty,
 
         pub const _desc_table = .{
             .path = fd(1, .{ .packed_repeated = .{ .scalar = .int32 } }),
@@ -1944,10 +1848,6 @@ pub const SourceCodeInfo = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -2004,10 +1904,6 @@ pub const SourceCodeInfo = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -2052,14 +1948,14 @@ pub const SourceCodeInfo = struct {
 };
 
 pub const GeneratedCodeInfo = struct {
-    annotation: std.ArrayListUnmanaged(GeneratedCodeInfo.Annotation),
+    annotation: std.ArrayListUnmanaged(GeneratedCodeInfo.Annotation) = .empty,
 
     pub const _desc_table = .{
         .annotation = fd(1, .{ .repeated = .submessage }),
     };
 
     pub const Annotation = struct {
-        path: std.ArrayListUnmanaged(i32),
+        path: std.ArrayListUnmanaged(i32) = .empty,
         source_file: ?[]const u8 = null,
         begin: ?i32 = null,
         end: ?i32 = null,
@@ -2093,10 +1989,6 @@ pub const GeneratedCodeInfo = struct {
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
-        }
-
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
         }
 
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -2153,10 +2045,6 @@ pub const GeneratedCodeInfo = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {

@@ -3,7 +3,7 @@ const FixedSizes = @import("./generated/tests.pb.zig").FixedSizes;
 const std = @import("std");
 
 test "FixedSizes" {
-    var demo = try FixedSizes.init(std.testing.allocator);
+    var demo: FixedSizes = .{};
     defer demo.deinit(std.testing.allocator);
     demo.sfixed64 = -1;
     demo.sfixed32 = -2;
@@ -31,7 +31,7 @@ test "FixedSizes" {
 }
 
 test "FixedSizes - encode/decode" {
-    var demo = try FixedSizes.init(std.testing.allocator);
+    var demo: FixedSizes = .{};
     defer demo.deinit(std.testing.allocator);
     demo.sfixed64 = -1123123141;
     demo.sfixed32 = -2131312;

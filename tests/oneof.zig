@@ -17,7 +17,7 @@ test "decode empty oneof must be null" {
 }
 
 test "oneof encode/decode int" {
-    var demo = try tests_oneof.OneofContainer.init(testing.allocator);
+    var demo: tests_oneof.OneofContainer = .{};
     defer demo.deinit(std.testing.allocator);
 
     demo.some_oneof = .{ .a_number = 10 };
@@ -48,7 +48,7 @@ test "oneof encode/decode int" {
 }
 
 test "oneof encode/decode enum" {
-    var demo = try tests_oneof.OneofContainer.init(testing.allocator);
+    var demo: tests_oneof.OneofContainer = .{};
     defer demo.deinit(std.testing.allocator);
 
     demo.some_oneof = .{ .enum_value = .SOMETHING2 };
@@ -79,7 +79,7 @@ test "oneof encode/decode enum" {
 }
 
 test "oneof encode/decode string" {
-    var demo = try tests_oneof.OneofContainer.init(testing.allocator);
+    var demo: tests_oneof.OneofContainer = .{};
     defer demo.deinit(std.testing.allocator);
 
     demo.some_oneof = .{ .string_in_oneof = try std.testing.allocator.dupe(u8, "123") };
@@ -114,7 +114,7 @@ test "oneof encode/decode string" {
 }
 
 test "oneof encode/decode submessage" {
-    var demo = try tests_oneof.OneofContainer.init(testing.allocator);
+    var demo: tests_oneof.OneofContainer = .{};
     defer demo.deinit(std.testing.allocator);
 
     demo.some_oneof = .{ .message_in_oneof = .{ .value = 1, .str = try std.testing.allocator.dupe(u8, "123") } };

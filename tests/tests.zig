@@ -1,17 +1,5 @@
 const std = @import("std");
 const protobuf = @import("protobuf");
-const mem = std.mem;
-const Allocator = mem.Allocator;
-const eql = mem.eql;
-const fd = protobuf.fd;
-const pb_decode = protobuf.pb_decode;
-const pb_encode = protobuf.pb_encode;
-const pb_deinit = protobuf.pb_deinit;
-const pb_init = protobuf.pb_init;
-const testing = std.testing;
-const ArrayList = std.ArrayList;
-const AutoHashMap = std.AutoHashMap;
-const FieldType = protobuf.FieldType;
 const tests = @import("./generated/tests.pb.zig");
 const DefaultValues = @import("./generated/jspb/test.pb.zig").DefaultValues;
 const tests_oneof = @import("./generated/tests/oneof.pb.zig");
@@ -28,43 +16,43 @@ pub fn printAllDecoded(input: []const u8) !void {
 }
 
 test "DefaultValuesInit" {
-    var demo = try DefaultValues.init(std.testing.allocator);
+    var demo: DefaultValues = .{};
     defer demo.deinit(std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, "default<>'\"abc", demo.string_field.?);
-    try testing.expectEqual(true, demo.bool_field.?);
-    try testing.expectEqual(demo.int_field, 11);
-    try testing.expectEqual(demo.enum_field.?, .E1);
-    try testing.expectEqualSlices(u8, "", demo.empty_field.?);
-    try testing.expectEqualSlices(u8, "moo", demo.bytes_field.?);
+    try std.testing.expectEqualSlices(u8, "default<>'\"abc", demo.string_field.?);
+    try std.testing.expectEqual(true, demo.bool_field.?);
+    try std.testing.expectEqual(demo.int_field, 11);
+    try std.testing.expectEqual(demo.enum_field.?, .E1);
+    try std.testing.expectEqualSlices(u8, "", demo.empty_field.?);
+    try std.testing.expectEqualSlices(u8, "moo", demo.bytes_field.?);
 }
 
 test "DefaultValuesDecode" {
     var fbs = std.io.fixedBufferStream("");
     const r = fbs.reader();
-    var demo = try DefaultValues.decode(r.any(), testing.allocator);
+    var demo = try DefaultValues.decode(r.any(), std.testing.allocator);
     defer demo.deinit(std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, "default<>'\"abc", demo.string_field.?);
-    try testing.expectEqual(true, demo.bool_field.?);
-    try testing.expectEqual(demo.int_field, 11);
-    try testing.expectEqual(demo.enum_field.?, .E1);
-    try testing.expectEqualSlices(u8, "", demo.empty_field.?);
-    try testing.expectEqualSlices(u8, "moo", demo.bytes_field.?);
+    try std.testing.expectEqualSlices(u8, "default<>'\"abc", demo.string_field.?);
+    try std.testing.expectEqual(true, demo.bool_field.?);
+    try std.testing.expectEqual(demo.int_field, 11);
+    try std.testing.expectEqual(demo.enum_field.?, .E1);
+    try std.testing.expectEqualSlices(u8, "", demo.empty_field.?);
+    try std.testing.expectEqualSlices(u8, "moo", demo.bytes_field.?);
 }
 
 test "issue #74" {
-    var item = try metrics.MetricsData.init(testing.allocator);
-    var copy = try item.dupe(testing.allocator);
+    var item: metrics.MetricsData = .{};
+    var copy = try item.dupe(std.testing.allocator);
     copy.deinit(std.testing.allocator);
     item.deinit(std.testing.allocator);
 }
 
 test "LogsData proto issue #84" {
-    var logsData = try pblogs.LogsData.init(std.testing.allocator);
+    var logsData: pblogs.LogsData = .{};
     defer logsData.deinit(std.testing.allocator);
 
-    var rl = try pblogs.ResourceLogs.init(std.testing.allocator);
+    var rl: pblogs.ResourceLogs = .{};
     defer rl.deinit(std.testing.allocator);
 
     try logsData.resource_logs.append(std.testing.allocator, rl);
@@ -77,29 +65,16 @@ test "LogsData proto issue #84" {
 }
 
 const SelfRefNode = selfref.SelfRefNode;
-const ManagedStruct = protobuf.ManagedStruct;
-
-//pub const SelfRefNode = struct {
-//    version: i32 = 0,
-//    node: ?ManagedStruct(SelfRefNode)= null,
-//
-//    pub const _desc_table = .{
-//        .version = fd(1, .{ .Varint = .Simple }),
-//        .node = fd(2, .{ .SubMessage = {} }),
-//    };
-//
-//    pub usingnamespace protobuf.MessageMixins(@This());
-//};
 
 test "self ref test" {
-    var demo = try SelfRefNode.init(testing.allocator);
+    var demo: SelfRefNode = .{};
     const demo2 = try std.testing.allocator.create(SelfRefNode);
-    demo2.* = try SelfRefNode.init(testing.allocator);
+    demo2.* = .{};
     demo2.version = 1;
     demo.node = demo2;
     defer demo.deinit(std.testing.allocator);
 
-    try testing.expectEqual(@as(i32, 0), demo.version);
+    try std.testing.expectEqual(@as(i32, 0), demo.version);
 
     var encoded: std.ArrayListUnmanaged(u8) = .empty;
     defer encoded.deinit(std.testing.allocator);
@@ -107,14 +82,14 @@ test "self ref test" {
 
     try demo.encode(w.any(), std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0x02, 0x08, 0x01 }, encoded.items);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0x02, 0x08, 0x01 }, encoded.items);
 
     var fbs = std.io.fixedBufferStream(encoded.items);
     const r = fbs.reader();
-    var decoded = try SelfRefNode.decode(r.any(), testing.allocator);
+    var decoded = try SelfRefNode.decode(r.any(), std.testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
-    try testing.expectEqual(@as(i32, 1), decoded.node.?.version);
+    try std.testing.expectEqual(@as(i32, 1), decoded.node.?.version);
 }
 
 // TODO: check for cyclic structure

@@ -20,7 +20,7 @@ pub fn printAllDecoded(input: []const u8) !void {
 test "long package" {
     // - this test allocates an object only. used to instruct zig to try to compile the file
     // - it also ensures that SubMessage deinit() works
-    var demo = try longName.WouldYouParseThisForMePlease.init(testing.allocator);
+    var demo: longName.WouldYouParseThisForMePlease = .{};
     demo.field = .{ .field = try std.testing.allocator.dupe(u8, "asd") };
     defer demo.deinit(std.testing.allocator);
 
@@ -32,7 +32,7 @@ test "long package" {
 }
 
 test "packed int32_list encoding" {
-    var demo = try tests.Packed.init(std.testing.allocator);
+    var demo: tests.Packed = .{};
     defer demo.deinit(std.testing.allocator);
     try demo.int32_list.append(std.testing.allocator, 0x01);
     try demo.int32_list.append(std.testing.allocator, 0x02);
@@ -65,7 +65,7 @@ test "packed int32_list encoding" {
 }
 
 test "unpacked int32_list" {
-    var demo = try tests.UnPacked.init(testing.allocator);
+    var demo: tests.UnPacked = .{};
     defer demo.deinit(std.testing.allocator);
     try demo.int32_list.append(std.testing.allocator, 0x01);
     try demo.int32_list.append(std.testing.allocator, 0x02);

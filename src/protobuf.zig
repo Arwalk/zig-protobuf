@@ -587,7 +587,9 @@ inline fn internal_init(comptime T: type, value: *T) void {
     }
 }
 
-/// Generic init function. Properly initialise any field required. Meant to be embedded in generated structs.
+/// Generic init function. All required fields will be forcibly initialized by
+/// their protobuf field type default values. Prefer standard struct
+/// initialization `... = .{}` whenever possible.
 pub fn init(comptime T: type, allocator: std.mem.Allocator) std.mem.Allocator.Error!T {
     switch (comptime @typeInfo(@TypeOf(T))) {
         .pointer => |p| {
