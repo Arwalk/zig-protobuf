@@ -20,13 +20,11 @@ pub const Type = enum(u3) {
 };
 
 /// Record tag.
-pub const Tag = packed struct(u16) {
+pub const Tag = packed struct(u32) {
     /// Wire type.
     type: Type,
     /// Field number.
-    /// Maximum number of fields is ~4100, which will fit well within 2^13.
-    /// https://protobuf.dev/programming-guides/proto-limits/
-    field: u13,
+    field: u29,
 
     /// Encode tag to byte stream. Returns number of bytes used for encoding,
     /// which is guaranteed to be between 1-3 inclusive.
@@ -35,9 +33,9 @@ pub const Tag = packed struct(u16) {
         writer: std.io.AnyWriter,
     ) !usize {
         const out_bytes: []const u8 = comptime b: {
-            var raw: u16 = @bitCast(self);
-            var buf: [3]u8 = undefined;
-            const len: u2 = for (0..3) |i| {
+            var raw: u32 = @bitCast(self);
+            var buf: [5]u8 = undefined;
+            const len: u3 = for (0..5) |i| {
                 if (raw < 0x80) {
                     buf[i] = @intCast(raw);
                     break i + 1;
@@ -76,29 +74,42 @@ pub const Tag = packed struct(u16) {
     /// encoding for a tag is guaranteed not to use ZigZag encoding, as the
     /// tag will always be unsigned.
     pub fn decode(reader: std.io.AnyReader) !Tag {
-        var raw_result: u24 = 0;
+        var raw_result: u32 = 0;
 
-        // Guaranteed that a tag will take less than 3 bytes in stream. Any
+        // Guaranteed that a tag will take less than 5 bytes in stream. Any
         // more bytes will result in an invalid field number (exceeding proto
         // limits), and as such should be considered an invalid tag.
-        for (0..3) |i| {
+        for (0..4) |i| {
             const b = try reader.readByte();
             const num = b & 0x7F;
-            raw_result |= @as(u24, num) << @intCast(7 * i);
+            raw_result |= @as(u32, num) << @intCast(7 * i);
             if (b >> 7 == 0) break;
         } else {
-            @branchHint(.cold);
-            return error.InvalidTag;
+            const b = try reader.readByte();
+            if (b & 0xF0 > 0) {
+                @branchHint(.cold);
+                return error.InvalidInput;
+            }
+            raw_result |= @as(u32, b) << @intCast(7 * 4);
         }
 
-        const field_num_too_high = (raw_result >> 16) > 0;
         const invalid_wire_type = (raw_result & 0x7) > 5;
-        if (field_num_too_high or invalid_wire_type) {
+        if (invalid_wire_type) {
             @branchHint(.cold);
             return error.InvalidTag;
         }
 
-        return @bitCast(@as(u16, @intCast(raw_result)));
+        return @bitCast(@as(u32, @intCast(raw_result)));
+    }
+
+    test decode {
+        const bytes: []const u8 = &.{ 0xFD, 0xFF, 0xFF, 0xFF, 0x0F };
+        var fbs = std.io.fixedBufferStream(bytes);
+        const r = fbs.reader();
+        const tag: Tag = try decode(r.any());
+
+        try std.testing.expectEqual(.i32, tag.type);
+        try std.testing.expectEqual(0x1FFFFFFF, tag.field);
     }
 };
 
