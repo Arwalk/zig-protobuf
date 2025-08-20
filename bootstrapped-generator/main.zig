@@ -13,13 +13,10 @@ pub fn main() !void {
 
     const allocator = std.heap.smp_allocator;
 
-    // Read the contents (up to 10MB)
-    const buffer_size = 1024 * 1024 * 10;
-
-    const file_buffer = try stdin.readToEndAlloc(allocator, buffer_size);
-    defer allocator.free(file_buffer);
-
-    const request: plugin.CodeGeneratorRequest = try .decode(file_buffer, allocator);
+    const request: plugin.CodeGeneratorRequest = try .decode(
+        stdin.reader().any(),
+        allocator,
+    );
 
     var ctx: GenerationContext = try .init(allocator, request);
 
@@ -668,10 +665,10 @@ const GenerationContext = struct {
                 \\    }}
                 \\
                 \\    pub fn decode(
-                \\        input: []const u8,
+                \\        reader: std.io.AnyReader,
                 \\        allocator: std.mem.Allocator,
                 \\    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {{
-                \\        return protobuf.decode(@This(), input, allocator);
+                \\        return protobuf.decode(@This(), reader, allocator);
                 \\    }}
                 \\
                 \\    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {{

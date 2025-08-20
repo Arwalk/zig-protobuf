@@ -19,7 +19,9 @@ test "Varints" {
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x01, 0x10, 0x01, 0x18, 0x96, 0x01, 0x20, 0x96, 0x01, 0x28, 0x01 }, obtained.items);
 
-    var decoded = try tests.Varints.decode(obtained.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try tests.Varints.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqual(demo, decoded);
 }
@@ -27,7 +29,9 @@ test "Varints" {
 // Extracted from the documentation site
 // https://protobuf.dev/programming-guides/encoding/
 test "optional and repeated elements" {
-    var decoded = try tests.TestOptional.decode("\x22\x05\x68\x65\x6c\x6c\x6f\x28\x01\x28\x02\x28\x03", testing.allocator);
+    var fbs = std.io.fixedBufferStream("\x22\x05\x68\x65\x6c\x6c\x6f\x28\x01\x28\x02\x28\x03");
+    const r = fbs.reader();
+    var decoded = try tests.TestOptional.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(i32, &[_]i32{ 1, 2, 3 }, decoded.e.items);
     try testing.expectEqualSlices(u8, "hello", decoded.d.?);
@@ -35,14 +39,18 @@ test "optional and repeated elements" {
 
 test "packed example from protobuf documentation" {
     const bytes = "\x32\x06\x03\x8e\x02\x9e\xa7\x05";
-    var m = try tests.TestPacked.decode(bytes, testing.allocator);
+    var fbs = std.io.fixedBufferStream(bytes);
+    const r = fbs.reader();
+    var m = try tests.TestPacked.decode(r.any(), testing.allocator);
     defer m.deinit(std.testing.allocator);
     try testing.expectEqualSlices(i32, &[_]i32{ 3, 270, 86942 }, m.f.items);
 }
 
 test "packed example from protobuf documentation repeated" {
     const bytes = "\x32\x06\x03\x8e\x02\x9e\xa7\x05\x32\x06\x03\x8e\x02\x9e\xa7\x05";
-    var m = try tests.TestPacked.decode(bytes, testing.allocator);
+    var fbs = std.io.fixedBufferStream(bytes);
+    const r = fbs.reader();
+    var m = try tests.TestPacked.decode(r.any(), testing.allocator);
     defer m.deinit(std.testing.allocator);
     try testing.expectEqualSlices(i32, &[_]i32{ 3, 270, 86942, 3, 270, 86942 }, m.f.items);
 }
@@ -62,7 +70,9 @@ test "Varints - encode/decode equivalence" {
     const w = obtained.writer(std.testing.allocator);
     try demo.encode(w.any(), std.testing.allocator);
 
-    var decoded = try tests.Varints.decode(obtained.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try tests.Varints.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualDeep(demo, decoded);
 }
@@ -83,7 +93,9 @@ test "EmptyLists" {
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x01, 0x08, 0x02, 0x08, 0x03, 0x08, 0x04 }, obtained.items);
 
-    var decoded = try tests.EmptyLists.decode(obtained.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try tests.EmptyLists.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(u32, demo.varuint32List.items, decoded.varuint32List.items);
     try testing.expectEqualSlices(u32, demo.varuint32Empty.items, decoded.varuint32Empty.items);
@@ -109,7 +121,9 @@ test "SubMessageList" {
         obtained.items,
     );
 
-    var decoded = try tests.SubMessageList.decode(obtained.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try tests.SubMessageList.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(tests.Demo1, demo.subMessageList.items, decoded.subMessageList.items);
 }
@@ -134,7 +148,9 @@ test "VarintListPacked - encode/decode" {
         0x03, 0x04,
     }, obtained.items);
 
-    var decoded = try tests.VarintListPacked.decode(obtained.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try tests.VarintListPacked.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(u32, demo.varuint32List.items, decoded.varuint32List.items);
 }
@@ -147,7 +163,9 @@ test "VarintListPacked - decode not packed" {
         0x08, 0x04,
     };
 
-    var decoded = try tests.VarintListPacked.decode(binary, testing.allocator);
+    var fbs = std.io.fixedBufferStream(binary);
+    const r = fbs.reader();
+    var decoded = try tests.VarintListPacked.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(u32, &[_]u32{ 1, 2, 3, 4 }, decoded.varuint32List.items);
 }
@@ -159,7 +177,9 @@ test "VarintListPacked - decode packed" {
         0x03, 0x04,
     };
 
-    var decoded = try tests.VarintListPacked.decode(binary, testing.allocator);
+    var fbs = std.io.fixedBufferStream(binary);
+    const r = fbs.reader();
+    var decoded = try tests.VarintListPacked.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(u32, &[_]u32{ 1, 2, 3, 4 }, decoded.varuint32List.items);
 }
@@ -197,7 +217,9 @@ test "EmptyMessage" {
 
     try testing.expectEqualSlices(u8, &[_]u8{}, obtained.items);
 
-    var decoded = try tests.EmptyMessage.decode(obtained.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try tests.EmptyMessage.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqual(demo, decoded);
 }
@@ -207,7 +229,9 @@ test "integration varint packed - decode - multi-byte-varint" {
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x04, 0xA1, 0x01, 0xA2, 0x01 }, obtained);
 
-    var decoded = try tests.WithIntsPacked.decode(obtained, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained);
+    const r = fbs.reader();
+    var decoded = try tests.WithIntsPacked.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(u32, &[_]u32{ 0xA1, 0xA2 }, decoded.list_of_data.items);
 }
@@ -230,7 +254,9 @@ test "FixedSizesList" {
         0x0D, 0x01, 0x00, 0x00, 0x00, 0x0D, 0x02, 0x00, 0x00, 0x00, 0x0D, 0x03, 0x00, 0x00, 0x00, 0x0D, 0x04, 0x00, 0x00, 0x00,
     }, obtained.items);
 
-    var decoded = try tests.FixedSizesList.decode(obtained.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try tests.FixedSizesList.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(u32, demo.fixed32List.items, decoded.fixed32List.items);
 }
@@ -256,7 +282,9 @@ test "VarintListNotPacked - not packed - encode/decode" {
         0x08, 0x04,
     }, obtained.items);
 
-    var decoded = try tests.VarintListNotPacked.decode(obtained.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try tests.VarintListNotPacked.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(u32, demo.varuint32List.items, decoded.varuint32List.items);
 }
@@ -269,7 +297,9 @@ test "VarintListNotPacked - decode not packed" {
         0x08, 0x04,
     };
 
-    var decoded = try tests.VarintListNotPacked.decode(binary, testing.allocator);
+    var fbs = std.io.fixedBufferStream(binary);
+    const r = fbs.reader();
+    var decoded = try tests.VarintListNotPacked.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(u32, &[_]u32{ 1, 2, 3, 4 }, decoded.varuint32List.items);
 }
@@ -281,19 +311,25 @@ test "VarintListNotPacked - decode packed" {
         0x03, 0x04,
     };
 
-    var decoded = try tests.VarintListNotPacked.decode(binary, testing.allocator);
+    var fbs = std.io.fixedBufferStream(binary);
+    const r = fbs.reader();
+    var decoded = try tests.VarintListNotPacked.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(u32, &[_]u32{ 1, 2, 3, 4 }, decoded.varuint32List.items);
 }
 
 test "varint packed - decode empty" {
-    var decoded = try tests.WithIntsPacked.decode("\x0A\x00", testing.allocator);
+    var fbs = std.io.fixedBufferStream("\x0A\x00");
+    const r = fbs.reader();
+    var decoded = try tests.WithIntsPacked.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(u32, &[_]u32{}, decoded.list_of_data.items);
 }
 
 test "varint packed - decode" {
-    var decoded = try tests.WithIntsPacked.decode("\x0A\x02\x31\x32", testing.allocator);
+    var fbs = std.io.fixedBufferStream("\x0A\x02\x31\x32");
+    const r = fbs.reader();
+    var decoded = try tests.WithIntsPacked.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(u32, &[_]u32{ 0x31, 0x32 }, decoded.list_of_data.items);
 }
@@ -315,7 +351,9 @@ test "varint packed - encode, single element multi-byte-varint" {
 test "varint packed - decode, single element multi-byte-varint" {
     const obtained = &[_]u8{ 0x0A, 0x02, 0xA3, 0x01 };
 
-    var decoded = try tests.WithIntsPacked.decode(obtained, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained);
+    const r = fbs.reader();
+    var decoded = try tests.WithIntsPacked.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(u32, &[_]u32{0xA3}, decoded.list_of_data.items);
 }
@@ -333,7 +371,9 @@ test "varint packed - encode decode, single element single-byte-varint" {
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x01, 0x13 }, obtained.items);
 
-    var decoded = try tests.WithIntsPacked.decode(obtained.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try tests.WithIntsPacked.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(u32, demo.list_of_data.items, decoded.list_of_data.items);
 }
@@ -352,7 +392,9 @@ test "varint packed - encode decode - single-byte-varint" {
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x02, 0x11, 0x12 }, obtained.items);
 
-    var decoded = try tests.WithIntsPacked.decode(obtained.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try tests.WithIntsPacked.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(u32, demo.list_of_data.items, decoded.list_of_data.items);
 }
@@ -383,7 +425,9 @@ test "WithSubmessages" {
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0x08 + 2, 0x02, 0x08, 0x01, 0x10 + 2, 0x04, 0x08, 0x02, 0x10, 0x03 }, obtained.items);
 
-    var decoded = try tests.WithSubmessages2.decode(obtained.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try tests.WithSubmessages2.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqual(demo, decoded);
 }
@@ -405,7 +449,9 @@ test "FixedInt - not packed" {
         0x08, 0x01,
     }, obtained.items);
 
-    var decoded = try tests.WithIntsNotPacked.decode(obtained.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try tests.WithIntsNotPacked.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(u32, demo.list_of_data.items, decoded.list_of_data.items);
 }
@@ -435,18 +481,33 @@ test "basic encoding with optionals" {
 }
 
 test "basic decoding" {
-    const input = [_]u8{ 0x08, 0x96, 0x01 };
-    const obtained = try tests.Demo1.decode(&input, testing.allocator);
+    const input: []const u8 = &.{ 0x08, 0x96, 0x01 };
+    var fbs = std.io.fixedBufferStream(input);
+    const r = fbs.reader();
+    const obtained = try tests.Demo1.decode(r.any(), testing.allocator);
 
     try testing.expectEqual(tests.Demo1{ .a = 150 }, obtained);
 
-    const input2 = [_]u8{ 0x08, 0x00 };
-    const obtained2 = try tests.Demo1.decode(&input2, testing.allocator);
+    const input2: []const u8 = &.{ 0x08, 0x00 };
+    var fbs2 = std.io.fixedBufferStream(input2);
+    const r2 = fbs2.reader();
+    const obtained2 = try tests.Demo1.decode(r2.any(), testing.allocator);
     try testing.expectEqual(tests.Demo1{ .a = 0 }, obtained2);
 }
 
 test "DemoWithAllVarint" {
-    const demo = tests.DemoWithAllVarint{ .sint32 = -1, .sint64 = -1, .uint32 = 150, .uint64 = 150, .a_bool = true, .a_enum = tests.DemoWithAllVarint.DemoEnum.AndAnother, .pos_int32 = 1, .pos_int64 = 2, .neg_int32 = -1, .neg_int64 = -2 };
+    const demo = tests.DemoWithAllVarint{
+        .sint32 = -1,
+        .sint64 = -1,
+        .uint32 = 150,
+        .uint64 = 150,
+        .a_bool = true,
+        .a_enum = tests.DemoWithAllVarint.DemoEnum.AndAnother,
+        .pos_int32 = 1,
+        .pos_int64 = 2,
+        .neg_int32 = -1,
+        .neg_int64 = -2,
+    };
     try check(demo, "08011001189601209601280130023801400248ffffffffffffffffff0150feffffffffffffffff01");
 }
 
@@ -465,7 +526,9 @@ test "basic encoding with negative numbers" {
         &[_]u8{ 0x08, 0x03, 0x10, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01 },
         obtained.items,
     );
-    var decoded = try tests.WithNegativeIntegers.decode(obtained.items, std.testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try tests.WithNegativeIntegers.decode(r.any(), std.testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqual(demo, decoded);
 }
@@ -482,7 +545,9 @@ fn check(object: anytype, expected: []const u8) !void {
     const bytes = try std.fmt.hexToBytes(buffer, expected);
 
     try testing.expectEqualSlices(u8, bytes, obtained.items);
-    var decoded = try @TypeOf(object).decode(obtained.items, std.testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try @TypeOf(object).decode(r.any(), std.testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqual(object, decoded);
 }

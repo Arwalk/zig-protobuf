@@ -1120,16 +1120,13 @@ const LengthDelimitedDecoderIterator = struct {
 /// Iterates over the input and try to fill the resulting structure accordingly.
 pub fn decode(
     comptime T: type,
-    input: []const u8,
+    reader: std.io.AnyReader,
     allocator: std.mem.Allocator,
 ) (DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!T {
     var result: T = undefined;
     internal_init(T, &result);
 
-    var fbs = std.io.fixedBufferStream(input);
-    const r = fbs.reader();
-
-    _ = try wire.decodeMessage(&result, allocator, r.any(), .{});
+    _ = try wire.decodeMessage(&result, allocator, reader, .{});
 
     return result;
 }

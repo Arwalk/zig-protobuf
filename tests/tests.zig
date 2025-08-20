@@ -40,7 +40,9 @@ test "DefaultValuesInit" {
 }
 
 test "DefaultValuesDecode" {
-    var demo = try DefaultValues.decode("", testing.allocator);
+    var fbs = std.io.fixedBufferStream("");
+    const r = fbs.reader();
+    var demo = try DefaultValues.decode(r.any(), testing.allocator);
     defer demo.deinit(std.testing.allocator);
 
     try testing.expectEqualSlices(u8, "default<>'\"abc", demo.string_field.?);
@@ -107,7 +109,9 @@ test "self ref test" {
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0x02, 0x08, 0x01 }, encoded.items);
 
-    var decoded = try SelfRefNode.decode(encoded.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(encoded.items);
+    const r = fbs.reader();
+    var decoded = try SelfRefNode.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqual(@as(i32, 1), decoded.node.?.version);
