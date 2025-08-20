@@ -10,7 +10,7 @@ const unittest = @import("./generated/unittest.pb.zig");
 const longName = @import("./generated/some/really/long/name/which/does/not/really/make/any/sense/but/sometimes/we/still/see/stuff/like/this.pb.zig");
 
 test "empty string in optional fields must be serialized over the wire" {
-    var t = try jspb.TestClone.init(testing.allocator);
+    var t: jspb.TestClone = .{};
     defer t.deinit(std.testing.allocator);
 
     try testing.expect(t.str == null);

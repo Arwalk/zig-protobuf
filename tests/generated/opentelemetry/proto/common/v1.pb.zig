@@ -6,7 +6,7 @@ const protobuf = @import("protobuf");
 const fd = protobuf.fd;
 
 pub const AnyValue = struct {
-    value: ?value_union,
+    value: ?value_union = null,
 
     pub const _value_case = enum {
         string_value,
@@ -53,10 +53,6 @@ pub const AnyValue = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -122,10 +118,6 @@ pub const ArrayValue = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -187,10 +179,6 @@ pub const KeyValueList = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -256,10 +244,6 @@ pub const KeyValue = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -329,10 +313,6 @@ pub const InstrumentationScope = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {

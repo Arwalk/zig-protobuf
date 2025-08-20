@@ -45,10 +45,6 @@ pub const LongsMessage = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }

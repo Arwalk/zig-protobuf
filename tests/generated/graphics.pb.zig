@@ -37,10 +37,6 @@ pub const InventoryItem = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -128,10 +124,6 @@ pub const Character = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -197,10 +189,6 @@ pub const Alignment = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -285,10 +273,6 @@ pub const Index = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -343,10 +327,6 @@ pub const Index = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -412,10 +392,6 @@ pub const StoredChunk = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -493,10 +469,6 @@ pub const MapEntity = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -568,10 +540,6 @@ pub const Light = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -637,10 +605,6 @@ pub const Point = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -702,10 +666,6 @@ pub const Shape = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -808,10 +768,6 @@ pub const Npc = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -877,10 +833,6 @@ pub const Npc = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -935,10 +887,6 @@ pub const Npc = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1020,10 +968,6 @@ pub const Tile = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -1091,10 +1035,6 @@ pub const MapItem = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1178,10 +1118,6 @@ pub const GraphicsDB = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -1245,10 +1181,6 @@ pub const Script = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1320,10 +1252,6 @@ pub const SubTexture = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1403,10 +1331,6 @@ pub const Texture = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -1451,7 +1375,7 @@ pub const Texture = struct {
 pub const Graphic = struct {
     id: i32 = 0,
     name: []const u8 = &.{},
-    type: ?type_union,
+    type: ?type_union = null,
 
     pub const _type_case = enum {
         sprite,
@@ -1485,10 +1409,6 @@ pub const Graphic = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1566,10 +1486,6 @@ pub const Sprite = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -1633,10 +1549,6 @@ pub const Animation = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1704,10 +1616,6 @@ pub const Spine = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {

@@ -44,10 +44,6 @@ pub const MetricsData = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -113,10 +109,6 @@ pub const ResourceMetrics = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -186,10 +178,6 @@ pub const ScopeMetrics = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -236,7 +224,7 @@ pub const Metric = struct {
     description: []const u8 = &.{},
     unit: []const u8 = &.{},
     metadata: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue) = .empty,
-    data: ?data_union,
+    data: ?data_union = null,
 
     pub const _data_case = enum {
         gauge,
@@ -281,10 +269,6 @@ pub const Metric = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -348,10 +332,6 @@ pub const Gauge = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -421,10 +401,6 @@ pub const Sum = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -488,10 +464,6 @@ pub const Histogram = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -559,10 +531,6 @@ pub const ExponentialHistogram = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -626,10 +594,6 @@ pub const Summary = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -677,7 +641,7 @@ pub const NumberDataPoint = struct {
     time_unix_nano: u64 = 0,
     exemplars: std.ArrayListUnmanaged(Exemplar) = .empty,
     flags: u32 = 0,
-    value: ?value_union,
+    value: ?value_union = null,
 
     pub const _value_case = enum {
         as_double,
@@ -714,10 +678,6 @@ pub const NumberDataPoint = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -801,10 +761,6 @@ pub const HistogramDataPoint = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -905,10 +861,6 @@ pub const ExponentialHistogramDataPoint = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -963,10 +915,6 @@ pub const ExponentialHistogramDataPoint = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1053,10 +1001,6 @@ pub const SummaryDataPoint = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
-        pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-            return protobuf.init(@This(), allocator);
-        }
-
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
@@ -1113,10 +1057,6 @@ pub const SummaryDataPoint = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
-    }
-
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
@@ -1163,7 +1103,7 @@ pub const Exemplar = struct {
     time_unix_nano: u64 = 0,
     span_id: []const u8 = &.{},
     trace_id: []const u8 = &.{},
-    value: ?value_union,
+    value: ?value_union = null,
 
     pub const _value_case = enum {
         as_double,
@@ -1199,10 +1139,6 @@ pub const Exemplar = struct {
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
-    }
-
-    pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
-        return protobuf.init(@This(), allocator);
     }
 
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
