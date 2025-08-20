@@ -41,6 +41,8 @@ test "leak in list of allocated bytes" {
 
     try msg.encode(w.any(), std.testing.allocator);
 
-    var msg_copy = try tests.WithRepeatedBytes.decode(buffer.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(buffer.items);
+    const r = fbs.reader();
+    var msg_copy = try tests.WithRepeatedBytes.decode(r.any(), testing.allocator);
     msg_copy.deinit(std.testing.allocator);
 }

@@ -6,7 +6,9 @@ const testing = std.testing;
 const tests_oneof = @import("./generated/tests/oneof.pb.zig");
 
 test "decode empty oneof must be null" {
-    var decoded = try tests_oneof.OneofContainer.decode("", testing.allocator);
+    var fbs = std.io.fixedBufferStream("");
+    const r = fbs.reader();
+    var decoded = try tests_oneof.OneofContainer.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try testing.expect(decoded.regular_field.len == 0);
@@ -37,7 +39,9 @@ test "oneof encode/decode int" {
         0x18, 10,
     }, obtained.items);
 
-    var decoded = try tests_oneof.OneofContainer.decode(obtained.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try tests_oneof.OneofContainer.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqual(demo.some_oneof.?.a_number, decoded.some_oneof.?.a_number);
@@ -66,7 +70,9 @@ test "oneof encode/decode enum" {
         0x30, 0x02,
     }, obtained.items);
 
-    var decoded = try tests_oneof.OneofContainer.decode(obtained.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try tests_oneof.OneofContainer.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqual(demo.some_oneof.?.enum_value, decoded.some_oneof.?.enum_value);
@@ -95,7 +101,9 @@ test "oneof encode/decode string" {
         0x0A, 0x03, 0x31, 0x32, 0x33,
     }, obtained.items);
 
-    var decoded = try tests_oneof.OneofContainer.decode(obtained.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try tests_oneof.OneofContainer.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqualSlices(
@@ -128,7 +136,9 @@ test "oneof encode/decode submessage" {
         0x12, 0x07, 0x08, 0x01, 0x12, 0x03, 0x31, 0x32, 0x33,
     }, obtained.items);
 
-    var decoded = try tests_oneof.OneofContainer.decode(obtained.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try tests_oneof.OneofContainer.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqualSlices(
@@ -154,7 +164,9 @@ test "decoding multiple messages keeps the last value 123" {
         0x32, 0x33,
     };
 
-    var decoded = try tests_oneof.OneofContainer.decode(payload, testing.allocator);
+    var fbs = std.io.fixedBufferStream(payload);
+    const r = fbs.reader();
+    var decoded = try tests_oneof.OneofContainer.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqualSlices(u8, "123", decoded.some_oneof.?.message_in_oneof.str);
@@ -181,7 +193,9 @@ test "decoding multiple messages keeps the last value 132" {
         0x32, 0x33,
     };
 
-    var decoded = try tests_oneof.OneofContainer.decode(payload, testing.allocator);
+    var fbs = std.io.fixedBufferStream(payload);
+    const r = fbs.reader();
+    var decoded = try tests_oneof.OneofContainer.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqualSlices(u8, "123", decoded.some_oneof.?.string_in_oneof);

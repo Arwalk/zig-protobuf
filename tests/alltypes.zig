@@ -57,7 +57,9 @@ test "packed int32_list encoding" {
         0x04,
     }, obtained.items);
 
-    var decoded = try tests.Packed.decode(obtained.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try tests.Packed.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(i32, demo.int32_list.items, decoded.int32_list.items);
 }
@@ -78,7 +80,9 @@ test "unpacked int32_list" {
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x01, 0x08, 0x02, 0x08, 0x03, 0x08, 0x04 }, obtained.items);
 
-    var decoded = try tests.UnPacked.decode(obtained.items, testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try tests.UnPacked.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try testing.expectEqualSlices(i32, demo.int32_list.items, decoded.int32_list.items);
 }
@@ -86,16 +90,21 @@ test "unpacked int32_list" {
 test "Required.Proto3.ProtobufInput.ValidDataRepeated.BOOL.PackedInput.ProtobufOutput" {
     const err_bytes = "\xda\x02\x28\x00\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01\xce\xc2\xf1\x05\x80\x80\x80\x80\x20\xff\xff\xff\xff\xff\xff\xff\xff\x7f\x80\x80\x80\x80\x80\x80\x80\x80\x80\x01";
 
+    var err_fbs = std.io.fixedBufferStream(err_bytes);
+    const err_r = err_fbs.reader();
+
     // Bools MUST be encoded as either `0x00` or `0x01` bytes.
     // https://protobuf.dev/programming-guides/encoding/#bools-and-enums
     try std.testing.expectError(
         error.InvalidInput,
-        proto3.TestAllTypesProto3.decode(err_bytes, testing.allocator),
+        proto3.TestAllTypesProto3.decode(err_r.any(), testing.allocator),
     );
 
     const bytes = "\xda\x02\x07\x00\x00\x00\x00\x01\x00\x00";
 
-    var m = try proto3.TestAllTypesProto3.decode(bytes, testing.allocator);
+    var fbs = std.io.fixedBufferStream(bytes);
+    const r = fbs.reader();
+    var m = try proto3.TestAllTypesProto3.decode(r.any(), testing.allocator);
     defer m.deinit(std.testing.allocator);
 
     try testing.expectEqualSlices(
@@ -107,7 +116,9 @@ test "Required.Proto3.ProtobufInput.ValidDataRepeated.BOOL.PackedInput.ProtobufO
 
 test "msg-longs.proto" {
     const bytes = &[_]u8{ 17, 255, 255, 255, 255, 255, 255, 255, 255, 24, 128, 128, 128, 128, 128, 128, 128, 128, 128, 1, 32, 255, 255, 255, 255, 255, 255, 255, 255, 127, 41, 0, 0, 0, 0, 0, 0, 0, 128, 49, 255, 255, 255, 255, 255, 255, 255, 127, 56, 255, 255, 255, 255, 255, 255, 255, 255, 255, 1, 64, 254, 255, 255, 255, 255, 255, 255, 255, 255, 1, 80, 255, 255, 255, 255, 255, 255, 255, 255, 255, 1, 97, 255, 255, 255, 255, 255, 255, 255, 255, 104, 128, 128, 128, 128, 128, 128, 128, 128, 128, 1, 112, 255, 255, 255, 255, 255, 255, 255, 255, 127, 121, 0, 0, 0, 0, 0, 0, 0, 128, 129, 1, 255, 255, 255, 255, 255, 255, 255, 127, 136, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 1, 144, 1, 254, 255, 255, 255, 255, 255, 255, 255, 255, 1, 160, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 1, 177, 1, 255, 255, 255, 255, 255, 255, 255, 255, 184, 1, 128, 128, 128, 128, 128, 128, 128, 128, 128, 1, 192, 1, 255, 255, 255, 255, 255, 255, 255, 255, 127, 201, 1, 0, 0, 0, 0, 0, 0, 0, 128, 209, 1, 255, 255, 255, 255, 255, 255, 255, 127, 216, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 1, 224, 1, 254, 255, 255, 255, 255, 255, 255, 255, 255, 1, 240, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 1 };
-    var decoded = try longs.LongsMessage.decode(bytes, testing.allocator);
+    var fbs = std.io.fixedBufferStream(bytes);
+    const r = fbs.reader();
+    var decoded = try longs.LongsMessage.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqual(@as(u64, 0), decoded.fixed64_field_min);
@@ -123,7 +134,9 @@ test "msg-longs.proto" {
 }
 
 test "TestExtremeDefaultValues" {
-    var decoded = try unittest.TestExtremeDefaultValues.decode("", testing.allocator);
+    var fbs = std.io.fixedBufferStream("");
+    const r = fbs.reader();
+    var decoded = try unittest.TestExtremeDefaultValues.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqualSlices(u8, "\\000\\001\\007\\010\\014\\n\\r\\t\\013\\\\\\'\\\"\\376", decoded.escaped_bytes.?);
