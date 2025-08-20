@@ -38,10 +38,10 @@ pub const MetricsData = struct {
     }
 
     pub fn decode(
-        input: []const u8,
+        reader: std.io.AnyReader,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
-        return protobuf.decode(@This(), input, allocator);
+        return protobuf.decode(@This(), reader, allocator);
     }
 
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -109,10 +109,10 @@ pub const ResourceMetrics = struct {
     }
 
     pub fn decode(
-        input: []const u8,
+        reader: std.io.AnyReader,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
-        return protobuf.decode(@This(), input, allocator);
+        return protobuf.decode(@This(), reader, allocator);
     }
 
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -180,10 +180,10 @@ pub const ScopeMetrics = struct {
     }
 
     pub fn decode(
-        input: []const u8,
+        reader: std.io.AnyReader,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
-        return protobuf.decode(@This(), input, allocator);
+        return protobuf.decode(@This(), reader, allocator);
     }
 
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -277,10 +277,10 @@ pub const Metric = struct {
     }
 
     pub fn decode(
-        input: []const u8,
+        reader: std.io.AnyReader,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
-        return protobuf.decode(@This(), input, allocator);
+        return protobuf.decode(@This(), reader, allocator);
     }
 
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -344,10 +344,10 @@ pub const Gauge = struct {
     }
 
     pub fn decode(
-        input: []const u8,
+        reader: std.io.AnyReader,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
-        return protobuf.decode(@This(), input, allocator);
+        return protobuf.decode(@This(), reader, allocator);
     }
 
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -415,10 +415,10 @@ pub const Sum = struct {
     }
 
     pub fn decode(
-        input: []const u8,
+        reader: std.io.AnyReader,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
-        return protobuf.decode(@This(), input, allocator);
+        return protobuf.decode(@This(), reader, allocator);
     }
 
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -484,10 +484,10 @@ pub const Histogram = struct {
     }
 
     pub fn decode(
-        input: []const u8,
+        reader: std.io.AnyReader,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
-        return protobuf.decode(@This(), input, allocator);
+        return protobuf.decode(@This(), reader, allocator);
     }
 
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -553,10 +553,10 @@ pub const ExponentialHistogram = struct {
     }
 
     pub fn decode(
-        input: []const u8,
+        reader: std.io.AnyReader,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
-        return protobuf.decode(@This(), input, allocator);
+        return protobuf.decode(@This(), reader, allocator);
     }
 
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -620,10 +620,10 @@ pub const Summary = struct {
     }
 
     pub fn decode(
-        input: []const u8,
+        reader: std.io.AnyReader,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
-        return protobuf.decode(@This(), input, allocator);
+        return protobuf.decode(@This(), reader, allocator);
     }
 
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -710,10 +710,10 @@ pub const NumberDataPoint = struct {
     }
 
     pub fn decode(
-        input: []const u8,
+        reader: std.io.AnyReader,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
-        return protobuf.decode(@This(), input, allocator);
+        return protobuf.decode(@This(), reader, allocator);
     }
 
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -797,10 +797,10 @@ pub const HistogramDataPoint = struct {
     }
 
     pub fn decode(
-        input: []const u8,
+        reader: std.io.AnyReader,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
-        return protobuf.decode(@This(), input, allocator);
+        return protobuf.decode(@This(), reader, allocator);
     }
 
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -899,10 +899,10 @@ pub const ExponentialHistogramDataPoint = struct {
         }
 
         pub fn decode(
-            input: []const u8,
+            reader: std.io.AnyReader,
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
-            return protobuf.decode(@This(), input, allocator);
+            return protobuf.decode(@This(), reader, allocator);
         }
 
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -959,10 +959,10 @@ pub const ExponentialHistogramDataPoint = struct {
     }
 
     pub fn decode(
-        input: []const u8,
+        reader: std.io.AnyReader,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
-        return protobuf.decode(@This(), input, allocator);
+        return protobuf.decode(@This(), reader, allocator);
     }
 
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1047,10 +1047,10 @@ pub const SummaryDataPoint = struct {
         }
 
         pub fn decode(
-            input: []const u8,
+            reader: std.io.AnyReader,
             allocator: std.mem.Allocator,
         ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
-            return protobuf.decode(@This(), input, allocator);
+            return protobuf.decode(@This(), reader, allocator);
         }
 
         pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1107,10 +1107,10 @@ pub const SummaryDataPoint = struct {
     }
 
     pub fn decode(
-        input: []const u8,
+        reader: std.io.AnyReader,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
-        return protobuf.decode(@This(), input, allocator);
+        return protobuf.decode(@This(), reader, allocator);
     }
 
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
@@ -1195,10 +1195,10 @@ pub const Exemplar = struct {
     }
 
     pub fn decode(
-        input: []const u8,
+        reader: std.io.AnyReader,
         allocator: std.mem.Allocator,
     ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
-        return protobuf.decode(@This(), input, allocator);
+        return protobuf.decode(@This(), reader, allocator);
     }
 
     pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {

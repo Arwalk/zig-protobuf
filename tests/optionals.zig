@@ -23,7 +23,9 @@ test "empty string in optional fields must be serialized over the wire" {
     try testing.expectEqualSlices(u8, "", encodedNull.items);
 
     // decoded must be null as well
-    var decodedNull = try jspb.TestClone.decode("", testing.allocator);
+    var fbs = std.io.fixedBufferStream("");
+    const r = fbs.reader();
+    var decodedNull = try jspb.TestClone.decode(r.any(), testing.allocator);
     defer decodedNull.deinit(std.testing.allocator);
     try testing.expect(decodedNull.str == null);
 
@@ -39,7 +41,9 @@ test "empty string in optional fields must be serialized over the wire" {
     try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x00 }, encodedEmpty.items);
 
     // decoded must be null as well
-    var decodedEmpty = try jspb.TestClone.decode(encodedEmpty.items, testing.allocator);
+    var fbs2 = std.io.fixedBufferStream(encodedEmpty.items);
+    const r2 = fbs2.reader();
+    var decodedEmpty = try jspb.TestClone.decode(r2.any(), testing.allocator);
     defer decodedEmpty.deinit(std.testing.allocator);
     try testing.expect(decodedEmpty.str.?.len == 0);
 }
@@ -51,8 +55,10 @@ test "unittest.proto parse and re-encode" {
         "\x00\xde\x42\x61\x00\x00\x00\x00\x00\x00\x5c\x40\x68\x01\x72\x03\x31\x31\x35\x7a\x03\x31" ++
         "\x31\x36\x83\x01\x88\x01\x75\x84\x01";
 
+    var fbs = std.io.fixedBufferStream(binary_file);
+    const r = fbs.reader();
     // first decode the binary
-    var decoded = try unittest.TestAllTypes.decode(binary_file, testing.allocator);
+    var decoded = try unittest.TestAllTypes.decode(r.any(), testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try assert(decoded);
@@ -65,7 +71,9 @@ test "unittest.proto parse and re-encode" {
     try decoded.encode(w.any(), testing.allocator);
 
     // then re-decode it
-    var decoded2 = try unittest.TestAllTypes.decode(encoded.items, testing.allocator);
+    var fbs2 = std.io.fixedBufferStream(encoded.items);
+    const r2 = fbs2.reader();
+    var decoded2 = try unittest.TestAllTypes.decode(r2.any(), testing.allocator);
     defer decoded2.deinit(std.testing.allocator);
 
     var encoded2: std.ArrayListUnmanaged(u8) = .empty;

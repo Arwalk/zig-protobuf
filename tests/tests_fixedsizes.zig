@@ -12,7 +12,7 @@ test "FixedSizes" {
     demo.double = 5.0; // 0x4014000000000000
     demo.float = 5.0; // 0x40a00000
 
-    const expected = [_]u8{ 0x08 + 1, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x10 + 5, 0xFE, 0xFF, 0xFF, 0xFF, 0x18 + 5, 0x01, 0x00, 0x00, 0x00, 0x20 + 1, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28 + 1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x40, 0x30 + 5, 0x00, 0x00, 0xa0, 0x40 };
+    const expected: []const u8 = &.{ 0x08 + 1, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x10 + 5, 0xFE, 0xFF, 0xFF, 0xFF, 0x18 + 5, 0x01, 0x00, 0x00, 0x00, 0x20 + 1, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28 + 1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x40, 0x30 + 5, 0x00, 0x00, 0xa0, 0x40 };
 
     var obtained: std.ArrayListUnmanaged(u8) = .empty;
     defer obtained.deinit(std.testing.allocator);
@@ -20,10 +20,12 @@ test "FixedSizes" {
     const w = obtained.writer(std.testing.allocator);
     try demo.encode(w.any(), std.testing.allocator);
 
-    try std.testing.expectEqualSlices(u8, &expected, obtained.items);
+    try std.testing.expectEqualSlices(u8, expected, obtained.items);
 
     // decoding
-    var decoded = try FixedSizes.decode(&expected, std.testing.allocator);
+    var fbs = std.io.fixedBufferStream(expected);
+    const r = fbs.reader();
+    var decoded = try FixedSizes.decode(r.any(), std.testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try std.testing.expectEqual(demo, decoded);
 }
@@ -45,7 +47,9 @@ test "FixedSizes - encode/decode" {
     try demo.encode(w.any(), std.testing.allocator);
 
     // decoding
-    var decoded = try FixedSizes.decode(obtained.items, std.testing.allocator);
+    var fbs = std.io.fixedBufferStream(obtained.items);
+    const r = fbs.reader();
+    var decoded = try FixedSizes.decode(r.any(), std.testing.allocator);
     defer decoded.deinit(std.testing.allocator);
     try std.testing.expectEqualDeep(demo, decoded);
 }
