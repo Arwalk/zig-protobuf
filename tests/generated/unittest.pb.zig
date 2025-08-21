@@ -315,16 +315,16 @@ pub const TestAllTypes = struct {
 
         pub fn encode(
             self: @This(),
-            writer: std.io.AnyWriter,
+            writer: *std.Io.Writer,
             allocator: std.mem.Allocator,
-        ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
 
         pub fn decode(
-            reader: std.io.AnyReader,
+            reader: *std.Io.Reader,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
 
@@ -346,7 +346,7 @@ pub const TestAllTypes = struct {
 
         pub fn jsonEncode(
             self: @This(),
-            options: std.json.StringifyOptions,
+            options: std.json.Stringify.Options,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
             return protobuf.json.encode(self, options, allocator);
@@ -371,16 +371,16 @@ pub const TestAllTypes = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -402,7 +402,7 @@ pub const TestAllTypes = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -442,16 +442,16 @@ pub const NestedTestAllTypes = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -473,7 +473,7 @@ pub const NestedTestAllTypes = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -507,16 +507,16 @@ pub const TestDeprecatedFields = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -538,7 +538,7 @@ pub const TestDeprecatedFields = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -566,16 +566,16 @@ pub const TestDeprecatedMessage = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -597,7 +597,7 @@ pub const TestDeprecatedMessage = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -631,16 +631,16 @@ pub const ForeignMessage = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -662,7 +662,7 @@ pub const ForeignMessage = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -690,16 +690,16 @@ pub const TestReservedFields = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -721,7 +721,7 @@ pub const TestReservedFields = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -749,16 +749,16 @@ pub const TestAllExtensions = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -780,7 +780,7 @@ pub const TestAllExtensions = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -814,16 +814,16 @@ pub const TestGroup = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -845,7 +845,7 @@ pub const TestGroup = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -873,16 +873,16 @@ pub const TestGroupExtension = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -904,7 +904,7 @@ pub const TestGroupExtension = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -932,16 +932,16 @@ pub const TestNestedExtension = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -963,7 +963,7 @@ pub const TestNestedExtension = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -999,16 +999,16 @@ pub const TestChildExtension = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -1030,7 +1030,7 @@ pub const TestChildExtension = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -1082,16 +1082,16 @@ pub const TestChildExtensionData = struct {
 
             pub fn encode(
                 self: @This(),
-                writer: std.io.AnyWriter,
+                writer: *std.Io.Writer,
                 allocator: std.mem.Allocator,
-            ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+            ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
                 return protobuf.encode(writer, allocator, self);
             }
 
             pub fn decode(
-                reader: std.io.AnyReader,
+                reader: *std.Io.Reader,
                 allocator: std.mem.Allocator,
-            ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+            ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
                 return protobuf.decode(@This(), reader, allocator);
             }
 
@@ -1113,7 +1113,7 @@ pub const TestChildExtensionData = struct {
 
             pub fn jsonEncode(
                 self: @This(),
-                options: std.json.StringifyOptions,
+                options: std.json.Stringify.Options,
                 allocator: std.mem.Allocator,
             ) ![]const u8 {
                 return protobuf.json.encode(self, options, allocator);
@@ -1138,16 +1138,16 @@ pub const TestChildExtensionData = struct {
 
         pub fn encode(
             self: @This(),
-            writer: std.io.AnyWriter,
+            writer: *std.Io.Writer,
             allocator: std.mem.Allocator,
-        ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
 
         pub fn decode(
-            reader: std.io.AnyReader,
+            reader: *std.Io.Reader,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
 
@@ -1169,7 +1169,7 @@ pub const TestChildExtensionData = struct {
 
         pub fn jsonEncode(
             self: @This(),
-            options: std.json.StringifyOptions,
+            options: std.json.Stringify.Options,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
             return protobuf.json.encode(self, options, allocator);
@@ -1194,16 +1194,16 @@ pub const TestChildExtensionData = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -1225,7 +1225,7 @@ pub const TestChildExtensionData = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -1259,16 +1259,16 @@ pub const TestNestedChildExtension = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -1290,7 +1290,7 @@ pub const TestNestedChildExtension = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -1324,16 +1324,16 @@ pub const TestNestedChildExtensionData = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -1355,7 +1355,7 @@ pub const TestNestedChildExtensionData = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -1453,16 +1453,16 @@ pub const TestRequired = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -1484,7 +1484,7 @@ pub const TestRequired = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -1522,16 +1522,16 @@ pub const TestRequiredForeign = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -1553,7 +1553,7 @@ pub const TestRequiredForeign = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -1589,16 +1589,16 @@ pub const TestRequiredMessage = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -1620,7 +1620,7 @@ pub const TestRequiredMessage = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -1656,16 +1656,16 @@ pub const TestNestedRequiredForeign = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -1687,7 +1687,7 @@ pub const TestNestedRequiredForeign = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -1719,16 +1719,16 @@ pub const TestForeignNested = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -1750,7 +1750,7 @@ pub const TestForeignNested = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -1778,16 +1778,16 @@ pub const TestEmptyMessage = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -1809,7 +1809,7 @@ pub const TestEmptyMessage = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -1837,16 +1837,16 @@ pub const TestEmptyMessageWithExtensions = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -1868,7 +1868,7 @@ pub const TestEmptyMessageWithExtensions = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -1910,16 +1910,16 @@ pub const TestPickleNestedMessage = struct {
 
             pub fn encode(
                 self: @This(),
-                writer: std.io.AnyWriter,
+                writer: *std.Io.Writer,
                 allocator: std.mem.Allocator,
-            ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+            ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
                 return protobuf.encode(writer, allocator, self);
             }
 
             pub fn decode(
-                reader: std.io.AnyReader,
+                reader: *std.Io.Reader,
                 allocator: std.mem.Allocator,
-            ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+            ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
                 return protobuf.decode(@This(), reader, allocator);
             }
 
@@ -1941,7 +1941,7 @@ pub const TestPickleNestedMessage = struct {
 
             pub fn jsonEncode(
                 self: @This(),
-                options: std.json.StringifyOptions,
+                options: std.json.Stringify.Options,
                 allocator: std.mem.Allocator,
             ) ![]const u8 {
                 return protobuf.json.encode(self, options, allocator);
@@ -1966,16 +1966,16 @@ pub const TestPickleNestedMessage = struct {
 
         pub fn encode(
             self: @This(),
-            writer: std.io.AnyWriter,
+            writer: *std.Io.Writer,
             allocator: std.mem.Allocator,
-        ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
 
         pub fn decode(
-            reader: std.io.AnyReader,
+            reader: *std.Io.Reader,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
 
@@ -1997,7 +1997,7 @@ pub const TestPickleNestedMessage = struct {
 
         pub fn jsonEncode(
             self: @This(),
-            options: std.json.StringifyOptions,
+            options: std.json.Stringify.Options,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
             return protobuf.json.encode(self, options, allocator);
@@ -2022,16 +2022,16 @@ pub const TestPickleNestedMessage = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -2053,7 +2053,7 @@ pub const TestPickleNestedMessage = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -2081,16 +2081,16 @@ pub const TestMultipleExtensionRanges = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -2112,7 +2112,7 @@ pub const TestMultipleExtensionRanges = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -2146,16 +2146,16 @@ pub const TestReallyLargeTagNumber = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -2177,7 +2177,7 @@ pub const TestReallyLargeTagNumber = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -2211,16 +2211,16 @@ pub const TestRecursiveMessage = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -2242,7 +2242,7 @@ pub const TestRecursiveMessage = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -2285,16 +2285,16 @@ pub const TestMutualRecursionA = struct {
 
         pub fn encode(
             self: @This(),
-            writer: std.io.AnyWriter,
+            writer: *std.Io.Writer,
             allocator: std.mem.Allocator,
-        ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
 
         pub fn decode(
-            reader: std.io.AnyReader,
+            reader: *std.Io.Reader,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
 
@@ -2316,7 +2316,7 @@ pub const TestMutualRecursionA = struct {
 
         pub fn jsonEncode(
             self: @This(),
-            options: std.json.StringifyOptions,
+            options: std.json.Stringify.Options,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
             return protobuf.json.encode(self, options, allocator);
@@ -2341,16 +2341,16 @@ pub const TestMutualRecursionA = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -2372,7 +2372,7 @@ pub const TestMutualRecursionA = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -2406,16 +2406,16 @@ pub const TestMutualRecursionB = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -2437,7 +2437,7 @@ pub const TestMutualRecursionB = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -2476,16 +2476,16 @@ pub const TestIsInitialized = struct {
 
         pub fn encode(
             self: @This(),
-            writer: std.io.AnyWriter,
+            writer: *std.Io.Writer,
             allocator: std.mem.Allocator,
-        ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
 
         pub fn decode(
-            reader: std.io.AnyReader,
+            reader: *std.Io.Reader,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
 
@@ -2507,7 +2507,7 @@ pub const TestIsInitialized = struct {
 
         pub fn jsonEncode(
             self: @This(),
-            options: std.json.StringifyOptions,
+            options: std.json.Stringify.Options,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
             return protobuf.json.encode(self, options, allocator);
@@ -2532,16 +2532,16 @@ pub const TestIsInitialized = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -2563,7 +2563,7 @@ pub const TestIsInitialized = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -2595,16 +2595,16 @@ pub const TestDupFieldNumber = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -2626,7 +2626,7 @@ pub const TestDupFieldNumber = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -2658,16 +2658,16 @@ pub const TestEagerMessage = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -2689,7 +2689,7 @@ pub const TestEagerMessage = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -2721,16 +2721,16 @@ pub const TestLazyMessage = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -2752,7 +2752,7 @@ pub const TestLazyMessage = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -2795,16 +2795,16 @@ pub const TestEagerMaybeLazy = struct {
 
         pub fn encode(
             self: @This(),
-            writer: std.io.AnyWriter,
+            writer: *std.Io.Writer,
             allocator: std.mem.Allocator,
-        ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
 
         pub fn decode(
-            reader: std.io.AnyReader,
+            reader: *std.Io.Reader,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
 
@@ -2826,7 +2826,7 @@ pub const TestEagerMaybeLazy = struct {
 
         pub fn jsonEncode(
             self: @This(),
-            options: std.json.StringifyOptions,
+            options: std.json.Stringify.Options,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
             return protobuf.json.encode(self, options, allocator);
@@ -2851,16 +2851,16 @@ pub const TestEagerMaybeLazy = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -2882,7 +2882,7 @@ pub const TestEagerMaybeLazy = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -2923,16 +2923,16 @@ pub const TestNestedMessageHasBits = struct {
 
         pub fn encode(
             self: @This(),
-            writer: std.io.AnyWriter,
+            writer: *std.Io.Writer,
             allocator: std.mem.Allocator,
-        ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
 
         pub fn decode(
-            reader: std.io.AnyReader,
+            reader: *std.Io.Reader,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
 
@@ -2954,7 +2954,7 @@ pub const TestNestedMessageHasBits = struct {
 
         pub fn jsonEncode(
             self: @This(),
-            options: std.json.StringifyOptions,
+            options: std.json.Stringify.Options,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
             return protobuf.json.encode(self, options, allocator);
@@ -2979,16 +2979,16 @@ pub const TestNestedMessageHasBits = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -3010,7 +3010,7 @@ pub const TestNestedMessageHasBits = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -3064,16 +3064,16 @@ pub const TestCamelCaseFieldNames = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -3095,7 +3095,7 @@ pub const TestCamelCaseFieldNames = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -3142,16 +3142,16 @@ pub const TestFieldOrderings = struct {
 
         pub fn encode(
             self: @This(),
-            writer: std.io.AnyWriter,
+            writer: *std.Io.Writer,
             allocator: std.mem.Allocator,
-        ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
 
         pub fn decode(
-            reader: std.io.AnyReader,
+            reader: *std.Io.Reader,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
 
@@ -3173,7 +3173,7 @@ pub const TestFieldOrderings = struct {
 
         pub fn jsonEncode(
             self: @This(),
-            options: std.json.StringifyOptions,
+            options: std.json.Stringify.Options,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
             return protobuf.json.encode(self, options, allocator);
@@ -3198,16 +3198,16 @@ pub const TestFieldOrderings = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -3229,7 +3229,7 @@ pub const TestFieldOrderings = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -3261,16 +3261,16 @@ pub const TestExtensionOrderings1 = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -3292,7 +3292,7 @@ pub const TestExtensionOrderings1 = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -3331,16 +3331,16 @@ pub const TestExtensionOrderings2 = struct {
 
         pub fn encode(
             self: @This(),
-            writer: std.io.AnyWriter,
+            writer: *std.Io.Writer,
             allocator: std.mem.Allocator,
-        ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
 
         pub fn decode(
-            reader: std.io.AnyReader,
+            reader: *std.Io.Reader,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
 
@@ -3362,7 +3362,7 @@ pub const TestExtensionOrderings2 = struct {
 
         pub fn jsonEncode(
             self: @This(),
-            options: std.json.StringifyOptions,
+            options: std.json.Stringify.Options,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
             return protobuf.json.encode(self, options, allocator);
@@ -3387,16 +3387,16 @@ pub const TestExtensionOrderings2 = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -3418,7 +3418,7 @@ pub const TestExtensionOrderings2 = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -3502,16 +3502,16 @@ pub const TestExtremeDefaultValues = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -3533,7 +3533,7 @@ pub const TestExtremeDefaultValues = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -3565,16 +3565,16 @@ pub const SparseEnumMessage = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -3596,7 +3596,7 @@ pub const SparseEnumMessage = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -3628,16 +3628,16 @@ pub const OneString = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -3659,7 +3659,7 @@ pub const OneString = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -3691,16 +3691,16 @@ pub const MoreString = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -3722,7 +3722,7 @@ pub const MoreString = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -3754,16 +3754,16 @@ pub const OneBytes = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -3785,7 +3785,7 @@ pub const OneBytes = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -3817,16 +3817,16 @@ pub const MoreBytes = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -3848,7 +3848,7 @@ pub const MoreBytes = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -3942,16 +3942,16 @@ pub const ManyOptionalString = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -3973,7 +3973,7 @@ pub const ManyOptionalString = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -4005,16 +4005,16 @@ pub const Int32Message = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -4036,7 +4036,7 @@ pub const Int32Message = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -4068,16 +4068,16 @@ pub const Uint32Message = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -4099,7 +4099,7 @@ pub const Uint32Message = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -4131,16 +4131,16 @@ pub const Int64Message = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -4162,7 +4162,7 @@ pub const Int64Message = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -4194,16 +4194,16 @@ pub const Uint64Message = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -4225,7 +4225,7 @@ pub const Uint64Message = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -4257,16 +4257,16 @@ pub const BoolMessage = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -4288,7 +4288,7 @@ pub const BoolMessage = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -4342,16 +4342,16 @@ pub const TestOneof = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -4373,7 +4373,7 @@ pub const TestOneof = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -4413,16 +4413,16 @@ pub const TestOneofBackwardsCompatible = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -4444,7 +4444,7 @@ pub const TestOneofBackwardsCompatible = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -4572,16 +4572,16 @@ pub const TestOneof2 = struct {
 
         pub fn encode(
             self: @This(),
-            writer: std.io.AnyWriter,
+            writer: *std.Io.Writer,
             allocator: std.mem.Allocator,
-        ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
 
         pub fn decode(
-            reader: std.io.AnyReader,
+            reader: *std.Io.Reader,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
 
@@ -4603,7 +4603,7 @@ pub const TestOneof2 = struct {
 
         pub fn jsonEncode(
             self: @This(),
-            options: std.json.StringifyOptions,
+            options: std.json.Stringify.Options,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
             return protobuf.json.encode(self, options, allocator);
@@ -4628,16 +4628,16 @@ pub const TestOneof2 = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -4659,7 +4659,7 @@ pub const TestOneof2 = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -4714,16 +4714,16 @@ pub const TestRequiredOneof = struct {
 
         pub fn encode(
             self: @This(),
-            writer: std.io.AnyWriter,
+            writer: *std.Io.Writer,
             allocator: std.mem.Allocator,
-        ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
 
         pub fn decode(
-            reader: std.io.AnyReader,
+            reader: *std.Io.Reader,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
 
@@ -4745,7 +4745,7 @@ pub const TestRequiredOneof = struct {
 
         pub fn jsonEncode(
             self: @This(),
-            options: std.json.StringifyOptions,
+            options: std.json.Stringify.Options,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
             return protobuf.json.encode(self, options, allocator);
@@ -4770,16 +4770,16 @@ pub const TestRequiredOneof = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -4801,7 +4801,7 @@ pub const TestRequiredOneof = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -4859,16 +4859,16 @@ pub const TestPackedTypes = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -4890,7 +4890,7 @@ pub const TestPackedTypes = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -4948,16 +4948,16 @@ pub const TestUnpackedTypes = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -4979,7 +4979,7 @@ pub const TestUnpackedTypes = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -5007,16 +5007,16 @@ pub const TestPackedExtensions = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -5038,7 +5038,7 @@ pub const TestPackedExtensions = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -5066,16 +5066,16 @@ pub const TestUnpackedExtensions = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -5097,7 +5097,7 @@ pub const TestUnpackedExtensions = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -5155,16 +5155,16 @@ pub const TestDynamicExtensions = struct {
 
         pub fn encode(
             self: @This(),
-            writer: std.io.AnyWriter,
+            writer: *std.Io.Writer,
             allocator: std.mem.Allocator,
-        ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
 
         pub fn decode(
-            reader: std.io.AnyReader,
+            reader: *std.Io.Reader,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
 
@@ -5186,7 +5186,7 @@ pub const TestDynamicExtensions = struct {
 
         pub fn jsonEncode(
             self: @This(),
-            options: std.json.StringifyOptions,
+            options: std.json.Stringify.Options,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
             return protobuf.json.encode(self, options, allocator);
@@ -5211,16 +5211,16 @@ pub const TestDynamicExtensions = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -5242,7 +5242,7 @@ pub const TestDynamicExtensions = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -5284,16 +5284,16 @@ pub const TestRepeatedScalarDifferentTagSizes = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -5315,7 +5315,7 @@ pub const TestRepeatedScalarDifferentTagSizes = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -5374,16 +5374,16 @@ pub const TestParsingMerge = struct {
 
         pub fn encode(
             self: @This(),
-            writer: std.io.AnyWriter,
+            writer: *std.Io.Writer,
             allocator: std.mem.Allocator,
-        ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
 
         pub fn decode(
-            reader: std.io.AnyReader,
+            reader: *std.Io.Reader,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
 
@@ -5405,7 +5405,7 @@ pub const TestParsingMerge = struct {
 
         pub fn jsonEncode(
             self: @This(),
-            options: std.json.StringifyOptions,
+            options: std.json.Stringify.Options,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
             return protobuf.json.encode(self, options, allocator);
@@ -5430,16 +5430,16 @@ pub const TestParsingMerge = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -5461,7 +5461,7 @@ pub const TestParsingMerge = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -5493,16 +5493,16 @@ pub const TestMergeException = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -5524,7 +5524,7 @@ pub const TestMergeException = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -5556,16 +5556,16 @@ pub const TestCommentInjectionMessage = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -5587,7 +5587,7 @@ pub const TestCommentInjectionMessage = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -5629,16 +5629,16 @@ pub const TestMessageSize = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -5660,7 +5660,7 @@ pub const TestMessageSize = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -5688,16 +5688,16 @@ pub const FooRequest = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -5719,7 +5719,7 @@ pub const FooRequest = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -5747,16 +5747,16 @@ pub const FooResponse = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -5778,7 +5778,7 @@ pub const FooResponse = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -5806,16 +5806,16 @@ pub const FooClientMessage = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -5837,7 +5837,7 @@ pub const FooClientMessage = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -5865,16 +5865,16 @@ pub const FooServerMessage = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -5896,7 +5896,7 @@ pub const FooServerMessage = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -5924,16 +5924,16 @@ pub const BarRequest = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -5955,7 +5955,7 @@ pub const BarRequest = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -5983,16 +5983,16 @@ pub const BarResponse = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -6014,7 +6014,7 @@ pub const BarResponse = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -6058,16 +6058,16 @@ pub const TestJsonName = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -6089,7 +6089,7 @@ pub const TestJsonName = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -6169,16 +6169,16 @@ pub const TestHugeFieldNumbers = struct {
 
         pub fn encode(
             self: @This(),
-            writer: std.io.AnyWriter,
+            writer: *std.Io.Writer,
             allocator: std.mem.Allocator,
-        ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
 
         pub fn decode(
-            reader: std.io.AnyReader,
+            reader: *std.Io.Reader,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
 
@@ -6200,7 +6200,7 @@ pub const TestHugeFieldNumbers = struct {
 
         pub fn jsonEncode(
             self: @This(),
-            options: std.json.StringifyOptions,
+            options: std.json.Stringify.Options,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
             return protobuf.json.encode(self, options, allocator);
@@ -6225,16 +6225,16 @@ pub const TestHugeFieldNumbers = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -6256,7 +6256,7 @@ pub const TestHugeFieldNumbers = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -6304,16 +6304,16 @@ pub const TestExtensionInsideTable = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -6335,7 +6335,7 @@ pub const TestExtensionInsideTable = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -6367,16 +6367,16 @@ pub const TestNestedGroupExtensionInnerExtension = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -6398,7 +6398,7 @@ pub const TestNestedGroupExtensionInnerExtension = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -6436,16 +6436,16 @@ pub const TestExtensionRangeSerialize = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -6467,7 +6467,7 @@ pub const TestExtensionRangeSerialize = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -6505,16 +6505,16 @@ pub const TestVerifyInt32Simple = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -6536,7 +6536,7 @@ pub const TestVerifyInt32Simple = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -6578,16 +6578,16 @@ pub const TestVerifyInt32 = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -6609,7 +6609,7 @@ pub const TestVerifyInt32 = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -6657,16 +6657,16 @@ pub const TestVerifyMostlyInt32 = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -6688,7 +6688,7 @@ pub const TestVerifyMostlyInt32 = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -6738,16 +6738,16 @@ pub const TestVerifyMostlyInt32BigFieldNumber = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -6769,7 +6769,7 @@ pub const TestVerifyMostlyInt32BigFieldNumber = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -6807,16 +6807,16 @@ pub const TestVerifyUint32Simple = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -6838,7 +6838,7 @@ pub const TestVerifyUint32Simple = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -6880,16 +6880,16 @@ pub const TestVerifyUint32 = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -6911,7 +6911,7 @@ pub const TestVerifyUint32 = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -6953,16 +6953,16 @@ pub const TestVerifyOneUint32 = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -6984,7 +6984,7 @@ pub const TestVerifyOneUint32 = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -7028,16 +7028,16 @@ pub const TestVerifyOneInt32BigFieldNumber = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -7059,7 +7059,7 @@ pub const TestVerifyOneInt32BigFieldNumber = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -7105,16 +7105,16 @@ pub const TestVerifyInt32BigFieldNumber = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -7136,7 +7136,7 @@ pub const TestVerifyInt32BigFieldNumber = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -7182,16 +7182,16 @@ pub const TestVerifyUint32BigFieldNumber = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -7213,7 +7213,7 @@ pub const TestVerifyUint32BigFieldNumber = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -7270,16 +7270,16 @@ pub const TestVerifyBigFieldNumberUint32 = struct {
 
         pub fn encode(
             self: @This(),
-            writer: std.io.AnyWriter,
+            writer: *std.Io.Writer,
             allocator: std.mem.Allocator,
-        ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
             return protobuf.encode(writer, allocator, self);
         }
 
         pub fn decode(
-            reader: std.io.AnyReader,
+            reader: *std.Io.Reader,
             allocator: std.mem.Allocator,
-        ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
 
@@ -7301,7 +7301,7 @@ pub const TestVerifyBigFieldNumberUint32 = struct {
 
         pub fn jsonEncode(
             self: @This(),
-            options: std.json.StringifyOptions,
+            options: std.json.Stringify.Options,
             allocator: std.mem.Allocator,
         ) ![]const u8 {
             return protobuf.json.encode(self, options, allocator);
@@ -7326,16 +7326,16 @@ pub const TestVerifyBigFieldNumberUint32 = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -7357,7 +7357,7 @@ pub const TestVerifyBigFieldNumberUint32 = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
@@ -7524,16 +7524,16 @@ pub const EnumParseTester = struct {
 
     pub fn encode(
         self: @This(),
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
         allocator: std.mem.Allocator,
-    ) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
         return protobuf.encode(writer, allocator, self);
     }
 
     pub fn decode(
-        reader: std.io.AnyReader,
+        reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
-    ) (protobuf.DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!@This() {
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
 
@@ -7555,7 +7555,7 @@ pub const EnumParseTester = struct {
 
     pub fn jsonEncode(
         self: @This(),
-        options: std.json.StringifyOptions,
+        options: std.json.Stringify.Options,
         allocator: std.mem.Allocator,
     ) ![]const u8 {
         return protobuf.json.encode(self, options, allocator);
