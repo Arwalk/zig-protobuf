@@ -113,10 +113,10 @@ pub fn decode(
 
 pub fn encode(
     data: anytype,
-    options: std.json.StringifyOptions,
+    options: std.json.Stringify.Options,
     allocator: std.mem.Allocator,
 ) ![]u8 {
-    return try std.json.stringifyAlloc(allocator, data, options);
+    return std.json.Stringify.valueAlloc(allocator, data, options);
 }
 
 pub fn stringify(Self: type, self: *const Self, jws: anytype) !void {
@@ -450,17 +450,12 @@ fn print_numeric(value: anytype, jws: anytype) !void {
 }
 
 fn print_bytes(value: anytype, jws: anytype) !void {
-    const size = std.base64.standard.Encoder.calcSize(value.len);
-
     try jsonValueStartAssumeTypeOk(jws);
-    try jws.stream.writeByte('"');
+    try jws.writer.writeByte('"');
 
-    var innerArrayList: *std.ArrayList(u8) = jws.stream.context;
-    try innerArrayList.ensureTotalCapacity(innerArrayList.capacity + size + 1);
-    const temp = innerArrayList.unusedCapacitySlice();
-    _ = std.base64.standard.Encoder.encode(temp, value);
-    innerArrayList.items.len += size;
-    try jws.stream.writeByte('"');
+    try std.base64.standard.Encoder.encodeWriter(jws.writer, value);
+
+    try jws.writer.writeByte('"');
 
     jws.next_punctuation = .comma;
 }
@@ -479,8 +474,8 @@ fn jsonIndent(jws: anytype) !void {
             break :blk jws.indent_level;
         },
     };
-    try jws.stream.writeByte('\n');
-    try jws.stream.writeByteNTimes(char, n_chars);
+    try jws.writer.writeByte('\n');
+    try jws.writer.splatByteAll(char, n_chars);
 }
 
 fn jsonIsComplete(jws: anytype) bool {
@@ -499,13 +494,13 @@ fn jsonValueStartAssumeTypeOk(jws: anytype) !void {
         },
         .comma => {
             // Subsequent item in a container.
-            try jws.stream.writeByte(',');
+            try jws.writer.writeByte(',');
             try jsonIndent(jws);
         },
         .colon => {
-            try jws.stream.writeByte(':');
+            try jws.writer.writeByte(':');
             if (jws.options.whitespace != .minified) {
-                try jws.stream.writeByte(' ');
+                try jws.writer.writeByte(' ');
             }
         },
     }
