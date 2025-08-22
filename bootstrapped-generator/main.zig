@@ -26,6 +26,7 @@ pub fn main() !void {
     var stdout_buf: [4096]u8 = undefined;
     var stdout = std.fs.File.stdout().writer(&stdout_buf);
     try ctx.res.encode(&stdout.interface, allocator);
+    try stdout.interface.flush();
 }
 
 const GenerationContext = struct {
