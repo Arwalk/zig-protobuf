@@ -14,10 +14,11 @@ pub fn main() !void {
 
     const allocator = std.heap.smp_allocator;
 
-    const request: plugin.CodeGeneratorRequest = try .decode(
+    var request: plugin.CodeGeneratorRequest = try .decode(
         &stdin.interface,
         allocator,
     );
+    defer request.deinit(allocator);
 
     var ctx: GenerationContext = try .init(allocator, request);
 
@@ -68,19 +69,14 @@ const GenerationContext = struct {
             if (t.package) |package| {
                 try self.known_packages.put(package, FullName{ .buf = package });
             } else {
-                self.res.@"error" = try std.fmt.allocPrint(
-                    allocator,
-                    "ERROR Package directive missing in {s}\n",
-                    .{file.name.?},
-                );
-                return;
+                try self.known_packages.put("protobuf", FullName{ .buf = "protobuf" });
             }
         }
 
         for (self.req.proto_file.items) |file| {
             const t: descriptor.FileDescriptorProto = file;
 
-            const name = FullName{ .buf = t.package.? };
+            const name = FullName{ .buf = t.package orelse "protobuf" };
 
             try self.printFileDeclarations(allocator, name, file);
         }
@@ -110,8 +106,8 @@ const GenerationContext = struct {
                 \\ ///! package {s}
                 \\const std = @import("std");
                 \\
-                \\const protobuf = @import("protobuf");
-                \\const fd = protobuf.fd;
+                \\const pb  = @import("protobuf");
+                \\const fd = pb.fd;
                 \\
             , .{name.buf}));
 
@@ -119,7 +115,7 @@ const GenerationContext = struct {
             var importedPackages: std.StringHashMap(bool) = .init(allocator);
 
             for (self.req.proto_file.items) |file| {
-                if (name.eqlString(file.package.?)) {
+                if (name.eqlString(file.package orelse "protobuf")) {
                     for (file.dependency.items) |dep| {
                         for (self.req.proto_file.items, 0..) |item, index| {
                             if (std.mem.eql(u8, dep, item.name.?)) {
@@ -132,7 +128,7 @@ const GenerationContext = struct {
                                     }
                                 }
 
-                                try importedPackages.put(item.package.?, is_public_dep);
+                                try importedPackages.put(item.package orelse "protobuf", is_public_dep);
                             }
                         }
                     }
@@ -248,30 +244,28 @@ const GenerationContext = struct {
                     const diff_idx = std.mem.indexOfDiff(
                         u8,
                         fullTypeName.buf,
-                        file.package.?,
+                        file.package orelse "protobuf",
                     ).?;
                     return fullTypeName.buf[diff_idx + 1 ..];
                 }
-                if (parent.eql(FullName{ .buf = file.package.? })) {
+                if (parent.eql(FullName{ .buf = file.package orelse "protobuf" })) {
                     return fullTypeName.name().buf;
                 }
             }
 
             var parent: ?FullName = fullTypeName.parent();
-            const filePackage = FullName{ .buf = file.package.? };
+            const filePackage = FullName{ .buf = file.package orelse "protobuf" };
 
             // iterate parents until we find a parent that matches the known_packages
             while (parent != null) {
+                // it is in current package, return full name
+                if (filePackage.eql(parent.?)) {
+                    const name = fullTypeName.buf[parent.?.buf.len + 1 ..];
+                    return name;
+                }
+
                 var it = ctx.known_packages.valueIterator();
-
                 while (it.next()) |value| {
-
-                    // it is in current package, return full name
-                    if (filePackage.eql(parent.?)) {
-                        const name = fullTypeName.buf[parent.?.buf.len + 1 ..];
-                        return name;
-                    }
-
                     // it is in different package. return fully qualified name including accessor
                     if (value.eql(parent.?)) {
                         const prop = try escapeFqn(allocator, parent.?.buf);
@@ -279,13 +273,21 @@ const GenerationContext = struct {
                         return try std.fmt.allocPrint(allocator, "{s}.{s}", .{ prop, name });
                     }
                 }
-
                 parent = parent.?.parent();
+            } else {
+                // Parent is in root package.
+                return try std.fmt.allocPrint(
+                    allocator,
+                    "{s}{s}",
+                    .{
+                        if (filePackage.eqlString("protobuf"))
+                            ""
+                        else
+                            "protobuf.",
+                        fullTypeName.buf,
+                    },
+                );
             }
-
-            std.debug.print("Unknown type: {s} from {s} in {s}\n", .{ fullTypeName.buf, parentFqn.buf, file.package.? });
-
-            return try escapeFqn(allocator, field.type_name.?);
         }
         @panic("field has no type");
     }
@@ -705,22 +707,22 @@ const GenerationContext = struct {
                 \\        writer: *std.Io.Writer,
                 \\        allocator: std.mem.Allocator,
                 \\    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {{
-                \\        return protobuf.encode(writer, allocator, self);
+                \\        return pb.encode(writer, allocator, self);
                 \\    }}
                 \\
                 \\    pub fn decode(
                 \\        reader: *std.Io.Reader,
                 \\        allocator: std.mem.Allocator,
-                \\    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {{
-                \\        return protobuf.decode(@This(), reader, allocator);
+                \\    ) (pb.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {{
+                \\        return pb.decode(@This(), reader, allocator);
                 \\    }}
                 \\
                 \\    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {{
-                \\        return protobuf.deinit(allocator, self);
+                \\        return pb.deinit(allocator, self);
                 \\    }}
                 \\
                 \\    pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {{
-                \\        return protobuf.dupe(@This(), self, allocator);
+                \\        return pb.dupe(@This(), self, allocator);
                 \\    }}
                 \\
                 \\    pub fn jsonDecode(
@@ -728,7 +730,7 @@ const GenerationContext = struct {
                 \\        options: std.json.ParseOptions,
                 \\        allocator: std.mem.Allocator,
                 \\    ) !std.json.Parsed(@This()) {{
-                \\        return protobuf.json.decode(@This(), input, options, allocator);
+                \\        return pb.json.decode(@This(), input, options, allocator);
                 \\    }}
                 \\
                 \\    pub fn jsonEncode(
@@ -736,7 +738,7 @@ const GenerationContext = struct {
                 \\        options: std.json.Stringify.Options,
                 \\        allocator: std.mem.Allocator,
                 \\    ) ![]const u8 {{
-                \\        return protobuf.json.encode(self, options, allocator);
+                \\        return pb.json.encode(self, options, allocator);
                 \\    }}
                 \\
                 \\    // This method is used by std.json
@@ -746,13 +748,13 @@ const GenerationContext = struct {
                 \\        source: anytype,
                 \\        options: std.json.ParseOptions,
                 \\    ) !@This() {{
-                \\        return protobuf.json.parse(@This(), allocator, source, options);
+                \\        return pb.json.parse(@This(), allocator, source, options);
                 \\    }}
                 \\
                 \\    // This method is used by std.json
                 \\    // internally for serialization. DO NOT RENAME!
                 \\    pub fn jsonStringify(self: *const @This(), jws: anytype) !void {{
-                \\        return protobuf.json.stringify(@This(), self, jws);
+                \\        return pb.json.stringify(@This(), self, jws);
                 \\    }}
                 \\}};
                 \\
