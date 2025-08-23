@@ -1,0 +1,20 @@
+// No package declaration; test generation of root namespace
+syntax = "proto3";
+
+message RootNamespaceMessage {
+  uint32 foo = 1;
+  Bar bar = 2;
+  RootOtherMessage other = 3;
+  Nested nested = 4;
+
+  message Nested { uint32 my_field = 1; }
+
+  enum Bar { UNSPECIFIED = 0; BAZ = 1; }
+}
+
+message RootOtherMessage {
+  uint32 field1 = 1;
+  RootEnum field2 = 2;
+}
+
+enum RootEnum { NONE = 0; OPT1 = 1; OPT2 = 2; }
