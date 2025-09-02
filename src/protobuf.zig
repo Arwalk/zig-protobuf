@@ -340,7 +340,6 @@ fn writePackedStringList(
     comptime field: FieldDescriptor,
     value_list: anytype,
 ) std.io.AnyWriter!void {
-    // TODO: find examples about how to encode and decode packed strings. the documentation is ambiguous
     if (value_list.items.len > 0) {
         try writeTag(writer, field);
 
@@ -891,7 +890,6 @@ fn deinitField(
                     if (comptime s.fields.len == 2 and
                         @hasField(o.child, "items") and @hasField(o.child, "capacity"))
                     {
-                        std.log.err("list of strings deinit", .{});
                         const ListItem = @typeInfo(@FieldType(o.child, "items")).pointer.child;
                         switch (comptime @typeInfo(ListItem)) {
                             .pointer => {
