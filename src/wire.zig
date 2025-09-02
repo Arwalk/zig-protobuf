@@ -27,7 +27,7 @@ pub const Tag = packed struct(u32) {
     field: u29,
 
     /// Encode tag to byte stream. Returns number of bytes used for encoding,
-    /// which is guaranteed to be between 1-3 inclusive.
+    /// which is guaranteed to be between 1-5 inclusive.
     pub inline fn encode(
         comptime self: Tag,
         writer: std.io.AnyWriter,
