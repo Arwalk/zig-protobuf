@@ -112,8 +112,8 @@ pub const FieldType = union(enum) {
                     .sint64,
                     .bool,
                     => .varint,
-                    .float, .fixed32, .sfixed32 => .i32,
-                    .double, .fixed64, .sfixed64 => .i64,
+                    .float, .fixed32, .sfixed32 => .fixed32,
+                    .double, .fixed64, .sfixed64 => .fixed64,
                     .string, .bytes => .len,
                 };
             }
@@ -362,7 +362,7 @@ fn writePackedStringList(
 /// Writes the full tag of the field, if there is any.
 fn writeTag(writer: std.io.AnyWriter, comptime field: FieldDescriptor) std.io.AnyWriter.Error!void {
     const tag: wire.Tag = comptime .{
-        .type = field.ftype.toWire(),
+        .wire_type = field.ftype.toWire(),
         .field = field.field_number.?,
     };
     _ = try tag.encode(writer);
@@ -1087,7 +1087,7 @@ pub const WireDecoderIterator = struct {
                 else => unreachable,
             };
             state.current_index += if (tag.field > 2047) 3 else if (tag.field > 15) 2 else 1;
-            const data: ExtractedData = switch (tag.type) {
+            const data: ExtractedData = switch (tag.wire_type) {
                 .varint => blk: { // VARINT
                     const varint = try decode_varint(u64, state.input[state.current_index..]);
                     state.current_index += varint.size;
@@ -1095,7 +1095,7 @@ pub const WireDecoderIterator = struct {
                         .RawValue = varint.value,
                     };
                 },
-                .i64 => blk: { // 64BIT
+                .fixed64 => blk: { // 64BIT
                     const value = ExtractedData{ .RawValue = decode_fixed(u64, state.input[state.current_index .. state.current_index + 8]) };
                     state.current_index += 8;
                     break :blk value;
@@ -1114,7 +1114,7 @@ pub const WireDecoderIterator = struct {
                     break :blk value;
                 },
                 .sgroup, .egroup => return null,
-                .i32 => blk: { // 32BIT
+                .fixed32 => blk: { // 32BIT
                     const value = ExtractedData{ .RawValue = decode_fixed(u32, state.input[state.current_index .. state.current_index + 4]) };
                     state.current_index += 4;
                     break :blk value;
