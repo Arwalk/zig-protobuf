@@ -7,22 +7,22 @@ const protobuf = @import("protobuf.zig");
 pub const Type = enum(u3) {
     /// int32, int64, uint32, uint64, sint32, sint64, bool, enum
     varint = 0,
-    /// fixed64, sfixed64, double
-    i64 = 1,
+    /// fixed64, sfixed64, double - referred to as `i64` in protobuf docs
+    fixed64 = 1,
     /// string, bytes, embedded messages, packed repeated fields
     len = 2,
     /// group start (deprecated)
     sgroup = 3,
     /// group end (deprecated)
     egroup = 4,
-    /// fixed32, sfixed32, float
-    i32 = 5,
+    /// fixed32, sfixed32, float - referred to as `i32` in protobuf docs
+    fixed32 = 5,
 };
 
 /// Record tag.
 pub const Tag = packed struct(u32) {
     /// Wire type.
-    type: Type,
+    wire_type: Type,
     /// Field number.
     field: u29,
 
@@ -52,7 +52,7 @@ pub const Tag = packed struct(u32) {
     }
 
     test encode {
-        const tag: Tag = .{ .type = .len, .field = 15 };
+        const tag: Tag = .{ .wire_type = .len, .field = 15 };
 
         var result: [2]u8 = undefined;
         var fbs = std.io.fixedBufferStream(&result);
@@ -64,7 +64,7 @@ pub const Tag = packed struct(u32) {
         try std.testing.expectEqual((15 << 3) | 2, result[0]);
 
         fbs.reset();
-        const tag2: Tag = .{ .type = .i64, .field = 1 };
+        const tag2: Tag = .{ .wire_type = .fixed64, .field = 1 };
         const encoded2 = try tag2.encode(writer.any());
         try std.testing.expectEqual(1, encoded2);
         try std.testing.expectEqual((1 << 3) | 1, result[0]);
@@ -108,7 +108,7 @@ pub const Tag = packed struct(u32) {
         const r = fbs.reader();
         const tag: Tag = try decode(r.any());
 
-        try std.testing.expectEqual(.i32, tag.type);
+        try std.testing.expectEqual(.fixed32, tag.wire_type);
         try std.testing.expectEqual(0x1FFFFFFF, tag.field);
     }
 };
