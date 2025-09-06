@@ -80,25 +80,8 @@ pub const Tag = packed struct(u32) {
         /// Number of bytes consumed from reader.
         usize,
     } {
-        var raw_result: u32 = 0;
-
-        // Guaranteed that a tag will take less than 5 bytes in stream. Any
-        // more bytes will result in an invalid field number (exceeding proto
-        // limits), and as such should be considered an invalid tag.
-        const consumed = for (0..4) |i| {
-            const b = try reader.readByte();
-            const num = b & 0x7F;
-            raw_result |= @as(u32, num) << @intCast(7 * i);
-            if (b >> 7 == 0) break i + 1;
-        } else b: {
-            const b = try reader.readByte();
-            if (b & 0xF0 > 0) {
-                @branchHint(.cold);
-                return error.InvalidInput;
-            }
-            raw_result |= @as(u32, b) << @intCast(7 * 4);
-            break :b 5;
-        };
+        const raw_result: u32, const consumed: usize =
+            try decodeScalar(.uint32, reader);
 
         const invalid_wire_type = (raw_result & 0x7) > 5;
         if (invalid_wire_type) {
@@ -106,7 +89,7 @@ pub const Tag = packed struct(u32) {
             return error.InvalidTag;
         }
 
-        return .{ @bitCast(@as(u32, @intCast(raw_result))), consumed };
+        return .{ @bitCast(raw_result), consumed };
     }
 
     test decode {
