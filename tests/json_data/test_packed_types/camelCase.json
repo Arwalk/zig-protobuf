@@ -10,18 +10,18 @@
   "packedSfixed32": [],
   "packedSfixed64": [],
   "packedFloat": [
-    1e0,
+    1,
     "NaN",
     "Infinity",
     "-Infinity",
-    1e0
+    1
   ],
   "packedDouble": [
-    1e0,
+    1,
     "NaN",
     "Infinity",
     "-Infinity",
-    1e0
+    1
   ],
   "packedBool": [],
   "packedEnum": []

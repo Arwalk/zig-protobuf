@@ -6,9 +6,8 @@ const testing = std.testing;
 const tests_oneof = @import("./generated/tests/oneof.pb.zig");
 
 test "decode empty oneof must be null" {
-    var fbs = std.io.fixedBufferStream("");
-    const r = fbs.reader();
-    var decoded = try tests_oneof.OneofContainer.decode(r.any(), testing.allocator);
+    var reader: std.Io.Reader = .fixed("");
+    var decoded = try tests_oneof.OneofContainer.decode(&reader, testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try testing.expect(decoded.regular_field.len == 0);
@@ -29,19 +28,17 @@ test "oneof encode/decode int" {
         try testing.expectEqualDeep(demo, dupe);
     }
 
-    var obtained: std.ArrayListUnmanaged(u8) = .empty;
-    defer obtained.deinit(std.testing.allocator);
-    const w = obtained.writer(std.testing.allocator);
+    var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer w.deinit();
 
-    try demo.encode(w.any(), testing.allocator);
+    try demo.encode(&w.writer, testing.allocator);
 
     try testing.expectEqualSlices(u8, &[_]u8{
         0x18, 10,
-    }, obtained.items);
+    }, w.written());
 
-    var fbs = std.io.fixedBufferStream(obtained.items);
-    const r = fbs.reader();
-    var decoded = try tests_oneof.OneofContainer.decode(r.any(), testing.allocator);
+    var reader: std.Io.Reader = .fixed(w.written());
+    var decoded = try tests_oneof.OneofContainer.decode(&reader, testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqual(demo.some_oneof.?.a_number, decoded.some_oneof.?.a_number);
@@ -53,11 +50,10 @@ test "oneof encode/decode enum" {
 
     demo.some_oneof = .{ .enum_value = .SOMETHING2 };
 
-    var obtained: std.ArrayListUnmanaged(u8) = .empty;
-    defer obtained.deinit(std.testing.allocator);
-    const w = obtained.writer(std.testing.allocator);
+    var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer w.deinit();
 
-    try demo.encode(w.any(), testing.allocator);
+    try demo.encode(&w.writer, testing.allocator);
 
     {
         // duplicate the one-of and deep compare
@@ -68,11 +64,10 @@ test "oneof encode/decode enum" {
 
     try testing.expectEqualSlices(u8, &[_]u8{
         0x30, 0x02,
-    }, obtained.items);
+    }, w.written());
 
-    var fbs = std.io.fixedBufferStream(obtained.items);
-    const r = fbs.reader();
-    var decoded = try tests_oneof.OneofContainer.decode(r.any(), testing.allocator);
+    var reader: std.Io.Reader = .fixed(w.written());
+    var decoded = try tests_oneof.OneofContainer.decode(&reader, testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqual(demo.some_oneof.?.enum_value, decoded.some_oneof.?.enum_value);
@@ -91,19 +86,17 @@ test "oneof encode/decode string" {
         try testing.expectEqualDeep(demo, dupe);
     }
 
-    var obtained: std.ArrayListUnmanaged(u8) = .empty;
-    defer obtained.deinit(std.testing.allocator);
-    const w = obtained.writer(std.testing.allocator);
+    var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer w.deinit();
 
-    try demo.encode(w.any(), testing.allocator);
+    try demo.encode(&w.writer, testing.allocator);
 
     try testing.expectEqualSlices(u8, &[_]u8{
         0x0A, 0x03, 0x31, 0x32, 0x33,
-    }, obtained.items);
+    }, w.written());
 
-    var fbs = std.io.fixedBufferStream(obtained.items);
-    const r = fbs.reader();
-    var decoded = try tests_oneof.OneofContainer.decode(r.any(), testing.allocator);
+    var reader: std.Io.Reader = .fixed(w.written());
+    var decoded = try tests_oneof.OneofContainer.decode(&reader, testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqualSlices(
@@ -126,19 +119,17 @@ test "oneof encode/decode submessage" {
         try testing.expectEqualDeep(demo, dupe);
     }
 
-    var obtained: std.ArrayListUnmanaged(u8) = .empty;
-    defer obtained.deinit(std.testing.allocator);
-    const w = obtained.writer(std.testing.allocator);
+    var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer w.deinit();
 
-    try demo.encode(w.any(), testing.allocator);
+    try demo.encode(&w.writer, testing.allocator);
 
     try testing.expectEqualSlices(u8, &[_]u8{
         0x12, 0x07, 0x08, 0x01, 0x12, 0x03, 0x31, 0x32, 0x33,
-    }, obtained.items);
+    }, w.written());
 
-    var fbs = std.io.fixedBufferStream(obtained.items);
-    const r = fbs.reader();
-    var decoded = try tests_oneof.OneofContainer.decode(r.any(), testing.allocator);
+    var reader: std.Io.Reader = .fixed(w.written());
+    var decoded = try tests_oneof.OneofContainer.decode(&reader, testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqualSlices(
@@ -164,9 +155,8 @@ test "decoding multiple messages keeps the last value 123" {
         0x32, 0x33,
     };
 
-    var fbs = std.io.fixedBufferStream(payload);
-    const r = fbs.reader();
-    var decoded = try tests_oneof.OneofContainer.decode(r.any(), testing.allocator);
+    var reader: std.Io.Reader = .fixed(payload);
+    var decoded = try tests_oneof.OneofContainer.decode(&reader, testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqualSlices(u8, "123", decoded.some_oneof.?.message_in_oneof.str);
@@ -193,9 +183,8 @@ test "decoding multiple messages keeps the last value 132" {
         0x32, 0x33,
     };
 
-    var fbs = std.io.fixedBufferStream(payload);
-    const r = fbs.reader();
-    var decoded = try tests_oneof.OneofContainer.decode(r.any(), testing.allocator);
+    var reader: std.Io.Reader = .fixed(payload);
+    var decoded = try tests_oneof.OneofContainer.decode(&reader, testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
     try testing.expectEqualSlices(u8, "123", decoded.some_oneof.?.string_in_oneof);
