@@ -31,7 +31,7 @@ pub const Tag = packed struct(u32) {
     /// which is guaranteed to be between 1-5 inclusive.
     pub inline fn encode(
         comptime self: Tag,
-        writer: std.io.AnyWriter,
+        writer: *std.Io.Writer,
     ) !usize {
         const out_bytes: []const u8 = comptime b: {
             var raw: u32 = @bitCast(self);
@@ -56,17 +56,16 @@ pub const Tag = packed struct(u32) {
         const tag: Tag = .{ .wire_type = .len, .field = 15 };
 
         var result: [2]u8 = undefined;
-        var fbs = std.io.fixedBufferStream(&result);
-        const writer = fbs.writer();
+        var writer: std.Io.Writer = .fixed(&result);
 
-        const encoded = try tag.encode(writer.any());
+        const encoded = try tag.encode(&writer);
 
         try std.testing.expectEqual(1, encoded);
         try std.testing.expectEqual((15 << 3) | 2, result[0]);
 
-        fbs.reset();
+        writer = .fixed(&result);
         const tag2: Tag = .{ .wire_type = .fixed64, .field = 1 };
-        const encoded2 = try tag2.encode(writer.any());
+        const encoded2 = try tag2.encode(&writer);
         try std.testing.expectEqual(1, encoded2);
         try std.testing.expectEqual((1 << 3) | 1, result[0]);
     }
@@ -74,7 +73,7 @@ pub const Tag = packed struct(u32) {
     /// Decode from byte stream to tag. Unlike normal `varint` types, the
     /// encoding for a tag is guaranteed not to use ZigZag encoding, as the
     /// tag will always be unsigned.
-    pub fn decode(reader: std.io.AnyReader) !struct {
+    pub fn decode(reader: *std.Io.Reader) !struct {
         /// Decoded tag.
         Tag,
         /// Number of bytes consumed from reader.
@@ -86,7 +85,7 @@ pub const Tag = packed struct(u32) {
         const invalid_wire_type = (raw_result & 0x7) > 5;
         if (invalid_wire_type) {
             @branchHint(.cold);
-            return error.InvalidTag;
+            return error.InvalidInput;
         }
 
         return .{ @bitCast(raw_result), consumed };
@@ -94,9 +93,8 @@ pub const Tag = packed struct(u32) {
 
     test decode {
         const bytes: []const u8 = &.{ 0xFD, 0xFF, 0xFF, 0xFF, 0x0F };
-        var fbs = std.io.fixedBufferStream(bytes);
-        const r = fbs.reader();
-        const tag: Tag, const consumed = try decode(r.any());
+        var reader: std.Io.Reader = .fixed(bytes);
+        const tag: Tag, const consumed = try decode(&reader);
 
         try std.testing.expectEqual(5, consumed);
         try std.testing.expectEqual(.fixed32, tag.wire_type);
@@ -188,8 +186,8 @@ pub const ZigZag = struct {
 /// decoded by directly reading a slice from the reader.
 pub fn decodeScalar(
     comptime scalar: protobuf.FieldType.Scalar,
-    reader: std.io.AnyReader,
-) (std.io.AnyReader.Error || protobuf.DecodingError)!struct {
+    reader: *std.Io.Reader,
+) (std.Io.Reader.Error || protobuf.DecodingError)!struct {
     /// Resulting decoded scalar.
     scalar.toType(),
     /// Number of bytes consumed from reader.
@@ -216,7 +214,7 @@ pub fn decodeScalar(
             break :b byte_count;
         };
         const consumed = for (0..max_bytes) |i| {
-            const b = try reader.readByte();
+            const b = try reader.takeByte();
             const num = b & 0x7F;
             val |= @as(Result, num) << @intCast(7 * i);
             if (b >> 7 == 0) break i + 1;
@@ -256,14 +254,14 @@ pub fn decodeScalar(
 
         var val: Unsigned = 0;
         for (0..@sizeOf(Unsigned)) |i| {
-            const b = try reader.readByte();
+            const b = try reader.takeByte();
             val |= @as(Unsigned, b) << @intCast(8 * i);
         }
         return .{ @bitCast(val), @sizeOf(Unsigned) };
     }
 
     if (comptime scalar == .bool) {
-        const b = try reader.readByte();
+        const b = try reader.takeByte();
         if (b == 0) {
             return .{ false, 1 };
         } else if (b == 1) {
@@ -278,10 +276,9 @@ pub fn decodeScalar(
 test decodeScalar {
     {
         const bytes: []const u8 = &.{ 0xFF, 0xFF, 0xFF, 0xFF, 0x0F };
-        var fbs = std.io.fixedBufferStream(bytes);
-        const r = fbs.reader();
 
-        const decoded: u32, const consumed = try decodeScalar(.uint32, r.any());
+        var reader: std.Io.Reader = .fixed(bytes);
+        const decoded: u32, const consumed = try decodeScalar(.uint32, &reader);
 
         try std.testing.expectEqual(5, consumed);
         try std.testing.expectEqual(std.math.maxInt(u32), decoded);
@@ -289,10 +286,9 @@ test decodeScalar {
 
     {
         const bytes: []const u8 = &.{ 0xFF, 0xFF, 0xFF, 0xFF, 0x0F };
-        var fbs = std.io.fixedBufferStream(bytes);
-        const r = fbs.reader();
+        var reader: std.Io.Reader = .fixed(bytes);
 
-        const decoded: i32, const consumed = try decodeScalar(.sint32, r.any());
+        const decoded: i32, const consumed = try decodeScalar(.sint32, &reader);
 
         try std.testing.expectEqual(5, consumed);
         try std.testing.expectEqual(std.math.minInt(i32), decoded);
@@ -310,19 +306,17 @@ test decodeScalar {
             0xFF,
             0x7F,
         };
-        var fbs = std.io.fixedBufferStream(bytes);
-        const r = fbs.reader();
+        var reader: std.Io.Reader = .fixed(bytes);
 
-        const max_u64 = decodeScalar(.int32, r.any());
+        const max_u64 = decodeScalar(.int32, &reader);
         try std.testing.expectError(error.InvalidInput, max_u64);
     }
 
     { // Barely oversized `int32` value
         const bytes: []const u8 = &.{ 0xFF, 0xFF, 0xFF, 0xFF, 0x10 };
-        var fbs = std.io.fixedBufferStream(bytes);
-        const r = fbs.reader();
+        var reader: std.Io.Reader = .fixed(bytes);
 
-        const barely_too_big = decodeScalar(.int32, r.any());
+        const barely_too_big = decodeScalar(.int32, &reader);
         try std.testing.expectError(error.InvalidInput, barely_too_big);
     }
 
@@ -339,10 +333,9 @@ test decodeScalar {
             0xFF,
             0x01,
         };
-        var fbs = std.io.fixedBufferStream(bytes);
-        const r = fbs.reader();
+        var reader: std.Io.Reader = .fixed(bytes);
 
-        const decoded: i32, const consumed = try decodeScalar(.int32, r.any());
+        const decoded: i32, const consumed = try decodeScalar(.int32, &reader);
         try std.testing.expectEqual(10, consumed);
         try std.testing.expectEqual(-1, decoded);
     }
@@ -355,10 +348,9 @@ test decodeScalar {
             0xFF,
             0x0F,
         };
-        var fbs = std.io.fixedBufferStream(bytes);
-        const r = fbs.reader();
+        var reader: std.Io.Reader = .fixed(bytes);
 
-        const decoded: i32, const consumed = try decodeScalar(.int32, r.any());
+        const decoded: i32, const consumed = try decodeScalar(.int32, &reader);
         try std.testing.expectEqual(5, consumed);
         try std.testing.expectEqual(-1, decoded);
     }
@@ -369,13 +361,13 @@ pub fn decodeRepeated(
     result: anytype,
     allocator: std.mem.Allocator,
     comptime field: protobuf.FieldType.Repeated,
-    reader: std.io.AnyReader,
+    reader: *std.Io.Reader,
     options: struct {
         /// Number of bytes to parse. Provided for length-delimited records
         /// or packed repeated fields.
         bytes: ?usize = null,
     },
-) (std.io.AnyReader.Error || std.mem.Allocator.Error || protobuf.DecodingError)!usize {
+) (std.Io.Reader.Error || std.mem.Allocator.Error || protobuf.DecodingError)!usize {
     comptime std.debug.assert(@typeInfo(@TypeOf(result)) == .pointer);
     const ResultList = comptime @typeInfo(@TypeOf(result)).pointer.child;
     const Result = comptime @typeInfo(
@@ -395,14 +387,9 @@ pub fn decodeRepeated(
                 // string/bytes are length-delimited, and cannot be packed.
                 std.debug.assert(options.bytes != null);
 
-                const bytes = try allocator.alloc(u8, options.bytes.?);
+                const bytes = try reader.readAlloc(allocator, options.bytes.?);
                 errdefer allocator.free(bytes);
 
-                const read = try reader.readAll(bytes);
-                if (read < options.bytes.?) {
-                    @branchHint(.cold);
-                    return error.NotEnoughData;
-                }
                 try result.append(allocator, bytes);
                 return bytes.len;
             }
@@ -490,14 +477,13 @@ test decodeRepeated {
         var list: std.ArrayListUnmanaged(u32) = .empty;
         defer list.deinit(std.testing.allocator);
 
-        var fbs = std.io.fixedBufferStream(bytes);
-        const r = fbs.reader();
+        var reader: std.Io.Reader = .fixed(bytes);
 
         const consumed = try decodeRepeated(
             &list,
             std.testing.allocator,
             .{ .scalar = .uint32 },
-            r.any(),
+            &reader,
             .{
                 .bytes = bytes.len,
             },
@@ -515,12 +501,12 @@ test decodeRepeated {
 pub fn decodeMessage(
     result: anytype,
     allocator: std.mem.Allocator,
-    reader: std.io.AnyReader,
+    reader: *std.Io.Reader,
     options: struct {
         /// Number of bytes to parse. Provided for all submessages.
         bytes: ?usize = null,
     },
-) (std.io.AnyReader.Error || std.mem.Allocator.Error || protobuf.DecodingError)!usize {
+) (std.Io.Reader.Error || std.mem.Allocator.Error || protobuf.DecodingError)!usize {
     comptime std.debug.assert(@typeInfo(@TypeOf(result)) == .pointer);
     const Result = comptime @typeInfo(@TypeOf(result)).pointer.child;
     const ResultField = std.meta.FieldEnum(Result);
@@ -603,11 +589,7 @@ pub fn decodeMessage(
                         errdefer if (len > 0) allocator.free(new);
 
                         if (len > 0) {
-                            const read = try reader.readAll(new);
-                            if (read < len) {
-                                @branchHint(.cold);
-                                return error.NotEnoughData;
-                            }
+                            _ = try reader.readSliceAll(new);
                             consumed += @intCast(len);
                         }
 
@@ -873,11 +855,7 @@ pub fn decodeMessage(
                                     errdefer if (len > 0) allocator.free(new);
 
                                     if (len > 0) {
-                                        const read = try reader.readAll(new);
-                                        if (read < len) {
-                                            @branchHint(.cold);
-                                            return error.NotEnoughData;
-                                        }
+                                        _ = try reader.readSliceAll(new);
                                         consumed += @intCast(len);
                                     }
 
@@ -1071,7 +1049,7 @@ pub fn decodeMessage(
     return consumed;
 }
 
-fn skipField(reader: std.io.AnyReader, tag: Tag) !usize {
+fn skipField(reader: *std.Io.Reader, tag: Tag) !usize {
     var consumed: usize = 0;
 
     // If field number was not found, skip unknown field.
@@ -1081,11 +1059,11 @@ fn skipField(reader: std.io.AnyReader, tag: Tag) !usize {
     );
     switch (tag.wire_type) {
         .fixed32 => {
-            try reader.skipBytes(4, .{});
+            try reader.discardAll(4);
             consumed += 4;
         },
         .fixed64 => {
-            try reader.skipBytes(8, .{});
+            try reader.discardAll(8);
             consumed += 8;
         },
         .len => {
@@ -1095,7 +1073,7 @@ fn skipField(reader: std.io.AnyReader, tag: Tag) !usize {
                 @branchHint(.cold);
                 return error.InvalidInput;
             }
-            try reader.skipBytes(@intCast(skip), .{});
+            try reader.discardAll(@intCast(skip));
             consumed += @intCast(skip);
         },
         .varint => {
