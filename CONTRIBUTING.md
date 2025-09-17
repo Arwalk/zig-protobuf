@@ -1,3 +1,9 @@
+Code of Conduct
+===
+
+This repository adheres to [Github Community Code of Conduct](https://docs.github.com/en/site-policy/github-terms/github-community-code-of-conduct)
+
+
 Pull Request Etiquette
 ===
 
