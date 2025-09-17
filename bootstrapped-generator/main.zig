@@ -684,7 +684,7 @@ const GenerationContext = struct {
                         try std.fmt.allocPrint(
                             allocator,
                             "    .{s} = fd(null, .{{ .oneof  = {s}_union }}),\n",
-                            .{ oneof_name, oneof_name },
+                            .{ try escapeName(allocator, oneof_name), oneof_name },
                         ),
                     );
                 }
