@@ -171,7 +171,7 @@ pub fn fd(comptime field_number: ?u32, comptime ftype: FieldType) FieldDescripto
 /// Writes an unsigned varint value.
 /// Awaits a u64 value as it's the biggest unsigned varint possible,
 // so anything can be cast to it by definition
-fn writeRawVarint(writer: std.io.AnyWriter, value: u64) std.io.AnyWriter.Error!void {
+fn writeRawVarint(writer: *std.Io.Writer, value: u64) std.Io.Writer.Error!void {
     var copy = value;
     while (copy > 0x7F) {
         try writer.writeByte(0x80 + @as(u8, @intCast(copy & 0x7F)));
@@ -184,10 +184,10 @@ fn writeRawVarint(writer: std.io.AnyWriter, value: u64) std.io.AnyWriter.Error!v
 /// Mostly does the required transformations to use writeRawVarint
 /// after making the value some kind of unsigned value.
 fn writeAsVarint(
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
     int: anytype,
     comptime scalar_type: FieldType.Scalar,
-) std.io.AnyWriter.Error!void {
+) std.Io.Writer.Error!void {
     const val: u64 = blk: {
         if (comptime scalar_type.isZigZag()) {
             break :blk wire.ZigZag.encode(int);
@@ -220,10 +220,10 @@ fn writeAsVarint(
 /// Write a value of any complex type that can be transfered as a varint
 /// Only serves as an indirection to manage Enum and Booleans properly.
 fn writeVarint(
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
     value: anytype,
     comptime scalar_type: FieldType.Scalar,
-) std.io.AnyWriter.Error!void {
+) std.Io.Writer.Error!void {
     switch (@typeInfo(@TypeOf(value))) {
         .bool => try writeAsVarint(writer, @as(u8, if (value) 1 else 0), scalar_type),
         .int => try writeAsVarint(writer, value, scalar_type),
@@ -233,7 +233,7 @@ fn writeVarint(
 
 /// Writes a fixed size int.
 /// Takes care of casting any signed/float value to an appropriate unsigned type
-fn writeFixed(writer: std.io.AnyWriter, value: anytype) std.io.AnyWriter.Error!void {
+fn writeFixed(writer: *std.Io.Writer, value: anytype) std.Io.Writer.Error!void {
     const bitsize = @bitSizeOf(@TypeOf(value));
 
     var as_unsigned_int = switch (@TypeOf(value)) {
@@ -253,106 +253,100 @@ fn writeFixed(writer: std.io.AnyWriter, value: anytype) std.io.AnyWriter.Error!v
 /// Writes a submessage.
 /// Recursively calls encode.
 fn writeSubmessage(
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
     allocator: std.mem.Allocator,
     value: anytype,
-) (std.mem.Allocator.Error || std.io.AnyWriter.Error)!void {
+) (std.mem.Allocator.Error || std.Io.Writer.Error)!void {
     // TODO: Better handle calculating submessage size before write, or use
     // fixed-sized buffer.
-    var temp_buffer: std.ArrayListUnmanaged(u8) = .empty;
-    defer temp_buffer.deinit(allocator);
-    const w = temp_buffer.writer(allocator);
-    try encode(w.any(), allocator, value);
-    const size_encoded: u64 = temp_buffer.items.len;
+    var w: std.Io.Writer.Allocating = .init(allocator);
+    defer w.deinit();
+    try encode(&w.writer, allocator, value);
+    const size_encoded: u64 = w.written().len;
     try writeRawVarint(writer, size_encoded);
-    try writer.writeAll(temp_buffer.items);
+    try writer.writeAll(w.written());
 }
 
 /// simple writing of a list of fixed-size data.
 fn writePackedFixedList(
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
     allocator: std.mem.Allocator,
     comptime field: FieldDescriptor,
     value_list: anytype,
-) std.io.AnyWriter.Error!void {
+) std.Io.Writer.Error!void {
     if (value_list.items.len > 0) {
         // first append the tag for the field descriptor
         try writeTag(writer, field);
 
-        var temp_buffer: std.ArrayListUnmanaged(u8) = .empty;
-        defer temp_buffer.deinit(allocator);
-        const w = temp_buffer.writer(allocator);
+        var w: std.Io.Writer.Allocating = .init(allocator);
+        defer w.deinit();
 
         // write elements to temporary buffer to calculate write size
         for (value_list.items) |item| {
-            try writeFixed(w.any(), item);
+            try writeFixed(&w.writer, item);
         }
 
         // and finally write the LEN size in the len_index position, followed
         // by the bytes in the temporary buffer
-        const size_encoded: u64 = temp_buffer.items.len;
+        const size_encoded: u64 = w.written().len;
         try writeRawVarint(writer, size_encoded);
-        try writer.writeAll(temp_buffer.items);
+        try writer.writeAll(w.written());
     }
 }
 
 /// Writes a list of varint.
 fn writePackedVarintList(
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
     allocator: std.mem.Allocator,
     value_list: anytype,
     comptime field: FieldDescriptor,
     comptime scalar_type: FieldType.Scalar,
-) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
     if (value_list.items.len > 0) {
         try writeTag(writer, field);
 
-        var temp_buffer: std.ArrayListUnmanaged(u8) = .empty;
-        defer temp_buffer.deinit(allocator);
-
-        const w = temp_buffer.writer(allocator);
+        var w: std.Io.Writer.Allocating = .init(allocator);
+        defer w.deinit();
 
         for (value_list.items) |item| {
-            try writeVarint(w.any(), item, scalar_type);
+            try writeVarint(&w.writer, item, scalar_type);
         }
 
-        const size_encoded: u64 = temp_buffer.items.len;
+        const size_encoded: u64 = w.written().len;
         try writeRawVarint(writer, size_encoded);
-        try writer.writeAll(temp_buffer.items);
+        try writer.writeAll(w.written());
     }
 }
 
 fn writePackedEnumList(
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
     allocator: std.mem.Allocator,
     value_list: anytype,
     comptime field: FieldDescriptor,
-) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
     if (value_list.items.len > 0) {
         try writeTag(writer, field);
 
-        var temp_buffer: std.ArrayListUnmanaged(u8) = .empty;
-        defer temp_buffer.deinit(allocator);
-
-        const w = temp_buffer.writer(allocator);
+        var w: std.Io.Writer.Allocating = .init(allocator);
+        defer w.deinit();
 
         for (value_list.items) |item| {
-            try writeRawVarint(w.any(), @bitCast(@as(i64, @intFromEnum(item))));
+            try writeRawVarint(&w.writer, @bitCast(@as(i64, @intFromEnum(item))));
         }
 
-        const size_encoded: u64 = temp_buffer.items.len;
+        const size_encoded: u64 = w.written().len;
         try writeRawVarint(writer, size_encoded);
-        try writer.writeAll(temp_buffer.items);
+        try writer.writeAll(w.written());
     }
 }
 
 /// Writes a list of submessages. Sequentially, prepending the tag of each message.
 fn writeSubmessageList(
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
     allocator: std.mem.Allocator,
     comptime field: FieldDescriptor,
     value_list: anytype,
-) (std.mem.Allocator.Error || std.io.AnyWriter.Error)!void {
+) (std.mem.Allocator.Error || std.Io.Writer.Error)!void {
     for (value_list.items) |item| {
         try writeTag(writer, field);
         try writeSubmessage(writer, allocator, item);
@@ -361,11 +355,11 @@ fn writeSubmessageList(
 
 /// Writes a packed list of strings.
 fn writePackedStringList(
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
     allocator: std.mem.Allocator,
     comptime field: FieldDescriptor,
     value_list: anytype,
-) std.io.AnyWriter!void {
+) std.Io.Writer.Error!void {
     if (value_list.items.len > 0) {
         try writeTag(writer, field);
 
@@ -386,7 +380,7 @@ fn writePackedStringList(
 }
 
 /// Writes the full tag of the field, if there is any.
-fn writeTag(writer: std.io.AnyWriter, comptime field: FieldDescriptor) std.io.AnyWriter.Error!void {
+fn writeTag(writer: *std.Io.Writer, comptime field: FieldDescriptor) std.Io.Writer.Error!void {
     const tag: wire.Tag = comptime .{
         .wire_type = field.ftype.toWire(),
         .field = field.field_number.?,
@@ -401,12 +395,12 @@ fn writeTag(writer: std.io.AnyWriter, comptime field: FieldDescriptor) std.io.An
 ///   it is used when an optional int/bool with value zero need to be encoded. usually value==0 are not written, but optionals
 ///   require its presence to differentiate 0 from "null"
 fn writeValue(
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
     allocator: std.mem.Allocator,
     comptime field: FieldDescriptor,
     value: anytype,
     comptime force_append: bool,
-) std.io.AnyWriter.Error!void {
+) (std.mem.Allocator.Error || std.Io.Writer.Error)!void {
 
     // TODO: review semantics of default-value in regards to wire protocol
     const is_default_scalar_value = switch (@typeInfo(@TypeOf(value))) {
@@ -522,10 +516,10 @@ fn writeValue(
 
 /// Public encoding function, meant to be embedded in generated structs
 pub fn encode(
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
     allocator: std.mem.Allocator,
     data: anytype,
-) (std.io.AnyWriter.Error || std.mem.Allocator.Error)!void {
+) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
     const Data = switch (comptime @typeInfo(@TypeOf(data))) {
         .pointer => |p| p.child,
         else => @TypeOf(data),
@@ -1080,51 +1074,13 @@ fn decode_fixed(comptime T: type, slice: []const u8) T {
     };
 }
 
-fn FixedDecoderIterator(comptime T: type) type {
-    return struct {
-        const Self = @This();
-        const num_bytes = @divFloor(@bitSizeOf(T), 8);
-
-        input: []const u8,
-        current_index: usize = 0,
-
-        fn next(self: *Self) ?T {
-            if (self.current_index < self.input.len) {
-                defer self.current_index += Self.num_bytes;
-                return decode_fixed(T, self.input[self.current_index .. self.current_index + Self.num_bytes]);
-            }
-            return null;
-        }
-    };
-}
-
-const LengthDelimitedDecoderIterator = struct {
-    const Self = @This();
-
-    input: []const u8,
-    current_index: usize = 0,
-
-    fn next(self: *Self) DecodingError!?[]const u8 {
-        if (self.current_index < self.input.len) {
-            const size = try decode_varint(u64, self.input[self.current_index..]);
-            self.current_index += size.size;
-            defer self.current_index += size.value;
-
-            if (self.current_index > self.input.len or (self.current_index + size.value) > self.input.len) return error.NotEnoughData;
-
-            return self.input[self.current_index .. self.current_index + size.value];
-        }
-        return null;
-    }
-};
-
 /// public decoding function meant to be embedded in message structures
 /// Iterates over the input and try to fill the resulting structure accordingly.
 pub fn decode(
     comptime T: type,
-    reader: std.io.AnyReader,
+    reader: *std.Io.Reader,
     allocator: std.mem.Allocator,
-) (DecodingError || std.io.AnyReader.Error || std.mem.Allocator.Error)!T {
+) (DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!T {
     var result: T = undefined;
     internal_init(T, &result);
 
@@ -1134,36 +1090,36 @@ pub fn decode(
 }
 
 test "get varint" {
-    var pb: std.ArrayListUnmanaged(u8) = .empty;
-    defer pb.deinit(std.testing.allocator);
+    var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer w.deinit();
 
-    const w = pb.writer(std.testing.allocator);
+    try writeVarint(&w.writer, @as(i32, 0x12c), .int32);
+    try writeVarint(&w.writer, @as(i32, 0x0), .int32);
+    try writeVarint(&w.writer, @as(i32, 0x1), .int32);
+    try writeVarint(&w.writer, @as(i32, 0xA1), .int32);
+    try writeVarint(&w.writer, @as(i32, 0xFF), .int32);
 
-    try writeVarint(w.any(), @as(i32, 0x12c), .int32);
-    try writeVarint(w.any(), @as(i32, 0x0), .int32);
-    try writeVarint(w.any(), @as(i32, 0x1), .int32);
-    try writeVarint(w.any(), @as(i32, 0xA1), .int32);
-    try writeVarint(w.any(), @as(i32, 0xFF), .int32);
-
-    try std.testing.expectEqualSlices(u8, &[_]u8{ 0b10101100, 0b00000010, 0x0, 0x1, 0xA1, 0x1, 0xFF, 0x01 }, pb.items);
+    try std.testing.expectEqualSlices(
+        u8,
+        &[_]u8{ 0b10101100, 0b00000010, 0x0, 0x1, 0xA1, 0x1, 0xFF, 0x01 },
+        w.written(),
+    );
 }
 
 test writeRawVarint {
-    var pb: std.ArrayListUnmanaged(u8) = .empty;
-    defer pb.deinit(std.testing.allocator);
+    var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer w.deinit();
 
-    var w = pb.writer(std.testing.allocator);
+    try writeRawVarint(&w.writer, 3);
 
-    try writeRawVarint(w.any(), 3);
-
-    try std.testing.expectEqualSlices(u8, &[_]u8{0x03}, pb.items);
-    try writeRawVarint(w.any(), 1);
-    try std.testing.expectEqualSlices(u8, &[_]u8{ 0x3, 0x1 }, pb.items);
-    try writeRawVarint(w.any(), 0);
-    try std.testing.expectEqualSlices(u8, &[_]u8{ 0x3, 0x1, 0x0 }, pb.items);
-    try writeRawVarint(w.any(), 0x80);
-    try std.testing.expectEqualSlices(u8, &[_]u8{ 0x3, 0x1, 0x0, 0x80, 0x1 }, pb.items);
-    try writeRawVarint(w.any(), 0xffffffff);
+    try std.testing.expectEqualSlices(u8, &[_]u8{0x03}, w.written());
+    try writeRawVarint(&w.writer, 1);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0x3, 0x1 }, w.written());
+    try writeRawVarint(&w.writer, 0);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0x3, 0x1, 0x0 }, w.written());
+    try writeRawVarint(&w.writer, 0x80);
+    try std.testing.expectEqualSlices(u8, &[_]u8{ 0x3, 0x1, 0x0, 0x80, 0x1 }, w.written());
+    try writeRawVarint(&w.writer, 0xffffffff);
     try std.testing.expectEqualSlices(u8, &[_]u8{
         0x3,
         0x1,
@@ -1175,44 +1131,23 @@ test writeRawVarint {
         0xFF,
         0xFF,
         0x0F,
-    }, pb.items);
+    }, w.written());
 }
 
 test "encode and decode multiple varints" {
-    var pb: std.ArrayListUnmanaged(u8) = .empty;
-    defer pb.deinit(std.testing.allocator);
-
-    const w = pb.writer(std.testing.allocator);
+    var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer w.deinit();
 
     const list = &[_]u64{ 0, 1, 2, 3, 199, 0xff, 0xfa, 1231313, 999288361, 0, 0xfffffff, 0x80808080, 0xffffffff };
 
     for (list) |num|
-        try writeVarint(w.any(), num, .uint64);
+        try writeVarint(&w.writer, num, .uint64);
 
-    var fbs = std.io.fixedBufferStream(pb.items);
-    const r = fbs.reader();
+    var reader: std.Io.Reader = .fixed(w.written());
     for (list) |num| {
-        const decoded, _ = try wire.decodeScalar(.uint64, r.any());
+        const decoded, _ = try wire.decodeScalar(.uint64, &reader);
         try std.testing.expectEqual(num, decoded);
     }
-}
-
-// TODO: the following two tests should work
-// test "VarintDecoderIterator i32" {
-//     var demo = VarintDecoderIterator(i32, .ZigZagOptimized){ .input = &[_]u8{ 133, 255, 255, 255, 255, 255, 255, 255, 255, 1 } };
-//     try testing.expectEqual(demo.next(), -123);
-//     try testing.expectEqual(demo.next(), null);
-// }
-// test "VarintDecoderIterator i64" {
-//     var demo = VarintDecoderIterator(i64, .ZigZagOptimized){ .input = &[_]u8{ 133, 255, 255, 255, 255, 255, 255, 255, 255, 1 } };
-//     try testing.expectEqual(demo.next(), -123);
-//     try testing.expectEqual(demo.next(), null);
-// }
-
-test FixedDecoderIterator {
-    var demo = FixedDecoderIterator(i64){ .input = &[_]u8{ 133, 255, 255, 255, 255, 255, 255, 255 } };
-    try std.testing.expectEqual(demo.next(), -123);
-    try std.testing.expectEqual(demo.next(), null);
 }
 
 test "decode fixed" {
@@ -1242,31 +1177,27 @@ test "decode fixed" {
 }
 
 test "zigzag i32 - encode" {
-    var pb: std.ArrayListUnmanaged(u8) = .empty;
-    defer pb.deinit(std.testing.allocator);
-
-    const w = pb.writer(std.testing.allocator);
+    var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer w.deinit();
 
     const input = "\xE7\x07";
 
     // -500 (.ZigZag)  encodes to {0xE7,0x07} which equals to 999 (.Simple)
 
-    try writeAsVarint(w.any(), @as(i32, -500), .sint32);
-    try std.testing.expectEqualSlices(u8, input, pb.items);
+    try writeAsVarint(&w.writer, @as(i32, -500), .sint32);
+    try std.testing.expectEqualSlices(u8, input, w.written());
 }
 
 test "zigzag i64 - encode" {
-    var pb: std.ArrayListUnmanaged(u8) = .empty;
-    defer pb.deinit(std.testing.allocator);
-
-    const w = pb.writer(std.testing.allocator);
+    var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer w.deinit();
 
     const input = "\xE7\x07";
 
     // -500 (.ZigZag)  encodes to {0xE7,0x07} which equals to 999 (.Simple)
 
-    try writeAsVarint(w.any(), @as(i64, -500), .sint64);
-    try std.testing.expectEqualSlices(u8, input, pb.items);
+    try writeAsVarint(&w.writer, @as(i64, -500), .sint64);
+    try std.testing.expectEqualSlices(u8, input, w.written());
 }
 
 test "incorrect data - decode" {

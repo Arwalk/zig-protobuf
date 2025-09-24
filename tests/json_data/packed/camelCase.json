@@ -15,14 +15,14 @@
     4
   ],
   "floatList": [
-    1e0,
-    -1e3,
+    1,
+    -1000,
     "NaN",
     "Infinity"
   ],
   "doubleList": [
-    2.1e0,
-    -1e3,
+    2.1,
+    -1000,
     "-Infinity"
   ],
   "int64List": [

@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: goto-bus-stop/setup-zig@v1
         with:
-          version: "0.14.0"
+          version: "0.15.1"
       - run: zig build
       - run: zig build test
 
@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: goto-bus-stop/setup-zig@v1
         with:
-          version: "0.14.0"
+          version: "0.15.1"
       - run: zig build test
       - run: zig build bootstrap
       - run: zig build test
@@ -41,5 +41,5 @@ jobs:
       - uses: actions/checkout@v2
       - uses: goto-bus-stop/setup-zig@v1
         with:
-          version: "0.14.0"
+          version: "0.15.1"
       - run: zig fmt --check src/protobuf.zig
