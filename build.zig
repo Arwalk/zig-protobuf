@@ -225,27 +225,41 @@ pub const RunProtocStep = struct {
         const absolute_dest_dir = self.destination_directory.getPath(b);
 
         { // run protoc
-            var argv = std.ArrayList([]const u8).init(b.allocator);
+            var argv: std.ArrayList([]const u8) = .empty;
 
-            const protoc_path = try ensureProtocBinaryDownloaded(std.heap.page_allocator, PROTOC_VERSION);
-            try argv.append(protoc_path);
+            const protoc_path = try ensureProtocBinaryDownloaded(b.allocator, PROTOC_VERSION);
+            try argv.append(b.allocator, protoc_path);
 
             // specify the path to the plugin
-            try argv.append(try std.mem.concat(b.allocator, u8, &.{ "--plugin=protoc-gen-zig=", self.generator.getEmittedBin().getPath(b) }));
+            try argv.append(b.allocator, try std.mem.concat(
+                b.allocator,
+                u8,
+                &.{
+                    "--plugin=protoc-gen-zig=",
+                    self.generator.getEmittedBin().getPath(b),
+                },
+            ));
 
             // specify the destination
 
-            try argv.append(try std.mem.concat(b.allocator, u8, &.{ "--zig_out=", absolute_dest_dir }));
+            try argv.append(b.allocator, try std.mem.concat(
+                b.allocator,
+                u8,
+                &.{ "--zig_out=", absolute_dest_dir },
+            ));
             if (!dirExists(absolute_dest_dir)) {
                 try std.fs.makeDirAbsolute(absolute_dest_dir);
             }
 
             // include directories
             for (self.include_directories) |it| {
-                try argv.append(try std.mem.concat(b.allocator, u8, &.{ "-I", it }));
+                try argv.append(
+                    b.allocator,
+                    try std.mem.concat(b.allocator, u8, &.{ "-I", it }),
+                );
             }
             for (self.source_files) |it| {
-                try argv.append(it);
+                try argv.append(b.allocator, it);
             }
 
             if (self.verbose) {
@@ -260,11 +274,11 @@ pub const RunProtocStep = struct {
         }
 
         { // run zig fmt <destination>
-            var argv = std.ArrayList([]const u8).init(b.allocator);
+            var argv: std.ArrayList([]const u8) = .empty;
 
-            try argv.append(b.graph.zig_exe);
-            try argv.append("fmt");
-            try argv.append(absolute_dest_dir);
+            try argv.append(b.allocator, b.graph.zig_exe);
+            try argv.append(b.allocator, "fmt");
+            try argv.append(b.allocator, absolute_dest_dir);
 
             _ = try step.evalChildProcess(argv.items);
         }
@@ -279,11 +293,11 @@ pub const GenOptions = struct {
 pub fn buildGenerator(b: *std.Build, opt: GenOptions) *std.Build.Step.Compile {
     const exe = b.addExecutable(.{
         .name = "protoc-gen-zig",
-        // In this case the main source file is merely a path, however, in more
-        // complicated build scripts, this could be a generated file.
-        .root_source_file = b.path("bootstrapped-generator/main.zig"),
-        .target = opt.target,
-        .optimize = opt.optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("bootstrapped-generator/main.zig"),
+            .target = opt.target,
+            .optimize = opt.optimize,
+        }),
     });
 
     const module = b.addModule("protobuf", .{
@@ -481,8 +495,8 @@ fn downloadFile(allocator: std.mem.Allocator, target_file: []const u8, url: []co
     else
         std.process.Child.init(&.{ "curl", "-L", "-o", target_file, url }, allocator);
     child.cwd = sdkPath("/");
-    child.stderr = std.io.getStdErr();
-    child.stdout = std.io.getStdOut();
+    child.stderr = std.fs.File.stderr();
+    child.stdout = std.fs.File.stdout();
     _ = try child.spawnAndWait();
 }
 
@@ -498,8 +512,8 @@ fn unzipFile(allocator: std.mem.Allocator, file: []const u8, target_directory: [
         ),
     };
     child.cwd = sdkPath("/");
-    child.stderr = std.io.getStdErr();
-    child.stdout = std.io.getStdOut();
+    child.stderr = std.fs.File.stderr();
+    child.stdout = std.fs.File.stdout();
     _ = try child.spawnAndWait();
 }
 

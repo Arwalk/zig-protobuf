@@ -8,7 +8,7 @@
   "sint32List": [],
   "floatList": [
     "1.0E-000",
-    "-1e+3",
+    "-1000",
     "NaN",
     "Infinity"
   ],
