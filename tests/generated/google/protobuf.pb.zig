@@ -12,12 +12,8 @@ pub const FileDescriptorSet = struct {
         .file = fd(1, .{ .repeated = .submessage }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -99,12 +95,8 @@ pub const FileDescriptorProto = struct {
         .edition = fd(13, .{ .scalar = .string }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -191,12 +183,8 @@ pub const DescriptorProto = struct {
             .options = fd(3, .submessage),
         };
 
-        pub fn encode(
-            self: @This(),
-            writer: *std.Io.Writer,
-            allocator: std.mem.Allocator,
-        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-            return protobuf.encode(writer, allocator, self);
+        pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+            return protobuf.encode(writer, self);
         }
 
         pub fn decode(
@@ -256,12 +244,8 @@ pub const DescriptorProto = struct {
             .end = fd(2, .{ .scalar = .int32 }),
         };
 
-        pub fn encode(
-            self: @This(),
-            writer: *std.Io.Writer,
-            allocator: std.mem.Allocator,
-        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-            return protobuf.encode(writer, allocator, self);
+        pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+            return protobuf.encode(writer, self);
         }
 
         pub fn decode(
@@ -312,12 +296,8 @@ pub const DescriptorProto = struct {
         }
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -402,12 +382,8 @@ pub const ExtensionRangeOptions = struct {
             .repeated = fd(6, .{ .scalar = .bool }),
         };
 
-        pub fn encode(
-            self: @This(),
-            writer: *std.Io.Writer,
-            allocator: std.mem.Allocator,
-        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-            return protobuf.encode(writer, allocator, self);
+        pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+            return protobuf.encode(writer, self);
         }
 
         pub fn decode(
@@ -458,12 +434,8 @@ pub const ExtensionRangeOptions = struct {
         }
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -570,12 +542,8 @@ pub const FieldDescriptorProto = struct {
         _,
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -635,12 +603,8 @@ pub const OneofDescriptorProto = struct {
         .options = fd(2, .submessage),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -715,12 +679,8 @@ pub const EnumDescriptorProto = struct {
             .end = fd(2, .{ .scalar = .int32 }),
         };
 
-        pub fn encode(
-            self: @This(),
-            writer: *std.Io.Writer,
-            allocator: std.mem.Allocator,
-        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-            return protobuf.encode(writer, allocator, self);
+        pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+            return protobuf.encode(writer, self);
         }
 
         pub fn decode(
@@ -771,12 +731,8 @@ pub const EnumDescriptorProto = struct {
         }
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -838,12 +794,8 @@ pub const EnumValueDescriptorProto = struct {
         .options = fd(3, .submessage),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -905,12 +857,8 @@ pub const ServiceDescriptorProto = struct {
         .options = fd(3, .submessage),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -978,12 +926,8 @@ pub const MethodDescriptorProto = struct {
         .server_streaming = fd(6, .{ .scalar = .bool }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -1088,12 +1032,8 @@ pub const FileOptions = struct {
         _,
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -1161,12 +1101,8 @@ pub const MessageOptions = struct {
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -1281,12 +1217,8 @@ pub const FieldOptions = struct {
         _,
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -1344,12 +1276,8 @@ pub const OneofOptions = struct {
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -1413,12 +1341,8 @@ pub const EnumOptions = struct {
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -1478,12 +1402,8 @@ pub const EnumValueOptions = struct {
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -1543,12 +1463,8 @@ pub const ServiceOptions = struct {
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -1617,12 +1533,8 @@ pub const MethodOptions = struct {
         _,
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -1701,12 +1613,8 @@ pub const UninterpretedOption = struct {
             .is_extension = fd(2, .{ .scalar = .bool }),
         };
 
-        pub fn encode(
-            self: @This(),
-            writer: *std.Io.Writer,
-            allocator: std.mem.Allocator,
-        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-            return protobuf.encode(writer, allocator, self);
+        pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+            return protobuf.encode(writer, self);
         }
 
         pub fn decode(
@@ -1757,12 +1665,8 @@ pub const UninterpretedOption = struct {
         }
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -1835,12 +1739,8 @@ pub const SourceCodeInfo = struct {
             .leading_detached_comments = fd(6, .{ .repeated = .{ .scalar = .string } }),
         };
 
-        pub fn encode(
-            self: @This(),
-            writer: *std.Io.Writer,
-            allocator: std.mem.Allocator,
-        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-            return protobuf.encode(writer, allocator, self);
+        pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+            return protobuf.encode(writer, self);
         }
 
         pub fn decode(
@@ -1891,12 +1791,8 @@ pub const SourceCodeInfo = struct {
         }
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -1976,12 +1872,8 @@ pub const GeneratedCodeInfo = struct {
             _,
         };
 
-        pub fn encode(
-            self: @This(),
-            writer: *std.Io.Writer,
-            allocator: std.mem.Allocator,
-        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-            return protobuf.encode(writer, allocator, self);
+        pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+            return protobuf.encode(writer, self);
         }
 
         pub fn decode(
@@ -2032,12 +1924,8 @@ pub const GeneratedCodeInfo = struct {
         }
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -2097,12 +1985,8 @@ pub const Any = struct {
         .value = fd(2, .{ .scalar = .bytes }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -2162,12 +2046,8 @@ pub const Duration = struct {
         .nanos = fd(2, .{ .scalar = .int32 }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -2225,12 +2105,8 @@ pub const FieldMask = struct {
         .paths = fd(1, .{ .repeated = .{ .scalar = .string } }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -2302,12 +2178,8 @@ pub const Struct = struct {
             .value = fd(2, .submessage),
         };
 
-        pub fn encode(
-            self: @This(),
-            writer: *std.Io.Writer,
-            allocator: std.mem.Allocator,
-        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-            return protobuf.encode(writer, allocator, self);
+        pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+            return protobuf.encode(writer, self);
         }
 
         pub fn decode(
@@ -2358,12 +2230,8 @@ pub const Struct = struct {
         }
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -2446,12 +2314,8 @@ pub const Value = struct {
         .kind = fd(null, .{ .oneof = kind_union }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -2509,12 +2373,8 @@ pub const ListValue = struct {
         .values = fd(1, .{ .repeated = .submessage }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -2574,12 +2434,8 @@ pub const Timestamp = struct {
         .nanos = fd(2, .{ .scalar = .int32 }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -2637,12 +2493,8 @@ pub const DoubleValue = struct {
         .value = fd(1, .{ .scalar = .double }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -2700,12 +2552,8 @@ pub const FloatValue = struct {
         .value = fd(1, .{ .scalar = .float }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -2763,12 +2611,8 @@ pub const Int64Value = struct {
         .value = fd(1, .{ .scalar = .int64 }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -2826,12 +2670,8 @@ pub const UInt64Value = struct {
         .value = fd(1, .{ .scalar = .uint64 }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -2889,12 +2729,8 @@ pub const Int32Value = struct {
         .value = fd(1, .{ .scalar = .int32 }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -2952,12 +2788,8 @@ pub const UInt32Value = struct {
         .value = fd(1, .{ .scalar = .uint32 }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -3015,12 +2847,8 @@ pub const BoolValue = struct {
         .value = fd(1, .{ .scalar = .bool }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -3078,12 +2906,8 @@ pub const StringValue = struct {
         .value = fd(1, .{ .scalar = .string }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -3141,12 +2965,8 @@ pub const BytesValue = struct {
         .value = fd(1, .{ .scalar = .bytes }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(

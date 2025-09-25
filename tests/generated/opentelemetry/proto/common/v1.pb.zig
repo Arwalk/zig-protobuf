@@ -40,12 +40,8 @@ pub const AnyValue = struct {
         .value = fd(null, .{ .oneof = value_union }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -103,12 +99,8 @@ pub const ArrayValue = struct {
         .values = fd(1, .{ .repeated = .submessage }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -166,12 +158,8 @@ pub const KeyValueList = struct {
         .values = fd(1, .{ .repeated = .submessage }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -231,12 +219,8 @@ pub const KeyValue = struct {
         .value = fd(2, .submessage),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -300,12 +284,8 @@ pub const InstrumentationScope = struct {
         .dropped_attributes_count = fd(4, .{ .scalar = .uint32 }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(

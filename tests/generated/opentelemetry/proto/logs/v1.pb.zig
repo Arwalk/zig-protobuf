@@ -51,12 +51,8 @@ pub const LogsData = struct {
         .resource_logs = fd(1, .{ .repeated = .submessage }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -118,12 +114,8 @@ pub const ResourceLogs = struct {
         .schema_url = fd(3, .{ .scalar = .string }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -185,12 +177,8 @@ pub const ScopeLogs = struct {
         .schema_url = fd(3, .{ .scalar = .string }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
@@ -266,12 +254,8 @@ pub const LogRecord = struct {
         .span_id = fd(10, .{ .scalar = .bytes }),
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(

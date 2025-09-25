@@ -39,12 +39,8 @@ pub const Tile = struct {
             .bool_value = fd(7, .{ .scalar = .bool }),
         };
 
-        pub fn encode(
-            self: @This(),
-            writer: *std.Io.Writer,
-            allocator: std.mem.Allocator,
-        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-            return protobuf.encode(writer, allocator, self);
+        pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+            return protobuf.encode(writer, self);
         }
 
         pub fn decode(
@@ -108,12 +104,8 @@ pub const Tile = struct {
             .geometry = fd(4, .{ .packed_repeated = .{ .scalar = .uint32 } }),
         };
 
-        pub fn encode(
-            self: @This(),
-            writer: *std.Io.Writer,
-            allocator: std.mem.Allocator,
-        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-            return protobuf.encode(writer, allocator, self);
+        pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+            return protobuf.encode(writer, self);
         }
 
         pub fn decode(
@@ -181,12 +173,8 @@ pub const Tile = struct {
             .extent = fd(5, .{ .scalar = .uint32 }),
         };
 
-        pub fn encode(
-            self: @This(),
-            writer: *std.Io.Writer,
-            allocator: std.mem.Allocator,
-        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-            return protobuf.encode(writer, allocator, self);
+        pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+            return protobuf.encode(writer, self);
         }
 
         pub fn decode(
@@ -237,12 +225,8 @@ pub const Tile = struct {
         }
     };
 
-    pub fn encode(
-        self: @This(),
-        writer: *std.Io.Writer,
-        allocator: std.mem.Allocator,
-    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
-        return protobuf.encode(writer, allocator, self);
+    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {
+        return protobuf.encode(writer, self);
     }
 
     pub fn decode(
