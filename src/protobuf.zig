@@ -252,25 +252,17 @@ fn writeFixed(writer: *std.Io.Writer, value: anytype) std.Io.Writer.Error!void {
 
 /// Writes a submessage.
 /// Recursively calls encode.
-fn writeSubmessage(
-    writer: *std.Io.Writer,
-    allocator: std.mem.Allocator,
-    value: anytype,
-) (std.mem.Allocator.Error || std.Io.Writer.Error)!void {
-    // TODO: Better handle calculating submessage size before write, or use
-    // fixed-sized buffer.
-    var w: std.Io.Writer.Allocating = .init(allocator);
-    defer w.deinit();
-    try encode(&w.writer, allocator, value);
-    const size_encoded: u64 = w.written().len;
+fn writeSubmessage(writer: *std.Io.Writer, value: anytype) std.Io.Writer.Error!void {
+    var w: std.Io.Writer.Discarding = .init(&.{});
+    try encode(&w.writer, value);
+    const size_encoded: u64 = w.fullCount();
     try writeRawVarint(writer, size_encoded);
-    try writer.writeAll(w.written());
+    try encode(writer, value);
 }
 
 /// simple writing of a list of fixed-size data.
 fn writePackedFixedList(
     writer: *std.Io.Writer,
-    allocator: std.mem.Allocator,
     comptime field: FieldDescriptor,
     value_list: anytype,
 ) std.Io.Writer.Error!void {
@@ -278,8 +270,7 @@ fn writePackedFixedList(
         // first append the tag for the field descriptor
         try writeTag(writer, field);
 
-        var w: std.Io.Writer.Allocating = .init(allocator);
-        defer w.deinit();
+        var w: std.Io.Writer.Discarding = .init(&.{});
 
         // write elements to temporary buffer to calculate write size
         for (value_list.items) |item| {
@@ -288,94 +279,96 @@ fn writePackedFixedList(
 
         // and finally write the LEN size in the len_index position, followed
         // by the bytes in the temporary buffer
-        const size_encoded: u64 = w.written().len;
+        const size_encoded: u64 = w.fullCount();
         try writeRawVarint(writer, size_encoded);
-        try writer.writeAll(w.written());
+
+        for (value_list.items) |item| {
+            try writeFixed(writer, item);
+        }
     }
 }
 
 /// Writes a list of varint.
 fn writePackedVarintList(
     writer: *std.Io.Writer,
-    allocator: std.mem.Allocator,
     value_list: anytype,
     comptime field: FieldDescriptor,
     comptime scalar_type: FieldType.Scalar,
-) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
+) std.Io.Writer.Error!void {
     if (value_list.items.len > 0) {
         try writeTag(writer, field);
 
-        var w: std.Io.Writer.Allocating = .init(allocator);
-        defer w.deinit();
+        var w: std.Io.Writer.Discarding = .init(&.{});
 
         for (value_list.items) |item| {
             try writeVarint(&w.writer, item, scalar_type);
         }
 
-        const size_encoded: u64 = w.written().len;
+        const size_encoded: u64 = w.fullCount();
         try writeRawVarint(writer, size_encoded);
-        try writer.writeAll(w.written());
+
+        for (value_list.items) |item| {
+            try writeVarint(writer, item, scalar_type);
+        }
     }
 }
 
 fn writePackedEnumList(
     writer: *std.Io.Writer,
-    allocator: std.mem.Allocator,
     value_list: anytype,
     comptime field: FieldDescriptor,
-) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
+) std.Io.Writer.Error!void {
     if (value_list.items.len > 0) {
         try writeTag(writer, field);
 
-        var w: std.Io.Writer.Allocating = .init(allocator);
-        defer w.deinit();
+        var w: std.Io.Writer.Discarding = .init(&.{});
 
         for (value_list.items) |item| {
             try writeRawVarint(&w.writer, @bitCast(@as(i64, @intFromEnum(item))));
         }
 
-        const size_encoded: u64 = w.written().len;
+        const size_encoded: u64 = w.fullCount();
         try writeRawVarint(writer, size_encoded);
-        try writer.writeAll(w.written());
+        for (value_list.items) |item| {
+            try writeRawVarint(writer, @bitCast(@as(i64, @intFromEnum(item))));
+        }
     }
 }
 
 /// Writes a list of submessages. Sequentially, prepending the tag of each message.
 fn writeSubmessageList(
     writer: *std.Io.Writer,
-    allocator: std.mem.Allocator,
     comptime field: FieldDescriptor,
     value_list: anytype,
-) (std.mem.Allocator.Error || std.Io.Writer.Error)!void {
+) std.Io.Writer.Error!void {
     for (value_list.items) |item| {
         try writeTag(writer, field);
-        try writeSubmessage(writer, allocator, item);
+        try writeSubmessage(writer, item);
     }
 }
 
 /// Writes a packed list of strings.
 fn writePackedStringList(
     writer: *std.Io.Writer,
-    allocator: std.mem.Allocator,
     comptime field: FieldDescriptor,
     value_list: anytype,
 ) std.Io.Writer.Error!void {
     if (value_list.items.len > 0) {
         try writeTag(writer, field);
 
-        var temp_buffer: std.ArrayListUnmanaged(u8) = .empty;
-        defer temp_buffer.deinit(allocator);
-
-        const w = temp_buffer.writer(allocator);
+        var w: std.Io.Writer.Discarding = .init(&.{});
 
         for (value_list.items) |item| {
-            try writeRawVarint(w.any(), item.getSlice().len);
-            try w.writeAll(item.getSlice());
+            try writeRawVarint(&w.writer, item.len);
+            try w.writer.writeAll(item);
         }
 
-        const size_encoded: u64 = temp_buffer.items.len;
+        const size_encoded: u64 = w.fullCount();
         try writeRawVarint(writer, size_encoded);
-        try writer.writeAll(temp_buffer.items);
+        for (value_list.items) |item| {
+            try writeRawVarint(writer, item.len);
+            try writer.writeAll(item);
+        }
     }
 }
 
@@ -396,11 +389,10 @@ fn writeTag(writer: *std.Io.Writer, comptime field: FieldDescriptor) std.Io.Writ
 ///   require its presence to differentiate 0 from "null"
 fn writeValue(
     writer: *std.Io.Writer,
-    allocator: std.mem.Allocator,
     comptime field: FieldDescriptor,
     value: anytype,
     comptime force_append: bool,
-) (std.mem.Allocator.Error || std.Io.Writer.Error)!void {
+) std.Io.Writer.Error!void {
 
     // TODO: review semantics of default-value in regards to wire protocol
     const is_default_scalar_value = switch (@typeInfo(@TypeOf(value))) {
@@ -444,22 +436,22 @@ fn writeValue(
         .submessage => {
             if (!is_default_scalar_value or force_append) {
                 try writeTag(writer, field);
-                try writeSubmessage(writer, allocator, value);
+                try writeSubmessage(writer, value);
             }
         },
         .packed_repeated => |repeated| {
             switch (comptime repeated) {
                 .scalar => |scalar| {
                     if (comptime scalar.isFixed()) {
-                        try writePackedFixedList(writer, allocator, field, value);
+                        try writePackedFixedList(writer, field, value);
                     } else if (comptime scalar.isSlice()) {
-                        try writePackedStringList(writer, allocator, field, value);
+                        try writePackedStringList(writer, field, value);
                     } else {
-                        try writePackedVarintList(writer, allocator, value, field, scalar);
+                        try writePackedVarintList(writer, value, field, scalar);
                     }
                 },
                 .@"enum" => {
-                    try writePackedEnumList(writer, allocator, value, field);
+                    try writePackedEnumList(writer, value, field);
                 },
                 .submessage => @compileError("submessages are not suitable for `packed_list`s."),
             }
@@ -486,7 +478,7 @@ fn writeValue(
                     }
                 },
                 .submessage => {
-                    try writeSubmessageList(writer, allocator, field, value);
+                    try writeSubmessageList(writer, field, value);
                 },
                 .@"enum" => {
                     for (value.items) |item| {
@@ -503,7 +495,6 @@ fn writeValue(
                 if (std.mem.eql(u8, union_field.name, active_union_tag)) {
                     try writeValue(
                         writer,
-                        allocator,
                         @field(union_type._desc_table, union_field.name),
                         @field(value, union_field.name),
                         force_append,
@@ -515,11 +506,7 @@ fn writeValue(
 }
 
 /// Public encoding function, meant to be embedded in generated structs
-pub fn encode(
-    writer: *std.Io.Writer,
-    allocator: std.mem.Allocator,
-    data: anytype,
-) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
+pub fn encode(writer: *std.Io.Writer, data: anytype) std.Io.Writer.Error!void {
     const Data = switch (comptime @typeInfo(@TypeOf(data))) {
         .pointer => |p| p.child,
         else => @TypeOf(data),
@@ -528,11 +515,11 @@ pub fn encode(
         if (comptime @typeInfo(field.type) == .optional) {
             const temp = data;
             if (@field(temp, field.name)) |value| {
-                try writeValue(writer, allocator, @field(Data._desc_table, field.name), value, true);
+                try writeValue(writer, @field(Data._desc_table, field.name), value, true);
             }
         } else {
             const value = data;
-            try writeValue(writer, allocator, @field(Data._desc_table, field.name), @field(value, field.name), false);
+            try writeValue(writer, @field(Data._desc_table, field.name), @field(value, field.name), false);
         }
     }
 }

@@ -25,7 +25,7 @@ pub fn main() !void {
 
     var stdout_buf: [4096]u8 = undefined;
     var stdout = std.fs.File.stdout().writer(&stdout_buf);
-    try ctx.res.encode(&stdout.interface, allocator);
+    try ctx.res.encode(&stdout.interface);
     try stdout.interface.flush();
 }
 
@@ -700,12 +700,8 @@ const GenerationContext = struct {
 
             try lines.append(allocator, try std.fmt.allocPrint(allocator,
                 \\
-                \\    pub fn encode(
-                \\        self: @This(),
-                \\        writer: *std.Io.Writer,
-                \\        allocator: std.mem.Allocator,
-                \\    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {{
-                \\        return protobuf.encode(writer, allocator, self);
+                \\    pub fn encode(self: @This(), writer: *std.Io.Writer) std.Io.Writer.Error!void {{
+                \\        return protobuf.encode(writer, self);
                 \\    }}
                 \\
                 \\    pub fn decode(
