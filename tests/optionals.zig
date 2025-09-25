@@ -18,7 +18,7 @@ test "empty string in optional fields must be serialized over the wire" {
     // first encode with NULL
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try t.encode(&w.writer, testing.allocator);
+    try t.encode(&w.writer);
     try testing.expectEqualSlices(u8, "", w.written());
 
     // decoded must be null as well
@@ -34,7 +34,7 @@ test "empty string in optional fields must be serialized over the wire" {
     // then the encoded must be an empty string
     var w2: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w2.deinit();
-    try t.encode(&w2.writer, testing.allocator);
+    try t.encode(&w2.writer);
     try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x00 }, w2.written());
 
     // decoded must be null as well
@@ -62,7 +62,7 @@ test "unittest.proto parse and re-encode" {
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
 
-    try decoded.encode(&w.writer, testing.allocator);
+    try decoded.encode(&w.writer);
 
     // then re-decode it
     var reader2: std.Io.Reader = .fixed(w.written());
@@ -72,7 +72,7 @@ test "unittest.proto parse and re-encode" {
     var w2: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w2.deinit();
 
-    try decoded2.encode(&w2.writer, testing.allocator);
+    try decoded2.encode(&w2.writer);
 
     try assert(decoded2);
 

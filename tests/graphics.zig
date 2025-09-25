@@ -16,7 +16,7 @@ test "GraphicsDB" {
     // then encode it
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try decoded.encode(&w.writer, std.testing.allocator);
+    try decoded.encode(&w.writer);
 
     // dupe the decoded
     var decoded_dupe = try decoded.dupe(testing.allocator);
@@ -26,7 +26,7 @@ test "GraphicsDB" {
         // encode and assert equality
         var w_dupe: std.Io.Writer.Allocating = .init(std.testing.allocator);
         defer w_dupe.deinit();
-        try decoded_dupe.encode(&w_dupe.writer, std.testing.allocator);
+        try decoded_dupe.encode(&w_dupe.writer);
 
         try testing.expectEqualSlices(u8, w_dupe.written(), w.written());
     }
@@ -49,7 +49,7 @@ test "GraphicsDB" {
         // encode and assert equality again
         var w_dupe: std.Io.Writer.Allocating = .init(std.testing.allocator);
         defer w_dupe.deinit();
-        try decoded_dupe.encode(&w_dupe.writer, std.testing.allocator);
+        try decoded_dupe.encode(&w_dupe.writer);
 
         try testing.expectEqualSlices(u8, w.written(), w_dupe.written());
     }
@@ -57,7 +57,7 @@ test "GraphicsDB" {
     // and equal encodings
     var w2: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w2.deinit();
-    try decoded2.encode(&w2.writer, std.testing.allocator);
+    try decoded2.encode(&w2.writer);
 
     try testing.expectEqualSlices(u8, w.written(), w2.written());
 

@@ -14,7 +14,7 @@ test "Varints" {
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
 
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x01, 0x10, 0x01, 0x18, 0x96, 0x01, 0x20, 0x96, 0x01, 0x28, 0x01 }, w.written());
 
@@ -61,7 +61,7 @@ test "Varints - encode/decode equivalence" {
 
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     var reader: std.Io.Reader = .fixed(w.written());
     var decoded = try tests.Varints.decode(&reader, testing.allocator);
@@ -79,7 +79,7 @@ test "EmptyLists" {
 
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x01, 0x08, 0x02, 0x08, 0x03, 0x08, 0x04 }, w.written());
 
@@ -100,7 +100,7 @@ test "SubMessageList" {
 
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     try testing.expectEqualSlices(
         u8,
@@ -124,7 +124,7 @@ test "VarintListPacked - encode/decode" {
 
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     try testing.expectEqualSlices(u8, &[_]u8{
         0x0A, 0x04,
@@ -170,14 +170,14 @@ test "basic encoding" {
 
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x96, 0x01 }, w.written());
 
     demo.a = 0;
 
     var w2: std.Io.Writer.Allocating = .init(std.testing.allocator);
-    try demo.encode(&w2.writer, std.testing.allocator);
+    try demo.encode(&w2.writer);
 
     try testing.expectEqualSlices(u8, &[_]u8{}, w2.written());
 }
@@ -188,7 +188,7 @@ test "EmptyMessage" {
 
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     try testing.expectEqualSlices(u8, &[_]u8{}, w.written());
 
@@ -217,7 +217,7 @@ test "FixedSizesList" {
 
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     try std.testing.expectEqualSlices(u8, &[_]u8{
         0x0D, 0x01, 0x00, 0x00, 0x00, 0x0D, 0x02, 0x00, 0x00, 0x00, 0x0D, 0x03, 0x00, 0x00, 0x00, 0x0D, 0x04, 0x00, 0x00, 0x00,
@@ -239,7 +239,7 @@ test "VarintListNotPacked - not packed - encode/decode" {
 
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     try testing.expectEqualSlices(u8, &[_]u8{
         0x08, 0x01,
@@ -302,7 +302,7 @@ test "varint packed - encode, single element multi-byte-varint" {
 
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x02, 0xA3, 0x01 }, w.written());
 }
@@ -323,7 +323,7 @@ test "varint packed - encode decode, single element single-byte-varint" {
 
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x01, 0x13 }, w.written());
 
@@ -341,7 +341,7 @@ test "varint packed - encode decode - single-byte-varint" {
 
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x02, 0x11, 0x12 }, w.written());
 
@@ -359,7 +359,7 @@ test "varint packed - encode - multi-byte-varint" {
 
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0x0A, 0x04, 0xA1, 0x01, 0xA2, 0x01 }, w.written());
 }
@@ -369,7 +369,7 @@ test "WithSubmessages" {
 
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0x08 + 2, 0x02, 0x08, 0x01, 0x10 + 2, 0x04, 0x08, 0x02, 0x10, 0x03 }, w.written());
 
@@ -387,7 +387,7 @@ test "FixedInt - not packed" {
 
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     try testing.expectEqualSlices(u8, &[_]u8{
         0x08, 0x08,
@@ -405,7 +405,7 @@ test "basic encoding with optionals" {
 
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     // 0x08 , 0x96, 0x01
     try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x96, 0x01 }, w.written());
@@ -414,7 +414,7 @@ test "basic encoding with optionals" {
 
     var w2: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w2.deinit();
-    try demo2.encode(&w2.writer, std.testing.allocator);
+    try demo2.encode(&w2.writer);
 
     // 0x08 , 0x96, 0x01
     try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x96, 0x01, 0x10, 0x96, 0x01 }, w2.written());
@@ -454,7 +454,7 @@ test "basic encoding with negative numbers" {
 
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     // 0x08
     try testing.expectEqualSlices(
@@ -471,7 +471,7 @@ test "basic encoding with negative numbers" {
 fn check(object: anytype, expected: []const u8) !void {
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try object.encode(&w.writer, std.testing.allocator);
+    try object.encode(&w.writer);
 
     const buffer = try testing.allocator.alloc(u8, expected.len);
     defer testing.allocator.free(buffer);

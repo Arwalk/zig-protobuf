@@ -31,7 +31,7 @@ test "oneof encode/decode int" {
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
 
-    try demo.encode(&w.writer, testing.allocator);
+    try demo.encode(&w.writer);
 
     try testing.expectEqualSlices(u8, &[_]u8{
         0x18, 10,
@@ -53,7 +53,7 @@ test "oneof encode/decode enum" {
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
 
-    try demo.encode(&w.writer, testing.allocator);
+    try demo.encode(&w.writer);
 
     {
         // duplicate the one-of and deep compare
@@ -89,7 +89,7 @@ test "oneof encode/decode string" {
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
 
-    try demo.encode(&w.writer, testing.allocator);
+    try demo.encode(&w.writer);
 
     try testing.expectEqualSlices(u8, &[_]u8{
         0x0A, 0x03, 0x31, 0x32, 0x33,
@@ -122,7 +122,7 @@ test "oneof encode/decode submessage" {
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
 
-    try demo.encode(&w.writer, testing.allocator);
+    try demo.encode(&w.writer);
 
     try testing.expectEqualSlices(u8, &[_]u8{
         0x12, 0x07, 0x08, 0x01, 0x12, 0x03, 0x31, 0x32, 0x33,

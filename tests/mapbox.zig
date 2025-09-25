@@ -18,7 +18,7 @@ test "mapbox decoding and re-encoding" {
     // then encode it
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
-    try decoded.encode(&w.writer, std.testing.allocator);
+    try decoded.encode(&w.writer);
 
     // at this moment, the copied slice will be deallocated, if strings were not copied, the decoded2 value
     // should differ
@@ -33,7 +33,7 @@ test "mapbox decoding and re-encoding" {
     try testing.expectEqualDeep(decoded, decoded2);
     var w2: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w2.deinit();
-    try decoded2.encode(&w2.writer, std.testing.allocator);
+    try decoded2.encode(&w2.writer);
 
     try testing.expectEqualSlices(u8, w.written(), w2.written());
 }

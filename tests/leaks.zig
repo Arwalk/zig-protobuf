@@ -20,7 +20,7 @@ test "leak in allocated string" {
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
 
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     try testing.expectEqualSlices(u8, "asd", demo.field.?.field);
 }
@@ -37,7 +37,7 @@ test "leak in list of allocated bytes" {
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
 
-    try msg.encode(&w.writer, std.testing.allocator);
+    try msg.encode(&w.writer);
 
     var reader: std.Io.Reader = .fixed(w.written());
     var msg_copy = try tests.WithRepeatedBytes.decode(&reader, testing.allocator);

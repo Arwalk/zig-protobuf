@@ -59,7 +59,7 @@ test "LogsData proto issue #84" {
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
 
-    try logsData.encode(&w.writer, std.testing.allocator); // <- compile error before
+    try logsData.encode(&w.writer); // <- compile error before
 }
 
 const SelfRefNode = selfref.SelfRefNode;
@@ -77,7 +77,7 @@ test "self ref test" {
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
 
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     try std.testing.expectEqualSlices(u8, &[_]u8{ 0x12, 0x02, 0x08, 0x01 }, w.written());
 

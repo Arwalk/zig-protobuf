@@ -27,7 +27,7 @@ test "long package" {
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
 
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 }
 
 test "packed int32_list encoding" {
@@ -41,7 +41,7 @@ test "packed int32_list encoding" {
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
 
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     try testing.expectEqualSlices(u8, &[_]u8{
         // fieldNumber=1<<3 packetType=2 (LEN)
@@ -72,7 +72,7 @@ test "unpacked int32_list" {
     var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer w.deinit();
 
-    try demo.encode(&w.writer, std.testing.allocator);
+    try demo.encode(&w.writer);
 
     try testing.expectEqualSlices(u8, &[_]u8{ 0x08, 0x01, 0x08, 0x02, 0x08, 0x03, 0x08, 0x04 }, w.written());
 
