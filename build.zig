@@ -216,6 +216,11 @@ pub fn build(b: *std.Build) !void {
 
     // Then run the executable
     const run_generate = b.addRunArtifact(generate_dataset_exe);
+
+    if (b.args) |args| {
+        run_generate.addArgs(args);
+    }
+
     generate_dataset_step.dependOn(&run_generate.step);
 }
 

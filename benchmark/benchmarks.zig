@@ -10,8 +10,6 @@ const DATASET_FILENAME = "test.data";
 
 fn bench_encode(allocator: std.mem.Allocator) void {
     var w: std.Io.Writer.Allocating = .init(allocator);
-    defer w.deinit();
-
     _ = input_to_encode.encode(&w.writer, allocator) catch null;
 }
 

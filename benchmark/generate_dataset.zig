@@ -133,10 +133,20 @@ pub fn generateRandomExponentialHistogramDataPoint(allocator: std.mem.Allocator)
     return point;
 }
 
-const DATASET_SIZE = 10;
 const OUTPUT_FILENAME = "test.data";
 
 pub fn main() !void {
+    var args = try std.process.argsWithAllocator(std.heap.page_allocator);
+    defer args.deinit();
+
+    // Skip executable name
+    _ = args.next();
+
+    // Get dataset size from args or use default
+    const DATASET_SIZE = if (args.next()) |arg|
+        try std.fmt.parseInt(usize, arg, 10)
+    else
+        10;
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
 
