@@ -9,13 +9,23 @@ const dataset_generator = @import("./generate_dataset.zig");
 const DATASET_FILENAME = "test.data";
 
 fn bench_encode(allocator: std.mem.Allocator) void {
-    var w: std.Io.Writer.Allocating = .init(allocator);
-    _ = input_to_encode.encode(&w.writer, allocator) catch null;
+    var buffer: [1]u8 = .{0};
+    var w: std.Io.Writer.Discarding = .init(&buffer);
+    _ = input_to_encode.encode(&w.writer, allocator) catch @panic("Failed to encode");
+}
+
+fn bench_encode_arena(allocator: std.mem.Allocator) void {
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const arena_allocator = arena.allocator();
+    var buffer: [1]u8 = .{0};
+    var w: std.Io.Writer.Discarding = .init(&buffer);
+    _ = input_to_encode.encode(&w.writer, arena_allocator) catch @panic("Failed to encode");
 }
 
 fn bench_decode(allocator: std.mem.Allocator) void {
     var reader: std.Io.Reader = .fixed(input_to_decode);
-    _ = metrics.ExponentialHistogramDataPoint.decode(&reader, allocator) catch null;
+    _ = benchmark_data.BenchmarkData.decode(&reader, allocator) catch @panic("Failed to decode");
 }
 
 const DataSet = struct {
@@ -80,8 +90,9 @@ pub fn main() !void {
     var bench = zbench.Benchmark.init(arena_allocator, .{});
     defer bench.deinit();
 
-    try bench.add("encoding benchmark", bench_encode, .{});
-    try bench.add("decoding benchmark", bench_decode, .{});
+    try bench.add("encoding", bench_encode, .{});
+    try bench.add("encoding (arena)", bench_encode_arena, .{});
+    try bench.add("decoding", bench_decode, .{});
 
     var buf: [1024]u8 = undefined;
     var stderr = std.fs.File.stderr().writer(&buf);
