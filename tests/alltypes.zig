@@ -85,7 +85,7 @@ test "unpacked int32_list" {
 test "Required.Proto3.ProtobufInput.ValidDataRepeated.BOOL.PackedInput.ProtobufOutput" {
     const err_bytes = "\xda\x02\x28\x00\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01\xce\xc2\xf1\x05\x80\x80\x80\x80\x20\xff\xff\xff\xff\xff\xff\xff\xff\x7f\x80\x80\x80\x80\x80\x80\x80\x80\x80\x01";
 
-    var err_reader: std.io.Reader = .fixed(err_bytes);
+    var err_reader: std.Io.Reader = .fixed(err_bytes);
 
     // Bools MUST be encoded as either `0x00` or `0x01` bytes.
     // https://protobuf.dev/programming-guides/encoding/#bools-and-enums
@@ -96,7 +96,7 @@ test "Required.Proto3.ProtobufInput.ValidDataRepeated.BOOL.PackedInput.ProtobufO
 
     const bytes = "\xda\x02\x07\x00\x00\x00\x00\x01\x00\x00";
 
-    var reader: std.io.Reader = .fixed(bytes);
+    var reader: std.Io.Reader = .fixed(bytes);
     var m = try proto3.TestAllTypesProto3.decode(&reader, testing.allocator);
     defer m.deinit(std.testing.allocator);
 
@@ -109,7 +109,7 @@ test "Required.Proto3.ProtobufInput.ValidDataRepeated.BOOL.PackedInput.ProtobufO
 
 test "msg-longs.proto" {
     const bytes = &[_]u8{ 17, 255, 255, 255, 255, 255, 255, 255, 255, 24, 128, 128, 128, 128, 128, 128, 128, 128, 128, 1, 32, 255, 255, 255, 255, 255, 255, 255, 255, 127, 41, 0, 0, 0, 0, 0, 0, 0, 128, 49, 255, 255, 255, 255, 255, 255, 255, 127, 56, 255, 255, 255, 255, 255, 255, 255, 255, 255, 1, 64, 254, 255, 255, 255, 255, 255, 255, 255, 255, 1, 80, 255, 255, 255, 255, 255, 255, 255, 255, 255, 1, 97, 255, 255, 255, 255, 255, 255, 255, 255, 104, 128, 128, 128, 128, 128, 128, 128, 128, 128, 1, 112, 255, 255, 255, 255, 255, 255, 255, 255, 127, 121, 0, 0, 0, 0, 0, 0, 0, 128, 129, 1, 255, 255, 255, 255, 255, 255, 255, 127, 136, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 1, 144, 1, 254, 255, 255, 255, 255, 255, 255, 255, 255, 1, 160, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 1, 177, 1, 255, 255, 255, 255, 255, 255, 255, 255, 184, 1, 128, 128, 128, 128, 128, 128, 128, 128, 128, 1, 192, 1, 255, 255, 255, 255, 255, 255, 255, 255, 127, 201, 1, 0, 0, 0, 0, 0, 0, 0, 128, 209, 1, 255, 255, 255, 255, 255, 255, 255, 127, 216, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 1, 224, 1, 254, 255, 255, 255, 255, 255, 255, 255, 255, 1, 240, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 1 };
-    var reader: std.io.Reader = .fixed(bytes);
+    var reader: std.Io.Reader = .fixed(bytes);
     var decoded = try longs.LongsMessage.decode(&reader, testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 

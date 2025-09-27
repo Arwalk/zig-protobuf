@@ -11,7 +11,7 @@ test "mapbox decoding and re-encoding" {
     const copied_slice = try testing.allocator.dupe(u8, binary_file);
 
     // first decode the binary
-    var reader: std.io.Reader = .fixed(copied_slice);
+    var reader: std.Io.Reader = .fixed(copied_slice);
     var decoded = try vector_tile.Tile.decode(&reader, testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
@@ -25,7 +25,7 @@ test "mapbox decoding and re-encoding" {
     testing.allocator.free(copied_slice);
 
     // then re-decode it
-    var reader2: std.io.Reader = .fixed(w.written());
+    var reader2: std.Io.Reader = .fixed(w.written());
     var decoded2 = try vector_tile.Tile.decode(&reader2, testing.allocator);
     defer decoded2.deinit(std.testing.allocator);
 

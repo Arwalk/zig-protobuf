@@ -7,7 +7,7 @@ const binary_file = @embedFile("./fixtures/graphics.bin");
 
 test "GraphicsDB" {
     // first decode the binary
-    var reader: std.io.Reader = .fixed(binary_file);
+    var reader: std.Io.Reader = .fixed(binary_file);
     var decoded: graphics.GraphicsDB = try graphics.GraphicsDB.decode(
         &reader,
         testing.allocator,
@@ -32,7 +32,7 @@ test "GraphicsDB" {
     }
 
     // then re-decode it
-    var reader2: std.io.Reader = .fixed(w.written());
+    var reader2: std.Io.Reader = .fixed(w.written());
     var decoded2: graphics.GraphicsDB = try graphics.GraphicsDB.decode(
         &reader2,
         testing.allocator,
