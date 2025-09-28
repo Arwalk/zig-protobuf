@@ -168,7 +168,25 @@ pub fn build(b: *std.Build) !void {
 
     bootstrap.dependOn(&bootstrapConversion.step);
 
-    const zbench_module = b.dependency("zbench", .{ .target = target, .optimize = optimize }).module("zbench");
+    const zbench_dir_rel = try std.fs.path.join(b.allocator, &.{ ".zig-cache", "zbench", "zBench-0.11.2" });
+    try std.fs.cwd().makePath(zbench_dir_rel);
+    defer b.allocator.free(zbench_dir_rel);
+
+    const zbench_dir = try std.fs.cwd().realpathAlloc(b.allocator, zbench_dir_rel);
+    defer b.allocator.free(zbench_dir);
+
+    const zbench_zig = try std.fs.path.join(b.allocator, &.{ zbench_dir, "zbench.zig" });
+    defer b.allocator.free(zbench_zig);
+
+    if (!fileExists(zbench_zig)) {
+        try downloadZBench(b.allocator, ".zig-cache/zbench");
+    }
+
+    const zbench_module = b.addModule("zbench", .{
+        .root_source_file = b.path(".zig-cache/zbench/zBench-0.11.2/zbench.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
 
     const benchmark_step = b.step("benchmark", "Run benchmarks");
 
@@ -478,6 +496,28 @@ fn getProtocDownloadLink(allocator: std.mem.Allocator, version: []const u8) !?[]
         "/",
         asset,
     });
+}
+
+fn downloadZBench(
+    allocator: std.mem.Allocator,
+    target_cache_dir: []const u8,
+) !void {
+    download_mutex.lock();
+    defer download_mutex.unlock();
+    const download_url = "https://github.com/hendriknielaender/zBench/archive/refs/tags/v0.11.2.zip";
+    ensureCanDownloadFiles(allocator);
+    ensureCanUnzipFiles(allocator);
+    const download_dir = try std.fs.path.join(allocator, &.{ target_cache_dir, "zbench" });
+    defer allocator.free(download_dir);
+    std.fs.cwd().makePath(download_dir) catch @panic(download_dir);
+    std.debug.print("download_dir: {s}\n", .{download_dir});
+    // Download zbench
+    const zip_target_file = try std.fs.path.join(allocator, &.{ download_dir, "zbench.zip" });
+    defer allocator.free(zip_target_file);
+    downloadFile(allocator, zip_target_file, download_url) catch @panic(zip_target_file);
+
+    // Decompress the .zip file
+    unzipFile(allocator, zip_target_file, target_cache_dir) catch @panic(zip_target_file);
 }
 
 fn downloadProtoc(

@@ -76,8 +76,8 @@ pub const MetricsData = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    /// This method is used by std.json
-    /// internally for deserialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -86,8 +86,8 @@ pub const MetricsData = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    /// This method is used by std.json
-    /// internally for serialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -151,8 +151,8 @@ pub const ResourceMetrics = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    /// This method is used by std.json
-    /// internally for deserialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -161,8 +161,8 @@ pub const ResourceMetrics = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    /// This method is used by std.json
-    /// internally for serialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -226,8 +226,8 @@ pub const ScopeMetrics = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    /// This method is used by std.json
-    /// internally for deserialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -236,8 +236,8 @@ pub const ScopeMetrics = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    /// This method is used by std.json
-    /// internally for serialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -327,8 +327,8 @@ pub const Metric = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    /// This method is used by std.json
-    /// internally for deserialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -337,8 +337,8 @@ pub const Metric = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    /// This method is used by std.json
-    /// internally for serialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -398,8 +398,8 @@ pub const Gauge = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    /// This method is used by std.json
-    /// internally for deserialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -408,8 +408,8 @@ pub const Gauge = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    /// This method is used by std.json
-    /// internally for serialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -473,8 +473,8 @@ pub const Sum = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    /// This method is used by std.json
-    /// internally for deserialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -483,8 +483,8 @@ pub const Sum = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    /// This method is used by std.json
-    /// internally for serialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -546,8 +546,8 @@ pub const Histogram = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    /// This method is used by std.json
-    /// internally for deserialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -556,8 +556,8 @@ pub const Histogram = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    /// This method is used by std.json
-    /// internally for serialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -619,8 +619,8 @@ pub const ExponentialHistogram = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    /// This method is used by std.json
-    /// internally for deserialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -629,8 +629,8 @@ pub const ExponentialHistogram = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    /// This method is used by std.json
-    /// internally for serialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -690,8 +690,8 @@ pub const Summary = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    /// This method is used by std.json
-    /// internally for deserialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -700,8 +700,8 @@ pub const Summary = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    /// This method is used by std.json
-    /// internally for serialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -784,8 +784,8 @@ pub const NumberDataPoint = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    /// This method is used by std.json
-    /// internally for deserialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -794,8 +794,8 @@ pub const NumberDataPoint = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    /// This method is used by std.json
-    /// internally for serialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -875,8 +875,8 @@ pub const HistogramDataPoint = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    /// This method is used by std.json
-    /// internally for deserialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -885,8 +885,8 @@ pub const HistogramDataPoint = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    /// This method is used by std.json
-    /// internally for serialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -981,8 +981,8 @@ pub const ExponentialHistogramDataPoint = struct {
             return protobuf.json.encode(self, options, allocator);
         }
 
-        /// This method is used by std.json
-        /// internally for deserialization. DO NOT RENAME!
+        // This method is used by std.json
+        // internally for deserialization. DO NOT RENAME!
         pub fn jsonParse(
             allocator: std.mem.Allocator,
             source: anytype,
@@ -991,8 +991,8 @@ pub const ExponentialHistogramDataPoint = struct {
             return protobuf.json.parse(@This(), allocator, source, options);
         }
 
-        /// This method is used by std.json
-        /// internally for serialization. DO NOT RENAME!
+        // This method is used by std.json
+        // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
             return protobuf.json.stringify(@This(), self, jws);
         }
@@ -1045,8 +1045,8 @@ pub const ExponentialHistogramDataPoint = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    /// This method is used by std.json
-    /// internally for deserialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -1055,8 +1055,8 @@ pub const ExponentialHistogramDataPoint = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    /// This method is used by std.json
-    /// internally for serialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -1137,8 +1137,8 @@ pub const SummaryDataPoint = struct {
             return protobuf.json.encode(self, options, allocator);
         }
 
-        /// This method is used by std.json
-        /// internally for deserialization. DO NOT RENAME!
+        // This method is used by std.json
+        // internally for deserialization. DO NOT RENAME!
         pub fn jsonParse(
             allocator: std.mem.Allocator,
             source: anytype,
@@ -1147,8 +1147,8 @@ pub const SummaryDataPoint = struct {
             return protobuf.json.parse(@This(), allocator, source, options);
         }
 
-        /// This method is used by std.json
-        /// internally for serialization. DO NOT RENAME!
+        // This method is used by std.json
+        // internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
             return protobuf.json.stringify(@This(), self, jws);
         }
@@ -1201,8 +1201,8 @@ pub const SummaryDataPoint = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    /// This method is used by std.json
-    /// internally for deserialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -1211,8 +1211,8 @@ pub const SummaryDataPoint = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    /// This method is used by std.json
-    /// internally for serialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -1293,8 +1293,8 @@ pub const Exemplar = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    /// This method is used by std.json
-    /// internally for deserialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -1303,8 +1303,8 @@ pub const Exemplar = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    /// This method is used by std.json
-    /// internally for serialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }

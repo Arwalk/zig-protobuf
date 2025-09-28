@@ -61,8 +61,8 @@ pub const BenchmarkData = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    /// This method is used by std.json
-    /// internally for deserialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -71,8 +71,8 @@ pub const BenchmarkData = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    /// This method is used by std.json
-    /// internally for serialization. DO NOT RENAME!
+    // This method is used by std.json
+    // internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
