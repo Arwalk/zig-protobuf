@@ -33,7 +33,7 @@ const DataSet = struct {
     encoded: []u8,
 };
 
-fn loadFixedDataset(allocator: std.mem.Allocator) !?DataSet {
+fn loadFixedDataset(allocator: std.mem.Allocator) !DataSet {
     // Try to open the test.data file
     std.debug.print("Loading dataset from {s}...\n", .{DATASET_FILENAME});
 
@@ -55,7 +55,7 @@ fn loadFixedDataset(allocator: std.mem.Allocator) !?DataSet {
 
     if (data.histogram_points.items.len == 0) {
         std.debug.print("Dataset contains no histogram points\n", .{});
-        return null;
+        return error.DatasetContainsNoHistogramPoints;
     }
 
     std.debug.print("Loaded dataset with {d} histogram points\n", .{data.histogram_points.items.len});
@@ -77,14 +77,28 @@ pub fn main() !void {
     const arena_allocator = arena.allocator();
 
     // Try to load dataset from file
-    if (try loadFixedDataset(arena_allocator)) |fixed_data| {
+    if (loadFixedDataset(arena_allocator)) |fixed_data| {
         // Use the loaded dataset
         input_to_encode = fixed_data.data;
         input_to_decode = fixed_data.encoded;
         std.debug.print("Using fixed dataset for benchmarking\n", .{});
-    } else {
-        std.debug.print("Could not load dataset from file. failure\n", .{});
-        return;
+    } else |err| {
+        switch (err) {
+            error.DatasetContainsNoHistogramPoints => {
+                std.debug.print("Dataset contains no histogram points. failure: {s}\n", .{@errorName(err)});
+                return;
+            },
+            error.FileNotFound => {
+                std.debug.print("test.data file not found. run `zig build generate-dataset` to build a random set of data to benchmark with\n", .{});
+                std.debug.print("You can specify the size of the dataset with `zig build generate-dataset -- <size>`, else it will default to 10 messages\n", .{});
+                std.debug.print("example: `zig build generate-dataset -- 1000`\n", .{});
+                return;
+            },
+            else => {
+                std.debug.print("Could not load dataset from file. failure: {s}\n", .{@errorName(err)});
+                return;
+            },
+        }
     }
 
     var bench = zbench.Benchmark.init(arena_allocator, .{});
