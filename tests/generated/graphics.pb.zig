@@ -22,6 +22,9 @@ pub const InventoryItem = struct {
         .id = fd(6, .{ .scalar = .int32 }),
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -30,6 +33,7 @@ pub const InventoryItem = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -37,14 +41,17 @@ pub const InventoryItem = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -53,6 +60,7 @@ pub const InventoryItem = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -61,8 +69,8 @@ pub const InventoryItem = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -71,8 +79,8 @@ pub const InventoryItem = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -109,6 +117,9 @@ pub const Character = struct {
         .enabled = fd(13, .{ .scalar = .bool }),
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -117,6 +128,7 @@ pub const Character = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -124,14 +136,17 @@ pub const Character = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -140,6 +155,7 @@ pub const Character = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -148,8 +164,8 @@ pub const Character = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -158,8 +174,8 @@ pub const Character = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -176,6 +192,9 @@ pub const Alignment = struct {
         .color = fd(3, .{ .scalar = .string }),
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -184,6 +203,7 @@ pub const Alignment = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -191,14 +211,17 @@ pub const Alignment = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -207,6 +230,7 @@ pub const Alignment = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -215,8 +239,8 @@ pub const Alignment = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -225,8 +249,8 @@ pub const Alignment = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -258,6 +282,9 @@ pub const Index = struct {
             .value = fd(2, .{ .scalar = .int32 }),
         };
 
+        /// Encodes the message to the writer
+        /// The allocator is used to generate submessages internally.
+        /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
         pub fn encode(
             self: @This(),
             writer: *std.Io.Writer,
@@ -266,6 +293,7 @@ pub const Index = struct {
             return protobuf.encode(writer, allocator, self);
         }
 
+        /// Decodes the message from the bytes read from the reader.
         pub fn decode(
             reader: *std.Io.Reader,
             allocator: std.mem.Allocator,
@@ -273,14 +301,17 @@ pub const Index = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
+        /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
 
+        /// Duplicates the message.
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
         }
 
+        /// Decodes the message from the JSON string.
         pub fn jsonDecode(
             input: []const u8,
             options: std.json.ParseOptions,
@@ -289,6 +320,7 @@ pub const Index = struct {
             return protobuf.json.decode(@This(), input, options, allocator);
         }
 
+        /// Encodes the message to a JSON string.
         pub fn jsonEncode(
             self: @This(),
             options: std.json.Stringify.Options,
@@ -297,8 +329,8 @@ pub const Index = struct {
             return protobuf.json.encode(self, options, allocator);
         }
 
-        // This method is used by std.json
-        // internally for deserialization. DO NOT RENAME!
+        /// This method is used by std.json
+        /// internally for deserialization. DO NOT RENAME!
         pub fn jsonParse(
             allocator: std.mem.Allocator,
             source: anytype,
@@ -307,13 +339,16 @@ pub const Index = struct {
             return protobuf.json.parse(@This(), allocator, source, options);
         }
 
-        // This method is used by std.json
-        // internally for serialization. DO NOT RENAME!
+        /// This method is used by std.json
+        /// internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
             return protobuf.json.stringify(@This(), self, jws);
         }
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -322,6 +357,7 @@ pub const Index = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -329,14 +365,17 @@ pub const Index = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -345,6 +384,7 @@ pub const Index = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -353,8 +393,8 @@ pub const Index = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -363,8 +403,8 @@ pub const Index = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -379,6 +419,9 @@ pub const StoredChunk = struct {
         .entities = fd(2, .{ .repeated = .submessage }),
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -387,6 +430,7 @@ pub const StoredChunk = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -394,14 +438,17 @@ pub const StoredChunk = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -410,6 +457,7 @@ pub const StoredChunk = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -418,8 +466,8 @@ pub const StoredChunk = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -428,8 +476,8 @@ pub const StoredChunk = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -454,6 +502,9 @@ pub const MapEntity = struct {
         .vertical_graphic = fd(7, .{ .scalar = .bool }),
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -462,6 +513,7 @@ pub const MapEntity = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -469,14 +521,17 @@ pub const MapEntity = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -485,6 +540,7 @@ pub const MapEntity = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -493,8 +549,8 @@ pub const MapEntity = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -503,8 +559,8 @@ pub const MapEntity = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -525,6 +581,9 @@ pub const Light = struct {
         .fall_off = fd(5, .{ .scalar = .float }),
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -533,6 +592,7 @@ pub const Light = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -540,14 +600,17 @@ pub const Light = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -556,6 +619,7 @@ pub const Light = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -564,8 +628,8 @@ pub const Light = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -574,8 +638,8 @@ pub const Light = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -590,6 +654,9 @@ pub const Point = struct {
         .y = fd(2, .{ .scalar = .int32 }),
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -598,6 +665,7 @@ pub const Point = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -605,14 +673,17 @@ pub const Point = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -621,6 +692,7 @@ pub const Point = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -629,8 +701,8 @@ pub const Point = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -639,8 +711,8 @@ pub const Point = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -653,6 +725,9 @@ pub const Shape = struct {
         .points = fd(1, .{ .repeated = .submessage }),
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -661,6 +736,7 @@ pub const Shape = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -668,14 +744,17 @@ pub const Shape = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -684,6 +763,7 @@ pub const Shape = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -692,8 +772,8 @@ pub const Shape = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -702,8 +782,8 @@ pub const Shape = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -753,6 +833,9 @@ pub const Npc = struct {
             .value = fd(2, .{ .scalar = .int32 }),
         };
 
+        /// Encodes the message to the writer
+        /// The allocator is used to generate submessages internally.
+        /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
         pub fn encode(
             self: @This(),
             writer: *std.Io.Writer,
@@ -761,6 +844,7 @@ pub const Npc = struct {
             return protobuf.encode(writer, allocator, self);
         }
 
+        /// Decodes the message from the bytes read from the reader.
         pub fn decode(
             reader: *std.Io.Reader,
             allocator: std.mem.Allocator,
@@ -768,14 +852,17 @@ pub const Npc = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
+        /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
 
+        /// Duplicates the message.
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
         }
 
+        /// Decodes the message from the JSON string.
         pub fn jsonDecode(
             input: []const u8,
             options: std.json.ParseOptions,
@@ -784,6 +871,7 @@ pub const Npc = struct {
             return protobuf.json.decode(@This(), input, options, allocator);
         }
 
+        /// Encodes the message to a JSON string.
         pub fn jsonEncode(
             self: @This(),
             options: std.json.Stringify.Options,
@@ -792,8 +880,8 @@ pub const Npc = struct {
             return protobuf.json.encode(self, options, allocator);
         }
 
-        // This method is used by std.json
-        // internally for deserialization. DO NOT RENAME!
+        /// This method is used by std.json
+        /// internally for deserialization. DO NOT RENAME!
         pub fn jsonParse(
             allocator: std.mem.Allocator,
             source: anytype,
@@ -802,8 +890,8 @@ pub const Npc = struct {
             return protobuf.json.parse(@This(), allocator, source, options);
         }
 
-        // This method is used by std.json
-        // internally for serialization. DO NOT RENAME!
+        /// This method is used by std.json
+        /// internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
             return protobuf.json.stringify(@This(), self, jws);
         }
@@ -818,6 +906,9 @@ pub const Npc = struct {
             .value = fd(2, .{ .scalar = .int32 }),
         };
 
+        /// Encodes the message to the writer
+        /// The allocator is used to generate submessages internally.
+        /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
         pub fn encode(
             self: @This(),
             writer: *std.Io.Writer,
@@ -826,6 +917,7 @@ pub const Npc = struct {
             return protobuf.encode(writer, allocator, self);
         }
 
+        /// Decodes the message from the bytes read from the reader.
         pub fn decode(
             reader: *std.Io.Reader,
             allocator: std.mem.Allocator,
@@ -833,14 +925,17 @@ pub const Npc = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
+        /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
         }
 
+        /// Duplicates the message.
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
         }
 
+        /// Decodes the message from the JSON string.
         pub fn jsonDecode(
             input: []const u8,
             options: std.json.ParseOptions,
@@ -849,6 +944,7 @@ pub const Npc = struct {
             return protobuf.json.decode(@This(), input, options, allocator);
         }
 
+        /// Encodes the message to a JSON string.
         pub fn jsonEncode(
             self: @This(),
             options: std.json.Stringify.Options,
@@ -857,8 +953,8 @@ pub const Npc = struct {
             return protobuf.json.encode(self, options, allocator);
         }
 
-        // This method is used by std.json
-        // internally for deserialization. DO NOT RENAME!
+        /// This method is used by std.json
+        /// internally for deserialization. DO NOT RENAME!
         pub fn jsonParse(
             allocator: std.mem.Allocator,
             source: anytype,
@@ -867,13 +963,16 @@ pub const Npc = struct {
             return protobuf.json.parse(@This(), allocator, source, options);
         }
 
-        // This method is used by std.json
-        // internally for serialization. DO NOT RENAME!
+        /// This method is used by std.json
+        /// internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
             return protobuf.json.stringify(@This(), self, jws);
         }
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -882,6 +981,7 @@ pub const Npc = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -889,14 +989,17 @@ pub const Npc = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -905,6 +1008,7 @@ pub const Npc = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -913,8 +1017,8 @@ pub const Npc = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -923,8 +1027,8 @@ pub const Npc = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -953,6 +1057,9 @@ pub const Tile = struct {
         .layer4 = fd(9, .{ .scalar = .int32 }),
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -961,6 +1068,7 @@ pub const Tile = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -968,14 +1076,17 @@ pub const Tile = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -984,6 +1095,7 @@ pub const Tile = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -992,8 +1104,8 @@ pub const Tile = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -1002,8 +1114,8 @@ pub const Tile = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -1022,6 +1134,9 @@ pub const MapItem = struct {
         .amount = fd(4, .{ .scalar = .int32 }),
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -1030,6 +1145,7 @@ pub const MapItem = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -1037,14 +1153,17 @@ pub const MapItem = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -1053,6 +1172,7 @@ pub const MapItem = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -1061,8 +1181,8 @@ pub const MapItem = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -1071,8 +1191,8 @@ pub const MapItem = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -1103,6 +1223,9 @@ pub const GraphicsDB = struct {
         .spine = fd(11, .{ .repeated = .submessage }),
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -1111,6 +1234,7 @@ pub const GraphicsDB = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -1118,14 +1242,17 @@ pub const GraphicsDB = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -1134,6 +1261,7 @@ pub const GraphicsDB = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -1142,8 +1270,8 @@ pub const GraphicsDB = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -1152,8 +1280,8 @@ pub const GraphicsDB = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -1168,6 +1296,9 @@ pub const Script = struct {
         .code = fd(2, .{ .scalar = .string }),
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -1176,6 +1307,7 @@ pub const Script = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -1183,14 +1315,17 @@ pub const Script = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -1199,6 +1334,7 @@ pub const Script = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -1207,8 +1343,8 @@ pub const Script = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -1217,8 +1353,8 @@ pub const Script = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -1239,6 +1375,9 @@ pub const SubTexture = struct {
         .height = fd(5, .{ .scalar = .int32 }),
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -1247,6 +1386,7 @@ pub const SubTexture = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -1254,14 +1394,17 @@ pub const SubTexture = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -1270,6 +1413,7 @@ pub const SubTexture = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -1278,8 +1422,8 @@ pub const SubTexture = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -1288,8 +1432,8 @@ pub const SubTexture = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -1316,6 +1460,9 @@ pub const Texture = struct {
         .dxt5 = fd(8, .submessage),
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -1324,6 +1471,7 @@ pub const Texture = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -1331,14 +1479,17 @@ pub const Texture = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -1347,6 +1498,7 @@ pub const Texture = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -1355,8 +1507,8 @@ pub const Texture = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -1365,8 +1517,8 @@ pub const Texture = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -1396,6 +1548,9 @@ pub const Graphic = struct {
         .type = fd(null, .{ .oneof = type_union }),
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -1404,6 +1559,7 @@ pub const Graphic = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -1411,14 +1567,17 @@ pub const Graphic = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -1427,6 +1586,7 @@ pub const Graphic = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -1435,8 +1595,8 @@ pub const Graphic = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -1445,8 +1605,8 @@ pub const Graphic = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -1471,6 +1631,9 @@ pub const Sprite = struct {
         .pivot_y = fd(7, .{ .scalar = .int32 }),
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -1479,6 +1642,7 @@ pub const Sprite = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -1486,14 +1650,17 @@ pub const Sprite = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -1502,6 +1669,7 @@ pub const Sprite = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -1510,8 +1678,8 @@ pub const Sprite = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -1520,8 +1688,8 @@ pub const Sprite = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -1536,6 +1704,9 @@ pub const Animation = struct {
         .speed = fd(2, .{ .scalar = .float }),
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -1544,6 +1715,7 @@ pub const Animation = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -1551,14 +1723,17 @@ pub const Animation = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -1567,6 +1742,7 @@ pub const Animation = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -1575,8 +1751,8 @@ pub const Animation = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -1585,8 +1761,8 @@ pub const Animation = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
@@ -1603,6 +1779,9 @@ pub const Spine = struct {
         .atlas = fd(3, .{ .scalar = .string }),
     };
 
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
     pub fn encode(
         self: @This(),
         writer: *std.Io.Writer,
@@ -1611,6 +1790,7 @@ pub const Spine = struct {
         return protobuf.encode(writer, allocator, self);
     }
 
+    /// Decodes the message from the bytes read from the reader.
     pub fn decode(
         reader: *std.Io.Reader,
         allocator: std.mem.Allocator,
@@ -1618,14 +1798,17 @@ pub const Spine = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
     }
 
+    /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
         options: std.json.ParseOptions,
@@ -1634,6 +1817,7 @@ pub const Spine = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
         options: std.json.Stringify.Options,
@@ -1642,8 +1826,8 @@ pub const Spine = struct {
         return protobuf.json.encode(self, options, allocator);
     }
 
-    // This method is used by std.json
-    // internally for deserialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
     pub fn jsonParse(
         allocator: std.mem.Allocator,
         source: anytype,
@@ -1652,8 +1836,8 @@ pub const Spine = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 
-    // This method is used by std.json
-    // internally for serialization. DO NOT RENAME!
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
         return protobuf.json.stringify(@This(), self, jws);
     }
