@@ -40,7 +40,7 @@
         //"README.md",
         "build.zig",
         "build.zig.zon",
-        "build_util.zig",
+        "utils/build_util.zig",
         "LICENSE.md",
         "README.md",
         ".gitignore",
