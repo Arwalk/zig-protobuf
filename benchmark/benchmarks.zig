@@ -37,6 +37,8 @@ fn loadFixedDataset(allocator: std.mem.Allocator) !DataSet {
     // Try to open the test.data file
     std.debug.print("Loading dataset from {s}...\n", .{DATASET_FILENAME});
 
+    // NOTE: it is important to always load the file from disk at runtime to prevent
+    // early optimizations of the compiler that may impact(tint) the benchmark
     const file = try std.fs.cwd().openFile(DATASET_FILENAME, .{});
     defer file.close();
 
