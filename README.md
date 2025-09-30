@@ -33,7 +33,7 @@ There are 2 branches you can use for your development.
 
 1. Add `protobuf` to your `build.zig.zon`.  
     ```sh
-    zig fetch --save "git+https://github.com/Arwalk/zig-protobuf#v2.0.0"
+    zig fetch --save "git+https://github.com/Arwalk/zig-protobuf#master"
     ```
 1. Use the `protobuf` module. In your `build.zig`'s build function, add the dependency as module before
 `b.installArtifact(exe)`.
