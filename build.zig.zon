@@ -25,6 +25,7 @@
     // Paths are relative to the build root. Use the empty string (`""`) to refer to
     // the build root itself.
     // A directory listed here means that all files within, recursively, are included.
+    .dependencies = .{},
     .paths = .{
         // This makes *all* files, recursively, included in this package. It is generally
         // better to explicitly list the files and directories instead, to insure that
@@ -39,6 +40,7 @@
         //"README.md",
         "build.zig",
         "build.zig.zon",
+        "utils/build_util.zig",
         "LICENSE.md",
         "README.md",
         ".gitignore",

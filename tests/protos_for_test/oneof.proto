@@ -22,3 +22,21 @@ message OneofContainer {
   string regular_field = 4;
   Enum enum_field = 5;
 }
+
+message S3LockResult {
+    oneof error { // this does not compile if not escaped
+        Success success = 1;
+        NotOwner not_owner = 2;
+        Conflict conflict = 3;
+    }
+}
+message Success {}
+// Error caused by S3GC owner changed
+// client should retry
+message NotOwner{
+}
+// Error caused by concurrency conflict,
+// request cancel
+message Conflict {
+    string reason = 1;
+}

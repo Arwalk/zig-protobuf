@@ -14,3 +14,5 @@ tests/.generated
 debug
 .zig-cache
 .specstory/*
+test.data
+benchmark/generated/**/*
