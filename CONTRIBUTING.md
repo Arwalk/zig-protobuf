@@ -81,6 +81,7 @@ Remember that your commit message must survive the ravages of time. Try to link 
 
 ** Each commit message should include the reason why this commit was made. Usually by adding a sentence completing the form 'So that we...' will give an amazing amount of context to the history that the code change itself cannot **
 
+Format the commit message using [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), that is `<type>(scope)?: [message]` i.e. `fix(code generator): doc comments are now emitted using three / instead of two`, `refactor: move json serialization to its own file`, `feat: support enums`, `fix(benchmark): use constant complexity datasets`, etc.
 
 ### Keep it small
 
@@ -89,10 +90,6 @@ Try to only fix one issue or add one feature within the pull request. The larger
 If you must submit a large PR, try to at least make someone else aware of this fact, and arrange for their time to review and get the PR merged. It's not fair to the team to dump large pieces of work on their laps without warning.
 
 If you can rebase up a large PR into multiple smaller PRs, then do so.
-
-
-
-
 
 Reviewing Pull Requests
 -----
@@ -158,6 +155,11 @@ If you, as a reviewer, are suspicious that the work in the PR has not been teste
 
 If, as a submitter, you know that this change is not fully tested, highlight this in the PR text, and talk to the reviewer.
 
+### Adhere to the code of conduct and provide context in PR reviews
+
+Effective collaboration can only happen if all parts treat themselves respectfully, phis repository adheres to [Github Community Code of Conduct](https://docs.github.com/en/site-policy/github-terms/github-community-code-of-conduct), please read the link as much information is condensed in it around empathy, clearness, and respectful communication among other important aspects for collaboration.
+
+[Conventional comments](https://conventionalcomments.org/) are also encouraged, text-driven communication often misses a lot of bits of information regarding the intent of each comment. More often than not, it help smoothing discussions between perfect strangers over reviews.
 
 
 ## Some interesting links
