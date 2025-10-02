@@ -157,7 +157,7 @@ If, as a submitter, you know that this change is not fully tested, highlight thi
 
 ### Adhere to the code of conduct and provide context in PR reviews
 
-Effective collaboration can only happen if all parts treat themselves respectfully, phis repository adheres to [Github Community Code of Conduct](https://docs.github.com/en/site-policy/github-terms/github-community-code-of-conduct), please read the link as much information is condensed in it around empathy, clearness, and respectful communication among other important aspects for collaboration.
+Effective collaboration can only happen if all parts treat themselves respectfully, this repository adheres to [Github Community Code of Conduct](https://docs.github.com/en/site-policy/github-terms/github-community-code-of-conduct). Please read the previous link, as much information is condensed in it around empathy, clearness, respectful communication and other important aspects for collaboration.
 
 [Conventional comments](https://conventionalcomments.org/) are also encouraged, text-driven communication often misses a lot of bits of information regarding the intent of each comment. More often than not, it help smoothing discussions between perfect strangers over reviews.
 
