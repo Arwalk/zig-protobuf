@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package RootImport;
+
+import "root_namespace.proto";
+
+message RootNamespaceImporter {
+  RootNamespaceMessage.Bar bar = 1;
+  RootOtherMessage top_level = 2;
+  RootNamespaceMessage.Nested nested = 3;
+  RootEnum enum_field = 4;
+}
