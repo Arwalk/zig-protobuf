@@ -62,7 +62,7 @@ pub fn getProtocDependency(b: *std.Build) !?*std.Build.Dependency {
     };
 
     const dependencyName = if (builtin.os.tag == .windows)
-        try std.mem.concat(b.allocator, u8, &.{"protoc-win64.zip"})
+        try std.mem.concat(b.allocator, u8, &.{"protoc-win64"})
     else if (os != null and arch != null)
         try std.mem.concat(b.allocator, u8, &.{ "protoc-", os.?, "-", arch.? })
     else
