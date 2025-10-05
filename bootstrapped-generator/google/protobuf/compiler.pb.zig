@@ -88,12 +88,14 @@ pub const CodeGeneratorRequest = struct {
     file_to_generate: std.ArrayListUnmanaged([]const u8) = .empty,
     parameter: ?[]const u8 = null,
     proto_file: std.ArrayListUnmanaged(google_protobuf.FileDescriptorProto) = .empty,
+    source_file_descriptors: std.ArrayListUnmanaged(google_protobuf.FileDescriptorProto) = .empty,
     compiler_version: ?Version = null,
 
     pub const _desc_table = .{
         .file_to_generate = fd(1, .{ .repeated = .{ .scalar = .string } }),
         .parameter = fd(2, .{ .scalar = .string }),
         .proto_file = fd(15, .{ .repeated = .submessage }),
+        .source_file_descriptors = fd(17, .{ .repeated = .submessage }),
         .compiler_version = fd(3, .submessage),
     };
 
@@ -164,17 +166,22 @@ pub const CodeGeneratorRequest = struct {
 pub const CodeGeneratorResponse = struct {
     @"error": ?[]const u8 = null,
     supported_features: ?u64 = null,
+    minimum_edition: ?i32 = null,
+    maximum_edition: ?i32 = null,
     file: std.ArrayListUnmanaged(CodeGeneratorResponse.File) = .empty,
 
     pub const _desc_table = .{
         .@"error" = fd(1, .{ .scalar = .string }),
         .supported_features = fd(2, .{ .scalar = .uint64 }),
+        .minimum_edition = fd(3, .{ .scalar = .int32 }),
+        .maximum_edition = fd(4, .{ .scalar = .int32 }),
         .file = fd(15, .{ .repeated = .submessage }),
     };
 
     pub const Feature = enum(i32) {
         FEATURE_NONE = 0,
         FEATURE_PROTO3_OPTIONAL = 1,
+        FEATURE_SUPPORTS_EDITIONS = 2,
         _,
     };
 

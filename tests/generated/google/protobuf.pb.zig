@@ -5,6 +5,29 @@ const std = @import("std");
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
 
+pub const Edition = enum(i32) {
+    EDITION_UNKNOWN = 0,
+    EDITION_LEGACY = 900,
+    EDITION_PROTO2 = 998,
+    EDITION_PROTO3 = 999,
+    EDITION_2023 = 1000,
+    EDITION_2024 = 1001,
+    EDITION_1_TEST_ONLY = 1,
+    EDITION_2_TEST_ONLY = 2,
+    EDITION_99997_TEST_ONLY = 99997,
+    EDITION_99998_TEST_ONLY = 99998,
+    EDITION_99999_TEST_ONLY = 99999,
+    EDITION_MAX = 2147483647,
+    _,
+};
+
+pub const SymbolVisibility = enum(i32) {
+    VISIBILITY_UNSET = 0,
+    VISIBILITY_LOCAL = 1,
+    VISIBILITY_EXPORT = 2,
+    _,
+};
+
 pub const FileDescriptorSet = struct {
     file: std.ArrayListUnmanaged(FileDescriptorProto) = .empty,
 
@@ -82,6 +105,7 @@ pub const FileDescriptorProto = struct {
     dependency: std.ArrayListUnmanaged([]const u8) = .empty,
     public_dependency: std.ArrayListUnmanaged(i32) = .empty,
     weak_dependency: std.ArrayListUnmanaged(i32) = .empty,
+    option_dependency: std.ArrayListUnmanaged([]const u8) = .empty,
     message_type: std.ArrayListUnmanaged(DescriptorProto) = .empty,
     enum_type: std.ArrayListUnmanaged(EnumDescriptorProto) = .empty,
     service: std.ArrayListUnmanaged(ServiceDescriptorProto) = .empty,
@@ -89,7 +113,7 @@ pub const FileDescriptorProto = struct {
     options: ?FileOptions = null,
     source_code_info: ?SourceCodeInfo = null,
     syntax: ?[]const u8 = null,
-    edition: ?[]const u8 = null,
+    edition: ?Edition = null,
 
     pub const _desc_table = .{
         .name = fd(1, .{ .scalar = .string }),
@@ -97,6 +121,7 @@ pub const FileDescriptorProto = struct {
         .dependency = fd(3, .{ .repeated = .{ .scalar = .string } }),
         .public_dependency = fd(10, .{ .repeated = .{ .scalar = .int32 } }),
         .weak_dependency = fd(11, .{ .repeated = .{ .scalar = .int32 } }),
+        .option_dependency = fd(15, .{ .repeated = .{ .scalar = .string } }),
         .message_type = fd(4, .{ .repeated = .submessage }),
         .enum_type = fd(5, .{ .repeated = .submessage }),
         .service = fd(6, .{ .repeated = .submessage }),
@@ -104,7 +129,7 @@ pub const FileDescriptorProto = struct {
         .options = fd(8, .submessage),
         .source_code_info = fd(9, .submessage),
         .syntax = fd(12, .{ .scalar = .string }),
-        .edition = fd(13, .{ .scalar = .string }),
+        .edition = fd(14, .@"enum"),
     };
 
     /// Encodes the message to the writer
@@ -182,6 +207,7 @@ pub const DescriptorProto = struct {
     options: ?MessageOptions = null,
     reserved_range: std.ArrayListUnmanaged(DescriptorProto.ReservedRange) = .empty,
     reserved_name: std.ArrayListUnmanaged([]const u8) = .empty,
+    visibility: ?SymbolVisibility = null,
 
     pub const _desc_table = .{
         .name = fd(1, .{ .scalar = .string }),
@@ -194,6 +220,7 @@ pub const DescriptorProto = struct {
         .options = fd(7, .submessage),
         .reserved_range = fd(9, .{ .repeated = .submessage }),
         .reserved_name = fd(10, .{ .repeated = .{ .scalar = .string } }),
+        .visibility = fd(11, .@"enum"),
     };
 
     pub const ExtensionRange = struct {
@@ -411,11 +438,13 @@ pub const DescriptorProto = struct {
 pub const ExtensionRangeOptions = struct {
     uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
     declaration: std.ArrayListUnmanaged(ExtensionRangeOptions.Declaration) = .empty,
+    features: ?FeatureSet = null,
     verification: ?ExtensionRangeOptions.VerificationState = .UNVERIFIED,
 
     pub const _desc_table = .{
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
         .declaration = fd(2, .{ .repeated = .submessage }),
+        .features = fd(50, .submessage),
         .verification = fd(3, .@"enum"),
     };
 
@@ -429,7 +458,6 @@ pub const ExtensionRangeOptions = struct {
         number: ?i32 = null,
         full_name: ?[]const u8 = null,
         type: ?[]const u8 = null,
-        is_repeated: ?bool = null,
         reserved: ?bool = null,
         repeated: ?bool = null,
 
@@ -437,7 +465,6 @@ pub const ExtensionRangeOptions = struct {
             .number = fd(1, .{ .scalar = .int32 }),
             .full_name = fd(2, .{ .scalar = .string }),
             .type = fd(3, .{ .scalar = .string }),
-            .is_repeated = fd(4, .{ .scalar = .bool }),
             .reserved = fd(5, .{ .scalar = .bool }),
             .repeated = fd(6, .{ .scalar = .bool }),
         };
@@ -621,8 +648,8 @@ pub const FieldDescriptorProto = struct {
 
     pub const Label = enum(i32) {
         LABEL_OPTIONAL = 1,
-        LABEL_REQUIRED = 2,
         LABEL_REPEATED = 3,
+        LABEL_REQUIRED = 2,
         _,
     };
 
@@ -769,6 +796,7 @@ pub const EnumDescriptorProto = struct {
     options: ?EnumOptions = null,
     reserved_range: std.ArrayListUnmanaged(EnumDescriptorProto.EnumReservedRange) = .empty,
     reserved_name: std.ArrayListUnmanaged([]const u8) = .empty,
+    visibility: ?SymbolVisibility = null,
 
     pub const _desc_table = .{
         .name = fd(1, .{ .scalar = .string }),
@@ -776,6 +804,7 @@ pub const EnumDescriptorProto = struct {
         .options = fd(3, .submessage),
         .reserved_range = fd(4, .{ .repeated = .submessage }),
         .reserved_name = fd(5, .{ .repeated = .{ .scalar = .string } }),
+        .visibility = fd(6, .@"enum"),
     };
 
     pub const EnumReservedRange = struct {
@@ -1157,7 +1186,6 @@ pub const FileOptions = struct {
     cc_generic_services: ?bool = false,
     java_generic_services: ?bool = false,
     py_generic_services: ?bool = false,
-    php_generic_services: ?bool = false,
     deprecated: ?bool = false,
     cc_enable_arenas: ?bool = true,
     objc_class_prefix: ?[]const u8 = null,
@@ -1167,6 +1195,7 @@ pub const FileOptions = struct {
     php_namespace: ?[]const u8 = null,
     php_metadata_namespace: ?[]const u8 = null,
     ruby_package: ?[]const u8 = null,
+    features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
@@ -1180,7 +1209,6 @@ pub const FileOptions = struct {
         .cc_generic_services = fd(16, .{ .scalar = .bool }),
         .java_generic_services = fd(17, .{ .scalar = .bool }),
         .py_generic_services = fd(18, .{ .scalar = .bool }),
-        .php_generic_services = fd(42, .{ .scalar = .bool }),
         .deprecated = fd(23, .{ .scalar = .bool }),
         .cc_enable_arenas = fd(31, .{ .scalar = .bool }),
         .objc_class_prefix = fd(36, .{ .scalar = .string }),
@@ -1190,6 +1218,7 @@ pub const FileOptions = struct {
         .php_namespace = fd(41, .{ .scalar = .string }),
         .php_metadata_namespace = fd(44, .{ .scalar = .string }),
         .ruby_package = fd(45, .{ .scalar = .string }),
+        .features = fd(50, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
@@ -1270,6 +1299,7 @@ pub const MessageOptions = struct {
     deprecated: ?bool = false,
     map_entry: ?bool = null,
     deprecated_legacy_json_field_conflicts: ?bool = null,
+    features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
@@ -1278,6 +1308,7 @@ pub const MessageOptions = struct {
         .deprecated = fd(3, .{ .scalar = .bool }),
         .map_entry = fd(7, .{ .scalar = .bool }),
         .deprecated_legacy_json_field_conflicts = fd(11, .{ .scalar = .bool }),
+        .features = fd(12, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
@@ -1355,8 +1386,10 @@ pub const FieldOptions = struct {
     weak: ?bool = false,
     debug_redact: ?bool = false,
     retention: ?FieldOptions.OptionRetention = null,
-    target: ?FieldOptions.OptionTargetType = null,
     targets: std.ArrayListUnmanaged(FieldOptions.OptionTargetType) = .empty,
+    edition_defaults: std.ArrayListUnmanaged(FieldOptions.EditionDefault) = .empty,
+    features: ?FeatureSet = null,
+    feature_support: ?FieldOptions.FeatureSupport = null,
     uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
@@ -1369,8 +1402,10 @@ pub const FieldOptions = struct {
         .weak = fd(10, .{ .scalar = .bool }),
         .debug_redact = fd(16, .{ .scalar = .bool }),
         .retention = fd(17, .@"enum"),
-        .target = fd(18, .@"enum"),
         .targets = fd(19, .{ .repeated = .@"enum" }),
+        .edition_defaults = fd(20, .{ .repeated = .submessage }),
+        .features = fd(21, .submessage),
+        .feature_support = fd(22, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
@@ -1407,6 +1442,156 @@ pub const FieldOptions = struct {
         TARGET_TYPE_SERVICE = 8,
         TARGET_TYPE_METHOD = 9,
         _,
+    };
+
+    pub const EditionDefault = struct {
+        edition: ?Edition = null,
+        value: ?[]const u8 = null,
+
+        pub const _desc_table = .{
+            .edition = fd(3, .@"enum"),
+            .value = fd(2, .{ .scalar = .string }),
+        };
+
+        /// Encodes the message to the writer
+        /// The allocator is used to generate submessages internally.
+        /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
+        pub fn encode(
+            self: @This(),
+            writer: *std.Io.Writer,
+            allocator: std.mem.Allocator,
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
+            return protobuf.encode(writer, allocator, self);
+        }
+
+        /// Decodes the message from the bytes read from the reader.
+        pub fn decode(
+            reader: *std.Io.Reader,
+            allocator: std.mem.Allocator,
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
+            return protobuf.decode(@This(), reader, allocator);
+        }
+
+        /// Deinitializes and frees the memory associated with the message.
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+            return protobuf.deinit(allocator, self);
+        }
+
+        /// Duplicates the message.
+        pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
+            return protobuf.dupe(@This(), self, allocator);
+        }
+
+        /// Decodes the message from the JSON string.
+        pub fn jsonDecode(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decode(@This(), input, options, allocator);
+        }
+
+        /// Encodes the message to a JSON string.
+        pub fn jsonEncode(
+            self: @This(),
+            options: std.json.Stringify.Options,
+            allocator: std.mem.Allocator,
+        ) ![]const u8 {
+            return protobuf.json.encode(self, options, allocator);
+        }
+
+        /// This method is used by std.json
+        /// internally for deserialization. DO NOT RENAME!
+        pub fn jsonParse(
+            allocator: std.mem.Allocator,
+            source: anytype,
+            options: std.json.ParseOptions,
+        ) !@This() {
+            return protobuf.json.parse(@This(), allocator, source, options);
+        }
+
+        /// This method is used by std.json
+        /// internally for serialization. DO NOT RENAME!
+        pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
+            return protobuf.json.stringify(@This(), self, jws);
+        }
+    };
+
+    pub const FeatureSupport = struct {
+        edition_introduced: ?Edition = null,
+        edition_deprecated: ?Edition = null,
+        deprecation_warning: ?[]const u8 = null,
+        edition_removed: ?Edition = null,
+
+        pub const _desc_table = .{
+            .edition_introduced = fd(1, .@"enum"),
+            .edition_deprecated = fd(2, .@"enum"),
+            .deprecation_warning = fd(3, .{ .scalar = .string }),
+            .edition_removed = fd(4, .@"enum"),
+        };
+
+        /// Encodes the message to the writer
+        /// The allocator is used to generate submessages internally.
+        /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
+        pub fn encode(
+            self: @This(),
+            writer: *std.Io.Writer,
+            allocator: std.mem.Allocator,
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
+            return protobuf.encode(writer, allocator, self);
+        }
+
+        /// Decodes the message from the bytes read from the reader.
+        pub fn decode(
+            reader: *std.Io.Reader,
+            allocator: std.mem.Allocator,
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
+            return protobuf.decode(@This(), reader, allocator);
+        }
+
+        /// Deinitializes and frees the memory associated with the message.
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+            return protobuf.deinit(allocator, self);
+        }
+
+        /// Duplicates the message.
+        pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
+            return protobuf.dupe(@This(), self, allocator);
+        }
+
+        /// Decodes the message from the JSON string.
+        pub fn jsonDecode(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decode(@This(), input, options, allocator);
+        }
+
+        /// Encodes the message to a JSON string.
+        pub fn jsonEncode(
+            self: @This(),
+            options: std.json.Stringify.Options,
+            allocator: std.mem.Allocator,
+        ) ![]const u8 {
+            return protobuf.json.encode(self, options, allocator);
+        }
+
+        /// This method is used by std.json
+        /// internally for deserialization. DO NOT RENAME!
+        pub fn jsonParse(
+            allocator: std.mem.Allocator,
+            source: anytype,
+            options: std.json.ParseOptions,
+        ) !@This() {
+            return protobuf.json.parse(@This(), allocator, source, options);
+        }
+
+        /// This method is used by std.json
+        /// internally for serialization. DO NOT RENAME!
+        pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
+            return protobuf.json.stringify(@This(), self, jws);
+        }
     };
 
     /// Encodes the message to the writer
@@ -1474,9 +1659,11 @@ pub const FieldOptions = struct {
 };
 
 pub const OneofOptions = struct {
+    features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
+        .features = fd(1, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
@@ -1548,12 +1735,14 @@ pub const EnumOptions = struct {
     allow_alias: ?bool = null,
     deprecated: ?bool = false,
     deprecated_legacy_json_field_conflicts: ?bool = null,
+    features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .allow_alias = fd(2, .{ .scalar = .bool }),
         .deprecated = fd(3, .{ .scalar = .bool }),
         .deprecated_legacy_json_field_conflicts = fd(6, .{ .scalar = .bool }),
+        .features = fd(7, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
@@ -1623,10 +1812,16 @@ pub const EnumOptions = struct {
 
 pub const EnumValueOptions = struct {
     deprecated: ?bool = false,
+    features: ?FeatureSet = null,
+    debug_redact: ?bool = false,
+    feature_support: ?FieldOptions.FeatureSupport = null,
     uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .deprecated = fd(1, .{ .scalar = .bool }),
+        .features = fd(2, .submessage),
+        .debug_redact = fd(3, .{ .scalar = .bool }),
+        .feature_support = fd(4, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
@@ -1695,10 +1890,12 @@ pub const EnumValueOptions = struct {
 };
 
 pub const ServiceOptions = struct {
+    features: ?FeatureSet = null,
     deprecated: ?bool = false,
     uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
+        .features = fd(34, .submessage),
         .deprecated = fd(33, .{ .scalar = .bool }),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
@@ -1770,11 +1967,13 @@ pub const ServiceOptions = struct {
 pub const MethodOptions = struct {
     deprecated: ?bool = false,
     idempotency_level: ?MethodOptions.IdempotencyLevel = .IDEMPOTENCY_UNKNOWN,
+    features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .deprecated = fd(33, .{ .scalar = .bool }),
         .idempotency_level = fd(34, .@"enum"),
+        .features = fd(35, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
@@ -1875,6 +2074,367 @@ pub const UninterpretedOption = struct {
         pub const _desc_table = .{
             .name_part = fd(1, .{ .scalar = .string }),
             .is_extension = fd(2, .{ .scalar = .bool }),
+        };
+
+        /// Encodes the message to the writer
+        /// The allocator is used to generate submessages internally.
+        /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
+        pub fn encode(
+            self: @This(),
+            writer: *std.Io.Writer,
+            allocator: std.mem.Allocator,
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
+            return protobuf.encode(writer, allocator, self);
+        }
+
+        /// Decodes the message from the bytes read from the reader.
+        pub fn decode(
+            reader: *std.Io.Reader,
+            allocator: std.mem.Allocator,
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
+            return protobuf.decode(@This(), reader, allocator);
+        }
+
+        /// Deinitializes and frees the memory associated with the message.
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+            return protobuf.deinit(allocator, self);
+        }
+
+        /// Duplicates the message.
+        pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
+            return protobuf.dupe(@This(), self, allocator);
+        }
+
+        /// Decodes the message from the JSON string.
+        pub fn jsonDecode(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decode(@This(), input, options, allocator);
+        }
+
+        /// Encodes the message to a JSON string.
+        pub fn jsonEncode(
+            self: @This(),
+            options: std.json.Stringify.Options,
+            allocator: std.mem.Allocator,
+        ) ![]const u8 {
+            return protobuf.json.encode(self, options, allocator);
+        }
+
+        /// This method is used by std.json
+        /// internally for deserialization. DO NOT RENAME!
+        pub fn jsonParse(
+            allocator: std.mem.Allocator,
+            source: anytype,
+            options: std.json.ParseOptions,
+        ) !@This() {
+            return protobuf.json.parse(@This(), allocator, source, options);
+        }
+
+        /// This method is used by std.json
+        /// internally for serialization. DO NOT RENAME!
+        pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
+            return protobuf.json.stringify(@This(), self, jws);
+        }
+    };
+
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
+    pub fn encode(
+        self: @This(),
+        writer: *std.Io.Writer,
+        allocator: std.mem.Allocator,
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
+        return protobuf.encode(writer, allocator, self);
+    }
+
+    /// Decodes the message from the bytes read from the reader.
+    pub fn decode(
+        reader: *std.Io.Reader,
+        allocator: std.mem.Allocator,
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
+        return protobuf.decode(@This(), reader, allocator);
+    }
+
+    /// Deinitializes and frees the memory associated with the message.
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+        return protobuf.deinit(allocator, self);
+    }
+
+    /// Duplicates the message.
+    pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
+        return protobuf.dupe(@This(), self, allocator);
+    }
+
+    /// Decodes the message from the JSON string.
+    pub fn jsonDecode(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Encodes the message to a JSON string.
+    pub fn jsonEncode(
+        self: @This(),
+        options: std.json.Stringify.Options,
+        allocator: std.mem.Allocator,
+    ) ![]const u8 {
+        return protobuf.json.encode(self, options, allocator);
+    }
+
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
+    pub fn jsonParse(
+        allocator: std.mem.Allocator,
+        source: anytype,
+        options: std.json.ParseOptions,
+    ) !@This() {
+        return protobuf.json.parse(@This(), allocator, source, options);
+    }
+
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
+    pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
+        return protobuf.json.stringify(@This(), self, jws);
+    }
+};
+
+pub const FeatureSet = struct {
+    field_presence: ?FeatureSet.FieldPresence = null,
+    enum_type: ?FeatureSet.EnumType = null,
+    repeated_field_encoding: ?FeatureSet.RepeatedFieldEncoding = null,
+    utf8_validation: ?FeatureSet.Utf8Validation = null,
+    message_encoding: ?FeatureSet.MessageEncoding = null,
+    json_format: ?FeatureSet.JsonFormat = null,
+    enforce_naming_style: ?FeatureSet.EnforceNamingStyle = null,
+    default_symbol_visibility: ?FeatureSet.VisibilityFeature.DefaultSymbolVisibility = null,
+
+    pub const _desc_table = .{
+        .field_presence = fd(1, .@"enum"),
+        .enum_type = fd(2, .@"enum"),
+        .repeated_field_encoding = fd(3, .@"enum"),
+        .utf8_validation = fd(4, .@"enum"),
+        .message_encoding = fd(5, .@"enum"),
+        .json_format = fd(6, .@"enum"),
+        .enforce_naming_style = fd(7, .@"enum"),
+        .default_symbol_visibility = fd(8, .@"enum"),
+    };
+
+    pub const FieldPresence = enum(i32) {
+        FIELD_PRESENCE_UNKNOWN = 0,
+        EXPLICIT = 1,
+        IMPLICIT = 2,
+        LEGACY_REQUIRED = 3,
+        _,
+    };
+
+    pub const EnumType = enum(i32) {
+        ENUM_TYPE_UNKNOWN = 0,
+        OPEN = 1,
+        CLOSED = 2,
+        _,
+    };
+
+    pub const RepeatedFieldEncoding = enum(i32) {
+        REPEATED_FIELD_ENCODING_UNKNOWN = 0,
+        PACKED = 1,
+        EXPANDED = 2,
+        _,
+    };
+
+    pub const Utf8Validation = enum(i32) {
+        UTF8_VALIDATION_UNKNOWN = 0,
+        VERIFY = 2,
+        NONE = 3,
+        _,
+    };
+
+    pub const MessageEncoding = enum(i32) {
+        MESSAGE_ENCODING_UNKNOWN = 0,
+        LENGTH_PREFIXED = 1,
+        DELIMITED = 2,
+        _,
+    };
+
+    pub const JsonFormat = enum(i32) {
+        JSON_FORMAT_UNKNOWN = 0,
+        ALLOW = 1,
+        LEGACY_BEST_EFFORT = 2,
+        _,
+    };
+
+    pub const EnforceNamingStyle = enum(i32) {
+        ENFORCE_NAMING_STYLE_UNKNOWN = 0,
+        STYLE2024 = 1,
+        STYLE_LEGACY = 2,
+        _,
+    };
+
+    pub const VisibilityFeature = struct {
+        pub const _desc_table = .{};
+
+        pub const DefaultSymbolVisibility = enum(i32) {
+            DEFAULT_SYMBOL_VISIBILITY_UNKNOWN = 0,
+            EXPORT_ALL = 1,
+            EXPORT_TOP_LEVEL = 2,
+            LOCAL_ALL = 3,
+            STRICT = 4,
+            _,
+        };
+
+        /// Encodes the message to the writer
+        /// The allocator is used to generate submessages internally.
+        /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
+        pub fn encode(
+            self: @This(),
+            writer: *std.Io.Writer,
+            allocator: std.mem.Allocator,
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
+            return protobuf.encode(writer, allocator, self);
+        }
+
+        /// Decodes the message from the bytes read from the reader.
+        pub fn decode(
+            reader: *std.Io.Reader,
+            allocator: std.mem.Allocator,
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
+            return protobuf.decode(@This(), reader, allocator);
+        }
+
+        /// Deinitializes and frees the memory associated with the message.
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+            return protobuf.deinit(allocator, self);
+        }
+
+        /// Duplicates the message.
+        pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
+            return protobuf.dupe(@This(), self, allocator);
+        }
+
+        /// Decodes the message from the JSON string.
+        pub fn jsonDecode(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decode(@This(), input, options, allocator);
+        }
+
+        /// Encodes the message to a JSON string.
+        pub fn jsonEncode(
+            self: @This(),
+            options: std.json.Stringify.Options,
+            allocator: std.mem.Allocator,
+        ) ![]const u8 {
+            return protobuf.json.encode(self, options, allocator);
+        }
+
+        /// This method is used by std.json
+        /// internally for deserialization. DO NOT RENAME!
+        pub fn jsonParse(
+            allocator: std.mem.Allocator,
+            source: anytype,
+            options: std.json.ParseOptions,
+        ) !@This() {
+            return protobuf.json.parse(@This(), allocator, source, options);
+        }
+
+        /// This method is used by std.json
+        /// internally for serialization. DO NOT RENAME!
+        pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
+            return protobuf.json.stringify(@This(), self, jws);
+        }
+    };
+
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
+    pub fn encode(
+        self: @This(),
+        writer: *std.Io.Writer,
+        allocator: std.mem.Allocator,
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
+        return protobuf.encode(writer, allocator, self);
+    }
+
+    /// Decodes the message from the bytes read from the reader.
+    pub fn decode(
+        reader: *std.Io.Reader,
+        allocator: std.mem.Allocator,
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
+        return protobuf.decode(@This(), reader, allocator);
+    }
+
+    /// Deinitializes and frees the memory associated with the message.
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+        return protobuf.deinit(allocator, self);
+    }
+
+    /// Duplicates the message.
+    pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
+        return protobuf.dupe(@This(), self, allocator);
+    }
+
+    /// Decodes the message from the JSON string.
+    pub fn jsonDecode(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Encodes the message to a JSON string.
+    pub fn jsonEncode(
+        self: @This(),
+        options: std.json.Stringify.Options,
+        allocator: std.mem.Allocator,
+    ) ![]const u8 {
+        return protobuf.json.encode(self, options, allocator);
+    }
+
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
+    pub fn jsonParse(
+        allocator: std.mem.Allocator,
+        source: anytype,
+        options: std.json.ParseOptions,
+    ) !@This() {
+        return protobuf.json.parse(@This(), allocator, source, options);
+    }
+
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
+    pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
+        return protobuf.json.stringify(@This(), self, jws);
+    }
+};
+
+pub const FeatureSetDefaults = struct {
+    defaults: std.ArrayListUnmanaged(FeatureSetDefaults.FeatureSetEditionDefault) = .empty,
+    minimum_edition: ?Edition = null,
+    maximum_edition: ?Edition = null,
+
+    pub const _desc_table = .{
+        .defaults = fd(1, .{ .repeated = .submessage }),
+        .minimum_edition = fd(4, .@"enum"),
+        .maximum_edition = fd(5, .@"enum"),
+    };
+
+    pub const FeatureSetEditionDefault = struct {
+        edition: ?Edition = null,
+        overridable_features: ?FeatureSet = null,
+        fixed_features: ?FeatureSet = null,
+
+        pub const _desc_table = .{
+            .edition = fd(3, .@"enum"),
+            .overridable_features = fd(4, .submessage),
+            .fixed_features = fd(5, .submessage),
         };
 
         /// Encodes the message to the writer
