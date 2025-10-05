@@ -42,6 +42,11 @@
             .hash = "N-V-__8AAAOIwgCuuT3IhPlAW6erD8SspcE7iVKY4nbJWLV6",
             .lazy = true,
         },
+        .@"protoc-linux-s390" = .{
+            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.1/protoc-32.1-linux-s390_64.zip",
+            .hash = "N-V-__8AADKo3ADb6qHynR1iiBhHFQcaoAE0qpLZuh3GtoT2",
+            .lazy = true,
+        },
     },
     .paths = .{
         "build.zig",
