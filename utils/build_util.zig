@@ -77,10 +77,10 @@ pub fn getProtocDependency(b: *std.Build) !*std.Build.Dependency {
 
 pub fn getProtocBin(b: *std.Build) ![]const u8 {
     const dep = try getProtocDependency(b);
-    
+
     if (builtin.os.tag == .windows)
         return dep.path("bin/protoc.exe").getPath(b);
-        
+
     return dep.path("bin/protoc").getPath(b);
 }
 
