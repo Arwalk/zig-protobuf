@@ -1,43 +1,49 @@
 .{
     .name = .protobuf,
-    // This is a [Semantic Version](https://semver.org/).
-    // In a future version of Zig it will be used for package deduplication.
-    .version = "2.0.0",
+    .version = "3.0.0",
 
     .fingerprint = 0x99fac5be6a36efd1,
 
-    // This field is optional.
-    // This is currently advisory only; Zig does not yet do anything
-    // with this value.
-    .minimum_zig_version = "0.14.0",
+    .minimum_zig_version = "0.15.1",
 
-    // This field is optional.
-    // Each dependency must either provide a `url` and `hash`, or a `path`.
-    // `zig build --fetch` can be used to fetch all dependencies of a package, recursively.
-    // Once all dependencies are fetched, `zig build` no longer requires
-    // internet connectivity.
-    //.dependencies = .{
-    //},
-
-    // Specifies the set of files and directories that are included in this package.
-    // Only files and directories listed here are included in the `hash` that
-    // is computed for this package.
-    // Paths are relative to the build root. Use the empty string (`""`) to refer to
-    // the build root itself.
-    // A directory listed here means that all files within, recursively, are included.
-    .dependencies = .{},
+    .dependencies = .{
+        .@"protoc-linux-64" = .{
+            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.1/protoc-32.1-win64.zip",
+            .hash = "N-V-__8AAAOIwgCuuT3IhPlAW6erD8SspcE7iVKY4nbJWLV6",
+            .lazy = true,
+        },
+        .@"protoc-linux-x86_64" = .{
+            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.1/protoc-32.1-linux-x86_64.zip",
+            .hash = "N-V-__8AAGKbngAmNuaBMSXq_WgmQi6N8WVWVKp0moFSTvoJ",
+            .lazy = true,
+        },
+        .@"protoc-linux-x86_32" = .{
+            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.1/protoc-32.1-linux-x86_32.zip",
+            .hash = "N-V-__8AAHpvrAAEcEurDCWYQt6jTJSozCfLDwkGTptKEyJ7",
+            .lazy = true,
+        },
+        .@"protoc-linux-aarch_64" = .{
+            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.1/protoc-32.1-linux-aarch_64.zip",
+            .hash = "N-V-__8AAJKMngA8y82sENkRg-JF100BtRa7GQxoBIfU3c3_",
+            .lazy = true,
+        },
+        .@"protoc-osx-aarch_64" = .{
+            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.1/protoc-32.1-osx-aarch_64.zip",
+            .hash = "N-V-__8AANrukAA2AHP6xuzchs_iwsyg1UYhIFhpUR6R0x7K",
+            .lazy = true,
+        },
+        .@"protoc-osx-x86_64" = .{
+            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.1/protoc-32.1-osx-x86_64.zip",
+            .hash = "N-V-__8AAFoXkgBrHnNjViSdp84aL1ciwtWKZdYHK7dSSppd",
+            .lazy = true,
+        },
+        .@"protoc-win64" = .{
+            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.1/protoc-32.1-win64.zip",
+            .hash = "N-V-__8AAAOIwgCuuT3IhPlAW6erD8SspcE7iVKY4nbJWLV6",
+            .lazy = true,
+        },
+    },
     .paths = .{
-        // This makes *all* files, recursively, included in this package. It is generally
-        // better to explicitly list the files and directories instead, to insure that
-        // fetching from tarballs, file system paths, and version control all result
-        // in the same contents hash.
-        "",
-        // For example...
-        //"build.zig",
-        //"build.zig.zon",
-        //"src",
-        //"LICENSE",
-        //"README.md",
         "build.zig",
         "build.zig.zon",
         "utils/build_util.zig",

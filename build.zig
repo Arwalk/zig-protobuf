@@ -155,15 +155,16 @@ pub fn build(b: *std.Build) !void {
         test_step.dependOn(&run_main_tests.step);
     }
 
-    const wd = try build_util.getProtocInstallDir(std.heap.page_allocator, PROTOC_VERSION);
+    const protoc = try build_util.getProtocDependency(b);
+    const include = protoc.path("include").getPath(b);
 
     const bootstrap = b.step("bootstrap", "run the generator over its own sources");
 
     const bootstrapConversion = RunProtocStep.create(b, b, target, .{
         .destination_directory = b.path("bootstrapped-generator"),
         .source_files = &.{
-            b.pathJoin(&.{ wd, "include/google/protobuf/compiler/plugin.proto" }),
-            b.pathJoin(&.{ wd, "include/google/protobuf/descriptor.proto" }),
+            b.pathJoin(&.{ include, "google/protobuf/compiler/plugin.proto" }),
+            b.pathJoin(&.{ include, "google/protobuf/descriptor.proto" }),
         },
         .include_directories = &.{},
     });
