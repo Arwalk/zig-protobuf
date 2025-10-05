@@ -108,7 +108,6 @@ pub const RunProtocStep = struct {
 
     pub fn create(
         owner: *std.Build,
-        dependency_builder: *std.Build,
         target: std.Build.ResolvedTarget,
         options: Options,
     ) *RunProtocStep {
@@ -123,7 +122,7 @@ pub const RunProtocStep = struct {
             .source_files = owner.dupeStrings(options.source_files),
             .include_directories = owner.dupeStrings(options.include_directories),
             .destination_directory = options.destination_directory.dupe(owner),
-            .generator = buildGenerator(dependency_builder, .{ .target = target }),
+            .generator = buildGenerator(owner, .{ .target = target }),
         };
 
         self.step.dependOn(&self.generator.step);
