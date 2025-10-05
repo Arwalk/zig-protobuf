@@ -155,8 +155,7 @@ pub fn build(b: *std.Build) !void {
         test_step.dependOn(&run_main_tests.step);
     }
 
-    const protoc = try build_util.getProtocDependency(b);
-    const include = protoc.path("include").getPath(b);
+    const include = if (try build_util.getProtocDependency(b)) |protoc| protoc.path("include").getPath(b) else std.fs.path.dirname(@src().file) orelse ".";
 
     const bootstrap = b.step("bootstrap", "run the generator over its own sources");
 

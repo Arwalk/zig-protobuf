@@ -29,22 +29,23 @@ pub fn isEnvVarTruthy(allocator: std.mem.Allocator, name: []const u8) bool {
 
 pub fn ensureProtocBinaryDownloaded(
     b: *std.Build,
-) ![]const u8 {
-    const executable_path = try getProtocBin(b);
+) !?[]const u8 {
+    if (try getProtocBin(b)) |executable_path| {
+        if (fileExists(executable_path)) {
+            return executable_path;
+        }
 
-    if (fileExists(executable_path)) {
+        if (!fileExists(executable_path)) {
+            std.log.err("zig-protobuf: file not found: {s}", .{executable_path});
+            std.process.exit(1);
+        }
+
         return executable_path;
     }
-
-    if (!fileExists(executable_path)) {
-        std.log.err("zig-protobuf: file not found: {s}", .{executable_path});
-        std.process.exit(1);
-    }
-
-    return executable_path;
+    return null;
 }
 
-pub fn getProtocDependency(b: *std.Build) !*std.Build.Dependency {
+pub fn getProtocDependency(b: *std.Build) !?*std.Build.Dependency {
     const os: ?[]const u8 = switch (builtin.os.tag) {
         .macos => "osx",
         .linux => "linux",
@@ -72,16 +73,17 @@ pub fn getProtocDependency(b: *std.Build) !*std.Build.Dependency {
         return dep;
     }
 
-    @panic("Platform not supported");
+    return null;
 }
 
-pub fn getProtocBin(b: *std.Build) ![]const u8 {
-    const dep = try getProtocDependency(b);
+pub fn getProtocBin(b: *std.Build) !?[]const u8 {
+    if (try getProtocDependency(b)) |dep| {
+        if (builtin.os.tag == .windows)
+            return dep.path("bin/protoc.exe").getPath(b);
 
-    if (builtin.os.tag == .windows)
-        return dep.path("bin/protoc.exe").getPath(b);
-
-    return dep.path("bin/protoc").getPath(b);
+        return dep.path("bin/protoc").getPath(b);
+    }
+    return null;
 }
 
 pub const RunProtocStep = struct {
@@ -165,46 +167,47 @@ pub const RunProtocStep = struct {
         { // run protoc
             var argv: std.ArrayList([]const u8) = .empty;
 
-            const protoc_path = try ensureProtocBinaryDownloaded(b);
-            try argv.append(b.allocator, protoc_path);
+            if (try ensureProtocBinaryDownloaded(b)) |protoc_path| {
+                try argv.append(b.allocator, protoc_path);
 
-            try argv.append(b.allocator, try std.mem.concat(
-                b.allocator,
-                u8,
-                &.{
-                    "--plugin=protoc-gen-zig=",
-                    self.generator.getEmittedBin().getPath(b),
-                },
-            ));
-
-            try argv.append(b.allocator, try std.mem.concat(
-                b.allocator,
-                u8,
-                &.{ "--zig_out=", absolute_dest_dir },
-            ));
-            if (!dirExists(absolute_dest_dir)) {
-                try std.fs.makeDirAbsolute(absolute_dest_dir);
-            }
-
-            for (self.include_directories) |it| {
-                try argv.append(
+                try argv.append(b.allocator, try std.mem.concat(
                     b.allocator,
-                    try std.mem.concat(b.allocator, u8, &.{ "-I", it }),
-                );
-            }
-            for (self.source_files) |it| {
-                try argv.append(b.allocator, it);
-            }
+                    u8,
+                    &.{
+                        "--plugin=protoc-gen-zig=",
+                        self.generator.getEmittedBin().getPath(b),
+                    },
+                ));
 
-            if (self.verbose) {
-                std.debug.print("Running protoc:", .{});
-                for (argv.items) |it| {
-                    std.debug.print(" {s}", .{it});
+                try argv.append(b.allocator, try std.mem.concat(
+                    b.allocator,
+                    u8,
+                    &.{ "--zig_out=", absolute_dest_dir },
+                ));
+                if (!dirExists(absolute_dest_dir)) {
+                    try std.fs.makeDirAbsolute(absolute_dest_dir);
                 }
-                std.debug.print("\n", .{});
-            }
 
-            _ = try step.evalChildProcess(argv.items);
+                for (self.include_directories) |it| {
+                    try argv.append(
+                        b.allocator,
+                        try std.mem.concat(b.allocator, u8, &.{ "-I", it }),
+                    );
+                }
+                for (self.source_files) |it| {
+                    try argv.append(b.allocator, it);
+                }
+
+                if (self.verbose) {
+                    std.debug.print("Running protoc:", .{});
+                    for (argv.items) |it| {
+                        std.debug.print(" {s}", .{it});
+                    }
+                    std.debug.print("\n", .{});
+                }
+
+                _ = try step.evalChildProcess(argv.items);
+            }
         }
 
         { // run zig fmt <destination>
