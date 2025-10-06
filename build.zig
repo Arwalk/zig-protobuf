@@ -124,6 +124,14 @@ pub fn build(b: *std.Build) !void {
                 .optimize = optimize,
             }),
         }),
+        b.addTest(.{
+            .name = "Root Namespace",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/root_namespace.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        }),
     };
 
     const convertStep = RunProtocStep.create(b, target, .{
