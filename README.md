@@ -1,24 +1,15 @@
 # zig-protobuf
 
--------
+<img src="logo.svg" width="50%">
 
-## Welcome!
-
-This is an implementation of google Protocol Buffers version 3 in Zig.
-
-Protocol Buffers is a serialization protocol so systems, from any programming language or platform, can exchange data reliably.
-
-Protobuf's strength lies in a generic codec paired with user-defined "messages" that will define the true nature of the data encoded.
-
-Messages are usually mapped to a native language's structure/class definition thanks to a language-specific generator associated with an implementation.
-
-Zig's compile-time evaluation becomes extremely strong and useful in this context: because the structure (a message) has to be known beforehand, the generic codec can leverage informations, at compile time, of the message and it's nature. This allows optimizations that are hard to get as easily in any other language, as Zig can mix compile-time informations with runtime-only data to optimize the encoding and decoding code paths.
 
 ## State of the implementation
 
 This repository, so far, only aims at implementing [protocol buffers version 3](https://developers.google.com/protocol-buffers/docs/proto3#simple).
 
-This project is currently able to handle all scalar types for encoding, decoding, and generation through the plugin.
+This project is mature enough to be used in production.
+
+json encoding/decoding is considered a beta feature.
 
 ## Branches
 
@@ -79,6 +70,16 @@ pub fn build(b: *std.Build) !void {
 }
 ```
 
-If you're really bored, you can buy me a coffe here.
+-------
+
+The zig-protobuf logo is licensed under the Attribution 4.0 International (CC BY 4.0).
+
+The logo is inspired by the [official mascots](https://github.com/ziglang/logo?tab=readme-ov-file#official-mascots) of the Zig programming language, themselves licensed under the Attribution 4.0 International (CC BY 4.0)
+
+Original art by vivisector.
+
+-------
+
+If you're really bored, you can buy me a coffee here.
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/N4N7VMS4F)
