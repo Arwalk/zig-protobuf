@@ -233,6 +233,7 @@ pub const Simple1 = struct {
     }
 };
 
+/// A message that differs from Simple1 only by name
 pub const Simple2 = struct {
     a_string: []const u8,
     a_repeated_string: std.ArrayListUnmanaged([]const u8) = .empty,
