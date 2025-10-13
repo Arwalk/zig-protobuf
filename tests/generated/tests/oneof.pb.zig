@@ -333,6 +333,8 @@ pub const Success = struct {
     }
 };
 
+/// Error caused by S3GC owner changed
+/// client should retry
 pub const NotOwner = struct {
     pub const _desc_table = .{};
 
@@ -400,6 +402,8 @@ pub const NotOwner = struct {
     }
 };
 
+/// Error caused by concurrency conflict,
+/// request cancel
 pub const Conflict = struct {
     reason: []const u8 = &.{},
 

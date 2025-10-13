@@ -194,6 +194,7 @@ pub const WithEnum = struct {
     }
 };
 
+/// tests shadowing names
 pub const WithEnumShadow = struct {
     value: WithEnumShadow.SomeEnum = @enumFromInt(0),
 
