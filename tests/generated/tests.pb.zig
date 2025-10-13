@@ -4,28 +4,30 @@ const std = @import("std");
 
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
-/// import package tests.oneof
-const tests_oneof = @import("tests/oneof.pb.zig");
-/// import package graphics
-const graphics = @import("graphics.pb.zig");
+/// import package default
+const default = @import("default.pb.zig");
 /// import package tests.longs
 const tests_longs = @import("tests/longs.pb.zig");
 /// import package opentelemetry.proto.metrics.v1
 const opentelemetry_proto_metrics_v1 = @import("opentelemetry/proto/metrics/v1.pb.zig");
-/// import package opentelemetry.proto.logs.v1
-const opentelemetry_proto_logs_v1 = @import("opentelemetry/proto/logs/v1.pb.zig");
 /// import package protobuf_test_messages.proto3
 pub const protobuf_test_messages_proto3 = @import("protobuf_test_messages/proto3.pb.zig");
-/// import package unittest
-pub const unittest = @import("unittest.pb.zig");
-/// import package selfref
-const selfref = @import("selfref.pb.zig");
 /// import package oneofselfref
 const oneofselfref = @import("oneofselfref.pb.zig");
+/// import package tests.oneof
+const tests_oneof = @import("tests/oneof.pb.zig");
 /// import package jspb.test
 pub const jspb_test = @import("jspb/test.pb.zig");
 /// import package vector_tile
 pub const vector_tile = @import("vector_tile.pb.zig");
+/// import package graphics
+pub const graphics = @import("graphics.pb.zig");
+/// import package opentelemetry.proto.logs.v1
+const opentelemetry_proto_logs_v1 = @import("opentelemetry/proto/logs/v1.pb.zig");
+/// import package selfref
+const selfref = @import("selfref.pb.zig");
+/// import package unittest
+pub const unittest = @import("unittest.pb.zig");
 
 pub const FixedSizes = struct {
     sfixed64: i64 = 0,
