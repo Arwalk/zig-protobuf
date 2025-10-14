@@ -5,7 +5,7 @@ const std = @import("std");
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
 
-pub const Message = struct {
+pub const MessageWithoutPackage = struct {
     value: i32 = 0,
     str: []const u8 = &.{},
 
