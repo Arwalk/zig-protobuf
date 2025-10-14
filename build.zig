@@ -136,7 +136,7 @@ pub fn build(b: *std.Build) !void {
         .destination_directory = b.path("tests/generated"),
         .source_files = &.{ "tests/protos_for_test/all.proto", "tests/protos_for_test/whitespace-in-name.proto" },
         .include_directories = &.{"tests/protos_for_test"},
-        .default_package_name = "default",
+        .default_package_name = "unittest",
     });
 
     for (tests) |test_item| {

@@ -4,8 +4,6 @@ const std = @import("std");
 
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
-/// import package default
-const default = @import("default.pb.zig");
 /// import package tests.longs
 const tests_longs = @import("tests/longs.pb.zig");
 /// import package opentelemetry.proto.metrics.v1
@@ -27,7 +25,7 @@ const opentelemetry_proto_logs_v1 = @import("opentelemetry/proto/logs/v1.pb.zig"
 /// import package selfref
 const selfref = @import("selfref.pb.zig");
 /// import package unittest
-pub const unittest = @import("unittest.pb.zig");
+const unittest = @import("unittest.pb.zig");
 
 pub const FixedSizes = struct {
     sfixed64: i64 = 0,
