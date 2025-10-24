@@ -876,3 +876,295 @@ pub const WithRepeatedBytes = struct {
         return protobuf.json.stringify(@This(), self, jws);
     }
 };
+
+/// This message simulates complex Kubernetes-like types with many fields
+/// to test the compile-time evaluation branch quota issue and
+/// the to_camel_case constant mutation issue
+pub const ComplexType = struct {
+    APIVersion: []const u8 = &.{},
+    Kind: []const u8 = &.{},
+    field_3: []const u8 = &.{},
+    field_4: []const u8 = &.{},
+    field_5: []const u8 = &.{},
+    field_6: []const u8 = &.{},
+    field_7: []const u8 = &.{},
+    field_8: []const u8 = &.{},
+    field_9: []const u8 = &.{},
+    field_10: []const u8 = &.{},
+    field_11: []const u8 = &.{},
+    field_12: []const u8 = &.{},
+    field_13: []const u8 = &.{},
+    field_14: []const u8 = &.{},
+    field_15: []const u8 = &.{},
+    field_16: []const u8 = &.{},
+    field_17: []const u8 = &.{},
+    field_18: []const u8 = &.{},
+    field_19: []const u8 = &.{},
+    field_20: []const u8 = &.{},
+    field_21: []const u8 = &.{},
+    field_22: []const u8 = &.{},
+    field_23: []const u8 = &.{},
+    field_24: []const u8 = &.{},
+    field_25: []const u8 = &.{},
+    field_26: []const u8 = &.{},
+    field_27: []const u8 = &.{},
+    field_28: []const u8 = &.{},
+    field_29: []const u8 = &.{},
+    field_30: []const u8 = &.{},
+    field_31: []const u8 = &.{},
+    field_32: []const u8 = &.{},
+    field_33: []const u8 = &.{},
+    field_34: []const u8 = &.{},
+    field_35: []const u8 = &.{},
+    field_36: []const u8 = &.{},
+    field_37: []const u8 = &.{},
+    field_38: []const u8 = &.{},
+    field_39: []const u8 = &.{},
+    field_40: []const u8 = &.{},
+    field_41: []const u8 = &.{},
+    field_42: []const u8 = &.{},
+    field_43: []const u8 = &.{},
+    field_44: []const u8 = &.{},
+    field_45: []const u8 = &.{},
+    field_46: []const u8 = &.{},
+    field_47: []const u8 = &.{},
+    field_48: []const u8 = &.{},
+    field_49: []const u8 = &.{},
+    field_50: []const u8 = &.{},
+    field_51: []const u8 = &.{},
+    field_52: []const u8 = &.{},
+    field_53: []const u8 = &.{},
+    field_54: []const u8 = &.{},
+    field_55: []const u8 = &.{},
+    field_56: []const u8 = &.{},
+    field_57: []const u8 = &.{},
+    field_58: []const u8 = &.{},
+    field_59: []const u8 = &.{},
+    field_60: []const u8 = &.{},
+    field_61: []const u8 = &.{},
+    field_62: []const u8 = &.{},
+    field_63: []const u8 = &.{},
+    field_64: []const u8 = &.{},
+    field_65: []const u8 = &.{},
+    field_66: []const u8 = &.{},
+    field_67: []const u8 = &.{},
+    field_68: []const u8 = &.{},
+    field_69: []const u8 = &.{},
+    field_70: []const u8 = &.{},
+    field_71: []const u8 = &.{},
+    field_72: []const u8 = &.{},
+    field_73: []const u8 = &.{},
+    field_74: []const u8 = &.{},
+    field_75: []const u8 = &.{},
+    field_76: []const u8 = &.{},
+    field_77: []const u8 = &.{},
+    field_78: []const u8 = &.{},
+    field_79: []const u8 = &.{},
+    field_80: []const u8 = &.{},
+    field_81: []const u8 = &.{},
+    field_82: []const u8 = &.{},
+    field_83: []const u8 = &.{},
+    field_84: []const u8 = &.{},
+    field_85: []const u8 = &.{},
+    field_86: []const u8 = &.{},
+    field_87: []const u8 = &.{},
+    field_88: []const u8 = &.{},
+    field_89: []const u8 = &.{},
+    field_90: []const u8 = &.{},
+    field_91: []const u8 = &.{},
+    field_92: []const u8 = &.{},
+    field_93: []const u8 = &.{},
+    field_94: []const u8 = &.{},
+    field_95: []const u8 = &.{},
+    field_96: []const u8 = &.{},
+    field_97: []const u8 = &.{},
+    field_98: []const u8 = &.{},
+    field_99: []const u8 = &.{},
+    field_100: []const u8 = &.{},
+    field_101: []const u8 = &.{},
+    field_102: []const u8 = &.{},
+    field_103: []const u8 = &.{},
+    field_104: []const u8 = &.{},
+    field_105: []const u8 = &.{},
+    field_106: []const u8 = &.{},
+    field_107: []const u8 = &.{},
+    field_108: []const u8 = &.{},
+    field_109: []const u8 = &.{},
+    field_110: []const u8 = &.{},
+
+    pub const _desc_table = .{
+        .APIVersion = fd(1, .{ .scalar = .string }),
+        .Kind = fd(2, .{ .scalar = .string }),
+        .field_3 = fd(3, .{ .scalar = .string }),
+        .field_4 = fd(4, .{ .scalar = .string }),
+        .field_5 = fd(5, .{ .scalar = .string }),
+        .field_6 = fd(6, .{ .scalar = .string }),
+        .field_7 = fd(7, .{ .scalar = .string }),
+        .field_8 = fd(8, .{ .scalar = .string }),
+        .field_9 = fd(9, .{ .scalar = .string }),
+        .field_10 = fd(10, .{ .scalar = .string }),
+        .field_11 = fd(11, .{ .scalar = .string }),
+        .field_12 = fd(12, .{ .scalar = .string }),
+        .field_13 = fd(13, .{ .scalar = .string }),
+        .field_14 = fd(14, .{ .scalar = .string }),
+        .field_15 = fd(15, .{ .scalar = .string }),
+        .field_16 = fd(16, .{ .scalar = .string }),
+        .field_17 = fd(17, .{ .scalar = .string }),
+        .field_18 = fd(18, .{ .scalar = .string }),
+        .field_19 = fd(19, .{ .scalar = .string }),
+        .field_20 = fd(20, .{ .scalar = .string }),
+        .field_21 = fd(21, .{ .scalar = .string }),
+        .field_22 = fd(22, .{ .scalar = .string }),
+        .field_23 = fd(23, .{ .scalar = .string }),
+        .field_24 = fd(24, .{ .scalar = .string }),
+        .field_25 = fd(25, .{ .scalar = .string }),
+        .field_26 = fd(26, .{ .scalar = .string }),
+        .field_27 = fd(27, .{ .scalar = .string }),
+        .field_28 = fd(28, .{ .scalar = .string }),
+        .field_29 = fd(29, .{ .scalar = .string }),
+        .field_30 = fd(30, .{ .scalar = .string }),
+        .field_31 = fd(31, .{ .scalar = .string }),
+        .field_32 = fd(32, .{ .scalar = .string }),
+        .field_33 = fd(33, .{ .scalar = .string }),
+        .field_34 = fd(34, .{ .scalar = .string }),
+        .field_35 = fd(35, .{ .scalar = .string }),
+        .field_36 = fd(36, .{ .scalar = .string }),
+        .field_37 = fd(37, .{ .scalar = .string }),
+        .field_38 = fd(38, .{ .scalar = .string }),
+        .field_39 = fd(39, .{ .scalar = .string }),
+        .field_40 = fd(40, .{ .scalar = .string }),
+        .field_41 = fd(41, .{ .scalar = .string }),
+        .field_42 = fd(42, .{ .scalar = .string }),
+        .field_43 = fd(43, .{ .scalar = .string }),
+        .field_44 = fd(44, .{ .scalar = .string }),
+        .field_45 = fd(45, .{ .scalar = .string }),
+        .field_46 = fd(46, .{ .scalar = .string }),
+        .field_47 = fd(47, .{ .scalar = .string }),
+        .field_48 = fd(48, .{ .scalar = .string }),
+        .field_49 = fd(49, .{ .scalar = .string }),
+        .field_50 = fd(50, .{ .scalar = .string }),
+        .field_51 = fd(51, .{ .scalar = .string }),
+        .field_52 = fd(52, .{ .scalar = .string }),
+        .field_53 = fd(53, .{ .scalar = .string }),
+        .field_54 = fd(54, .{ .scalar = .string }),
+        .field_55 = fd(55, .{ .scalar = .string }),
+        .field_56 = fd(56, .{ .scalar = .string }),
+        .field_57 = fd(57, .{ .scalar = .string }),
+        .field_58 = fd(58, .{ .scalar = .string }),
+        .field_59 = fd(59, .{ .scalar = .string }),
+        .field_60 = fd(60, .{ .scalar = .string }),
+        .field_61 = fd(61, .{ .scalar = .string }),
+        .field_62 = fd(62, .{ .scalar = .string }),
+        .field_63 = fd(63, .{ .scalar = .string }),
+        .field_64 = fd(64, .{ .scalar = .string }),
+        .field_65 = fd(65, .{ .scalar = .string }),
+        .field_66 = fd(66, .{ .scalar = .string }),
+        .field_67 = fd(67, .{ .scalar = .string }),
+        .field_68 = fd(68, .{ .scalar = .string }),
+        .field_69 = fd(69, .{ .scalar = .string }),
+        .field_70 = fd(70, .{ .scalar = .string }),
+        .field_71 = fd(71, .{ .scalar = .string }),
+        .field_72 = fd(72, .{ .scalar = .string }),
+        .field_73 = fd(73, .{ .scalar = .string }),
+        .field_74 = fd(74, .{ .scalar = .string }),
+        .field_75 = fd(75, .{ .scalar = .string }),
+        .field_76 = fd(76, .{ .scalar = .string }),
+        .field_77 = fd(77, .{ .scalar = .string }),
+        .field_78 = fd(78, .{ .scalar = .string }),
+        .field_79 = fd(79, .{ .scalar = .string }),
+        .field_80 = fd(80, .{ .scalar = .string }),
+        .field_81 = fd(81, .{ .scalar = .string }),
+        .field_82 = fd(82, .{ .scalar = .string }),
+        .field_83 = fd(83, .{ .scalar = .string }),
+        .field_84 = fd(84, .{ .scalar = .string }),
+        .field_85 = fd(85, .{ .scalar = .string }),
+        .field_86 = fd(86, .{ .scalar = .string }),
+        .field_87 = fd(87, .{ .scalar = .string }),
+        .field_88 = fd(88, .{ .scalar = .string }),
+        .field_89 = fd(89, .{ .scalar = .string }),
+        .field_90 = fd(90, .{ .scalar = .string }),
+        .field_91 = fd(91, .{ .scalar = .string }),
+        .field_92 = fd(92, .{ .scalar = .string }),
+        .field_93 = fd(93, .{ .scalar = .string }),
+        .field_94 = fd(94, .{ .scalar = .string }),
+        .field_95 = fd(95, .{ .scalar = .string }),
+        .field_96 = fd(96, .{ .scalar = .string }),
+        .field_97 = fd(97, .{ .scalar = .string }),
+        .field_98 = fd(98, .{ .scalar = .string }),
+        .field_99 = fd(99, .{ .scalar = .string }),
+        .field_100 = fd(100, .{ .scalar = .string }),
+        .field_101 = fd(101, .{ .scalar = .string }),
+        .field_102 = fd(102, .{ .scalar = .string }),
+        .field_103 = fd(103, .{ .scalar = .string }),
+        .field_104 = fd(104, .{ .scalar = .string }),
+        .field_105 = fd(105, .{ .scalar = .string }),
+        .field_106 = fd(106, .{ .scalar = .string }),
+        .field_107 = fd(107, .{ .scalar = .string }),
+        .field_108 = fd(108, .{ .scalar = .string }),
+        .field_109 = fd(109, .{ .scalar = .string }),
+        .field_110 = fd(110, .{ .scalar = .string }),
+    };
+
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
+    pub fn encode(
+        self: @This(),
+        writer: *std.Io.Writer,
+        allocator: std.mem.Allocator,
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
+        return protobuf.encode(writer, allocator, self);
+    }
+
+    /// Decodes the message from the bytes read from the reader.
+    pub fn decode(
+        reader: *std.Io.Reader,
+        allocator: std.mem.Allocator,
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
+        return protobuf.decode(@This(), reader, allocator);
+    }
+
+    /// Deinitializes and frees the memory associated with the message.
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+        return protobuf.deinit(allocator, self);
+    }
+
+    /// Duplicates the message.
+    pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
+        return protobuf.dupe(@This(), self, allocator);
+    }
+
+    /// Decodes the message from the JSON string.
+    pub fn jsonDecode(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Encodes the message to a JSON string.
+    pub fn jsonEncode(
+        self: @This(),
+        options: std.json.Stringify.Options,
+        allocator: std.mem.Allocator,
+    ) ![]const u8 {
+        return protobuf.json.encode(self, options, allocator);
+    }
+
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
+    pub fn jsonParse(
+        allocator: std.mem.Allocator,
+        source: anytype,
+        options: std.json.ParseOptions,
+    ) !@This() {
+        return protobuf.json.parse(@This(), allocator, source, options);
+    }
+
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
+    pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
+        return protobuf.json.stringify(@This(), self, jws);
+    }
+};

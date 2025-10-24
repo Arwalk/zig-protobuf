@@ -8,6 +8,9 @@ pub fn parse(
     source: anytype,
     options: std.json.ParseOptions,
 ) !Self {
+    // Increase eval branch quota for types with hundreds of fields
+    @setEvalBranchQuota(1000000);
+
     if (.object_begin != try source.next()) {
         return error.UnexpectedToken;
     }
@@ -120,6 +123,9 @@ pub fn encode(
 }
 
 pub fn stringify(Self: type, self: *const Self, jws: anytype) !void {
+    // Increase eval branch quota for types with hundreds of fields
+    @setEvalBranchQuota(1000000);
+
     try jws.beginObject();
 
     inline for (@typeInfo(Self).@"struct".fields) |fieldInfo| {
@@ -160,8 +166,10 @@ fn to_camel_case(not_camel_cased_string: []const u8) []const u8 {
         }
     }
 
+    // Build a new string with lowercase first letter instead of mutating const
     if (comptime std.ascii.isUpper(camel_cased_string[0])) {
-        camel_cased_string[0] = std.ascii.toLower(camel_cased_string[0]);
+        const lower_first = .{std.ascii.toLower(camel_cased_string[0])};
+        camel_cased_string = lower_first ++ camel_cased_string[1..];
     }
 
     return camel_cased_string;

@@ -124,6 +124,14 @@ pub fn build(b: *std.Build) !void {
                 .optimize = optimize,
             }),
         }),
+        b.addTest(.{
+            .name = "complex_type",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/tests_complex_type.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        }),
     };
 
     const convertStep = RunProtocStep.create(b, target, .{
@@ -134,7 +142,7 @@ pub fn build(b: *std.Build) !void {
 
     const convertStep2 = RunProtocStep.create(b, target, .{
         .destination_directory = b.path("tests/generated"),
-        .source_files = &.{ "tests/protos_for_test/all.proto", "tests/protos_for_test/whitespace-in-name.proto" },
+        .source_files = &.{ "tests/protos_for_test/all.proto", "tests/protos_for_test/whitespace-in-name.proto", "tests/protos_for_test/complex_type.proto" },
         .include_directories = &.{"tests/protos_for_test"},
     });
 
