@@ -322,7 +322,6 @@ pub const RunProtocStep = struct {
     }
 
     fn make(step: *std.Build.Step, make_opt: std.Build.Step.MakeOptions) anyerror!void {
-        _ = make_opt;
         const b = step.owner;
         const self: *RunProtocStep = @fieldParentPtr("step", step);
 
@@ -370,7 +369,7 @@ pub const RunProtocStep = struct {
                 std.debug.print("\n", .{});
             }
 
-            _ = try step.evalChildProcess(argv.items);
+            _ = try step.captureChildProcess(step.owner.allocator, make_opt.progress_node, argv.items);
         }
 
         { // run zig fmt <destination>
@@ -380,7 +379,9 @@ pub const RunProtocStep = struct {
             try argv.append(b.allocator, "fmt");
             try argv.append(b.allocator, absolute_dest_dir);
 
-            _ = try step.evalChildProcess(argv.items);
+            step.result_failed_command = null;
+
+            _ = try step.captureChildProcess(step.owner.allocator, make_opt.progress_node, argv.items);
         }
     }
 };
