@@ -16,3 +16,11 @@ debug
 .specstory/*
 test.data
 benchmark/generated/**/*
+
+# nix devenv
+devenv.nix
+devenv.yaml
+devenv.lock
+.envrc
+*.nix
+.devenv

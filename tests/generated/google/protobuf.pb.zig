@@ -5,6 +5,37 @@ const std = @import("std");
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
 
+/// The full set of known editions.
+pub const Edition = enum(i32) {
+    EDITION_UNKNOWN = 0,
+    EDITION_LEGACY = 900,
+    EDITION_PROTO2 = 998,
+    EDITION_PROTO3 = 999,
+    EDITION_2023 = 1000,
+    EDITION_2024 = 1001,
+    EDITION_1_TEST_ONLY = 1,
+    EDITION_2_TEST_ONLY = 2,
+    EDITION_99997_TEST_ONLY = 99997,
+    EDITION_99998_TEST_ONLY = 99998,
+    EDITION_99999_TEST_ONLY = 99999,
+    EDITION_MAX = 2147483647,
+    _,
+};
+
+/// Describes the 'visibility' of a symbol with respect to the proto import
+/// system. Symbols can only be imported when the visibility rules do not prevent
+/// it (ex: local symbols cannot be imported).  Visibility modifiers can only set
+/// on `message` and `enum` as they are the only types available to be referenced
+/// from other files.
+pub const SymbolVisibility = enum(i32) {
+    VISIBILITY_UNSET = 0,
+    VISIBILITY_LOCAL = 1,
+    VISIBILITY_EXPORT = 2,
+    _,
+};
+
+/// The protocol compiler can output a FileDescriptorSet containing the .proto
+/// files it parses.
 pub const FileDescriptorSet = struct {
     file: std.ArrayListUnmanaged(FileDescriptorProto) = .empty,
 
@@ -76,12 +107,14 @@ pub const FileDescriptorSet = struct {
     }
 };
 
+/// Describes a complete .proto file.
 pub const FileDescriptorProto = struct {
     name: ?[]const u8 = null,
     package: ?[]const u8 = null,
     dependency: std.ArrayListUnmanaged([]const u8) = .empty,
     public_dependency: std.ArrayListUnmanaged(i32) = .empty,
     weak_dependency: std.ArrayListUnmanaged(i32) = .empty,
+    option_dependency: std.ArrayListUnmanaged([]const u8) = .empty,
     message_type: std.ArrayListUnmanaged(DescriptorProto) = .empty,
     enum_type: std.ArrayListUnmanaged(EnumDescriptorProto) = .empty,
     service: std.ArrayListUnmanaged(ServiceDescriptorProto) = .empty,
@@ -89,7 +122,7 @@ pub const FileDescriptorProto = struct {
     options: ?FileOptions = null,
     source_code_info: ?SourceCodeInfo = null,
     syntax: ?[]const u8 = null,
-    edition: ?[]const u8 = null,
+    edition: ?Edition = null,
 
     pub const _desc_table = .{
         .name = fd(1, .{ .scalar = .string }),
@@ -97,6 +130,7 @@ pub const FileDescriptorProto = struct {
         .dependency = fd(3, .{ .repeated = .{ .scalar = .string } }),
         .public_dependency = fd(10, .{ .repeated = .{ .scalar = .int32 } }),
         .weak_dependency = fd(11, .{ .repeated = .{ .scalar = .int32 } }),
+        .option_dependency = fd(15, .{ .repeated = .{ .scalar = .string } }),
         .message_type = fd(4, .{ .repeated = .submessage }),
         .enum_type = fd(5, .{ .repeated = .submessage }),
         .service = fd(6, .{ .repeated = .submessage }),
@@ -104,7 +138,7 @@ pub const FileDescriptorProto = struct {
         .options = fd(8, .submessage),
         .source_code_info = fd(9, .submessage),
         .syntax = fd(12, .{ .scalar = .string }),
-        .edition = fd(13, .{ .scalar = .string }),
+        .edition = fd(14, .@"enum"),
     };
 
     /// Encodes the message to the writer
@@ -171,6 +205,7 @@ pub const FileDescriptorProto = struct {
     }
 };
 
+/// Describes a message type.
 pub const DescriptorProto = struct {
     name: ?[]const u8 = null,
     field: std.ArrayListUnmanaged(FieldDescriptorProto) = .empty,
@@ -182,6 +217,7 @@ pub const DescriptorProto = struct {
     options: ?MessageOptions = null,
     reserved_range: std.ArrayListUnmanaged(DescriptorProto.ReservedRange) = .empty,
     reserved_name: std.ArrayListUnmanaged([]const u8) = .empty,
+    visibility: ?SymbolVisibility = null,
 
     pub const _desc_table = .{
         .name = fd(1, .{ .scalar = .string }),
@@ -194,6 +230,7 @@ pub const DescriptorProto = struct {
         .options = fd(7, .submessage),
         .reserved_range = fd(9, .{ .repeated = .submessage }),
         .reserved_name = fd(10, .{ .repeated = .{ .scalar = .string } }),
+        .visibility = fd(11, .@"enum"),
     };
 
     pub const ExtensionRange = struct {
@@ -271,6 +308,9 @@ pub const DescriptorProto = struct {
         }
     };
 
+    /// Range of reserved tag numbers. Reserved tag numbers may not be used by
+    /// fields or extension ranges in the same message. Reserved ranges may
+    /// not overlap.
     pub const ReservedRange = struct {
         start: ?i32 = null,
         end: ?i32 = null,
@@ -411,14 +451,17 @@ pub const DescriptorProto = struct {
 pub const ExtensionRangeOptions = struct {
     uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
     declaration: std.ArrayListUnmanaged(ExtensionRangeOptions.Declaration) = .empty,
+    features: ?FeatureSet = null,
     verification: ?ExtensionRangeOptions.VerificationState = .UNVERIFIED,
 
     pub const _desc_table = .{
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
         .declaration = fd(2, .{ .repeated = .submessage }),
+        .features = fd(50, .submessage),
         .verification = fd(3, .@"enum"),
     };
 
+    /// The verification state of the extension range.
     pub const VerificationState = enum(i32) {
         DECLARATION = 0,
         UNVERIFIED = 1,
@@ -429,7 +472,6 @@ pub const ExtensionRangeOptions = struct {
         number: ?i32 = null,
         full_name: ?[]const u8 = null,
         type: ?[]const u8 = null,
-        is_repeated: ?bool = null,
         reserved: ?bool = null,
         repeated: ?bool = null,
 
@@ -437,7 +479,6 @@ pub const ExtensionRangeOptions = struct {
             .number = fd(1, .{ .scalar = .int32 }),
             .full_name = fd(2, .{ .scalar = .string }),
             .type = fd(3, .{ .scalar = .string }),
-            .is_repeated = fd(4, .{ .scalar = .bool }),
             .reserved = fd(5, .{ .scalar = .bool }),
             .repeated = fd(6, .{ .scalar = .bool }),
         };
@@ -570,6 +611,7 @@ pub const ExtensionRangeOptions = struct {
     }
 };
 
+/// Describes a field within a message.
 pub const FieldDescriptorProto = struct {
     name: ?[]const u8 = null,
     number: ?i32 = null,
@@ -621,8 +663,8 @@ pub const FieldDescriptorProto = struct {
 
     pub const Label = enum(i32) {
         LABEL_OPTIONAL = 1,
-        LABEL_REQUIRED = 2,
         LABEL_REPEATED = 3,
+        LABEL_REQUIRED = 2,
         _,
     };
 
@@ -690,6 +732,7 @@ pub const FieldDescriptorProto = struct {
     }
 };
 
+/// Describes a oneof.
 pub const OneofDescriptorProto = struct {
     name: ?[]const u8 = null,
     options: ?OneofOptions = null,
@@ -763,12 +806,14 @@ pub const OneofDescriptorProto = struct {
     }
 };
 
+/// Describes an enum type.
 pub const EnumDescriptorProto = struct {
     name: ?[]const u8 = null,
     value: std.ArrayListUnmanaged(EnumValueDescriptorProto) = .empty,
     options: ?EnumOptions = null,
     reserved_range: std.ArrayListUnmanaged(EnumDescriptorProto.EnumReservedRange) = .empty,
     reserved_name: std.ArrayListUnmanaged([]const u8) = .empty,
+    visibility: ?SymbolVisibility = null,
 
     pub const _desc_table = .{
         .name = fd(1, .{ .scalar = .string }),
@@ -776,8 +821,15 @@ pub const EnumDescriptorProto = struct {
         .options = fd(3, .submessage),
         .reserved_range = fd(4, .{ .repeated = .submessage }),
         .reserved_name = fd(5, .{ .repeated = .{ .scalar = .string } }),
+        .visibility = fd(6, .@"enum"),
     };
 
+    /// Range of reserved numeric values. Reserved values may not be used by
+    /// entries in the same enum. Reserved ranges may not overlap.
+    ///
+    /// Note that this is distinct from DescriptorProto.ReservedRange in that it
+    /// is inclusive such that it can appropriately represent the entire int32
+    /// domain.
     pub const EnumReservedRange = struct {
         start: ?i32 = null,
         end: ?i32 = null,
@@ -915,6 +967,7 @@ pub const EnumDescriptorProto = struct {
     }
 };
 
+/// Describes a value within an enum.
 pub const EnumValueDescriptorProto = struct {
     name: ?[]const u8 = null,
     number: ?i32 = null,
@@ -990,6 +1043,7 @@ pub const EnumValueDescriptorProto = struct {
     }
 };
 
+/// Describes a service.
 pub const ServiceDescriptorProto = struct {
     name: ?[]const u8 = null,
     method: std.ArrayListUnmanaged(MethodDescriptorProto) = .empty,
@@ -1065,6 +1119,7 @@ pub const ServiceDescriptorProto = struct {
     }
 };
 
+/// Describes a method of a service.
 pub const MethodDescriptorProto = struct {
     name: ?[]const u8 = null,
     input_type: ?[]const u8 = null,
@@ -1157,7 +1212,6 @@ pub const FileOptions = struct {
     cc_generic_services: ?bool = false,
     java_generic_services: ?bool = false,
     py_generic_services: ?bool = false,
-    php_generic_services: ?bool = false,
     deprecated: ?bool = false,
     cc_enable_arenas: ?bool = true,
     objc_class_prefix: ?[]const u8 = null,
@@ -1167,6 +1221,7 @@ pub const FileOptions = struct {
     php_namespace: ?[]const u8 = null,
     php_metadata_namespace: ?[]const u8 = null,
     ruby_package: ?[]const u8 = null,
+    features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
@@ -1180,7 +1235,6 @@ pub const FileOptions = struct {
         .cc_generic_services = fd(16, .{ .scalar = .bool }),
         .java_generic_services = fd(17, .{ .scalar = .bool }),
         .py_generic_services = fd(18, .{ .scalar = .bool }),
-        .php_generic_services = fd(42, .{ .scalar = .bool }),
         .deprecated = fd(23, .{ .scalar = .bool }),
         .cc_enable_arenas = fd(31, .{ .scalar = .bool }),
         .objc_class_prefix = fd(36, .{ .scalar = .string }),
@@ -1190,9 +1244,11 @@ pub const FileOptions = struct {
         .php_namespace = fd(41, .{ .scalar = .string }),
         .php_metadata_namespace = fd(44, .{ .scalar = .string }),
         .ruby_package = fd(45, .{ .scalar = .string }),
+        .features = fd(50, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
+    /// Generated classes can be optimized for speed or code size.
     pub const OptimizeMode = enum(i32) {
         SPEED = 1,
         CODE_SIZE = 2,
@@ -1270,6 +1326,7 @@ pub const MessageOptions = struct {
     deprecated: ?bool = false,
     map_entry: ?bool = null,
     deprecated_legacy_json_field_conflicts: ?bool = null,
+    features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
@@ -1278,6 +1335,7 @@ pub const MessageOptions = struct {
         .deprecated = fd(3, .{ .scalar = .bool }),
         .map_entry = fd(7, .{ .scalar = .bool }),
         .deprecated_legacy_json_field_conflicts = fd(11, .{ .scalar = .bool }),
+        .features = fd(12, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
@@ -1355,8 +1413,10 @@ pub const FieldOptions = struct {
     weak: ?bool = false,
     debug_redact: ?bool = false,
     retention: ?FieldOptions.OptionRetention = null,
-    target: ?FieldOptions.OptionTargetType = null,
     targets: std.ArrayListUnmanaged(FieldOptions.OptionTargetType) = .empty,
+    edition_defaults: std.ArrayListUnmanaged(FieldOptions.EditionDefault) = .empty,
+    features: ?FeatureSet = null,
+    feature_support: ?FieldOptions.FeatureSupport = null,
     uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
@@ -1369,8 +1429,10 @@ pub const FieldOptions = struct {
         .weak = fd(10, .{ .scalar = .bool }),
         .debug_redact = fd(16, .{ .scalar = .bool }),
         .retention = fd(17, .@"enum"),
-        .target = fd(18, .@"enum"),
         .targets = fd(19, .{ .repeated = .@"enum" }),
+        .edition_defaults = fd(20, .{ .repeated = .submessage }),
+        .features = fd(21, .submessage),
+        .feature_support = fd(22, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
@@ -1388,6 +1450,7 @@ pub const FieldOptions = struct {
         _,
     };
 
+    /// If set to RETENTION_SOURCE, the option will be omitted from the binary.
     pub const OptionRetention = enum(i32) {
         RETENTION_UNKNOWN = 0,
         RETENTION_RUNTIME = 1,
@@ -1395,6 +1458,9 @@ pub const FieldOptions = struct {
         _,
     };
 
+    /// This indicates the types of entities that the field may apply to when used
+    /// as an option. If it is unset, then the field may be freely used as an
+    /// option on any kind of entity.
     pub const OptionTargetType = enum(i32) {
         TARGET_TYPE_UNKNOWN = 0,
         TARGET_TYPE_FILE = 1,
@@ -1407,6 +1473,157 @@ pub const FieldOptions = struct {
         TARGET_TYPE_SERVICE = 8,
         TARGET_TYPE_METHOD = 9,
         _,
+    };
+
+    pub const EditionDefault = struct {
+        edition: ?Edition = null,
+        value: ?[]const u8 = null,
+
+        pub const _desc_table = .{
+            .edition = fd(3, .@"enum"),
+            .value = fd(2, .{ .scalar = .string }),
+        };
+
+        /// Encodes the message to the writer
+        /// The allocator is used to generate submessages internally.
+        /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
+        pub fn encode(
+            self: @This(),
+            writer: *std.Io.Writer,
+            allocator: std.mem.Allocator,
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
+            return protobuf.encode(writer, allocator, self);
+        }
+
+        /// Decodes the message from the bytes read from the reader.
+        pub fn decode(
+            reader: *std.Io.Reader,
+            allocator: std.mem.Allocator,
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
+            return protobuf.decode(@This(), reader, allocator);
+        }
+
+        /// Deinitializes and frees the memory associated with the message.
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+            return protobuf.deinit(allocator, self);
+        }
+
+        /// Duplicates the message.
+        pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
+            return protobuf.dupe(@This(), self, allocator);
+        }
+
+        /// Decodes the message from the JSON string.
+        pub fn jsonDecode(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decode(@This(), input, options, allocator);
+        }
+
+        /// Encodes the message to a JSON string.
+        pub fn jsonEncode(
+            self: @This(),
+            options: std.json.Stringify.Options,
+            allocator: std.mem.Allocator,
+        ) ![]const u8 {
+            return protobuf.json.encode(self, options, allocator);
+        }
+
+        /// This method is used by std.json
+        /// internally for deserialization. DO NOT RENAME!
+        pub fn jsonParse(
+            allocator: std.mem.Allocator,
+            source: anytype,
+            options: std.json.ParseOptions,
+        ) !@This() {
+            return protobuf.json.parse(@This(), allocator, source, options);
+        }
+
+        /// This method is used by std.json
+        /// internally for serialization. DO NOT RENAME!
+        pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
+            return protobuf.json.stringify(@This(), self, jws);
+        }
+    };
+
+    /// Information about the support window of a feature.
+    pub const FeatureSupport = struct {
+        edition_introduced: ?Edition = null,
+        edition_deprecated: ?Edition = null,
+        deprecation_warning: ?[]const u8 = null,
+        edition_removed: ?Edition = null,
+
+        pub const _desc_table = .{
+            .edition_introduced = fd(1, .@"enum"),
+            .edition_deprecated = fd(2, .@"enum"),
+            .deprecation_warning = fd(3, .{ .scalar = .string }),
+            .edition_removed = fd(4, .@"enum"),
+        };
+
+        /// Encodes the message to the writer
+        /// The allocator is used to generate submessages internally.
+        /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
+        pub fn encode(
+            self: @This(),
+            writer: *std.Io.Writer,
+            allocator: std.mem.Allocator,
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
+            return protobuf.encode(writer, allocator, self);
+        }
+
+        /// Decodes the message from the bytes read from the reader.
+        pub fn decode(
+            reader: *std.Io.Reader,
+            allocator: std.mem.Allocator,
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
+            return protobuf.decode(@This(), reader, allocator);
+        }
+
+        /// Deinitializes and frees the memory associated with the message.
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+            return protobuf.deinit(allocator, self);
+        }
+
+        /// Duplicates the message.
+        pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
+            return protobuf.dupe(@This(), self, allocator);
+        }
+
+        /// Decodes the message from the JSON string.
+        pub fn jsonDecode(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decode(@This(), input, options, allocator);
+        }
+
+        /// Encodes the message to a JSON string.
+        pub fn jsonEncode(
+            self: @This(),
+            options: std.json.Stringify.Options,
+            allocator: std.mem.Allocator,
+        ) ![]const u8 {
+            return protobuf.json.encode(self, options, allocator);
+        }
+
+        /// This method is used by std.json
+        /// internally for deserialization. DO NOT RENAME!
+        pub fn jsonParse(
+            allocator: std.mem.Allocator,
+            source: anytype,
+            options: std.json.ParseOptions,
+        ) !@This() {
+            return protobuf.json.parse(@This(), allocator, source, options);
+        }
+
+        /// This method is used by std.json
+        /// internally for serialization. DO NOT RENAME!
+        pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
+            return protobuf.json.stringify(@This(), self, jws);
+        }
     };
 
     /// Encodes the message to the writer
@@ -1474,9 +1691,11 @@ pub const FieldOptions = struct {
 };
 
 pub const OneofOptions = struct {
+    features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
+        .features = fd(1, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
@@ -1548,12 +1767,14 @@ pub const EnumOptions = struct {
     allow_alias: ?bool = null,
     deprecated: ?bool = false,
     deprecated_legacy_json_field_conflicts: ?bool = null,
+    features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .allow_alias = fd(2, .{ .scalar = .bool }),
         .deprecated = fd(3, .{ .scalar = .bool }),
         .deprecated_legacy_json_field_conflicts = fd(6, .{ .scalar = .bool }),
+        .features = fd(7, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
@@ -1623,10 +1844,16 @@ pub const EnumOptions = struct {
 
 pub const EnumValueOptions = struct {
     deprecated: ?bool = false,
+    features: ?FeatureSet = null,
+    debug_redact: ?bool = false,
+    feature_support: ?FieldOptions.FeatureSupport = null,
     uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .deprecated = fd(1, .{ .scalar = .bool }),
+        .features = fd(2, .submessage),
+        .debug_redact = fd(3, .{ .scalar = .bool }),
+        .feature_support = fd(4, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
@@ -1695,10 +1922,12 @@ pub const EnumValueOptions = struct {
 };
 
 pub const ServiceOptions = struct {
+    features: ?FeatureSet = null,
     deprecated: ?bool = false,
     uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
+        .features = fd(34, .submessage),
         .deprecated = fd(33, .{ .scalar = .bool }),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
@@ -1770,14 +1999,19 @@ pub const ServiceOptions = struct {
 pub const MethodOptions = struct {
     deprecated: ?bool = false,
     idempotency_level: ?MethodOptions.IdempotencyLevel = .IDEMPOTENCY_UNKNOWN,
+    features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .deprecated = fd(33, .{ .scalar = .bool }),
         .idempotency_level = fd(34, .@"enum"),
+        .features = fd(35, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
+    /// Is this method side-effect-free (or safe in HTTP parlance), or idempotent,
+    /// or neither? HTTP based RPC implementation may choose GET verb for safe
+    /// methods, and PUT verb for idempotent methods instead of the default POST.
     pub const IdempotencyLevel = enum(i32) {
         IDEMPOTENCY_UNKNOWN = 0,
         NO_SIDE_EFFECTS = 1,
@@ -1849,6 +2083,12 @@ pub const MethodOptions = struct {
     }
 };
 
+/// A message representing a option the parser does not recognize. This only
+/// appears in options protos created by the compiler::Parser class.
+/// DescriptorPool resolves these when building Descriptor objects. Therefore,
+/// options protos in descriptor objects (e.g. returned by Descriptor::options(),
+/// or produced by Descriptor::CopyTo()) will never have UninterpretedOptions
+/// in them.
 pub const UninterpretedOption = struct {
     name: std.ArrayListUnmanaged(UninterpretedOption.NamePart) = .empty,
     identifier_value: ?[]const u8 = null,
@@ -1868,6 +2108,11 @@ pub const UninterpretedOption = struct {
         .aggregate_value = fd(8, .{ .scalar = .string }),
     };
 
+    /// The name of the uninterpreted option.  Each string represents a segment in
+    /// a dot-separated name.  is_extension is true iff a segment represents an
+    /// extension (denoted with parentheses in options specs in .proto files).
+    /// E.g.,{ ["foo", false], ["bar.baz", true], ["moo", false] } represents
+    /// "foo.(bar.baz).moo".
     pub const NamePart = struct {
         name_part: []const u8,
         is_extension: bool,
@@ -2005,6 +2250,383 @@ pub const UninterpretedOption = struct {
     }
 };
 
+/// TODO Enums in C++ gencode (and potentially other languages) are
+/// not well scoped.  This means that each of the feature enums below can clash
+/// with each other.  The short names we've chosen maximize call-site
+/// readability, but leave us very open to this scenario.  A future feature will
+/// be designed and implemented to handle this, hopefully before we ever hit a
+/// conflict here.
+pub const FeatureSet = struct {
+    field_presence: ?FeatureSet.FieldPresence = null,
+    enum_type: ?FeatureSet.EnumType = null,
+    repeated_field_encoding: ?FeatureSet.RepeatedFieldEncoding = null,
+    utf8_validation: ?FeatureSet.Utf8Validation = null,
+    message_encoding: ?FeatureSet.MessageEncoding = null,
+    json_format: ?FeatureSet.JsonFormat = null,
+    enforce_naming_style: ?FeatureSet.EnforceNamingStyle = null,
+    default_symbol_visibility: ?FeatureSet.VisibilityFeature.DefaultSymbolVisibility = null,
+
+    pub const _desc_table = .{
+        .field_presence = fd(1, .@"enum"),
+        .enum_type = fd(2, .@"enum"),
+        .repeated_field_encoding = fd(3, .@"enum"),
+        .utf8_validation = fd(4, .@"enum"),
+        .message_encoding = fd(5, .@"enum"),
+        .json_format = fd(6, .@"enum"),
+        .enforce_naming_style = fd(7, .@"enum"),
+        .default_symbol_visibility = fd(8, .@"enum"),
+    };
+
+    pub const FieldPresence = enum(i32) {
+        FIELD_PRESENCE_UNKNOWN = 0,
+        EXPLICIT = 1,
+        IMPLICIT = 2,
+        LEGACY_REQUIRED = 3,
+        _,
+    };
+
+    pub const EnumType = enum(i32) {
+        ENUM_TYPE_UNKNOWN = 0,
+        OPEN = 1,
+        CLOSED = 2,
+        _,
+    };
+
+    pub const RepeatedFieldEncoding = enum(i32) {
+        REPEATED_FIELD_ENCODING_UNKNOWN = 0,
+        PACKED = 1,
+        EXPANDED = 2,
+        _,
+    };
+
+    pub const Utf8Validation = enum(i32) {
+        UTF8_VALIDATION_UNKNOWN = 0,
+        VERIFY = 2,
+        NONE = 3,
+        _,
+    };
+
+    pub const MessageEncoding = enum(i32) {
+        MESSAGE_ENCODING_UNKNOWN = 0,
+        LENGTH_PREFIXED = 1,
+        DELIMITED = 2,
+        _,
+    };
+
+    pub const JsonFormat = enum(i32) {
+        JSON_FORMAT_UNKNOWN = 0,
+        ALLOW = 1,
+        LEGACY_BEST_EFFORT = 2,
+        _,
+    };
+
+    pub const EnforceNamingStyle = enum(i32) {
+        ENFORCE_NAMING_STYLE_UNKNOWN = 0,
+        STYLE2024 = 1,
+        STYLE_LEGACY = 2,
+        _,
+    };
+
+    pub const VisibilityFeature = struct {
+        pub const _desc_table = .{};
+
+        pub const DefaultSymbolVisibility = enum(i32) {
+            DEFAULT_SYMBOL_VISIBILITY_UNKNOWN = 0,
+            EXPORT_ALL = 1,
+            EXPORT_TOP_LEVEL = 2,
+            LOCAL_ALL = 3,
+            STRICT = 4,
+            _,
+        };
+
+        /// Encodes the message to the writer
+        /// The allocator is used to generate submessages internally.
+        /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
+        pub fn encode(
+            self: @This(),
+            writer: *std.Io.Writer,
+            allocator: std.mem.Allocator,
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
+            return protobuf.encode(writer, allocator, self);
+        }
+
+        /// Decodes the message from the bytes read from the reader.
+        pub fn decode(
+            reader: *std.Io.Reader,
+            allocator: std.mem.Allocator,
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
+            return protobuf.decode(@This(), reader, allocator);
+        }
+
+        /// Deinitializes and frees the memory associated with the message.
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+            return protobuf.deinit(allocator, self);
+        }
+
+        /// Duplicates the message.
+        pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
+            return protobuf.dupe(@This(), self, allocator);
+        }
+
+        /// Decodes the message from the JSON string.
+        pub fn jsonDecode(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decode(@This(), input, options, allocator);
+        }
+
+        /// Encodes the message to a JSON string.
+        pub fn jsonEncode(
+            self: @This(),
+            options: std.json.Stringify.Options,
+            allocator: std.mem.Allocator,
+        ) ![]const u8 {
+            return protobuf.json.encode(self, options, allocator);
+        }
+
+        /// This method is used by std.json
+        /// internally for deserialization. DO NOT RENAME!
+        pub fn jsonParse(
+            allocator: std.mem.Allocator,
+            source: anytype,
+            options: std.json.ParseOptions,
+        ) !@This() {
+            return protobuf.json.parse(@This(), allocator, source, options);
+        }
+
+        /// This method is used by std.json
+        /// internally for serialization. DO NOT RENAME!
+        pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
+            return protobuf.json.stringify(@This(), self, jws);
+        }
+    };
+
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
+    pub fn encode(
+        self: @This(),
+        writer: *std.Io.Writer,
+        allocator: std.mem.Allocator,
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
+        return protobuf.encode(writer, allocator, self);
+    }
+
+    /// Decodes the message from the bytes read from the reader.
+    pub fn decode(
+        reader: *std.Io.Reader,
+        allocator: std.mem.Allocator,
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
+        return protobuf.decode(@This(), reader, allocator);
+    }
+
+    /// Deinitializes and frees the memory associated with the message.
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+        return protobuf.deinit(allocator, self);
+    }
+
+    /// Duplicates the message.
+    pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
+        return protobuf.dupe(@This(), self, allocator);
+    }
+
+    /// Decodes the message from the JSON string.
+    pub fn jsonDecode(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Encodes the message to a JSON string.
+    pub fn jsonEncode(
+        self: @This(),
+        options: std.json.Stringify.Options,
+        allocator: std.mem.Allocator,
+    ) ![]const u8 {
+        return protobuf.json.encode(self, options, allocator);
+    }
+
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
+    pub fn jsonParse(
+        allocator: std.mem.Allocator,
+        source: anytype,
+        options: std.json.ParseOptions,
+    ) !@This() {
+        return protobuf.json.parse(@This(), allocator, source, options);
+    }
+
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
+    pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
+        return protobuf.json.stringify(@This(), self, jws);
+    }
+};
+
+/// A compiled specification for the defaults of a set of features.  These
+/// messages are generated from FeatureSet extensions and can be used to seed
+/// feature resolution. The resolution with this object becomes a simple search
+/// for the closest matching edition, followed by proto merges.
+pub const FeatureSetDefaults = struct {
+    defaults: std.ArrayListUnmanaged(FeatureSetDefaults.FeatureSetEditionDefault) = .empty,
+    minimum_edition: ?Edition = null,
+    maximum_edition: ?Edition = null,
+
+    pub const _desc_table = .{
+        .defaults = fd(1, .{ .repeated = .submessage }),
+        .minimum_edition = fd(4, .@"enum"),
+        .maximum_edition = fd(5, .@"enum"),
+    };
+
+    /// A map from every known edition with a unique set of defaults to its
+    /// defaults. Not all editions may be contained here.  For a given edition,
+    /// the defaults at the closest matching edition ordered at or before it should
+    /// be used.  This field must be in strict ascending order by edition.
+    pub const FeatureSetEditionDefault = struct {
+        edition: ?Edition = null,
+        overridable_features: ?FeatureSet = null,
+        fixed_features: ?FeatureSet = null,
+
+        pub const _desc_table = .{
+            .edition = fd(3, .@"enum"),
+            .overridable_features = fd(4, .submessage),
+            .fixed_features = fd(5, .submessage),
+        };
+
+        /// Encodes the message to the writer
+        /// The allocator is used to generate submessages internally.
+        /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
+        pub fn encode(
+            self: @This(),
+            writer: *std.Io.Writer,
+            allocator: std.mem.Allocator,
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
+            return protobuf.encode(writer, allocator, self);
+        }
+
+        /// Decodes the message from the bytes read from the reader.
+        pub fn decode(
+            reader: *std.Io.Reader,
+            allocator: std.mem.Allocator,
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
+            return protobuf.decode(@This(), reader, allocator);
+        }
+
+        /// Deinitializes and frees the memory associated with the message.
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+            return protobuf.deinit(allocator, self);
+        }
+
+        /// Duplicates the message.
+        pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
+            return protobuf.dupe(@This(), self, allocator);
+        }
+
+        /// Decodes the message from the JSON string.
+        pub fn jsonDecode(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decode(@This(), input, options, allocator);
+        }
+
+        /// Encodes the message to a JSON string.
+        pub fn jsonEncode(
+            self: @This(),
+            options: std.json.Stringify.Options,
+            allocator: std.mem.Allocator,
+        ) ![]const u8 {
+            return protobuf.json.encode(self, options, allocator);
+        }
+
+        /// This method is used by std.json
+        /// internally for deserialization. DO NOT RENAME!
+        pub fn jsonParse(
+            allocator: std.mem.Allocator,
+            source: anytype,
+            options: std.json.ParseOptions,
+        ) !@This() {
+            return protobuf.json.parse(@This(), allocator, source, options);
+        }
+
+        /// This method is used by std.json
+        /// internally for serialization. DO NOT RENAME!
+        pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
+            return protobuf.json.stringify(@This(), self, jws);
+        }
+    };
+
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
+    pub fn encode(
+        self: @This(),
+        writer: *std.Io.Writer,
+        allocator: std.mem.Allocator,
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
+        return protobuf.encode(writer, allocator, self);
+    }
+
+    /// Decodes the message from the bytes read from the reader.
+    pub fn decode(
+        reader: *std.Io.Reader,
+        allocator: std.mem.Allocator,
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
+        return protobuf.decode(@This(), reader, allocator);
+    }
+
+    /// Deinitializes and frees the memory associated with the message.
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+        return protobuf.deinit(allocator, self);
+    }
+
+    /// Duplicates the message.
+    pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
+        return protobuf.dupe(@This(), self, allocator);
+    }
+
+    /// Decodes the message from the JSON string.
+    pub fn jsonDecode(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Encodes the message to a JSON string.
+    pub fn jsonEncode(
+        self: @This(),
+        options: std.json.Stringify.Options,
+        allocator: std.mem.Allocator,
+    ) ![]const u8 {
+        return protobuf.json.encode(self, options, allocator);
+    }
+
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
+    pub fn jsonParse(
+        allocator: std.mem.Allocator,
+        source: anytype,
+        options: std.json.ParseOptions,
+    ) !@This() {
+        return protobuf.json.parse(@This(), allocator, source, options);
+    }
+
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
+    pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
+        return protobuf.json.stringify(@This(), self, jws);
+    }
+};
+
+/// Encapsulates information about the original source file from which a
+/// FileDescriptorProto was generated.
 pub const SourceCodeInfo = struct {
     location: std.ArrayListUnmanaged(SourceCodeInfo.Location) = .empty,
 
@@ -2155,6 +2777,9 @@ pub const SourceCodeInfo = struct {
     }
 };
 
+/// Describes the relationship between generated code and its original source
+/// file. A GeneratedCodeInfo message is associated with only one generated
+/// source file, but may contain references to different source .proto files.
 pub const GeneratedCodeInfo = struct {
     annotation: std.ArrayListUnmanaged(GeneratedCodeInfo.Annotation) = .empty,
 
@@ -2177,6 +2802,8 @@ pub const GeneratedCodeInfo = struct {
             .semantic = fd(5, .@"enum"),
         };
 
+        /// Represents the identified object's effect on the element in the original
+        /// .proto file.
         pub const Semantic = enum(i32) {
             NONE = 0,
             SET = 1,
@@ -2312,6 +2939,91 @@ pub const GeneratedCodeInfo = struct {
     }
 };
 
+/// `Any` contains an arbitrary serialized protocol buffer message along with a
+/// URL that describes the type of the serialized message.
+///
+/// Protobuf library provides support to pack/unpack Any values in the form
+/// of utility functions or additional generated methods of the Any type.
+///
+/// Example 1: Pack and unpack a message in C++.
+///
+/// Foo foo = ...;
+/// Any any;
+/// any.PackFrom(foo);
+/// ...
+/// if (any.UnpackTo(&foo)) {
+/// ...
+/// }
+///
+/// Example 2: Pack and unpack a message in Java.
+///
+/// Foo foo = ...;
+/// Any any = Any.pack(foo);
+/// ...
+/// if (any.is(Foo.class)) {
+/// foo = any.unpack(Foo.class);
+/// }
+/// or ...
+/// if (any.isSameTypeAs(Foo.getDefaultInstance())) {
+/// foo = any.unpack(Foo.getDefaultInstance());
+/// }
+///
+/// Example 3: Pack and unpack a message in Python.
+///
+/// foo = Foo(...)
+/// any = Any()
+/// any.Pack(foo)
+/// ...
+/// if any.Is(Foo.DESCRIPTOR):
+/// any.Unpack(foo)
+/// ...
+///
+/// Example 4: Pack and unpack a message in Go
+///
+/// foo := &pb.Foo{...}
+/// any, err := anypb.New(foo)
+/// if err != nil {
+/// ...
+/// }
+/// ...
+/// foo := &pb.Foo{}
+/// if err := any.UnmarshalTo(foo); err != nil {
+/// ...
+/// }
+///
+/// The pack methods provided by protobuf library will by default use
+/// 'type.googleapis.com/full.type.name' as the type URL and the unpack
+/// methods only use the fully qualified type name after the last '/'
+/// in the type URL, for example "foo.bar.com/x/y.z" will yield type
+/// name "y.z".
+///
+/// JSON
+/// ====
+/// The JSON representation of an `Any` value uses the regular
+/// representation of the deserialized, embedded message, with an
+/// additional field `@type` which contains the type URL. Example:
+///
+/// package google.profile;
+/// message Person {
+/// string first_name = 1;
+/// string last_name = 2;
+/// }
+///
+/// {
+/// "@type": "type.googleapis.com/google.profile.Person",
+/// "firstName": <string>,
+/// "lastName": <string>
+/// }
+///
+/// If the embedded message type is well-known and has a custom JSON
+/// representation, that representation will be embedded adding a field
+/// `value` which holds the custom JSON in addition to the `@type`
+/// field. Example (for message [google.protobuf.Duration][]):
+///
+/// {
+/// "@type": "type.googleapis.com/google.protobuf.Duration",
+/// "value": "1.212s"
+/// }
 pub const Any = struct {
     type_url: []const u8 = &.{},
     value: []const u8 = &.{},
@@ -2385,6 +3097,64 @@ pub const Any = struct {
     }
 };
 
+/// A Duration represents a signed, fixed-length span of time represented
+/// as a count of seconds and fractions of seconds at nanosecond
+/// resolution. It is independent of any calendar and concepts like "day"
+/// or "month". It is related to Timestamp in that the difference between
+/// two Timestamp values is a Duration and it can be added or subtracted
+/// from a Timestamp. Range is approximately +-10,000 years.
+///
+/// # Examples
+///
+/// Example 1: Compute Duration from two Timestamps in pseudo code.
+///
+/// Timestamp start = ...;
+/// Timestamp end = ...;
+/// Duration duration = ...;
+///
+/// duration.seconds = end.seconds - start.seconds;
+/// duration.nanos = end.nanos - start.nanos;
+///
+/// if (duration.seconds < 0 && duration.nanos > 0) {
+/// duration.seconds += 1;
+/// duration.nanos -= 1000000000;
+/// } else if (duration.seconds > 0 && duration.nanos < 0) {
+/// duration.seconds -= 1;
+/// duration.nanos += 1000000000;
+/// }
+///
+/// Example 2: Compute Timestamp from Timestamp + Duration in pseudo code.
+///
+/// Timestamp start = ...;
+/// Duration duration = ...;
+/// Timestamp end = ...;
+///
+/// end.seconds = start.seconds + duration.seconds;
+/// end.nanos = start.nanos + duration.nanos;
+///
+/// if (end.nanos < 0) {
+/// end.seconds -= 1;
+/// end.nanos += 1000000000;
+/// } else if (end.nanos >= 1000000000) {
+/// end.seconds += 1;
+/// end.nanos -= 1000000000;
+/// }
+///
+/// Example 3: Compute Duration from datetime.timedelta in Python.
+///
+/// td = datetime.timedelta(days=3, minutes=10)
+/// duration = Duration()
+/// duration.FromTimedelta(td)
+///
+/// # JSON Mapping
+///
+/// In JSON format, the Duration type is encoded as a string rather than an
+/// object, where the string ends in the suffix "s" (indicating seconds) and
+/// is preceded by the number of seconds, with nanoseconds expressed as
+/// fractional seconds. For example, 3 seconds with 0 nanoseconds should be
+/// encoded in JSON format as "3s", while 3 seconds and 1 nanosecond should
+/// be expressed in JSON format as "3.000000001s", and 3 seconds and 1
+/// microsecond should be expressed in JSON format as "3.000001s".
 pub const Duration = struct {
     seconds: i64 = 0,
     nanos: i32 = 0,
@@ -2458,6 +3228,205 @@ pub const Duration = struct {
     }
 };
 
+/// `FieldMask` represents a set of symbolic field paths, for example:
+///
+/// paths: "f.a"
+/// paths: "f.b.d"
+///
+/// Here `f` represents a field in some root message, `a` and `b`
+/// fields in the message found in `f`, and `d` a field found in the
+/// message in `f.b`.
+///
+/// Field masks are used to specify a subset of fields that should be
+/// returned by a get operation or modified by an update operation.
+/// Field masks also have a custom JSON encoding (see below).
+///
+/// # Field Masks in Projections
+///
+/// When used in the context of a projection, a response message or
+/// sub-message is filtered by the API to only contain those fields as
+/// specified in the mask. For example, if the mask in the previous
+/// example is applied to a response message as follows:
+///
+/// f {
+/// a : 22
+/// b {
+/// d : 1
+/// x : 2
+/// }
+/// y : 13
+/// }
+/// z: 8
+///
+/// The result will not contain specific values for fields x,y and z
+/// (their value will be set to the default, and omitted in proto text
+/// output):
+///
+///
+/// f {
+/// a : 22
+/// b {
+/// d : 1
+/// }
+/// }
+///
+/// A repeated field is not allowed except at the last position of a
+/// paths string.
+///
+/// If a FieldMask object is not present in a get operation, the
+/// operation applies to all fields (as if a FieldMask of all fields
+/// had been specified).
+///
+/// Note that a field mask does not necessarily apply to the
+/// top-level response message. In case of a REST get operation, the
+/// field mask applies directly to the response, but in case of a REST
+/// list operation, the mask instead applies to each individual message
+/// in the returned resource list. In case of a REST custom method,
+/// other definitions may be used. Where the mask applies will be
+/// clearly documented together with its declaration in the API.  In
+/// any case, the effect on the returned resource/resources is required
+/// behavior for APIs.
+///
+/// # Field Masks in Update Operations
+///
+/// A field mask in update operations specifies which fields of the
+/// targeted resource are going to be updated. The API is required
+/// to only change the values of the fields as specified in the mask
+/// and leave the others untouched. If a resource is passed in to
+/// describe the updated values, the API ignores the values of all
+/// fields not covered by the mask.
+///
+/// If a repeated field is specified for an update operation, new values will
+/// be appended to the existing repeated field in the target resource. Note that
+/// a repeated field is only allowed in the last position of a `paths` string.
+///
+/// If a sub-message is specified in the last position of the field mask for an
+/// update operation, then new value will be merged into the existing sub-message
+/// in the target resource.
+///
+/// For example, given the target message:
+///
+/// f {
+/// b {
+/// d: 1
+/// x: 2
+/// }
+/// c: [1]
+/// }
+///
+/// And an update message:
+///
+/// f {
+/// b {
+/// d: 10
+/// }
+/// c: [2]
+/// }
+///
+/// then if the field mask is:
+///
+/// paths: ["f.b", "f.c"]
+///
+/// then the result will be:
+///
+/// f {
+/// b {
+/// d: 10
+/// x: 2
+/// }
+/// c: [1, 2]
+/// }
+///
+/// An implementation may provide options to override this default behavior for
+/// repeated and message fields.
+///
+/// In order to reset a field's value to the default, the field must
+/// be in the mask and set to the default value in the provided resource.
+/// Hence, in order to reset all fields of a resource, provide a default
+/// instance of the resource and set all fields in the mask, or do
+/// not provide a mask as described below.
+///
+/// If a field mask is not present on update, the operation applies to
+/// all fields (as if a field mask of all fields has been specified).
+/// Note that in the presence of schema evolution, this may mean that
+/// fields the client does not know and has therefore not filled into
+/// the request will be reset to their default. If this is unwanted
+/// behavior, a specific service may require a client to always specify
+/// a field mask, producing an error if not.
+///
+/// As with get operations, the location of the resource which
+/// describes the updated values in the request message depends on the
+/// operation kind. In any case, the effect of the field mask is
+/// required to be honored by the API.
+///
+/// ## Considerations for HTTP REST
+///
+/// The HTTP kind of an update operation which uses a field mask must
+/// be set to PATCH instead of PUT in order to satisfy HTTP semantics
+/// (PUT must only be used for full updates).
+///
+/// # JSON Encoding of Field Masks
+///
+/// In JSON, a field mask is encoded as a single string where paths are
+/// separated by a comma. Fields name in each path are converted
+/// to/from lower-camel naming conventions.
+///
+/// As an example, consider the following message declarations:
+///
+/// message Profile {
+/// User user = 1;
+/// Photo photo = 2;
+/// }
+/// message User {
+/// string display_name = 1;
+/// string address = 2;
+/// }
+///
+/// In proto a field mask for `Profile` may look as such:
+///
+/// mask {
+/// paths: "user.display_name"
+/// paths: "photo"
+/// }
+///
+/// In JSON, the same mask is represented as below:
+///
+/// {
+/// mask: "user.displayName,photo"
+/// }
+///
+/// # Field Masks and Oneof Fields
+///
+/// Field masks treat fields in oneofs just as regular fields. Consider the
+/// following message:
+///
+/// message SampleMessage {
+/// oneof test_oneof {
+/// string name = 4;
+/// SubMessage sub_message = 9;
+/// }
+/// }
+///
+/// The field mask can be:
+///
+/// mask {
+/// paths: "name"
+/// }
+///
+/// Or:
+///
+/// mask {
+/// paths: "sub_message"
+/// }
+///
+/// Note that oneof type names ("test_oneof" in this case) cannot be used in
+/// paths.
+///
+/// ## Field Mask Verification
+///
+/// The implementation of any API method which has a FieldMask type field in the
+/// request should verify the included field paths, and return an
+/// `INVALID_ARGUMENT` error if any path is unmappable.
 pub const FieldMask = struct {
     paths: std.ArrayListUnmanaged([]const u8) = .empty,
 
@@ -2529,11 +3498,23 @@ pub const FieldMask = struct {
     }
 };
 
+/// `NullValue` is a singleton enumeration to represent the null value for the
+/// `Value` type union.
+///
+/// The JSON representation for `NullValue` is JSON `null`.
 pub const NullValue = enum(i32) {
     NULL_VALUE = 0,
     _,
 };
 
+/// `Struct` represents a structured data value, consisting of fields
+/// which map to dynamically typed values. In some languages, `Struct`
+/// might be supported by a native representation. For example, in
+/// scripting languages like JS a struct is represented as an
+/// object. The details of that representation are described together
+/// with the proto support for the language.
+///
+/// The JSON representation for `Struct` is JSON object.
 pub const Struct = struct {
     fields: std.ArrayListUnmanaged(Struct.FieldsEntry) = .empty,
 
@@ -2678,6 +3659,12 @@ pub const Struct = struct {
     }
 };
 
+/// `Value` represents a dynamically typed value which can be either
+/// null, a number, a string, a boolean, a recursive struct value, or a
+/// list of values. A producer of value is expected to set one of these
+/// variants. Absence of any variant indicates an error.
+///
+/// The JSON representation for `Value` is JSON value.
 pub const Value = struct {
     kind: ?kind_union = null,
 
@@ -2774,6 +3761,9 @@ pub const Value = struct {
     }
 };
 
+/// `ListValue` is a wrapper around a repeated field of values.
+///
+/// The JSON representation for `ListValue` is JSON array.
 pub const ListValue = struct {
     values: std.ArrayListUnmanaged(Value) = .empty,
 
@@ -2845,6 +3835,95 @@ pub const ListValue = struct {
     }
 };
 
+/// A Timestamp represents a point in time independent of any time zone or local
+/// calendar, encoded as a count of seconds and fractions of seconds at
+/// nanosecond resolution. The count is relative to an epoch at UTC midnight on
+/// January 1, 1970, in the proleptic Gregorian calendar which extends the
+/// Gregorian calendar backwards to year one.
+///
+/// All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
+/// second table is needed for interpretation, using a [24-hour linear
+/// smear](https://developers.google.com/time/smear).
+///
+/// The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
+/// restricting to that range, we ensure that we can convert to and from [RFC
+/// 3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
+///
+/// # Examples
+///
+/// Example 1: Compute Timestamp from POSIX `time()`.
+///
+/// Timestamp timestamp;
+/// timestamp.set_seconds(time(NULL));
+/// timestamp.set_nanos(0);
+///
+/// Example 2: Compute Timestamp from POSIX `gettimeofday()`.
+///
+/// struct timeval tv;
+/// gettimeofday(&tv, NULL);
+///
+/// Timestamp timestamp;
+/// timestamp.set_seconds(tv.tv_sec);
+/// timestamp.set_nanos(tv.tv_usec * 1000);
+///
+/// Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
+///
+/// FILETIME ft;
+/// GetSystemTimeAsFileTime(&ft);
+/// UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
+///
+/// A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
+/// is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
+/// Timestamp timestamp;
+/// timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
+/// timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
+///
+/// Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
+///
+/// long millis = System.currentTimeMillis();
+///
+/// Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
+/// .setNanos((int) ((millis % 1000) * 1000000)).build();
+///
+/// Example 5: Compute Timestamp from Java `Instant.now()`.
+///
+/// Instant now = Instant.now();
+///
+/// Timestamp timestamp =
+/// Timestamp.newBuilder().setSeconds(now.getEpochSecond())
+/// .setNanos(now.getNano()).build();
+///
+/// Example 6: Compute Timestamp from current time in Python.
+///
+/// timestamp = Timestamp()
+/// timestamp.GetCurrentTime()
+///
+/// # JSON Mapping
+///
+/// In JSON format, the Timestamp type is encoded as a string in the
+/// [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
+/// format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
+/// where {year} is always expressed using four digits while {month}, {day},
+/// {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
+/// seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
+/// are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
+/// is required. A proto3 JSON serializer should always use UTC (as indicated by
+/// "Z") when printing the Timestamp type and a proto3 JSON parser should be
+/// able to accept both UTC and other timezones (as indicated by an offset).
+///
+/// For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
+/// 01:30 UTC on January 15, 2017.
+///
+/// In JavaScript, one can convert a Date object to this format using the
+/// standard
+/// [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
+/// method. In Python, a standard `datetime.datetime` object can be converted
+/// to this format using
+/// [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
+/// the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
+/// the Joda Time's [`ISODateTimeFormat.dateTime()`](
+/// http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
+/// ) to obtain a formatter capable of generating timestamps in this format.
 pub const Timestamp = struct {
     seconds: i64 = 0,
     nanos: i32 = 0,
@@ -2918,6 +3997,12 @@ pub const Timestamp = struct {
     }
 };
 
+/// Wrapper message for `double`.
+///
+/// The JSON representation for `DoubleValue` is JSON number.
+///
+/// Not recommended for use in new APIs, but still useful for legacy APIs and
+/// has no plan to be removed.
 pub const DoubleValue = struct {
     value: f64 = 0,
 
@@ -2989,6 +4074,12 @@ pub const DoubleValue = struct {
     }
 };
 
+/// Wrapper message for `float`.
+///
+/// The JSON representation for `FloatValue` is JSON number.
+///
+/// Not recommended for use in new APIs, but still useful for legacy APIs and
+/// has no plan to be removed.
 pub const FloatValue = struct {
     value: f32 = 0,
 
@@ -3060,6 +4151,12 @@ pub const FloatValue = struct {
     }
 };
 
+/// Wrapper message for `int64`.
+///
+/// The JSON representation for `Int64Value` is JSON string.
+///
+/// Not recommended for use in new APIs, but still useful for legacy APIs and
+/// has no plan to be removed.
 pub const Int64Value = struct {
     value: i64 = 0,
 
@@ -3131,6 +4228,12 @@ pub const Int64Value = struct {
     }
 };
 
+/// Wrapper message for `uint64`.
+///
+/// The JSON representation for `UInt64Value` is JSON string.
+///
+/// Not recommended for use in new APIs, but still useful for legacy APIs and
+/// has no plan to be removed.
 pub const UInt64Value = struct {
     value: u64 = 0,
 
@@ -3202,6 +4305,12 @@ pub const UInt64Value = struct {
     }
 };
 
+/// Wrapper message for `int32`.
+///
+/// The JSON representation for `Int32Value` is JSON number.
+///
+/// Not recommended for use in new APIs, but still useful for legacy APIs and
+/// has no plan to be removed.
 pub const Int32Value = struct {
     value: i32 = 0,
 
@@ -3273,6 +4382,12 @@ pub const Int32Value = struct {
     }
 };
 
+/// Wrapper message for `uint32`.
+///
+/// The JSON representation for `UInt32Value` is JSON number.
+///
+/// Not recommended for use in new APIs, but still useful for legacy APIs and
+/// has no plan to be removed.
 pub const UInt32Value = struct {
     value: u32 = 0,
 
@@ -3344,6 +4459,12 @@ pub const UInt32Value = struct {
     }
 };
 
+/// Wrapper message for `bool`.
+///
+/// The JSON representation for `BoolValue` is JSON `true` and `false`.
+///
+/// Not recommended for use in new APIs, but still useful for legacy APIs and
+/// has no plan to be removed.
 pub const BoolValue = struct {
     value: bool = false,
 
@@ -3415,6 +4536,12 @@ pub const BoolValue = struct {
     }
 };
 
+/// Wrapper message for `string`.
+///
+/// The JSON representation for `StringValue` is JSON string.
+///
+/// Not recommended for use in new APIs, but still useful for legacy APIs and
+/// has no plan to be removed.
 pub const StringValue = struct {
     value: []const u8 = &.{},
 
@@ -3486,6 +4613,12 @@ pub const StringValue = struct {
     }
 };
 
+/// Wrapper message for `bytes`.
+///
+/// The JSON representation for `BytesValue` is JSON string.
+///
+/// Not recommended for use in new APIs, but still useful for legacy APIs and
+/// has no plan to be removed.
 pub const BytesValue = struct {
     value: []const u8 = &.{},
 

@@ -43,6 +43,62 @@ const GenerationContext = struct {
     /// map of message names to their dependencies
     message_deps: std.StringHashMap(std.ArrayList([]const u8)),
 
+    /// Helper struct for working with SourceCodeInfo
+    const SourceCodeInfo = struct {
+        /// Appends a comment as doc-comment lines (///) to the output
+        fn appendComment(allocator: std.mem.Allocator, lines: *std.ArrayList([]const u8), raw_comment: []const u8) !void {
+            // Trim trailing newlines from the comment first
+            var trimmed = raw_comment;
+            while (trimmed.len > 0 and trimmed[trimmed.len - 1] == '\n') {
+                trimmed = trimmed[0 .. trimmed.len - 1];
+            }
+
+            var comment_lines = std.mem.splitScalar(u8, trimmed, '\n');
+
+            while (comment_lines.next()) |comment_line| {
+                // Strip leading forward slashes that protobuf includes from the source
+                var line = comment_line;
+                while (line.len > 0 and (line[0] == '/' or line[0] == ' ')) {
+                    line = line[1..];
+                }
+
+                // Use /// for doc comments as per issue discussion
+                try lines.append(allocator, try std.fmt.allocPrint(
+                    allocator,
+                    "/// {s}\n",
+                    .{line},
+                ));
+            }
+        }
+
+        /// Get source code location for an item in a repeated field
+        fn getRepeatedFieldLocation(
+            file: descriptor.FileDescriptorProto,
+            root_path: []const i32,
+            field_number: i32,
+            index: usize,
+        ) ?descriptor.SourceCodeInfo.Location {
+            const sci = file.source_code_info orelse return null;
+
+            for (sci.location.items) |location| {
+                const path = location.path.items;
+
+                if (path.len != root_path.len + 2) continue;
+                if (!std.mem.eql(i32, root_path, path[0..root_path.len]))
+                    continue;
+
+                const rem_path = path[root_path.len..];
+
+                if (rem_path[0] != field_number) continue;
+                if (rem_path[1] != @as(i32, @intCast(index))) continue;
+
+                return location;
+            }
+
+            return null;
+        }
+    };
+
     pub fn init(allocator: std.mem.Allocator, request: plugin.CodeGeneratorRequest) !GenerationContext {
         return .{
             .req = request,
@@ -193,8 +249,12 @@ const GenerationContext = struct {
     ) !void {
         const lines = try self.getOutputLines(allocator, fqn);
 
-        try self.generateEnums(allocator, lines, fqn, file, file.enum_type);
-        try self.generateMessages(allocator, lines, fqn, file, file.message_type);
+        // For file-level elements, root_path is empty
+        const file_root_path: []const i32 = &.{};
+        // Field number 5 for enum_type in FileDescriptorProto
+        try self.generateEnums(allocator, lines, fqn, file, file.enum_type, file_root_path, 5);
+        // Field number 4 for message_type in FileDescriptorProto
+        try self.generateMessages(allocator, lines, fqn, file, file.message_type, file_root_path, 4);
     }
 
     fn generateEnums(
@@ -204,17 +264,32 @@ const GenerationContext = struct {
         fqn: FullName,
         file: descriptor.FileDescriptorProto,
         enums: std.ArrayListUnmanaged(descriptor.EnumDescriptorProto),
+        root_path: []const i32,
+        enum_field_number: i32,
     ) !void {
         _ = ctx;
-        _ = file;
         _ = fqn;
 
-        for (enums.items) |theEnum| {
+        for (enums.items, 0..) |theEnum, enum_i| {
             const e: descriptor.EnumDescriptorProto = theEnum;
+
+            try lines.append(allocator, "\n");
+
+            // Add leading comment if available
+            if (SourceCodeInfo.getRepeatedFieldLocation(
+                file,
+                root_path,
+                enum_field_number,
+                enum_i,
+            )) |loc| {
+                if (loc.leading_comments) |leading_comments| {
+                    try SourceCodeInfo.appendComment(allocator, lines, leading_comments);
+                }
+            }
 
             try lines.append(
                 allocator,
-                try std.fmt.allocPrint(allocator, "\npub const {s} = enum(i32) {{\n", .{e.name.?}),
+                try std.fmt.allocPrint(allocator, "pub const {s} = enum(i32) {{\n", .{e.name.?}),
             );
 
             for (e.value.items) |elem| {
@@ -567,14 +642,37 @@ const GenerationContext = struct {
         fqn: FullName,
         file: descriptor.FileDescriptorProto,
         messages: std.ArrayListUnmanaged(descriptor.DescriptorProto),
+        root_path: []const i32,
+        message_field_number: i32,
     ) !void {
-        for (messages.items) |message| {
+        for (messages.items, 0..) |message, message_i| {
             const m: descriptor.DescriptorProto = message;
             const messageFqn = try fqn.append(allocator, m.name.?);
 
+            // Build the path for this message: root_path + [message_field_number, message_i]
+            var message_path: std.ArrayList(i32) = .empty;
+            defer message_path.deinit(allocator);
+            try message_path.appendSlice(allocator, root_path);
+            try message_path.append(allocator, message_field_number);
+            try message_path.append(allocator, @intCast(message_i));
+
+            try lines.append(allocator, "\n");
+
+            // Add leading comment if available
+            if (SourceCodeInfo.getRepeatedFieldLocation(
+                file,
+                root_path,
+                message_field_number,
+                message_i,
+            )) |loc| {
+                if (loc.leading_comments) |leading_comments| {
+                    try SourceCodeInfo.appendComment(allocator, lines, leading_comments);
+                }
+            }
+
             try lines.append(
                 allocator,
-                try std.fmt.allocPrint(allocator, "\npub const {s} = struct {{\n", .{m.name.?}),
+                try std.fmt.allocPrint(allocator, "pub const {s} = struct {{\n", .{m.name.?}),
             );
 
             // append all fields that are not part of a oneof
@@ -696,8 +794,10 @@ const GenerationContext = struct {
                 \\
             );
 
-            try self.generateEnums(allocator, lines, messageFqn, file, m.enum_type);
-            try self.generateMessages(allocator, lines, messageFqn, file, m.nested_type);
+            // For nested enums, root_path is the message's path and field number is 4 (enum_type in DescriptorProto)
+            try self.generateEnums(allocator, lines, messageFqn, file, m.enum_type, message_path.items, 4);
+            // For nested messages, root_path is the message's path and field number is 3 (nested_type in DescriptorProto)
+            try self.generateMessages(allocator, lines, messageFqn, file, m.nested_type, message_path.items, 3);
 
             try lines.append(allocator, try std.fmt.allocPrint(allocator,
                 \\
