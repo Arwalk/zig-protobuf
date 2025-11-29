@@ -93,6 +93,7 @@ pub const RunProtocStep = struct {
     destination_directory: std.Build.LazyPath,
     generator: *std.Build.Step.Compile,
     verbose: bool = false,
+    default_package_name: ?[]const u8 = null,
 
     pub const base_id = .protoc;
 
@@ -100,6 +101,7 @@ pub const RunProtocStep = struct {
         source_files: []const []const u8,
         include_directories: []const []const u8 = &.{},
         destination_directory: std.Build.LazyPath,
+        default_package_name: ?[]const u8 = null,
     };
 
     pub const StepErr = error{
@@ -123,6 +125,7 @@ pub const RunProtocStep = struct {
             .include_directories = owner.dupeStrings(options.include_directories),
             .destination_directory = options.destination_directory.dupe(owner),
             .generator = buildGenerator(owner, .{ .target = target }),
+            .default_package_name = options.default_package_name,
         };
 
         self.step.dependOn(&self.generator.step);
@@ -146,6 +149,7 @@ pub const RunProtocStep = struct {
             .include_directories = owner.dupeStrings(options.include_directories),
             .destination_directory = options.destination_directory.dupe(owner),
             .generator = generator,
+            .default_package_name = options.default_package_name,
         };
 
         self.step.dependOn(&self.generator.step);
@@ -193,6 +197,12 @@ pub const RunProtocStep = struct {
                         try std.mem.concat(b.allocator, u8, &.{ "-I", it }),
                     );
                 }
+
+                // TODO handle multiple options, must add --zig_opt only once to protoc arguments
+                if (self.default_package_name) |it| {
+                    try argv.append(b.allocator, try std.mem.concat(b.allocator, u8, &.{ "--zig_opt=", "default_package_name", "=", it }));
+                }
+
                 for (self.source_files) |it| {
                     try argv.append(b.allocator, it);
                 }

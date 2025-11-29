@@ -118,15 +118,33 @@ const GenerationContext = struct {
             self.message_deps.deinit();
         }
 
-        for (self.req.proto_file.items) |file| {
-            const t: descriptor.FileDescriptorProto = file;
+        const default_package_name: ?[]const u8 = blk: {
+            if (self.req.parameter) |all_params| {
+                var params_iterator = std.mem.splitSequence(u8, all_params, ",");
+                while (params_iterator.next()) |param| {
+                    var key_value = std.mem.splitSequence(u8, param, "=");
+                    if (std.mem.eql(u8, key_value.next().?, "default_package_name")) {
+                        if (key_value.next()) |value| {
+                            break :blk value;
+                        }
+                    }
+                }
+            }
+            break :blk null;
+        };
+
+        for (self.req.proto_file.items) |*file| {
+            var t: *descriptor.FileDescriptorProto = file;
 
             if (t.package) |package| {
                 try self.known_packages.put(package, FullName{ .buf = package });
+            } else if (default_package_name) |n| {
+                t.package = n;
+                try self.known_packages.put(n, FullName{ .buf = n });
             } else {
                 self.res.@"error" = try std.fmt.allocPrint(
                     allocator,
-                    "ERROR Package directive missing in {s}\n",
+                    "File {s} has no package directive and no default package name was provided,\n",
                     .{file.name.?},
                 );
                 return;
