@@ -19,6 +19,8 @@ pub fn build(b: *std.Build) void {
 
     if (target.result.os.tag == .windows) {
         abseil.linkSystemLibrary("dbghelp");
+    } else if (target.result.os.tag == .macos) {
+        abseil.linkFramework("CoreFoundation");
     }
 
     abseil.addIncludePath(upstream.path(""));
