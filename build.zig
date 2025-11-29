@@ -134,13 +134,13 @@ pub fn build(b: *std.Build) !void {
         }),
     };
 
-    const convertStep = RunProtocStep.create(b, target, .{
+    const convertStep = RunProtocStep.create(b, target, optimize, .{
         .destination_directory = b.path("tests/.generated"),
         .source_files = &.{"tests/protos_for_test/generated_in_ci.proto"},
         .include_directories = &.{"tests/protos_for_test"},
     });
 
-    const convertStep2 = RunProtocStep.create(b, target, .{
+    const convertStep2 = RunProtocStep.create(b, target, optimize, .{
         .destination_directory = b.path("tests/generated"),
         .source_files = &.{ "tests/protos_for_test/all.proto", "tests/protos_for_test/whitespace-in-name.proto", "tests/protos_for_test/complex_type.proto" },
         .include_directories = &.{"tests/protos_for_test"},
@@ -163,18 +163,22 @@ pub fn build(b: *std.Build) !void {
         test_step.dependOn(&run_main_tests.step);
     }
 
-    const include = if (try build_util.getProtocDependency(b)) |protoc| protoc.path("include").getPath(b) else std.fs.path.dirname(@src().file) orelse ".";
+    const include = build_util.getProtocDependency(b, target, optimize).artifact("libprotobuf").getEmittedIncludeTree();
 
     const bootstrap = b.step("bootstrap", "run the generator over its own sources");
 
-    const bootstrapConversion = RunProtocStep.create(b, target, .{
+    const bootstrapConversion = RunProtocStep.create(b, target, optimize, .{
+        .root = include,
         .destination_directory = b.path("bootstrapped-generator"),
         .source_files = &.{
-            b.pathJoin(&.{ include, "google/protobuf/compiler/plugin.proto" }),
-            b.pathJoin(&.{ include, "google/protobuf/descriptor.proto" }),
+            "google/protobuf/compiler/plugin.proto",
+            "google/protobuf/descriptor.proto",
         },
         .include_directories = &.{},
     });
+
+    const protoc_artifact = build_util.getProtocArtifact(b, target, optimize);
+    bootstrapConversion.step.dependOn(&protoc_artifact.step);
 
     bootstrap.dependOn(&bootstrapConversion.step);
 }

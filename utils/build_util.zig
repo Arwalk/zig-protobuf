@@ -29,66 +29,40 @@ pub fn isEnvVarTruthy(allocator: std.mem.Allocator, name: []const u8) bool {
 
 pub fn ensureProtocBinaryDownloaded(
     b: *std.Build,
-) !?[]const u8 {
-    if (try getProtocBin(b)) |executable_path| {
-        if (fileExists(executable_path)) {
-            return executable_path;
-        }
-
-        if (!fileExists(executable_path)) {
-            std.log.err("zig-protobuf: file not found: {s}", .{executable_path});
-            std.process.exit(1);
-        }
-
-        return executable_path;
-    }
-    return null;
+    target: ?std.Build.ResolvedTarget,
+    optimize: ?std.builtin.OptimizeMode,
+) []const u8 {
+    return getProtocBin(b, target, optimize).getPath(b);
 }
 
-pub fn getProtocDependency(b: *std.Build) !?*std.Build.Dependency {
-    const os: ?[]const u8 = switch (builtin.os.tag) {
-        .macos => "osx",
-        .linux => "linux",
-        else => null,
-    };
-
-    const arch: ?[]const u8 = switch (builtin.cpu.arch) {
-        .powerpcle, .powerpc64le => "ppcle",
-        .aarch64, .aarch64_be => "aarch_64",
-        .s390x => "s390",
-        .x86_64 => "x86_64",
-        .x86 => "x86_32",
-        else => null,
-    };
-
-    const dependencyName = if (builtin.os.tag == .windows)
-        try std.mem.concat(b.allocator, u8, &.{"protoc-win64"})
-    else if (os != null and arch != null)
-        try std.mem.concat(b.allocator, u8, &.{ "protoc-", os.?, "-", arch.? })
-    else
-        @panic("Platform not supported");
-    defer b.allocator.free(dependencyName);
-
-    if (b.lazyDependency(dependencyName, .{})) |dep| {
-        return dep;
-    }
-
-    return null;
+pub fn getProtocDependency(
+    b: *std.Build,
+    target: ?std.Build.ResolvedTarget,
+    optimize: ?std.builtin.OptimizeMode,
+) *std.Build.Dependency {
+    return b.dependency("protobuf", .{ .target = target, .optimize = optimize });
 }
 
-pub fn getProtocBin(b: *std.Build) !?[]const u8 {
-    if (try getProtocDependency(b)) |dep| {
-        if (builtin.os.tag == .windows)
-            return dep.path("bin/protoc.exe").getPath(b);
-
-        return dep.path("bin/protoc").getPath(b);
-    }
-    return null;
+pub fn getProtocArtifact(
+    b: *std.Build,
+    target: ?std.Build.ResolvedTarget,
+    optimize: ?std.builtin.OptimizeMode,
+) *std.Build.Step.Compile {
+    return getProtocDependency(b, target, optimize).artifact("protoc");
+}
+pub fn getProtocBin(
+    b: *std.Build,
+    target: ?std.Build.ResolvedTarget,
+    optimize: ?std.builtin.OptimizeMode,
+) std.Build.LazyPath {
+    return getProtocArtifact(b, target, optimize).getEmittedBin();
 }
 
 pub const RunProtocStep = struct {
     step: std.Build.Step,
+    root: std.Build.LazyPath,
     source_files: []const []const u8,
+    base_include: std.Build.LazyPath,
     include_directories: []const []const u8,
     destination_directory: std.Build.LazyPath,
     generator: *std.Build.Step.Compile,
@@ -97,6 +71,7 @@ pub const RunProtocStep = struct {
     pub const base_id = .protoc;
 
     pub const Options = struct {
+        root: ?std.Build.LazyPath = null,
         source_files: []const []const u8,
         include_directories: []const []const u8 = &.{},
         destination_directory: std.Build.LazyPath,
@@ -109,28 +84,17 @@ pub const RunProtocStep = struct {
     pub fn create(
         owner: *std.Build,
         target: std.Build.ResolvedTarget,
+        optimize: std.builtin.OptimizeMode,
         options: Options,
     ) *RunProtocStep {
-        var self: *RunProtocStep = owner.allocator.create(RunProtocStep) catch @panic("OOM");
-        self.* = .{
-            .step = std.Build.Step.init(.{
-                .id = .check_file,
-                .name = "run protoc",
-                .owner = owner,
-                .makeFn = make,
-            }),
-            .source_files = owner.dupeStrings(options.source_files),
-            .include_directories = owner.dupeStrings(options.include_directories),
-            .destination_directory = options.destination_directory.dupe(owner),
-            .generator = buildGenerator(owner, .{ .target = target }),
-        };
-
-        self.step.dependOn(&self.generator.step);
-        return self;
+        const generator = buildGenerator(owner, .{ .target = target, .optimize = optimize });
+        return createWithGenerator(owner, target, optimize, generator, options);
     }
 
     pub fn createWithGenerator(
         owner: *std.Build,
+        target: std.Build.ResolvedTarget,
+        optimize: std.builtin.OptimizeMode,
         generator: *std.Build.Step.Compile,
         options: Options,
     ) *RunProtocStep {
@@ -142,13 +106,17 @@ pub const RunProtocStep = struct {
                 .owner = owner,
                 .makeFn = make,
             }),
+            .root = options.root orelse owner.path(""),
             .source_files = owner.dupeStrings(options.source_files),
             .include_directories = owner.dupeStrings(options.include_directories),
+            .base_include = getProtocDependency(owner, target, optimize).artifact("libprotobuf").getEmittedIncludeTree(),
             .destination_directory = options.destination_directory.dupe(owner),
             .generator = generator,
         };
 
+        const protoc_artifact = getProtocArtifact(owner, target, optimize);
         self.step.dependOn(&self.generator.step);
+        self.step.dependOn(&protoc_artifact.step);
         return self;
     }
 
@@ -160,53 +128,70 @@ pub const RunProtocStep = struct {
         _ = make_opt;
         const b = step.owner;
         const self: *RunProtocStep = @fieldParentPtr("step", step);
+        const protoc_artifact = getProtocArtifact(
+            b,
+            self.generator.root_module.resolved_target,
+            self.generator.root_module.optimize,
+        );
+
+        self.step.dependOn(&self.generator.step);
+        self.step.dependOn(&protoc_artifact.step);
 
         const absolute_dest_dir = self.destination_directory.getPath(b);
 
         { // run protoc
             var argv: std.ArrayList([]const u8) = .empty;
 
-            if (try ensureProtocBinaryDownloaded(b)) |protoc_path| {
-                try argv.append(b.allocator, protoc_path);
+            const protoc_path = ensureProtocBinaryDownloaded(
+                b,
+                self.generator.root_module.resolved_target,
+                self.generator.root_module.optimize,
+            );
 
-                try argv.append(b.allocator, try std.mem.concat(
-                    b.allocator,
-                    u8,
-                    &.{
-                        "--plugin=protoc-gen-zig=",
-                        self.generator.getEmittedBin().getPath(b),
-                    },
-                ));
+            try argv.append(b.allocator, protoc_path);
 
-                try argv.append(b.allocator, try std.mem.concat(
-                    b.allocator,
-                    u8,
-                    &.{ "--zig_out=", absolute_dest_dir },
-                ));
-                if (!dirExists(absolute_dest_dir)) {
-                    try std.fs.makeDirAbsolute(absolute_dest_dir);
-                }
+            try argv.append(b.allocator, try std.mem.concat(
+                b.allocator,
+                u8,
+                &.{
+                    "--plugin=protoc-gen-zig=",
+                    self.generator.getEmittedBin().getPath(b),
+                },
+            ));
 
-                for (self.include_directories) |it| {
-                    try argv.append(
-                        b.allocator,
-                        try std.mem.concat(b.allocator, u8, &.{ "-I", it }),
-                    );
-                }
-                for (self.source_files) |it| {
-                    try argv.append(b.allocator, it);
-                }
-
-                if (self.verbose) {
-                    std.debug.print("Running protoc:", .{});
-                    for (argv.items) |it| {
-                        std.debug.print(" {s}", .{it});
-                    }
-                    std.debug.print("\n", .{});
-                }
-
-                _ = try step.evalChildProcess(argv.items);
+            try argv.append(b.allocator, try std.mem.concat(
+                b.allocator,
+                u8,
+                &.{ "--zig_out=", absolute_dest_dir },
+            ));
+            if (!dirExists(absolute_dest_dir)) {
+                try std.fs.makeDirAbsolute(absolute_dest_dir);
             }
+
+            try argv.append(
+                b.allocator,
+                try std.mem.concat(b.allocator, u8, &.{ "-I", self.base_include.getPath(b) }),
+            );
+
+            for (self.include_directories) |it| {
+                try argv.append(
+                    b.allocator,
+                    try std.mem.concat(b.allocator, u8, &.{ "-I", self.root.path(b, it).getPath(b) }),
+                );
+            }
+            for (self.source_files) |it| {
+                try argv.append(b.allocator, self.root.path(b, it).getPath(b));
+            }
+
+            if (self.verbose) {
+                std.debug.print("Running protoc:", .{});
+                for (argv.items) |it| {
+                    std.debug.print(" {s}", .{it});
+                }
+                std.debug.print("\n", .{});
+            }
+
+            _ = try step.evalChildProcess(argv.items);
         }
 
         { // run zig fmt <destination>

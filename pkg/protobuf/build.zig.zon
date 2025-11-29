@@ -1,0 +1,13 @@
+.{
+    .name = .protobuf,
+    .version = "33.1.0",
+    .fingerprint = 0x99fac5bef9175f04,
+    .dependencies = .{
+        .protobuf = .{
+            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v33.1/protobuf-33.1.zip",
+            .hash = "N-V-__8AAEFHrwK_X6t_KsfWqMUt4PYycrJf9q1klcaITIW9",
+        },
+        .abseil = .{ .path = "../abseil" },
+    },
+    .paths = .{""},
+}
