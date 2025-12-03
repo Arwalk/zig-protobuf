@@ -125,14 +125,54 @@ pub fn parse(
                 const field_descriptor = @field(Self._desc_table, field.name);
                 if (field_descriptor.ftype == .oneof) {
                     const oneof = field_descriptor.ftype.oneof;
-                    if (try parseOneofUnionValue(oneof, field_name, allocator, source, options)) |union_value| {
-                        freeAllocated(allocator, name_token.?);
-                        name_token = null;
-                        @field(result, field.name) = union_value;
-                        fields_seen[i] = true;
-                        matched = true;
-                        break;
+                    const union_type = oneof;
+                    const union_info = @typeInfo(union_type).@"union";
+
+                    inline for (union_info.fields) |union_field| {
+                        const union_snake_match = std.mem.eql(u8, union_field.name, field_name);
+                        const union_camel_case_name = comptime to_camel_case(union_field.name);
+                        const union_camel_match = std.mem.eql(u8, union_camel_case_name, field_name);
+
+                        if (union_snake_match or union_camel_match) {
+                            freeAllocated(allocator, name_token.?);
+                            name_token = null;
+                            // Parse the value directly as the union field
+                            @field(result, field.name) = @unionInit(
+                                union_type,
+                                union_field.name,
+                                switch (@field(
+                                    oneof._desc_table,
+                                    union_field.name,
+                                ).ftype) {
+                                    .scalar => |scalar| switch (scalar) {
+                                        .bytes => try parse_bytes(allocator, source, options),
+                                        else => try std.json.innerParse(
+                                            union_field.type,
+                                            allocator,
+                                            source,
+                                            options,
+                                        ),
+                                    },
+                                    .submessage, .@"enum" => try std.json.innerParse(
+                                        union_field.type,
+                                        allocator,
+                                        source,
+                                        options,
+                                    ),
+                                    .repeated, .packed_repeated => {
+                                        @compileError("Repeated fields are not allowed in oneof");
+                                    },
+                                    .oneof => {
+                                        @compileError("one oneof inside another? really?");
+                                    },
+                                },
+                            );
+                            fields_seen[i] = true;
+                            matched = true;
+                            break;
+                        }
                     }
+                    if (matched) break;
                 }
             }
         }
@@ -240,57 +280,6 @@ fn freeAllocated(allocator: std.mem.Allocator, token: std.json.Token) void {
         },
         else => {},
     }
-}
-
-/// Parses a oneof union value when the union field name has already been matched.
-/// Returns the parsed union value or null if the field_name doesn't match any union field.
-fn parseOneofUnionValue(
-    comptime oneof: type,
-    field_name: []const u8,
-    allocator: std.mem.Allocator,
-    source: anytype,
-    json_options: std.json.ParseOptions,
-) !?oneof {
-    const union_info = @typeInfo(oneof).@"union";
-
-    inline for (union_info.fields) |union_field| {
-        // Check both snake_case and camelCase
-        const snake_match = std.mem.eql(u8, union_field.name, field_name);
-        const camel_case_name = comptime to_camel_case(union_field.name);
-        const camel_match = std.mem.eql(u8, camel_case_name, field_name);
-
-        if (snake_match or camel_match) {
-            return @unionInit(
-                oneof,
-                union_field.name,
-                switch (@field(oneof._desc_table, union_field.name).ftype) {
-                    .scalar => |scalar| switch (scalar) {
-                        .bytes => try parse_bytes(allocator, source, json_options),
-                        else => try std.json.innerParse(
-                            union_field.type,
-                            allocator,
-                            source,
-                            json_options,
-                        ),
-                    },
-                    .submessage, .@"enum" => try std.json.innerParse(
-                        union_field.type,
-                        allocator,
-                        source,
-                        json_options,
-                    ),
-                    .repeated, .packed_repeated => {
-                        @compileError("Repeated fields are not allowed in oneof");
-                    },
-                    .oneof => {
-                        @compileError("one oneof inside another? really?");
-                    },
-                },
-            );
-        }
-    }
-
-    return null;
 }
 
 fn stringify_struct_field(
@@ -441,32 +430,86 @@ fn parseStructField(
             }
         },
         .oneof => |oneof| oneof: {
-            // oneof -> union (shadowed format with wrapper object)
+            // oneof -> union
+            var union_value: switch (@typeInfo(
+                @TypeOf(@field(result.*, fieldInfo.name)),
+            )) {
+                .@"union" => @TypeOf(@field(result.*, fieldInfo.name)),
+                .optional => |optional| optional.child,
+                else => unreachable,
+            } = undefined;
+
+            const union_type = @TypeOf(union_value);
+            const union_info = @typeInfo(union_type).@"union";
+            if (union_info.tag_type == null) {
+                @compileError("Untagged unions are not supported here");
+            }
+
             if (.object_begin != try source.next()) {
                 return error.UnexpectedToken;
             }
 
-            const name_token: std.json.Token = try source.nextAllocMax(
+            var name_token: ?std.json.Token = try source.nextAllocMax(
                 allocator,
                 .alloc_if_needed,
                 options.max_value_len.?,
             );
-            const field_name = switch (name_token) {
+            const field_name = switch (name_token.?) {
                 inline .string, .allocated_string => |slice| slice,
                 else => {
                     return error.UnexpectedToken;
                 },
             };
 
-            if (try parseOneofUnionValue(oneof, field_name, allocator, source, options)) |union_value| {
-                freeAllocated(allocator, name_token);
-                if (.object_end != try source.next()) {
-                    return error.UnexpectedToken;
+            inline for (union_info.fields) |union_field| {
+                // snake_case comparison
+                var this_field = std.mem.eql(u8, union_field.name, field_name);
+                if (!this_field) {
+                    const union_camel_case_name = comptime to_camel_case(union_field.name);
+                    this_field = std.mem.eql(u8, union_camel_case_name, field_name);
                 }
-                break :oneof union_value;
-            } else {
-                return error.UnknownField;
-            }
+
+                if (this_field) {
+                    freeAllocated(allocator, name_token.?);
+                    name_token = null;
+                    union_value = @unionInit(
+                        union_type,
+                        union_field.name,
+                        switch (@field(
+                            oneof._desc_table,
+                            union_field.name,
+                        ).ftype) {
+                            .scalar => |scalar| switch (scalar) {
+                                .bytes => try parse_bytes(allocator, source, options),
+                                else => try std.json.innerParse(
+                                    union_field.type,
+                                    allocator,
+                                    source,
+                                    options,
+                                ),
+                            },
+                            .submessage, .@"enum" => other: {
+                                break :other try std.json.innerParse(
+                                    union_field.type,
+                                    allocator,
+                                    source,
+                                    options,
+                                );
+                            },
+                            .repeated, .packed_repeated => {
+                                @compileError("Repeated fields are not allowed in oneof");
+                            },
+                            .oneof => {
+                                @compileError("one oneof inside another? really?");
+                            },
+                        },
+                    );
+                    if (.object_end != try source.next()) {
+                        return error.UnexpectedToken;
+                    }
+                    break :oneof union_value;
+                }
+            } else return error.UnknownField;
         },
         // `.submessage`s (generated structs) have their own jsonParse implementation
         .@"enum", .submessage => try std.json.innerParse(
