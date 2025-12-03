@@ -28,7 +28,7 @@ pub fn parse(
     Self: type,
     allocator: std.mem.Allocator,
     source: anytype,
-    json_options: std.json.ParseOptions,
+    options: std.json.ParseOptions,
 ) !Self {
     // Increase eval branch quota for types with hundreds of fields
     @setEvalBranchQuota(1000000);
@@ -46,7 +46,7 @@ pub fn parse(
         var name_token: ?std.json.Token = try source.nextAllocMax(
             allocator,
             .alloc_if_needed,
-            json_options.max_value_len.?,
+            options.max_value_len.?,
         );
         const field_name = switch (name_token.?) {
             inline .string, .allocated_string => |slice| slice,
@@ -84,7 +84,7 @@ pub fn parse(
                 freeAllocated(allocator, name_token.?);
                 name_token = null;
                 if (fields_seen[i]) {
-                    switch (json_options.duplicate_field_behavior) {
+                    switch (options.duplicate_field_behavior) {
                         .use_first => {
                             // Parse and ignore the redundant value.
                             // We don't want to skip the value,
@@ -95,7 +95,7 @@ pub fn parse(
                                 field,
                                 allocator,
                                 source,
-                                json_options,
+                                options,
                             );
                             matched = true;
                             break;
@@ -110,7 +110,7 @@ pub fn parse(
                     field,
                     allocator,
                     source,
-                    json_options,
+                    options,
                 );
                 fields_seen[i] = true;
                 matched = true;
@@ -145,19 +145,19 @@ pub fn parse(
                                     union_field.name,
                                 ).ftype) {
                                     .scalar => |scalar| switch (scalar) {
-                                        .bytes => try parse_bytes(allocator, source, json_options),
+                                        .bytes => try parse_bytes(allocator, source, options),
                                         else => try std.json.innerParse(
                                             union_field.type,
                                             allocator,
                                             source,
-                                            json_options,
+                                            options,
                                         ),
                                     },
                                     .submessage, .@"enum" => try std.json.innerParse(
                                         union_field.type,
                                         allocator,
                                         source,
-                                        json_options,
+                                        options,
                                     ),
                                     .repeated, .packed_repeated => {
                                         @compileError("Repeated fields are not allowed in oneof");
@@ -180,7 +180,7 @@ pub fn parse(
         if (!matched) {
             // Didn't match anything.
             freeAllocated(allocator, name_token.?);
-            if (json_options.ignore_unknown_fields) {
+            if (options.ignore_unknown_fields) {
                 try source.skipValue();
             } else {
                 return error.UnknownField;
