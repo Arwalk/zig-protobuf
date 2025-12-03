@@ -2,11 +2,33 @@ const std = @import("std");
 
 const protobuf = @import("protobuf.zig");
 
+/// Options for protobuf JSON serialization/deserialization
+pub const Options = struct {
+    /// When true (default), oneof fields are serialized with a wrapper object
+    /// containing the oneof field name. For example:
+    ///
+    /// message AnyValue { oneof value { string string_value = 1; } }
+    ///
+    /// With emit_oneof_field_name = true (default):
+    ///   {"value":{"stringValue":"hello"}}
+    ///
+    /// With emit_oneof_field_name = false (standard protobuf JSON mapping):
+    ///   {"stringValue":"hello"}
+    ///
+    /// Set to false for standard protobuf JSON mapping where oneof union fields
+    /// are flattened into the parent message object.
+    emit_oneof_field_name: bool = true,
+};
+
+/// Global options for protobuf JSON serialization/deserialization.
+/// These can be modified at runtime before calling parse/stringify.
+pub var pb_options: Options = .{};
+
 pub fn parse(
     Self: type,
     allocator: std.mem.Allocator,
     source: anytype,
-    options: std.json.ParseOptions,
+    json_options: std.json.ParseOptions,
 ) !Self {
     // Increase eval branch quota for types with hundreds of fields
     @setEvalBranchQuota(1000000);
@@ -24,7 +46,7 @@ pub fn parse(
         var name_token: ?std.json.Token = try source.nextAllocMax(
             allocator,
             .alloc_if_needed,
-            options.max_value_len.?,
+            json_options.max_value_len.?,
         );
         const field_name = switch (name_token.?) {
             inline .string, .allocated_string => |slice| slice,
@@ -35,6 +57,8 @@ pub fn parse(
                 return error.UnexpectedToken;
             },
         };
+
+        var matched = false;
 
         inline for (structInfo.fields, 0..) |field, i| {
             if (field.is_comptime) {
@@ -60,7 +84,7 @@ pub fn parse(
                 freeAllocated(allocator, name_token.?);
                 name_token = null;
                 if (fields_seen[i]) {
-                    switch (options.duplicate_field_behavior) {
+                    switch (json_options.duplicate_field_behavior) {
                         .use_first => {
                             // Parse and ignore the redundant value.
                             // We don't want to skip the value,
@@ -71,8 +95,9 @@ pub fn parse(
                                 field,
                                 allocator,
                                 source,
-                                options,
+                                json_options,
                             );
+                            matched = true;
                             break;
                         },
                         .@"error" => return error.DuplicateField,
@@ -85,15 +110,77 @@ pub fn parse(
                     field,
                     allocator,
                     source,
-                    options,
+                    json_options,
                 );
                 fields_seen[i] = true;
+                matched = true;
                 break;
             }
-        } else {
+        }
+
+        // If emit_oneof_field_name is false, check if the field name matches
+        // a union field within any oneof struct field
+        if (!matched and !pb_options.emit_oneof_field_name) {
+            inline for (structInfo.fields, 0..) |field, i| {
+                const field_descriptor = @field(Self._desc_table, field.name);
+                if (field_descriptor.ftype == .oneof) {
+                    const oneof = field_descriptor.ftype.oneof;
+                    const union_type = oneof;
+                    const union_info = @typeInfo(union_type).@"union";
+
+                    inline for (union_info.fields) |union_field| {
+                        const union_snake_match = std.mem.eql(u8, union_field.name, field_name);
+                        const union_camel_case_name = comptime to_camel_case(union_field.name);
+                        const union_camel_match = std.mem.eql(u8, union_camel_case_name, field_name);
+
+                        if (union_snake_match or union_camel_match) {
+                            freeAllocated(allocator, name_token.?);
+                            name_token = null;
+                            // Parse the value directly as the union field
+                            @field(result, field.name) = @unionInit(
+                                union_type,
+                                union_field.name,
+                                switch (@field(
+                                    oneof._desc_table,
+                                    union_field.name,
+                                ).ftype) {
+                                    .scalar => |scalar| switch (scalar) {
+                                        .bytes => try parse_bytes(allocator, source, json_options),
+                                        else => try std.json.innerParse(
+                                            union_field.type,
+                                            allocator,
+                                            source,
+                                            json_options,
+                                        ),
+                                    },
+                                    .submessage, .@"enum" => try std.json.innerParse(
+                                        union_field.type,
+                                        allocator,
+                                        source,
+                                        json_options,
+                                    ),
+                                    .repeated, .packed_repeated => {
+                                        @compileError("Repeated fields are not allowed in oneof");
+                                    },
+                                    .oneof => {
+                                        @compileError("one oneof inside another? really?");
+                                    },
+                                },
+                            );
+                            fields_seen[i] = true;
+                            matched = true;
+                            break;
+                        }
+                    }
+                    if (matched) break;
+                }
+            }
+        }
+
+        if (!matched) {
             // Didn't match anything.
             freeAllocated(allocator, name_token.?);
-            if (options.ignore_unknown_fields) {
+            if (json_options.ignore_unknown_fields) {
                 try source.skipValue();
             } else {
                 return error.UnknownField;
@@ -130,15 +217,25 @@ pub fn stringify(Self: type, self: *const Self, jws: anytype) !void {
 
     inline for (@typeInfo(Self).@"struct".fields) |fieldInfo| {
         const camel_case_name = comptime to_camel_case(fieldInfo.name);
+        const field_descriptor = @field(Self._desc_table, fieldInfo.name);
+
+        // For oneof fields, only emit the field name if emit_oneof_field_name is true.
+        // Otherwise, the oneof union's active field is written directly to the parent object.
+        const is_oneof = field_descriptor.ftype == .oneof;
+        const should_emit_field_name = !is_oneof or pb_options.emit_oneof_field_name;
 
         if (switch (@typeInfo(fieldInfo.type)) {
             .optional => @field(self, fieldInfo.name) != null,
             else => true,
-        }) try jws.objectField(camel_case_name);
+        }) {
+            if (should_emit_field_name) {
+                try jws.objectField(camel_case_name);
+            }
+        }
 
         try stringify_struct_field(
             @field(self, fieldInfo.name),
-            @field(Self._desc_table, fieldInfo.name),
+            field_descriptor,
             jws,
         );
     }
@@ -238,7 +335,11 @@ fn stringify_struct_field(
                 @compileError("Untagged unions are not supported here");
             }
 
-            try jws.beginObject();
+            // When emit_oneof_field_name is true, wrap the oneof value in an object
+            // with its field name. Otherwise, write the inner value directly.
+            if (pb_options.emit_oneof_field_name) {
+                try jws.beginObject();
+            }
             inline for (union_info.fields) |union_field| {
                 if (value == @field(
                     union_info.tag_type.?,
@@ -265,7 +366,9 @@ fn stringify_struct_field(
                 }
             } else unreachable;
 
-            try jws.endObject();
+            if (pb_options.emit_oneof_field_name) {
+                try jws.endObject();
+            }
         },
         .submessage => {
             // `.submessage`s (generated structs) have their own jsonStringify implementation
