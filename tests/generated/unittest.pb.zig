@@ -8456,3 +8456,25 @@ pub const EnumParseTester = struct {
         return protobuf.json.stringify(@This(), self, jws);
     }
 };
+
+pub fn TestServiceImplementations(comptime ServerContext: type) type {
+    return struct {
+        Foo: *const fn (context: *ServerContext, request: FooRequest) anyerror!FooResponse,
+        Bar: *const fn (context: *ServerContext, request: BarRequest) anyerror!BarResponse,
+    };
+}
+
+pub fn TestService(comptime ServerContext: type) type {
+    return struct {
+        context: *ServerContext,
+        implementations: TestServiceImplementations(ServerContext),
+
+        pub fn Foo(self: @This(), request: FooRequest) anyerror!FooResponse {
+            return self.implementations.Foo(self.context, request);
+        }
+
+        pub fn Bar(self: @This(), request: BarRequest) anyerror!BarResponse {
+            return self.implementations.Bar(self.context, request);
+        }
+    };
+}
