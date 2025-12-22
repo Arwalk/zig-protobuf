@@ -529,7 +529,7 @@ pub fn decodeMessage(
         };
         consumed += tag_c;
 
-        @setEvalBranchQuota(40_000);
+        @setEvalBranchQuota(50_000);
         inline for (@typeInfo(@TypeOf(desc_table)).@"struct".fields) |field| {
             const field_desc: protobuf.FieldDescriptor =
                 comptime @field(desc_table, field.name);
