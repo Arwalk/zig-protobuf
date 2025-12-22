@@ -86,10 +86,17 @@ pub fn getProtocBin(b: *std.Build) !?[]const u8 {
     return null;
 }
 
+fn dupeLazyPaths(b: *std.Build, paths: []const std.Build.LazyPath) []std.Build.LazyPath {
+    const array = b.allocator.alloc(std.Build.LazyPath, paths.len) catch @panic("OOM");
+    for (array, paths) |*dest, source|
+        dest.* = source.dupe(b);
+    return array;
+}
+
 pub const RunProtocStep = struct {
     step: std.Build.Step,
-    source_files: []const []const u8,
-    include_directories: []const []const u8,
+    source_files: []std.Build.LazyPath,
+    include_directories: []std.Build.LazyPath,
     destination_directory: std.Build.LazyPath,
     generator: *std.Build.Step.Compile,
     verbose: bool = false,
@@ -97,8 +104,8 @@ pub const RunProtocStep = struct {
     pub const base_id = .protoc;
 
     pub const Options = struct {
-        source_files: []const []const u8,
-        include_directories: []const []const u8 = &.{},
+        source_files: []const std.Build.LazyPath,
+        include_directories: []const std.Build.LazyPath = &.{},
         destination_directory: std.Build.LazyPath,
     };
 
@@ -119,8 +126,8 @@ pub const RunProtocStep = struct {
                 .owner = owner,
                 .makeFn = make,
             }),
-            .source_files = owner.dupeStrings(options.source_files),
-            .include_directories = owner.dupeStrings(options.include_directories),
+            .source_files = dupeLazyPaths(owner, options.source_files),
+            .include_directories = dupeLazyPaths(owner, options.include_directories),
             .destination_directory = options.destination_directory.dupe(owner),
             .generator = buildGenerator(owner, .{ .target = target }),
         };
@@ -142,8 +149,8 @@ pub const RunProtocStep = struct {
                 .owner = owner,
                 .makeFn = make,
             }),
-            .source_files = owner.dupeStrings(options.source_files),
-            .include_directories = owner.dupeStrings(options.include_directories),
+            .source_files = dupeLazyPaths(owner, options.source_files),
+            .include_directories = dupeLazyPaths(owner, options.include_directories),
             .destination_directory = options.destination_directory.dupe(owner),
             .generator = generator,
         };
@@ -177,23 +184,16 @@ pub const RunProtocStep = struct {
                     },
                 ));
 
-                try argv.append(b.allocator, try std.mem.concat(
-                    b.allocator,
-                    u8,
-                    &.{ "--zig_out=", absolute_dest_dir },
-                ));
+                try argv.appendSlice(b.allocator, &.{ "--zig_out", absolute_dest_dir });
                 if (!dirExists(absolute_dest_dir)) {
                     try std.fs.makeDirAbsolute(absolute_dest_dir);
                 }
 
                 for (self.include_directories) |it| {
-                    try argv.append(
-                        b.allocator,
-                        try std.mem.concat(b.allocator, u8, &.{ "-I", it }),
-                    );
+                    try argv.appendSlice(b.allocator, &.{ "-I", it.getPath(b) });
                 }
                 for (self.source_files) |it| {
-                    try argv.append(b.allocator, it);
+                    try argv.append(b.allocator, it.getPath(b));
                 }
 
                 if (self.verbose) {

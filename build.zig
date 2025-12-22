@@ -136,14 +136,18 @@ pub fn build(b: *std.Build) !void {
 
     const convertStep = RunProtocStep.create(b, target, .{
         .destination_directory = b.path("tests/.generated"),
-        .source_files = &.{"tests/protos_for_test/generated_in_ci.proto"},
-        .include_directories = &.{"tests/protos_for_test"},
+        .source_files = &.{b.path("tests/protos_for_test/generated_in_ci.proto")},
+        .include_directories = &.{b.path("tests/protos_for_test")},
     });
 
     const convertStep2 = RunProtocStep.create(b, target, .{
         .destination_directory = b.path("tests/generated"),
-        .source_files = &.{ "tests/protos_for_test/all.proto", "tests/protos_for_test/whitespace-in-name.proto", "tests/protos_for_test/complex_type.proto" },
-        .include_directories = &.{"tests/protos_for_test"},
+        .source_files = &.{
+            b.path("tests/protos_for_test/all.proto"),
+            b.path("tests/protos_for_test/whitespace-in-name.proto"),
+            b.path("tests/protos_for_test/complex_type.proto"),
+        },
+        .include_directories = &.{b.path("tests/protos_for_test")},
     });
 
     for (tests) |test_item| {
@@ -163,15 +167,15 @@ pub fn build(b: *std.Build) !void {
         test_step.dependOn(&run_main_tests.step);
     }
 
-    const include = if (try build_util.getProtocDependency(b)) |protoc| protoc.path("include").getPath(b) else std.fs.path.dirname(@src().file) orelse ".";
+    const include = if (try build_util.getProtocDependency(b)) |protoc| protoc.path("include") else b.path("");
 
     const bootstrap = b.step("bootstrap", "run the generator over its own sources");
 
     const bootstrapConversion = RunProtocStep.create(b, target, .{
         .destination_directory = b.path("bootstrapped-generator"),
         .source_files = &.{
-            b.pathJoin(&.{ include, "google/protobuf/compiler/plugin.proto" }),
-            b.pathJoin(&.{ include, "google/protobuf/descriptor.proto" }),
+            include.path(b, "google/protobuf/compiler/plugin.proto"),
+            include.path(b, "google/protobuf/descriptor.proto"),
         },
         .include_directories = &.{},
     });
