@@ -28,9 +28,9 @@ pub fn isEnvVarTruthy(allocator: std.mem.Allocator, name: []const u8) bool {
 }
 
 pub fn ensureProtocBinaryDownloaded(
-    b: *std.Build,
+    step: *std.Build.Step,
 ) !?[]const u8 {
-    if (try getProtocBin(b)) |executable_path| {
+    if (try getProtocBin(step)) |executable_path| {
         if (fileExists(executable_path)) {
             return executable_path;
         }
@@ -76,12 +76,12 @@ pub fn getProtocDependency(b: *std.Build) !?*std.Build.Dependency {
     return null;
 }
 
-pub fn getProtocBin(b: *std.Build) !?[]const u8 {
-    if (try getProtocDependency(b)) |dep| {
+pub fn getProtocBin(step: *std.Build.Step) !?[]const u8 {
+    if (try getProtocDependency(step.owner)) |dep| {
         if (builtin.os.tag == .windows)
-            return dep.path("bin/protoc.exe").getPath(b);
+            return dep.path("bin/protoc.exe").getPath2(step.owner, step);
 
-        return dep.path("bin/protoc").getPath(b);
+        return dep.path("bin/protoc").getPath2(step.owner, step);
     }
     return null;
 }
@@ -167,22 +167,18 @@ pub const RunProtocStep = struct {
         const b = step.owner;
         const self: *RunProtocStep = @fieldParentPtr("step", step);
 
-        const absolute_dest_dir = self.destination_directory.getPath(b);
+        const absolute_dest_dir = self.destination_directory.getPath2(b, step);
 
         { // run protoc
             var argv: std.ArrayList([]const u8) = .empty;
 
-            if (try ensureProtocBinaryDownloaded(b)) |protoc_path| {
+            if (try ensureProtocBinaryDownloaded(step)) |protoc_path| {
                 try argv.append(b.allocator, protoc_path);
 
-                try argv.append(b.allocator, try std.mem.concat(
-                    b.allocator,
-                    u8,
-                    &.{
-                        "--plugin=protoc-gen-zig=",
-                        self.generator.getEmittedBin().getPath(b),
-                    },
-                ));
+                try argv.append(b.allocator, try std.mem.concat(b.allocator, u8, &.{
+                    "--plugin=protoc-gen-zig=",
+                    self.generator.getEmittedBin().getPath2(b, step),
+                }));
 
                 try argv.appendSlice(b.allocator, &.{ "--zig_out", absolute_dest_dir });
                 if (!dirExists(absolute_dest_dir)) {
@@ -190,10 +186,10 @@ pub const RunProtocStep = struct {
                 }
 
                 for (self.include_directories) |it| {
-                    try argv.appendSlice(b.allocator, &.{ "-I", it.getPath(b) });
+                    try argv.appendSlice(b.allocator, &.{ "-I", it.getPath2(b, step) });
                 }
                 for (self.source_files) |it| {
-                    try argv.append(b.allocator, it.getPath(b));
+                    try argv.append(b.allocator, it.getPath2(b, step));
                 }
 
                 if (self.verbose) {
