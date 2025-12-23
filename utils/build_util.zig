@@ -28,9 +28,9 @@ pub fn isEnvVarTruthy(allocator: std.mem.Allocator, name: []const u8) bool {
 }
 
 pub fn ensureProtocBinaryDownloaded(
-    b: *std.Build,
+    step: *std.Build.Step,
 ) !?[]const u8 {
-    if (try getProtocBin(b)) |executable_path| {
+    if (try getProtocBin(step)) |executable_path| {
         if (fileExists(executable_path)) {
             return executable_path;
         }
@@ -76,20 +76,27 @@ pub fn getProtocDependency(b: *std.Build) !?*std.Build.Dependency {
     return null;
 }
 
-pub fn getProtocBin(b: *std.Build) !?[]const u8 {
-    if (try getProtocDependency(b)) |dep| {
+pub fn getProtocBin(step: *std.Build.Step) !?[]const u8 {
+    if (try getProtocDependency(step.owner)) |dep| {
         if (builtin.os.tag == .windows)
-            return dep.path("bin/protoc.exe").getPath(b);
+            return dep.path("bin/protoc.exe").getPath2(step.owner, step);
 
-        return dep.path("bin/protoc").getPath(b);
+        return dep.path("bin/protoc").getPath2(step.owner, step);
     }
     return null;
 }
 
+fn dupeLazyPaths(b: *std.Build, paths: []const std.Build.LazyPath) []std.Build.LazyPath {
+    const array = b.allocator.alloc(std.Build.LazyPath, paths.len) catch @panic("OOM");
+    for (array, paths) |*dest, source|
+        dest.* = source.dupe(b);
+    return array;
+}
+
 pub const RunProtocStep = struct {
     step: std.Build.Step,
-    source_files: []const []const u8,
-    include_directories: []const []const u8,
+    source_files: []std.Build.LazyPath,
+    include_directories: []std.Build.LazyPath,
     destination_directory: std.Build.LazyPath,
     generator: *std.Build.Step.Compile,
     verbose: bool = false,
@@ -97,8 +104,8 @@ pub const RunProtocStep = struct {
     pub const base_id = .protoc;
 
     pub const Options = struct {
-        source_files: []const []const u8,
-        include_directories: []const []const u8 = &.{},
+        source_files: []const std.Build.LazyPath,
+        include_directories: []const std.Build.LazyPath = &.{},
         destination_directory: std.Build.LazyPath,
     };
 
@@ -119,8 +126,8 @@ pub const RunProtocStep = struct {
                 .owner = owner,
                 .makeFn = make,
             }),
-            .source_files = owner.dupeStrings(options.source_files),
-            .include_directories = owner.dupeStrings(options.include_directories),
+            .source_files = dupeLazyPaths(owner, options.source_files),
+            .include_directories = dupeLazyPaths(owner, options.include_directories),
             .destination_directory = options.destination_directory.dupe(owner),
             .generator = buildGenerator(owner, .{ .target = target }),
         };
@@ -142,8 +149,8 @@ pub const RunProtocStep = struct {
                 .owner = owner,
                 .makeFn = make,
             }),
-            .source_files = owner.dupeStrings(options.source_files),
-            .include_directories = owner.dupeStrings(options.include_directories),
+            .source_files = dupeLazyPaths(owner, options.source_files),
+            .include_directories = dupeLazyPaths(owner, options.include_directories),
             .destination_directory = options.destination_directory.dupe(owner),
             .generator = generator,
         };
@@ -160,40 +167,29 @@ pub const RunProtocStep = struct {
         const b = step.owner;
         const self: *RunProtocStep = @fieldParentPtr("step", step);
 
-        const absolute_dest_dir = self.destination_directory.getPath(b);
+        const absolute_dest_dir = self.destination_directory.getPath2(b, step);
 
         { // run protoc
             var argv: std.ArrayList([]const u8) = .empty;
 
-            if (try ensureProtocBinaryDownloaded(b)) |protoc_path| {
+            if (try ensureProtocBinaryDownloaded(step)) |protoc_path| {
                 try argv.append(b.allocator, protoc_path);
 
-                try argv.append(b.allocator, try std.mem.concat(
-                    b.allocator,
-                    u8,
-                    &.{
-                        "--plugin=protoc-gen-zig=",
-                        self.generator.getEmittedBin().getPath(b),
-                    },
-                ));
+                try argv.append(b.allocator, try std.mem.concat(b.allocator, u8, &.{
+                    "--plugin=protoc-gen-zig=",
+                    self.generator.getEmittedBin().getPath2(b, step),
+                }));
 
-                try argv.append(b.allocator, try std.mem.concat(
-                    b.allocator,
-                    u8,
-                    &.{ "--zig_out=", absolute_dest_dir },
-                ));
+                try argv.appendSlice(b.allocator, &.{ "--zig_out", absolute_dest_dir });
                 if (!dirExists(absolute_dest_dir)) {
                     try std.fs.makeDirAbsolute(absolute_dest_dir);
                 }
 
                 for (self.include_directories) |it| {
-                    try argv.append(
-                        b.allocator,
-                        try std.mem.concat(b.allocator, u8, &.{ "-I", it }),
-                    );
+                    try argv.appendSlice(b.allocator, &.{ "-I", it.getPath2(b, step) });
                 }
                 for (self.source_files) |it| {
-                    try argv.append(b.allocator, it);
+                    try argv.append(b.allocator, it.getPath2(b, step));
                 }
 
                 if (self.verbose) {

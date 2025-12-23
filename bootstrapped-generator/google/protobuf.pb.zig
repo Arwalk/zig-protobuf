@@ -5,6 +5,7 @@ const std = @import("std");
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
 
+/// The full set of known editions.
 pub const Edition = enum(i32) {
     EDITION_UNKNOWN = 0,
     EDITION_LEGACY = 900,
@@ -21,6 +22,11 @@ pub const Edition = enum(i32) {
     _,
 };
 
+/// Describes the 'visibility' of a symbol with respect to the proto import
+/// system. Symbols can only be imported when the visibility rules do not prevent
+/// it (ex: local symbols cannot be imported).  Visibility modifiers can only set
+/// on `message` and `enum` as they are the only types available to be referenced
+/// from other files.
 pub const SymbolVisibility = enum(i32) {
     VISIBILITY_UNSET = 0,
     VISIBILITY_LOCAL = 1,
@@ -28,6 +34,8 @@ pub const SymbolVisibility = enum(i32) {
     _,
 };
 
+/// The protocol compiler can output a FileDescriptorSet containing the .proto
+/// files it parses.
 pub const FileDescriptorSet = struct {
     file: std.ArrayListUnmanaged(FileDescriptorProto) = .empty,
 
@@ -99,6 +107,7 @@ pub const FileDescriptorSet = struct {
     }
 };
 
+/// Describes a complete .proto file.
 pub const FileDescriptorProto = struct {
     name: ?[]const u8 = null,
     package: ?[]const u8 = null,
@@ -196,6 +205,7 @@ pub const FileDescriptorProto = struct {
     }
 };
 
+/// Describes a message type.
 pub const DescriptorProto = struct {
     name: ?[]const u8 = null,
     field: std.ArrayListUnmanaged(FieldDescriptorProto) = .empty,
@@ -298,6 +308,9 @@ pub const DescriptorProto = struct {
         }
     };
 
+    /// Range of reserved tag numbers. Reserved tag numbers may not be used by
+    /// fields or extension ranges in the same message. Reserved ranges may
+    /// not overlap.
     pub const ReservedRange = struct {
         start: ?i32 = null,
         end: ?i32 = null,
@@ -448,6 +461,7 @@ pub const ExtensionRangeOptions = struct {
         .verification = fd(3, .@"enum"),
     };
 
+    /// The verification state of the extension range.
     pub const VerificationState = enum(i32) {
         DECLARATION = 0,
         UNVERIFIED = 1,
@@ -597,6 +611,7 @@ pub const ExtensionRangeOptions = struct {
     }
 };
 
+/// Describes a field within a message.
 pub const FieldDescriptorProto = struct {
     name: ?[]const u8 = null,
     number: ?i32 = null,
@@ -717,6 +732,7 @@ pub const FieldDescriptorProto = struct {
     }
 };
 
+/// Describes a oneof.
 pub const OneofDescriptorProto = struct {
     name: ?[]const u8 = null,
     options: ?OneofOptions = null,
@@ -790,6 +806,7 @@ pub const OneofDescriptorProto = struct {
     }
 };
 
+/// Describes an enum type.
 pub const EnumDescriptorProto = struct {
     name: ?[]const u8 = null,
     value: std.ArrayListUnmanaged(EnumValueDescriptorProto) = .empty,
@@ -807,6 +824,12 @@ pub const EnumDescriptorProto = struct {
         .visibility = fd(6, .@"enum"),
     };
 
+    /// Range of reserved numeric values. Reserved values may not be used by
+    /// entries in the same enum. Reserved ranges may not overlap.
+    ///
+    /// Note that this is distinct from DescriptorProto.ReservedRange in that it
+    /// is inclusive such that it can appropriately represent the entire int32
+    /// domain.
     pub const EnumReservedRange = struct {
         start: ?i32 = null,
         end: ?i32 = null,
@@ -944,6 +967,7 @@ pub const EnumDescriptorProto = struct {
     }
 };
 
+/// Describes a value within an enum.
 pub const EnumValueDescriptorProto = struct {
     name: ?[]const u8 = null,
     number: ?i32 = null,
@@ -1019,6 +1043,7 @@ pub const EnumValueDescriptorProto = struct {
     }
 };
 
+/// Describes a service.
 pub const ServiceDescriptorProto = struct {
     name: ?[]const u8 = null,
     method: std.ArrayListUnmanaged(MethodDescriptorProto) = .empty,
@@ -1094,6 +1119,7 @@ pub const ServiceDescriptorProto = struct {
     }
 };
 
+/// Describes a method of a service.
 pub const MethodDescriptorProto = struct {
     name: ?[]const u8 = null,
     input_type: ?[]const u8 = null,
@@ -1222,6 +1248,7 @@ pub const FileOptions = struct {
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
+    /// Generated classes can be optimized for speed or code size.
     pub const OptimizeMode = enum(i32) {
         SPEED = 1,
         CODE_SIZE = 2,
@@ -1423,6 +1450,7 @@ pub const FieldOptions = struct {
         _,
     };
 
+    /// If set to RETENTION_SOURCE, the option will be omitted from the binary.
     pub const OptionRetention = enum(i32) {
         RETENTION_UNKNOWN = 0,
         RETENTION_RUNTIME = 1,
@@ -1430,6 +1458,9 @@ pub const FieldOptions = struct {
         _,
     };
 
+    /// This indicates the types of entities that the field may apply to when used
+    /// as an option. If it is unset, then the field may be freely used as an
+    /// option on any kind of entity.
     pub const OptionTargetType = enum(i32) {
         TARGET_TYPE_UNKNOWN = 0,
         TARGET_TYPE_FILE = 1,
@@ -1517,6 +1548,7 @@ pub const FieldOptions = struct {
         }
     };
 
+    /// Information about the support window of a feature.
     pub const FeatureSupport = struct {
         edition_introduced: ?Edition = null,
         edition_deprecated: ?Edition = null,
@@ -1977,6 +2009,9 @@ pub const MethodOptions = struct {
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
+    /// Is this method side-effect-free (or safe in HTTP parlance), or idempotent,
+    /// or neither? HTTP based RPC implementation may choose GET verb for safe
+    /// methods, and PUT verb for idempotent methods instead of the default POST.
     pub const IdempotencyLevel = enum(i32) {
         IDEMPOTENCY_UNKNOWN = 0,
         NO_SIDE_EFFECTS = 1,
@@ -2048,6 +2083,12 @@ pub const MethodOptions = struct {
     }
 };
 
+/// A message representing a option the parser does not recognize. This only
+/// appears in options protos created by the compiler::Parser class.
+/// DescriptorPool resolves these when building Descriptor objects. Therefore,
+/// options protos in descriptor objects (e.g. returned by Descriptor::options(),
+/// or produced by Descriptor::CopyTo()) will never have UninterpretedOptions
+/// in them.
 pub const UninterpretedOption = struct {
     name: std.ArrayListUnmanaged(UninterpretedOption.NamePart) = .empty,
     identifier_value: ?[]const u8 = null,
@@ -2067,6 +2108,11 @@ pub const UninterpretedOption = struct {
         .aggregate_value = fd(8, .{ .scalar = .string }),
     };
 
+    /// The name of the uninterpreted option.  Each string represents a segment in
+    /// a dot-separated name.  is_extension is true iff a segment represents an
+    /// extension (denoted with parentheses in options specs in .proto files).
+    /// E.g.,{ ["foo", false], ["bar.baz", true], ["moo", false] } represents
+    /// "foo.(bar.baz).moo".
     pub const NamePart = struct {
         name_part: []const u8,
         is_extension: bool,
@@ -2204,6 +2250,12 @@ pub const UninterpretedOption = struct {
     }
 };
 
+/// TODO Enums in C++ gencode (and potentially other languages) are
+/// not well scoped.  This means that each of the feature enums below can clash
+/// with each other.  The short names we've chosen maximize call-site
+/// readability, but leave us very open to this scenario.  A future feature will
+/// be designed and implemented to handle this, hopefully before we ever hit a
+/// conflict here.
 pub const FeatureSet = struct {
     field_presence: ?FeatureSet.FieldPresence = null,
     enum_type: ?FeatureSet.EnumType = null,
@@ -2415,6 +2467,10 @@ pub const FeatureSet = struct {
     }
 };
 
+/// A compiled specification for the defaults of a set of features.  These
+/// messages are generated from FeatureSet extensions and can be used to seed
+/// feature resolution. The resolution with this object becomes a simple search
+/// for the closest matching edition, followed by proto merges.
 pub const FeatureSetDefaults = struct {
     defaults: std.ArrayListUnmanaged(FeatureSetDefaults.FeatureSetEditionDefault) = .empty,
     minimum_edition: ?Edition = null,
@@ -2426,6 +2482,10 @@ pub const FeatureSetDefaults = struct {
         .maximum_edition = fd(5, .@"enum"),
     };
 
+    /// A map from every known edition with a unique set of defaults to its
+    /// defaults. Not all editions may be contained here.  For a given edition,
+    /// the defaults at the closest matching edition ordered at or before it should
+    /// be used.  This field must be in strict ascending order by edition.
     pub const FeatureSetEditionDefault = struct {
         edition: ?Edition = null,
         overridable_features: ?FeatureSet = null,
@@ -2565,6 +2625,8 @@ pub const FeatureSetDefaults = struct {
     }
 };
 
+/// Encapsulates information about the original source file from which a
+/// FileDescriptorProto was generated.
 pub const SourceCodeInfo = struct {
     location: std.ArrayListUnmanaged(SourceCodeInfo.Location) = .empty,
 
@@ -2715,6 +2777,9 @@ pub const SourceCodeInfo = struct {
     }
 };
 
+/// Describes the relationship between generated code and its original source
+/// file. A GeneratedCodeInfo message is associated with only one generated
+/// source file, but may contain references to different source .proto files.
 pub const GeneratedCodeInfo = struct {
     annotation: std.ArrayListUnmanaged(GeneratedCodeInfo.Annotation) = .empty,
 
@@ -2737,6 +2802,8 @@ pub const GeneratedCodeInfo = struct {
             .semantic = fd(5, .@"enum"),
         };
 
+        /// Represents the identified object's effect on the element in the original
+        /// .proto file.
         pub const Semantic = enum(i32) {
             NONE = 0,
             SET = 1,
