@@ -17,6 +17,7 @@ pub const FieldType = union(enum) {
     oneof: type,
 
     pub fn toWire(comptime ftype: FieldType) wire.Type {
+        @setEvalBranchQuota(1000000);
         return switch (comptime ftype) {
             .scalar => |s| s.toWire(),
             .submessage, .packed_repeated => .len,
