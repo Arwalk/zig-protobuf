@@ -1042,30 +1042,20 @@ const GenerationContext = struct {
         try method_root_path.append(allocator, service_field_number);
         try method_root_path.append(allocator, @intCast(service_index));
 
-        // Add compile-time checks for error type declarations
-        try lines.append(allocator, "        comptime {\n");
-        for (service.method.items) |method| {
-            const method_name = method.name.?;
-            const error_type_name = try std.fmt.allocPrint(allocator, "{s}Error", .{method_name});
-            try lines.append(
-                allocator,
-                try std.fmt.allocPrint(
+        // Add compile-time check for error type declarations using protobuf.requireDecls
+        if (service.method.items.len > 0) {
+            try lines.append(allocator, "        comptime {\n");
+            try lines.append(allocator, "            protobuf.requireDecls(ServerContext, &.{\n");
+            for (service.method.items) |method| {
+                const method_name = method.name.?;
+                try lines.append(
                     allocator,
-                    "            if (!@hasDecl(ServerContext, \"{s}\")) {{\n",
-                    .{error_type_name},
-                ),
-            );
-            try lines.append(
-                allocator,
-                try std.fmt.allocPrint(
-                    allocator,
-                    "                @compileError(\"ServerContext must have a '{s}' error set declaration\");\n",
-                    .{error_type_name},
-                ),
-            );
-            try lines.append(allocator, "            }\n");
+                    try std.fmt.allocPrint(allocator, "                \"{s}Error\",\n", .{method_name}),
+                );
+            }
+            try lines.append(allocator, "            });\n");
+            try lines.append(allocator, "        }\n\n");
         }
-        try lines.append(allocator, "        }\n\n");
 
         for (service.method.items, 0..) |method, method_i| {
             // Add method-level leading comment if available
@@ -1129,14 +1119,16 @@ const GenerationContext = struct {
             try lines.append(allocator, "\n");
 
             // Method signature varies by streaming pattern
+            const error_type = try std.fmt.allocPrint(allocator, "ServerContext.{s}Error", .{method_name});
+
             if (!client_streaming and !server_streaming) {
                 // Unary: fn(self, request) !response
                 try lines.append(
                     allocator,
                     try std.fmt.allocPrint(
                         allocator,
-                        "        pub fn {s}(self: @This(), request: {s}) anyerror!{s} {{\n",
-                        .{ method_name, input_type, output_type },
+                        "        pub fn {s}(self: @This(), request: {s}) {s}!{s} {{\n",
+                        .{ method_name, input_type, error_type, output_type },
                     ),
                 );
                 try lines.append(
@@ -1153,8 +1145,8 @@ const GenerationContext = struct {
                     allocator,
                     try std.fmt.allocPrint(
                         allocator,
-                        "        pub fn {s}(self: @This(), request: {s}, writer_queue: *std.Io.Queue({s})) anyerror!void {{\n",
-                        .{ method_name, input_type, output_type },
+                        "        pub fn {s}(self: @This(), request: {s}, writer_queue: *std.Io.Queue({s})) {s}!void {{\n",
+                        .{ method_name, input_type, output_type, error_type },
                     ),
                 );
                 try lines.append(
@@ -1171,8 +1163,8 @@ const GenerationContext = struct {
                     allocator,
                     try std.fmt.allocPrint(
                         allocator,
-                        "        pub fn {s}(self: @This(), reader_queue: *std.Io.Queue({s})) anyerror!{s} {{\n",
-                        .{ method_name, input_type, output_type },
+                        "        pub fn {s}(self: @This(), reader_queue: *std.Io.Queue({s})) {s}!{s} {{\n",
+                        .{ method_name, input_type, error_type, output_type },
                     ),
                 );
                 try lines.append(
@@ -1184,13 +1176,13 @@ const GenerationContext = struct {
                     ),
                 );
             } else {
-                // Bidirectional streaming: fn(self, reader_queue, writer_queue) anyerror!void
+                // Bidirectional streaming: fn(self, reader_queue, writer_queue) !void
                 try lines.append(
                     allocator,
                     try std.fmt.allocPrint(
                         allocator,
-                        "        pub fn {s}(self: @This(), reader_queue: *std.Io.Queue({s}), writer_queue: *std.Io.Queue({s})) anyerror!void {{\n",
-                        .{ method_name, input_type, output_type },
+                        "        pub fn {s}(self: @This(), reader_queue: *std.Io.Queue({s}), writer_queue: *std.Io.Queue({s})) {s}!void {{\n",
+                        .{ method_name, input_type, output_type, error_type },
                     ),
                 );
                 try lines.append(
