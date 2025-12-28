@@ -302,12 +302,10 @@ pub const StreamResponse = struct {
 pub fn SimpleServiceImplementations(comptime ServerContext: type) type {
     return struct {
         comptime {
-            if (!@hasDecl(ServerContext, "UnaryCallError")) {
-                @compileError("ServerContext must have a 'UnaryCallError' error set declaration");
-            }
-            if (!@hasDecl(ServerContext, "AnotherCallError")) {
-                @compileError("ServerContext must have a 'AnotherCallError' error set declaration");
-            }
+            protobuf.requireDecls(ServerContext, &.{
+                "UnaryCallError",
+                "AnotherCallError",
+            });
         }
 
         /// Performs a simple unary call
@@ -322,11 +320,11 @@ pub fn SimpleService(comptime ServerContext: type) type {
         context: *ServerContext,
         implementations: SimpleServiceImplementations(ServerContext),
 
-        pub fn UnaryCall(self: @This(), request: UnaryRequest) anyerror!UnaryResponse {
+        pub fn UnaryCall(self: @This(), request: UnaryRequest) ServerContext.UnaryCallError!UnaryResponse {
             return self.implementations.UnaryCall(self.context, request);
         }
 
-        pub fn AnotherCall(self: @This(), request: StreamRequest) anyerror!StreamResponse {
+        pub fn AnotherCall(self: @This(), request: StreamRequest) ServerContext.AnotherCallError!StreamResponse {
             return self.implementations.AnotherCall(self.context, request);
         }
     };
@@ -336,15 +334,11 @@ pub fn SimpleService(comptime ServerContext: type) type {
 pub fn StreamingServiceImplementations(comptime ServerContext: type) type {
     return struct {
         comptime {
-            if (!@hasDecl(ServerContext, "ServerStreamError")) {
-                @compileError("ServerContext must have a 'ServerStreamError' error set declaration");
-            }
-            if (!@hasDecl(ServerContext, "ClientStreamError")) {
-                @compileError("ServerContext must have a 'ClientStreamError' error set declaration");
-            }
-            if (!@hasDecl(ServerContext, "BidiStreamError")) {
-                @compileError("ServerContext must have a 'BidiStreamError' error set declaration");
-            }
+            protobuf.requireDecls(ServerContext, &.{
+                "ServerStreamError",
+                "ClientStreamError",
+                "BidiStreamError",
+            });
         }
 
         /// Server streaming RPC - client sends one request, server sends stream of responses
@@ -361,15 +355,15 @@ pub fn StreamingService(comptime ServerContext: type) type {
         context: *ServerContext,
         implementations: StreamingServiceImplementations(ServerContext),
 
-        pub fn ServerStream(self: @This(), request: StreamRequest, writer_queue: *std.Io.Queue(StreamResponse)) anyerror!void {
+        pub fn ServerStream(self: @This(), request: StreamRequest, writer_queue: *std.Io.Queue(StreamResponse)) ServerContext.ServerStreamError!void {
             return self.implementations.ServerStream(self.context, request, writer_queue);
         }
 
-        pub fn ClientStream(self: @This(), reader_queue: *std.Io.Queue(StreamRequest)) anyerror!StreamResponse {
+        pub fn ClientStream(self: @This(), reader_queue: *std.Io.Queue(StreamRequest)) ServerContext.ClientStreamError!StreamResponse {
             return self.implementations.ClientStream(self.context, reader_queue);
         }
 
-        pub fn BidiStream(self: @This(), reader_queue: *std.Io.Queue(StreamRequest), writer_queue: *std.Io.Queue(StreamResponse)) anyerror!void {
+        pub fn BidiStream(self: @This(), reader_queue: *std.Io.Queue(StreamRequest), writer_queue: *std.Io.Queue(StreamResponse)) ServerContext.BidiStreamError!void {
             return self.implementations.BidiStream(self.context, reader_queue, writer_queue);
         }
     };

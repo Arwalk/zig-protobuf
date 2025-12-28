@@ -8460,12 +8460,10 @@ pub const EnumParseTester = struct {
 pub fn TestServiceImplementations(comptime ServerContext: type) type {
     return struct {
         comptime {
-            if (!@hasDecl(ServerContext, "FooError")) {
-                @compileError("ServerContext must have a 'FooError' error set declaration");
-            }
-            if (!@hasDecl(ServerContext, "BarError")) {
-                @compileError("ServerContext must have a 'BarError' error set declaration");
-            }
+            protobuf.requireDecls(ServerContext, &.{
+                "FooError",
+                "BarError",
+            });
         }
 
         Foo: *const fn (context: *ServerContext, request: FooRequest) ServerContext.FooError!FooResponse,
@@ -8478,11 +8476,11 @@ pub fn TestService(comptime ServerContext: type) type {
         context: *ServerContext,
         implementations: TestServiceImplementations(ServerContext),
 
-        pub fn Foo(self: @This(), request: FooRequest) anyerror!FooResponse {
+        pub fn Foo(self: @This(), request: FooRequest) ServerContext.FooError!FooResponse {
             return self.implementations.Foo(self.context, request);
         }
 
-        pub fn Bar(self: @This(), request: BarRequest) anyerror!BarResponse {
+        pub fn Bar(self: @This(), request: BarRequest) ServerContext.BarError!BarResponse {
             return self.implementations.Bar(self.context, request);
         }
     };
