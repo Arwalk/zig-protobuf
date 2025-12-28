@@ -19,6 +19,7 @@ pub fn fileExists(io: Io, path: []const u8) bool {
 }
 
 // Environment utilities
+// TODO unused, remove
 pub fn isEnvVarTruthy(allocator: std.mem.Allocator, name: []const u8) bool {
     if (std.process.getEnvVarOwned(allocator, name)) |truthy| {
         defer allocator.free(truthy);

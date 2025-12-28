@@ -11,7 +11,7 @@ pub const std_options: std.Options = .{ .log_scope_levels = &[_]std.log.ScopeLev
 pub fn main() !void {
     var stdin_buf: [4096]u8 = undefined;
     const allocator = std.heap.smp_allocator;
-    var threaded: std.Io.Threaded = .init(allocator, .{});
+    var threaded: std.Io.Threaded = .init(allocator, .{ .environ = .empty });
     const io = threaded.io();
     var stdin = std.Io.File.stdin().reader(io, &stdin_buf);
 
@@ -216,7 +216,7 @@ const GenerationContext = struct {
                         .{
                             optional_pub_directive,
                             escapeFqn(allocator, package.key_ptr.*),
-                            self.resolvePath(allocator, name.buf, package.key_ptr.*),
+                            resolvePath(allocator, name.buf, package.key_ptr.*),
                         },
                     ));
                 }
@@ -229,15 +229,19 @@ const GenerationContext = struct {
     }
 
     /// resolves an import path from the file A relative to B
-    fn resolvePath(_: *GenerationContext, allocator: std.mem.Allocator, a: []const u8, b: []const u8) ![]const u8 {
+    fn resolvePath(allocator: std.mem.Allocator, a: []const u8, b: []const u8) ![]const u8 {
         var a_path_buf: [std.fs.max_path_bytes]u8 = undefined;
         var b_path_buf: [std.fs.max_path_bytes]u8 = undefined;
 
         const aPath = std.fs.path.dirname(packageToFileName(a, &a_path_buf)) orelse "";
         const bPath = packageToFileName(b, &b_path_buf);
 
+        // Get actual current working directory
+        var cwd_buf: [std.fs.max_path_bytes]u8 = undefined;
+        const cwd = try std.process.getCwd(&cwd_buf);
+
         // to resolve some escaping oddities, the windows path separator is canonicalized to /
-        const resolvedRelativePath = try std.fs.path.relative(allocator, aPath, bPath);
+        const resolvedRelativePath = try std.fs.path.relative(allocator, cwd, null, aPath, bPath);
         return std.mem.replaceOwned(u8, allocator, resolvedRelativePath, "\\", "/");
     }
 
