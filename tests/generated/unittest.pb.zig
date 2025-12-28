@@ -8459,8 +8459,17 @@ pub const EnumParseTester = struct {
 
 pub fn TestServiceImplementations(comptime ServerContext: type) type {
     return struct {
-        Foo: *const fn (context: *ServerContext, request: FooRequest) anyerror!FooResponse,
-        Bar: *const fn (context: *ServerContext, request: BarRequest) anyerror!BarResponse,
+        comptime {
+            if (!@hasDecl(ServerContext, "FooError")) {
+                @compileError("ServerContext must have a 'FooError' error set declaration");
+            }
+            if (!@hasDecl(ServerContext, "BarError")) {
+                @compileError("ServerContext must have a 'BarError' error set declaration");
+            }
+        }
+
+        Foo: *const fn (context: *ServerContext, request: FooRequest) ServerContext.FooError!FooResponse,
+        Bar: *const fn (context: *ServerContext, request: BarRequest) ServerContext.BarError!BarResponse,
     };
 }
 

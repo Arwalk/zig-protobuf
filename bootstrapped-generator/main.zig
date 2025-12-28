@@ -1042,6 +1042,31 @@ const GenerationContext = struct {
         try method_root_path.append(allocator, service_field_number);
         try method_root_path.append(allocator, @intCast(service_index));
 
+        // Add compile-time checks for error type declarations
+        try lines.append(allocator, "        comptime {\n");
+        for (service.method.items) |method| {
+            const method_name = method.name.?;
+            const error_type_name = try std.fmt.allocPrint(allocator, "{s}Error", .{method_name});
+            try lines.append(
+                allocator,
+                try std.fmt.allocPrint(
+                    allocator,
+                    "            if (!@hasDecl(ServerContext, \"{s}\")) {{\n",
+                    .{error_type_name},
+                ),
+            );
+            try lines.append(
+                allocator,
+                try std.fmt.allocPrint(
+                    allocator,
+                    "                @compileError(\"ServerContext must have a '{s}' error set declaration\");\n",
+                    .{error_type_name},
+                ),
+            );
+            try lines.append(allocator, "            }\n");
+        }
+        try lines.append(allocator, "        }\n\n");
+
         for (service.method.items, 0..) |method, method_i| {
             // Add method-level leading comment if available
             if (SourceCodeInfo.getRepeatedFieldLocation(
@@ -1064,6 +1089,7 @@ const GenerationContext = struct {
             // Generate function pointer signature based on streaming pattern
             const fn_sig = try self.generateMethodSignature(
                 allocator,
+                method_name,
                 input_type,
                 output_type,
                 client_streaming,
@@ -1122,56 +1148,56 @@ const GenerationContext = struct {
                     ),
                 );
             } else if (!client_streaming and server_streaming) {
-                // Server streaming: fn(self, request, writer) !void
+                // Server streaming: fn(self, request, writer_queue) !void
                 try lines.append(
                     allocator,
                     try std.fmt.allocPrint(
                         allocator,
-                        "        pub fn {s}(self: @This(), request: {s}, writer: *std.Io.Writer) anyerror!void {{\n",
-                        .{ method_name, input_type },
+                        "        pub fn {s}(self: @This(), request: {s}, writer_queue: *std.Io.Queue({s})) anyerror!void {{\n",
+                        .{ method_name, input_type, output_type },
                     ),
                 );
                 try lines.append(
                     allocator,
                     try std.fmt.allocPrint(
                         allocator,
-                        "            return self.implementations.{s}(self.context, request, writer);\n",
+                        "            return self.implementations.{s}(self.context, request, writer_queue);\n",
                         .{method_name},
                     ),
                 );
             } else if (client_streaming and !server_streaming) {
-                // Client streaming: fn(self, reader) !response
+                // Client streaming: fn(self, reader_queue) !response
                 try lines.append(
                     allocator,
                     try std.fmt.allocPrint(
                         allocator,
-                        "        pub fn {s}(self: @This(), reader: *std.Io.Reader) anyerror!{s} {{\n",
-                        .{ method_name, output_type },
+                        "        pub fn {s}(self: @This(), reader_queue: *std.Io.Queue({s})) anyerror!{s} {{\n",
+                        .{ method_name, input_type, output_type },
                     ),
                 );
                 try lines.append(
                     allocator,
                     try std.fmt.allocPrint(
                         allocator,
-                        "            return self.implementations.{s}(self.context, reader);\n",
+                        "            return self.implementations.{s}(self.context, reader_queue);\n",
                         .{method_name},
                     ),
                 );
             } else {
-                // Bidirectional streaming: fn(self, reader, writer) anyerror!void
+                // Bidirectional streaming: fn(self, reader_queue, writer_queue) anyerror!void
                 try lines.append(
                     allocator,
                     try std.fmt.allocPrint(
                         allocator,
-                        "        pub fn {s}(self: @This(), reader: *std.Io.Reader, writer: *std.Io.Writer) anyerror!void {{\n",
-                        .{method_name},
+                        "        pub fn {s}(self: @This(), reader_queue: *std.Io.Queue({s}), writer_queue: *std.Io.Queue({s})) anyerror!void {{\n",
+                        .{ method_name, input_type, output_type },
                     ),
                 );
                 try lines.append(
                     allocator,
                     try std.fmt.allocPrint(
                         allocator,
-                        "            return self.implementations.{s}(self.context, reader, writer);\n",
+                        "            return self.implementations.{s}(self.context, reader_queue, writer_queue);\n",
                         .{method_name},
                     ),
                 );
@@ -1184,35 +1210,42 @@ const GenerationContext = struct {
     fn generateMethodSignature(
         _: *GenerationContext,
         allocator: std.mem.Allocator,
+        method_name: []const u8,
         input_type: []const u8,
         output_type: []const u8,
         client_streaming: bool,
         server_streaming: bool,
     ) ![]const u8 {
+        const error_type = try std.fmt.allocPrint(allocator, "ServerContext.{s}Error", .{method_name});
+
         if (!client_streaming and !server_streaming) {
-            // Unary: *const fn(context: *ServerContext, request: Request) anyerror!Response
+            // Unary: *const fn(context: *ServerContext, request: Request) ServerContext.MethodError!Response
             return try std.fmt.allocPrint(
                 allocator,
-                "*const fn(context: *ServerContext, request: {s}) anyerror!{s}",
-                .{ input_type, output_type },
+                "*const fn(context: *ServerContext, request: {s}) {s}!{s}",
+                .{ input_type, error_type, output_type },
             );
         } else if (!client_streaming and server_streaming) {
-            // Server streaming: *const fn(context: *ServerContext, request: Request, writer: *std.Io.Writer) anyerror!void
+            // Server streaming: *const fn(context: *ServerContext, request: Request, writer_queue: *std.Io.Queue(Response)) ServerContext.MethodError!void
             return try std.fmt.allocPrint(
                 allocator,
-                "*const fn(context: *ServerContext, request: {s}, writer: *std.Io.Writer) anyerror!void",
-                .{input_type},
+                "*const fn(context: *ServerContext, request: {s}, writer_queue: *std.Io.Queue({s})) {s}!void",
+                .{ input_type, output_type, error_type },
             );
         } else if (client_streaming and !server_streaming) {
-            // Client streaming: *const fn(context: *ServerContext, reader: *std.Io.Reader) anyerror!Response
+            // Client streaming: *const fn(context: *ServerContext, reader_queue: *std.Io.Queue(Request)) ServerContext.MethodError!Response
             return try std.fmt.allocPrint(
                 allocator,
-                "*const fn(context: *ServerContext, reader: *std.Io.Reader) anyerror!{s}",
-                .{output_type},
+                "*const fn(context: *ServerContext, reader_queue: *std.Io.Queue({s})) {s}!{s}",
+                .{ input_type, error_type, output_type },
             );
         } else {
-            // Bidirectional streaming: *const fn(context: *ServerContext, reader: *std.Io.Reader, writer: *std.Io.Writer) anyerror!void
-            return "*const fn(context: *ServerContext, reader: *std.Io.Reader, writer: *std.Io.Writer) anyerror!void";
+            // Bidirectional streaming: *const fn(context: *ServerContext, reader_queue: *std.Io.Queue(Request), writer_queue: *std.Io.Queue(Response)) ServerContext.MethodError!void
+            return try std.fmt.allocPrint(
+                allocator,
+                "*const fn(context: *ServerContext, reader_queue: *std.Io.Queue({s}), writer_queue: *std.Io.Queue({s})) {s}!void",
+                .{ input_type, output_type, error_type },
+            );
         }
     }
 
