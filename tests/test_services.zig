@@ -6,6 +6,13 @@ const service = @import("generated/tests/service.pb.zig");
 const TestServerContext = struct {
     allocator: std.mem.Allocator,
     call_count: usize = 0,
+
+    // Error types required by the service implementations
+    pub const UnaryCallError = error{TestFailure};
+    pub const AnotherCallError = error{TestFailure};
+    pub const ServerStreamError = error{TestFailure};
+    pub const ClientStreamError = error{TestFailure};
+    pub const BidiStreamError = error{TestFailure};
 };
 
 test "SimpleService - UnaryCall implementation works" {
@@ -65,26 +72,26 @@ test "StreamingService - ServerStream signature is correct" {
     const StreamingServiceImpl = service.StreamingServiceImplementations(TestServerContext);
 
     const serverStreamImpl = struct {
-        fn call(context: *TestServerContext, request: service.StreamRequest, writer: *std.Io.Writer) !void {
+        fn call(context: *TestServerContext, request: service.StreamRequest, writer_queue: *std.Io.Queue(service.StreamResponse)) !void {
             context.call_count += 1;
             _ = request;
-            _ = writer;
+            _ = writer_queue;
         }
     }.call;
 
     const clientStreamImpl = struct {
-        fn call(context: *TestServerContext, reader: *std.Io.Reader) anyerror!service.StreamResponse {
+        fn call(context: *TestServerContext, reader_queue: *std.Io.Queue(service.StreamRequest)) TestServerContext.ClientStreamError!service.StreamResponse {
             context.call_count += 1;
-            _ = reader;
+            _ = reader_queue;
             return service.StreamResponse{ .data = "result" };
         }
     }.call;
 
     const bidiStreamImpl = struct {
-        fn call(context: *TestServerContext, reader: *std.Io.Reader, writer: *std.Io.Writer) anyerror!void {
+        fn call(context: *TestServerContext, reader_queue: *std.Io.Queue(service.StreamRequest), writer_queue: *std.Io.Queue(service.StreamResponse)) TestServerContext.BidiStreamError!void {
             context.call_count += 1;
-            _ = reader;
-            _ = writer;
+            _ = reader_queue;
+            _ = writer_queue;
         }
     }.call;
 
@@ -100,12 +107,12 @@ test "StreamingService - ServerStream signature is correct" {
         },
     };
 
-    // Test server streaming
-    var writer: std.Io.Writer.Allocating = .init(allocator);
-    defer writer.deinit();
+    // Test server streaming with Queue
+    var response_buffer: [10]service.StreamResponse = undefined;
+    var writer_queue: std.Io.Queue(service.StreamResponse) = .init(&response_buffer);
 
     const request = service.StreamRequest{ .id = 1 };
-    try svc.ServerStream(request, &writer.writer);
+    try svc.ServerStream(request, &writer_queue);
 
     try testing.expectEqual(@as(usize, 1), ctx.call_count);
 }
@@ -116,26 +123,26 @@ test "StreamingService - ClientStream returns response" {
     const StreamingServiceImpl = service.StreamingServiceImplementations(TestServerContext);
 
     const serverStreamImpl = struct {
-        fn call(context: *TestServerContext, request: service.StreamRequest, writer: *std.Io.Writer) anyerror!void {
+        fn call(context: *TestServerContext, request: service.StreamRequest, writer_queue: *std.Io.Queue(service.StreamResponse)) TestServerContext.ServerStreamError!void {
             _ = context;
             _ = request;
-            _ = writer;
+            _ = writer_queue;
         }
     }.call;
 
     const clientStreamImpl = struct {
-        fn call(context: *TestServerContext, reader: *std.Io.Reader) anyerror!service.StreamResponse {
+        fn call(context: *TestServerContext, reader_queue: *std.Io.Queue(service.StreamRequest)) TestServerContext.ClientStreamError!service.StreamResponse {
             context.call_count += 1;
-            _ = reader;
+            _ = reader_queue;
             return service.StreamResponse{ .data = "aggregated result" };
         }
     }.call;
 
     const bidiStreamImpl = struct {
-        fn call(context: *TestServerContext, reader: *std.Io.Reader, writer: *std.Io.Writer) anyerror!void {
+        fn call(context: *TestServerContext, reader_queue: *std.Io.Queue(service.StreamRequest), writer_queue: *std.Io.Queue(service.StreamResponse)) TestServerContext.BidiStreamError!void {
             _ = context;
-            _ = reader;
-            _ = writer;
+            _ = reader_queue;
+            _ = writer_queue;
         }
     }.call;
 
@@ -151,10 +158,11 @@ test "StreamingService - ClientStream returns response" {
         },
     };
 
-    const empty_data: []const u8 = &.{};
-    var reader: std.io.Reader = .fixed(empty_data);
+    // Test client streaming with Queue
+    var request_buffer: [10]service.StreamRequest = undefined;
+    var reader_queue: std.Io.Queue(service.StreamRequest) = .init(&request_buffer);
 
-    const response = try svc.ClientStream(&reader);
+    const response = try svc.ClientStream(&reader_queue);
 
     try testing.expectEqual(@as(usize, 1), ctx.call_count);
     try testing.expectEqualStrings("aggregated result", response.data);
@@ -165,10 +173,16 @@ test "Service can use different context types" {
 
     const ContextA = struct {
         value_a: i32,
+
+        pub const UnaryCallError = error{ContextAError};
+        pub const AnotherCallError = error{ContextAError};
     };
 
     const ContextB = struct {
         value_b: []const u8,
+
+        pub const UnaryCallError = error{ContextBError};
+        pub const AnotherCallError = error{ContextBError};
     };
 
     const ServiceA = service.SimpleService(ContextA);
@@ -210,7 +224,7 @@ test "Messages can be encoded and decoded" {
     try request.encode(&writer.writer, allocator);
 
     // Decode it
-    var reader: std.io.Reader = .fixed(writer.written());
+    var reader: std.Io.Reader = .fixed(writer.written());
     var decoded = try service.UnaryRequest.decode(&reader, allocator);
     defer decoded.deinit(allocator);
 
