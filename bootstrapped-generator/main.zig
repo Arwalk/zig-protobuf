@@ -11,9 +11,9 @@ pub const std_options: std.Options = .{ .log_scope_levels = &[_]std.log.ScopeLev
 pub fn main() !void {
     var stdin_buf: [4096]u8 = undefined;
     const allocator = std.heap.smp_allocator;
-    var threaded: std.Io.Threaded = .init(allocator);
+    var threaded: std.Io.Threaded = .init_single_threaded;
     const io = threaded.io();
-    var stdin = std.fs.File.stdin().reader(io, &stdin_buf);
+    var stdin = std.Io.File.stdin().reader(io, &stdin_buf);
 
     const request: plugin.CodeGeneratorRequest = try .decode(
         &stdin.interface,
@@ -25,7 +25,7 @@ pub fn main() !void {
     try ctx.processRequest(allocator);
 
     var stdout_buf: [4096]u8 = undefined;
-    var stdout = std.fs.File.stdout().writer(&stdout_buf);
+    var stdout = std.Io.File.stdout().writer(io, &stdout_buf);
     try ctx.res.encode(&stdout.interface, allocator);
     try stdout.interface.flush();
 }
