@@ -1,18 +1,20 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+const Io = std.Io;
+
 pub const PROTOC_VERSION = "32.1";
 
 // File system utilities
-pub fn dirExists(path: []const u8) bool {
-    var dir = std.fs.openDirAbsolute(path, .{}) catch return false;
-    dir.close();
+pub fn dirExists(io: Io, path: []const u8) bool {
+    var dir = Io.Dir.openDirAbsolute(io, path, .{}) catch return false;
+    dir.close(io);
     return true;
 }
 
-pub fn fileExists(path: []const u8) bool {
-    var file = std.fs.openFileAbsolute(path, .{}) catch return false;
-    file.close();
+pub fn fileExists(io: Io, path: []const u8) bool {
+    var file = Io.Dir.openFileAbsolute(io, path, .{}) catch return false;
+    file.close(io);
     return true;
 }
 
@@ -31,16 +33,11 @@ pub fn ensureProtocBinaryDownloaded(
     step: *std.Build.Step,
 ) !?[]const u8 {
     if (try getProtocBin(step)) |executable_path| {
-        if (fileExists(executable_path)) {
+        if (fileExists(step.owner.graph.io, executable_path)) {
             return executable_path;
         }
-
-        if (!fileExists(executable_path)) {
-            std.log.err("zig-protobuf: file not found: {s}", .{executable_path});
-            std.process.exit(1);
-        }
-
-        return executable_path;
+        std.log.err("zig-protobuf: file not found: {s}", .{executable_path});
+        std.process.exit(1);
     }
     return null;
 }
@@ -181,8 +178,8 @@ pub const RunProtocStep = struct {
                 }));
 
                 try argv.appendSlice(b.allocator, &.{ "--zig_out", absolute_dest_dir });
-                if (!dirExists(absolute_dest_dir)) {
-                    try std.fs.makeDirAbsolute(absolute_dest_dir);
+                if (!dirExists(b.graph.io, absolute_dest_dir)) {
+                    try Io.Dir.createDirAbsolute(b.graph.io, absolute_dest_dir, .default_dir);
                 }
 
                 for (self.include_directories) |it| {
