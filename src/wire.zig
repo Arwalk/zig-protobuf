@@ -259,11 +259,8 @@ pub fn decodeScalar(
         else
             u64;
 
-        var val: Unsigned = 0;
-        for (0..@sizeOf(Unsigned)) |i| {
-            const b = try reader.takeByte();
-            val |= @as(Unsigned, b) << @intCast(8 * i);
-        }
+        const bytes = try reader.takeArray(@sizeOf(Unsigned));
+        const val = std.mem.readInt(Unsigned, bytes, .little);
         return .{ @bitCast(val), @sizeOf(Unsigned) };
     }
 
@@ -402,10 +399,21 @@ pub fn decodeRepeated(
             }
             // Packed repeated scalar.
             else if (options.bytes) |bytes| {
+                // Pre-allocate capacity to avoid repeated reallocations
+                if (comptime scalar.isFixed()) {
+                    // For fixed-size scalars, we know the exact count
+                    const elem_size = @sizeOf(scalar.toType());
+                    const count = bytes / elem_size;
+                    try result.ensureTotalCapacity(allocator, result.items.len + count);
+                } else {
+                    // For varints, minimum 1 byte per element, so max count = bytes
+                    try result.ensureTotalCapacity(allocator, result.items.len + bytes);
+                }
+
                 var consumed: usize = 0;
                 while (consumed < bytes) {
                     const decoded, const c = try decodeScalar(scalar, reader);
-                    try result.append(allocator, decoded);
+                    result.appendAssumeCapacity(decoded);
                     consumed += c;
                 }
                 if (consumed != bytes) {
@@ -425,6 +433,9 @@ pub fn decodeRepeated(
         .@"enum" => {
             // Packed repeated enum.
             if (options.bytes) |bytes| {
+                // Pre-allocate: enums are varints, minimum 1 byte each
+                try result.ensureTotalCapacity(allocator, result.items.len + bytes);
+
                 var consumed: usize = 0;
                 while (consumed < bytes) {
                     const raw, const c = try decodeScalar(.int32, reader);
@@ -432,7 +443,7 @@ pub fn decodeRepeated(
                         @branchHint(.cold);
                         return error.InvalidInput;
                     };
-                    try result.append(allocator, decoded);
+                    result.appendAssumeCapacity(decoded);
                     consumed += c;
                 }
                 if (consumed > bytes) {
@@ -456,10 +467,15 @@ pub fn decodeRepeated(
             // Submessages are length-delimited, and cannot be packed.
             std.debug.assert(options.bytes != null);
 
-            try result.append(
-                allocator,
-                try protobuf.init(Result, allocator),
-            );
+            // Ensure capacity before append to reduce reallocations.
+            // If at capacity, grow by a reasonable amount (at least 8 items)
+            // to amortize allocation cost for repeated submessages.
+            if (result.items.len >= result.capacity) {
+                const grow_by = @max(8, result.capacity);
+                try result.ensureTotalCapacity(allocator, result.capacity + grow_by);
+            }
+
+            result.appendAssumeCapacity(try protobuf.init(Result, allocator));
             errdefer result.items[result.items.len - 1].deinit(allocator);
             const msg = &result.items[result.items.len - 1];
             const consumed = try decodeMessage(
