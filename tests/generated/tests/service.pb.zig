@@ -299,72 +299,27 @@ pub const StreamResponse = struct {
 
 /// Simple service with unary RPC
 /// This service demonstrates basic request-response pattern
-pub fn SimpleServiceImplementations(comptime ServerContext: type) type {
+pub fn SimpleService(comptime UserDataType: type, comptime ErrorSet: type) type {
     return struct {
-        comptime {
-            protobuf.requireDecls(ServerContext, &.{
-                "UnaryCallError",
-                "AnotherCallError",
-            });
-        }
+        pub const service_name = "SimpleService";
 
         /// Performs a simple unary call
-        UnaryCall: *const fn (context: *ServerContext, request: UnaryRequest) ServerContext.UnaryCallError!UnaryResponse,
+        UnaryCall: *const fn (userdata: *UserDataType, request: UnaryRequest) ErrorSet!UnaryResponse,
         /// Another unary call for testing multiple methods
-        AnotherCall: *const fn (context: *ServerContext, request: StreamRequest) ServerContext.AnotherCallError!StreamResponse,
-    };
-}
-
-pub fn SimpleService(comptime ServerContext: type) type {
-    return struct {
-        context: *ServerContext,
-        implementations: SimpleServiceImplementations(ServerContext),
-
-        pub fn UnaryCall(self: @This(), request: UnaryRequest) ServerContext.UnaryCallError!UnaryResponse {
-            return self.implementations.UnaryCall(self.context, request);
-        }
-
-        pub fn AnotherCall(self: @This(), request: StreamRequest) ServerContext.AnotherCallError!StreamResponse {
-            return self.implementations.AnotherCall(self.context, request);
-        }
+        AnotherCall: *const fn (userdata: *UserDataType, request: StreamRequest) ErrorSet!StreamResponse,
     };
 }
 
 /// Service demonstrating all streaming patterns
-pub fn StreamingServiceImplementations(comptime ServerContext: type) type {
+pub fn StreamingService(comptime UserDataType: type, comptime ErrorSet: type) type {
     return struct {
-        comptime {
-            protobuf.requireDecls(ServerContext, &.{
-                "ServerStreamError",
-                "ClientStreamError",
-                "BidiStreamError",
-            });
-        }
+        pub const service_name = "StreamingService";
 
         /// Server streaming RPC - client sends one request, server sends stream of responses
-        ServerStream: *const fn (context: *ServerContext, request: StreamRequest, writer_queue: *std.Io.Queue(StreamResponse)) ServerContext.ServerStreamError!void,
+        ServerStream: *const fn (userdata: *UserDataType, request: StreamRequest, writer_queue: *std.Io.Queue(StreamResponse)) ErrorSet!void,
         /// Client streaming RPC - client sends stream of requests, server sends one response
-        ClientStream: *const fn (context: *ServerContext, reader_queue: *std.Io.Queue(StreamRequest)) ServerContext.ClientStreamError!StreamResponse,
+        ClientStream: *const fn (userdata: *UserDataType, reader_queue: *std.Io.Queue(StreamRequest)) ErrorSet!StreamResponse,
         /// Bidirectional streaming RPC - both client and server send streams
-        BidiStream: *const fn (context: *ServerContext, reader_queue: *std.Io.Queue(StreamRequest), writer_queue: *std.Io.Queue(StreamResponse)) ServerContext.BidiStreamError!void,
-    };
-}
-
-pub fn StreamingService(comptime ServerContext: type) type {
-    return struct {
-        context: *ServerContext,
-        implementations: StreamingServiceImplementations(ServerContext),
-
-        pub fn ServerStream(self: @This(), request: StreamRequest, writer_queue: *std.Io.Queue(StreamResponse)) ServerContext.ServerStreamError!void {
-            return self.implementations.ServerStream(self.context, request, writer_queue);
-        }
-
-        pub fn ClientStream(self: @This(), reader_queue: *std.Io.Queue(StreamRequest)) ServerContext.ClientStreamError!StreamResponse {
-            return self.implementations.ClientStream(self.context, reader_queue);
-        }
-
-        pub fn BidiStream(self: @This(), reader_queue: *std.Io.Queue(StreamRequest), writer_queue: *std.Io.Queue(StreamResponse)) ServerContext.BidiStreamError!void {
-            return self.implementations.BidiStream(self.context, reader_queue, writer_queue);
-        }
+        BidiStream: *const fn (userdata: *UserDataType, reader_queue: *std.Io.Queue(StreamRequest), writer_queue: *std.Io.Queue(StreamResponse)) ErrorSet!void,
     };
 }

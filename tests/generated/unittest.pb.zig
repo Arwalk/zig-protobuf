@@ -8457,31 +8457,11 @@ pub const EnumParseTester = struct {
     }
 };
 
-pub fn TestServiceImplementations(comptime ServerContext: type) type {
+pub fn TestService(comptime UserDataType: type, comptime ErrorSet: type) type {
     return struct {
-        comptime {
-            protobuf.requireDecls(ServerContext, &.{
-                "FooError",
-                "BarError",
-            });
-        }
+        pub const service_name = "TestService";
 
-        Foo: *const fn (context: *ServerContext, request: FooRequest) ServerContext.FooError!FooResponse,
-        Bar: *const fn (context: *ServerContext, request: BarRequest) ServerContext.BarError!BarResponse,
-    };
-}
-
-pub fn TestService(comptime ServerContext: type) type {
-    return struct {
-        context: *ServerContext,
-        implementations: TestServiceImplementations(ServerContext),
-
-        pub fn Foo(self: @This(), request: FooRequest) ServerContext.FooError!FooResponse {
-            return self.implementations.Foo(self.context, request);
-        }
-
-        pub fn Bar(self: @This(), request: BarRequest) ServerContext.BarError!BarResponse {
-            return self.implementations.Bar(self.context, request);
-        }
+        Foo: *const fn (userdata: *UserDataType, request: FooRequest) ErrorSet!FooResponse,
+        Bar: *const fn (userdata: *UserDataType, request: BarRequest) ErrorSet!BarResponse,
     };
 }

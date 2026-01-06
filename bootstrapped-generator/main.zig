@@ -236,8 +236,11 @@ const GenerationContext = struct {
         const aPath = std.fs.path.dirname(packageToFileName(a, &a_path_buf)) orelse "";
         const bPath = packageToFileName(b, &b_path_buf);
 
+        const cwd = try std.process.getCwdAlloc(allocator);
+        defer allocator.free(cwd);
+
         // to resolve some escaping oddities, the windows path separator is canonicalized to /
-        const resolvedRelativePath = try std.fs.path.relative(allocator, aPath, bPath);
+        const resolvedRelativePath = try std.fs.path.relative(allocator, cwd, null, aPath, bPath);
         return std.mem.replaceOwned(u8, allocator, resolvedRelativePath, "\\", "/");
     }
 
@@ -973,42 +976,29 @@ const GenerationContext = struct {
 
             const service_name = service.name.?;
 
-            // Generate the Implementations vtable function
+            // Generate single VTable function
             try lines.append(
                 allocator,
-                try std.fmt.allocPrint(allocator, "pub fn {s}Implementations(comptime ServerContext: type) type {{\n", .{service_name}),
+                try std.fmt.allocPrint(
+                    allocator,
+                    "pub fn {s}(comptime UserDataType: type, comptime ErrorSet: type) type {{\n",
+                    .{service_name},
+                ),
             );
             try lines.append(allocator, "    return struct {\n");
 
-            // Generate vtable fields
+            // Add service metadata
+            try lines.append(
+                allocator,
+                try std.fmt.allocPrint(
+                    allocator,
+                    "        pub const service_name = \"{s}\";\n\n",
+                    .{service_name},
+                ),
+            );
+
+            // Generate vtable fields (function pointers only)
             try self.generateVTableFields(
-                allocator,
-                lines,
-                fqn,
-                file,
-                service,
-                root_path,
-                service_field_number,
-                service_i,
-            );
-
-            try lines.append(allocator, "    };\n");
-            try lines.append(allocator, "}\n\n");
-
-            // Generate the Service struct function
-            try lines.append(
-                allocator,
-                try std.fmt.allocPrint(allocator, "pub fn {s}(comptime ServerContext: type) type {{\n", .{service_name}),
-            );
-            try lines.append(allocator, "    return struct {\n");
-            try lines.append(allocator, "        context: *ServerContext,\n");
-            try lines.append(
-                allocator,
-                try std.fmt.allocPrint(allocator, "        implementations: {s}Implementations(ServerContext),\n\n", .{service_name}),
-            );
-
-            // Generate wrapper methods
-            try self.generateServiceWrapperMethods(
                 allocator,
                 lines,
                 fqn,
@@ -1042,21 +1032,6 @@ const GenerationContext = struct {
         try method_root_path.append(allocator, service_field_number);
         try method_root_path.append(allocator, @intCast(service_index));
 
-        // Add compile-time check for error type declarations using protobuf.requireDecls
-        if (service.method.items.len > 0) {
-            try lines.append(allocator, "        comptime {\n");
-            try lines.append(allocator, "            protobuf.requireDecls(ServerContext, &.{\n");
-            for (service.method.items) |method| {
-                const method_name = method.name.?;
-                try lines.append(
-                    allocator,
-                    try std.fmt.allocPrint(allocator, "                \"{s}Error\",\n", .{method_name}),
-                );
-            }
-            try lines.append(allocator, "            });\n");
-            try lines.append(allocator, "        }\n\n");
-        }
-
         for (service.method.items, 0..) |method, method_i| {
             // Add method-level leading comment if available
             if (SourceCodeInfo.getRepeatedFieldLocation(
@@ -1079,7 +1054,6 @@ const GenerationContext = struct {
             // Generate function pointer signature based on streaming pattern
             const fn_sig = try self.generateMethodSignature(
                 allocator,
-                method_name,
                 input_type,
                 output_type,
                 client_streaming,
@@ -1093,150 +1067,41 @@ const GenerationContext = struct {
         }
     }
 
-    fn generateServiceWrapperMethods(
-        self: *GenerationContext,
-        allocator: std.mem.Allocator,
-        lines: *std.ArrayList([]const u8),
-        fqn: FullName,
-        file: descriptor.FileDescriptorProto,
-        service: descriptor.ServiceDescriptorProto,
-        root_path: []const i32,
-        service_field_number: i32,
-        service_index: usize,
-    ) !void {
-        _ = root_path;
-        _ = service_field_number;
-        _ = service_index;
-
-        for (service.method.items) |method| {
-            const method_name = method.name.?;
-            const input_type = try self.resolveServiceTypeName(allocator, fqn, file, method.input_type.?);
-            const output_type = try self.resolveServiceTypeName(allocator, fqn, file, method.output_type.?);
-            const client_streaming = method.client_streaming orelse false;
-            const server_streaming = method.server_streaming orelse false;
-
-            // Generate wrapper method
-            try lines.append(allocator, "\n");
-
-            // Method signature varies by streaming pattern
-            const error_type = try std.fmt.allocPrint(allocator, "ServerContext.{s}Error", .{method_name});
-
-            if (!client_streaming and !server_streaming) {
-                // Unary: fn(self, request) !response
-                try lines.append(
-                    allocator,
-                    try std.fmt.allocPrint(
-                        allocator,
-                        "        pub fn {s}(self: @This(), request: {s}) {s}!{s} {{\n",
-                        .{ method_name, input_type, error_type, output_type },
-                    ),
-                );
-                try lines.append(
-                    allocator,
-                    try std.fmt.allocPrint(
-                        allocator,
-                        "            return self.implementations.{s}(self.context, request);\n",
-                        .{method_name},
-                    ),
-                );
-            } else if (!client_streaming and server_streaming) {
-                // Server streaming: fn(self, request, writer_queue) !void
-                try lines.append(
-                    allocator,
-                    try std.fmt.allocPrint(
-                        allocator,
-                        "        pub fn {s}(self: @This(), request: {s}, writer_queue: *std.Io.Queue({s})) {s}!void {{\n",
-                        .{ method_name, input_type, output_type, error_type },
-                    ),
-                );
-                try lines.append(
-                    allocator,
-                    try std.fmt.allocPrint(
-                        allocator,
-                        "            return self.implementations.{s}(self.context, request, writer_queue);\n",
-                        .{method_name},
-                    ),
-                );
-            } else if (client_streaming and !server_streaming) {
-                // Client streaming: fn(self, reader_queue) !response
-                try lines.append(
-                    allocator,
-                    try std.fmt.allocPrint(
-                        allocator,
-                        "        pub fn {s}(self: @This(), reader_queue: *std.Io.Queue({s})) {s}!{s} {{\n",
-                        .{ method_name, input_type, error_type, output_type },
-                    ),
-                );
-                try lines.append(
-                    allocator,
-                    try std.fmt.allocPrint(
-                        allocator,
-                        "            return self.implementations.{s}(self.context, reader_queue);\n",
-                        .{method_name},
-                    ),
-                );
-            } else {
-                // Bidirectional streaming: fn(self, reader_queue, writer_queue) !void
-                try lines.append(
-                    allocator,
-                    try std.fmt.allocPrint(
-                        allocator,
-                        "        pub fn {s}(self: @This(), reader_queue: *std.Io.Queue({s}), writer_queue: *std.Io.Queue({s})) {s}!void {{\n",
-                        .{ method_name, input_type, output_type, error_type },
-                    ),
-                );
-                try lines.append(
-                    allocator,
-                    try std.fmt.allocPrint(
-                        allocator,
-                        "            return self.implementations.{s}(self.context, reader_queue, writer_queue);\n",
-                        .{method_name},
-                    ),
-                );
-            }
-
-            try lines.append(allocator, "        }\n");
-        }
-    }
-
     fn generateMethodSignature(
         _: *GenerationContext,
         allocator: std.mem.Allocator,
-        method_name: []const u8,
         input_type: []const u8,
         output_type: []const u8,
         client_streaming: bool,
         server_streaming: bool,
     ) ![]const u8 {
-        const error_type = try std.fmt.allocPrint(allocator, "ServerContext.{s}Error", .{method_name});
-
         if (!client_streaming and !server_streaming) {
-            // Unary: *const fn(context: *ServerContext, request: Request) ServerContext.MethodError!Response
+            // Unary: *const fn(userdata: *UserDataType, request: Request) ErrorSet!Response
             return try std.fmt.allocPrint(
                 allocator,
-                "*const fn(context: *ServerContext, request: {s}) {s}!{s}",
-                .{ input_type, error_type, output_type },
+                "*const fn(userdata: *UserDataType, request: {s}) ErrorSet!{s}",
+                .{ input_type, output_type },
             );
         } else if (!client_streaming and server_streaming) {
-            // Server streaming: *const fn(context: *ServerContext, request: Request, writer_queue: *std.Io.Queue(Response)) ServerContext.MethodError!void
+            // Server streaming: *const fn(userdata: *UserDataType, request: Request, writer_queue: *std.Io.Queue(Response)) ErrorSet!void
             return try std.fmt.allocPrint(
                 allocator,
-                "*const fn(context: *ServerContext, request: {s}, writer_queue: *std.Io.Queue({s})) {s}!void",
-                .{ input_type, output_type, error_type },
+                "*const fn(userdata: *UserDataType, request: {s}, writer_queue: *std.Io.Queue({s})) ErrorSet!void",
+                .{ input_type, output_type },
             );
         } else if (client_streaming and !server_streaming) {
-            // Client streaming: *const fn(context: *ServerContext, reader_queue: *std.Io.Queue(Request)) ServerContext.MethodError!Response
+            // Client streaming: *const fn(userdata: *UserDataType, reader_queue: *std.Io.Queue(Request)) ErrorSet!Response
             return try std.fmt.allocPrint(
                 allocator,
-                "*const fn(context: *ServerContext, reader_queue: *std.Io.Queue({s})) {s}!{s}",
-                .{ input_type, error_type, output_type },
+                "*const fn(userdata: *UserDataType, reader_queue: *std.Io.Queue({s})) ErrorSet!{s}",
+                .{ input_type, output_type },
             );
         } else {
-            // Bidirectional streaming: *const fn(context: *ServerContext, reader_queue: *std.Io.Queue(Request), writer_queue: *std.Io.Queue(Response)) ServerContext.MethodError!void
+            // Bidirectional streaming: *const fn(userdata: *UserDataType, reader_queue: *std.Io.Queue(Request), writer_queue: *std.Io.Queue(Response)) ErrorSet!void
             return try std.fmt.allocPrint(
                 allocator,
-                "*const fn(context: *ServerContext, reader_queue: *std.Io.Queue({s}), writer_queue: *std.Io.Queue({s})) {s}!void",
-                .{ input_type, output_type, error_type },
+                "*const fn(userdata: *UserDataType, reader_queue: *std.Io.Queue({s}), writer_queue: *std.Io.Queue({s})) ErrorSet!void",
+                .{ input_type, output_type },
             );
         }
     }
