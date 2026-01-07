@@ -70,6 +70,14 @@ pub fn build(b: *std.Build) !void {
 }
 ```
 
+## Service Code Generation
+
+zig-protobuf generates code for Protocol Buffer `service` definitions using the delegate pattern. This provides a flexible, type-safe interface for implementing gRPC-compatible services with custom server contexts.
+
+**Note**: This generates service interfaces only. It does not include a gRPC transport layer - users must implement their own server logic and transport.
+
+For detailed documentation on service code generation, including examples and usage patterns, see [docs/services.md](docs/services.md).
+
 -------
 
 The zig-protobuf logo is licensed under the Attribution 4.0 International (CC BY 4.0).

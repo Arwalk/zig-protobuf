@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package tests.service;
+
+// Request message for unary calls
+message UnaryRequest {
+  string message = 1;
+  int32 value = 2;
+}
+
+// Response message for unary calls
+message UnaryResponse {
+  string result = 1;
+  bool success = 2;
+}
+
+// Request message for streaming calls
+message StreamRequest {
+  int32 id = 1;
+}
+
+// Response message for streaming calls
+message StreamResponse {
+  string data = 1;
+}
+
+// Simple service with unary RPC
+// This service demonstrates basic request-response pattern
+service SimpleService {
+  // Performs a simple unary call
+  rpc UnaryCall(UnaryRequest) returns (UnaryResponse) {}
+
+  // Another unary call for testing multiple methods
+  rpc AnotherCall(StreamRequest) returns (StreamResponse) {}
+}
+
+// Service demonstrating all streaming patterns
+service StreamingService {
+  // Server streaming RPC - client sends one request, server sends stream of responses
+  rpc ServerStream(StreamRequest) returns (stream StreamResponse) {}
+
+  // Client streaming RPC - client sends stream of requests, server sends one response
+  rpc ClientStream(stream StreamRequest) returns (StreamResponse) {}
+
+  // Bidirectional streaming RPC - both client and server send streams
+  rpc BidiStream(stream StreamRequest) returns (stream StreamResponse) {}
+}

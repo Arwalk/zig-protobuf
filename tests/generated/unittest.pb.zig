@@ -8456,3 +8456,12 @@ pub const EnumParseTester = struct {
         return protobuf.json.stringify(@This(), self, jws);
     }
 };
+
+pub fn TestService(comptime UserDataType: type, comptime ErrorSet: type) type {
+    return struct {
+        pub const service_name = "TestService";
+
+        Foo: *const fn (userdata: *UserDataType, request: FooRequest) ErrorSet!FooResponse,
+        Bar: *const fn (userdata: *UserDataType, request: BarRequest) ErrorSet!BarResponse,
+    };
+}
