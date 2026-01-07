@@ -11,7 +11,7 @@ pub const std_options: std.Options = .{ .log_scope_levels = &[_]std.log.ScopeLev
 pub fn main() !void {
     var stdin_buf: [4096]u8 = undefined;
     const allocator = std.heap.smp_allocator;
-    var threaded: std.Io.Threaded = .init_single_threaded;
+    var threaded: std.Io.Threaded = .init(allocator, .{});
     const io = threaded.io();
     var stdin = std.Io.File.stdin().reader(io, &stdin_buf);
 
