@@ -718,7 +718,7 @@ fn dupeField(
             }
             return list;
         },
-        .packed_repeated => |_| {
+        .packed_repeated => {
             const capacity = @field(original, field_name).items.len;
             var list = try @TypeOf(@field(original, field_name)).initCapacity(allocator, capacity);
 
