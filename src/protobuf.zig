@@ -7,6 +7,20 @@ pub const wire = @import("wire.zig");
 
 pub const DecodingError = error{ NotEnoughData, InvalidInput };
 
+/// Validates that a type has all required declarations at compile time.
+/// Used by generated service code to ensure ServerContext types provide
+/// the necessary error set declarations for each RPC method.
+///
+/// Example:
+///     requireDecls(ServerContext, &.{"UnaryCallError", "StreamError"});
+pub fn requireDecls(comptime T: type, comptime required_decls: []const []const u8) void {
+    inline for (required_decls) |decl_name| {
+        if (!@hasDecl(T, decl_name)) {
+            @compileError("Type '" ++ @typeName(T) ++ "' must have a '" ++ decl_name ++ "' declaration");
+        }
+    }
+}
+
 /// Main tagged union holding the details of any field type.
 pub const FieldType = union(enum) {
     scalar: Scalar,
@@ -704,7 +718,7 @@ fn dupeField(
             }
             return list;
         },
-        .packed_repeated => |_| {
+        .packed_repeated => {
             const capacity = @field(original, field_name).items.len;
             var list = try @TypeOf(@field(original, field_name)).initCapacity(allocator, capacity);
 

@@ -11,7 +11,7 @@ pub const std_options: std.Options = .{ .log_scope_levels = &[_]std.log.ScopeLev
 pub fn main() !void {
     var stdin_buf: [4096]u8 = undefined;
     const allocator = std.heap.smp_allocator;
-    var threaded: std.Io.Threaded = .init(allocator, .{});
+    var threaded: std.Io.Threaded = .init(allocator, .{ .environ = .empty });
     const io = threaded.io();
     var stdin = std.Io.File.stdin().reader(io, &stdin_buf);
 
@@ -216,7 +216,7 @@ const GenerationContext = struct {
                         .{
                             optional_pub_directive,
                             escapeFqn(allocator, package.key_ptr.*),
-                            self.resolvePath(allocator, name.buf, package.key_ptr.*),
+                            resolvePath(allocator, name.buf, package.key_ptr.*),
                         },
                     ));
                 }
@@ -229,15 +229,19 @@ const GenerationContext = struct {
     }
 
     /// resolves an import path from the file A relative to B
-    fn resolvePath(_: *GenerationContext, allocator: std.mem.Allocator, a: []const u8, b: []const u8) ![]const u8 {
+    fn resolvePath(allocator: std.mem.Allocator, a: []const u8, b: []const u8) ![]const u8 {
         var a_path_buf: [std.fs.max_path_bytes]u8 = undefined;
         var b_path_buf: [std.fs.max_path_bytes]u8 = undefined;
 
         const aPath = std.fs.path.dirname(packageToFileName(a, &a_path_buf)) orelse "";
         const bPath = packageToFileName(b, &b_path_buf);
 
+        // Get actual current working directory
+        const cwd = try std.process.getCwdAlloc(allocator);
+        defer allocator.free(cwd);
+
         // to resolve some escaping oddities, the windows path separator is canonicalized to /
-        const resolvedRelativePath = try std.fs.path.relative(allocator, aPath, bPath);
+        const resolvedRelativePath = try std.fs.path.relative(allocator, cwd, null, aPath, bPath);
         return std.mem.replaceOwned(u8, allocator, resolvedRelativePath, "\\", "/");
     }
 
@@ -255,6 +259,8 @@ const GenerationContext = struct {
         try self.generateEnums(allocator, lines, fqn, file, file.enum_type, file_root_path, 5);
         // Field number 4 for message_type in FileDescriptorProto
         try self.generateMessages(allocator, lines, fqn, file, file.message_type, file_root_path, 4);
+        // Field number 6 for service in FileDescriptorProto
+        try self.generateServices(allocator, lines, fqn, file, file.service, file_root_path, 6);
     }
 
     fn generateEnums(
@@ -942,6 +948,206 @@ const GenerationContext = struct {
         }
 
         return false;
+    }
+
+    fn generateServices(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        lines: *std.ArrayList([]const u8),
+        fqn: FullName,
+        file: descriptor.FileDescriptorProto,
+        services: std.ArrayListUnmanaged(descriptor.ServiceDescriptorProto),
+        root_path: []const i32,
+        service_field_number: i32,
+    ) !void {
+        for (services.items, 0..) |service, service_i| {
+            try lines.append(allocator, "\n");
+
+            // Add service-level leading comment if available
+            if (SourceCodeInfo.getRepeatedFieldLocation(
+                file,
+                root_path,
+                service_field_number,
+                service_i,
+            )) |loc| {
+                if (loc.leading_comments) |leading_comments| {
+                    try SourceCodeInfo.appendComment(allocator, lines, leading_comments);
+                }
+            }
+
+            const service_name = service.name.?;
+
+            // Generate single VTable function
+            try lines.append(
+                allocator,
+                try std.fmt.allocPrint(
+                    allocator,
+                    "pub fn {s}(comptime UserDataType: type, comptime ErrorSet: type) type {{\n",
+                    .{service_name},
+                ),
+            );
+            try lines.append(allocator, "    return struct {\n");
+
+            // Add service metadata
+            try lines.append(
+                allocator,
+                try std.fmt.allocPrint(
+                    allocator,
+                    "        pub const service_name = \"{s}\";\n\n",
+                    .{service_name},
+                ),
+            );
+
+            // Generate vtable fields (function pointers only)
+            try self.generateVTableFields(
+                allocator,
+                lines,
+                fqn,
+                file,
+                service,
+                root_path,
+                service_field_number,
+                service_i,
+            );
+
+            try lines.append(allocator, "    };\n");
+            try lines.append(allocator, "}\n");
+        }
+    }
+
+    fn generateVTableFields(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        lines: *std.ArrayList([]const u8),
+        fqn: FullName,
+        file: descriptor.FileDescriptorProto,
+        service: descriptor.ServiceDescriptorProto,
+        root_path: []const i32,
+        service_field_number: i32,
+        service_index: usize,
+    ) !void {
+        // Build the path for methods within this service
+        var method_root_path: std.ArrayList(i32) = .empty;
+        defer method_root_path.deinit(allocator);
+        try method_root_path.appendSlice(allocator, root_path);
+        try method_root_path.append(allocator, service_field_number);
+        try method_root_path.append(allocator, @intCast(service_index));
+
+        for (service.method.items, 0..) |method, method_i| {
+            // Add method-level leading comment if available
+            if (SourceCodeInfo.getRepeatedFieldLocation(
+                file,
+                method_root_path.items,
+                2, // Field number for 'method' in ServiceDescriptorProto
+                method_i,
+            )) |loc| {
+                if (loc.leading_comments) |leading_comments| {
+                    try SourceCodeInfo.appendComment(allocator, lines, leading_comments);
+                }
+            }
+
+            const method_name = method.name.?;
+            const input_type = try self.resolveServiceTypeName(allocator, fqn, file, method.input_type.?);
+            const output_type = try self.resolveServiceTypeName(allocator, fqn, file, method.output_type.?);
+            const client_streaming = method.client_streaming orelse false;
+            const server_streaming = method.server_streaming orelse false;
+
+            // Generate function pointer signature based on streaming pattern
+            const fn_sig = try self.generateMethodSignature(
+                allocator,
+                input_type,
+                output_type,
+                client_streaming,
+                server_streaming,
+            );
+
+            try lines.append(
+                allocator,
+                try std.fmt.allocPrint(allocator, "        {s}: {s},\n", .{ method_name, fn_sig }),
+            );
+        }
+    }
+
+    fn generateMethodSignature(
+        _: *GenerationContext,
+        allocator: std.mem.Allocator,
+        input_type: []const u8,
+        output_type: []const u8,
+        client_streaming: bool,
+        server_streaming: bool,
+    ) ![]const u8 {
+        if (!client_streaming and !server_streaming) {
+            // Unary: *const fn(userdata: *UserDataType, request: Request) ErrorSet!Response
+            return try std.fmt.allocPrint(
+                allocator,
+                "*const fn(userdata: *UserDataType, request: {s}) ErrorSet!{s}",
+                .{ input_type, output_type },
+            );
+        } else if (!client_streaming and server_streaming) {
+            // Server streaming: *const fn(userdata: *UserDataType, request: Request, writer_queue: *std.Io.Queue(Response)) ErrorSet!void
+            return try std.fmt.allocPrint(
+                allocator,
+                "*const fn(userdata: *UserDataType, request: {s}, writer_queue: *std.Io.Queue({s})) ErrorSet!void",
+                .{ input_type, output_type },
+            );
+        } else if (client_streaming and !server_streaming) {
+            // Client streaming: *const fn(userdata: *UserDataType, reader_queue: *std.Io.Queue(Request)) ErrorSet!Response
+            return try std.fmt.allocPrint(
+                allocator,
+                "*const fn(userdata: *UserDataType, reader_queue: *std.Io.Queue({s})) ErrorSet!{s}",
+                .{ input_type, output_type },
+            );
+        } else {
+            // Bidirectional streaming: *const fn(userdata: *UserDataType, reader_queue: *std.Io.Queue(Request), writer_queue: *std.Io.Queue(Response)) ErrorSet!void
+            return try std.fmt.allocPrint(
+                allocator,
+                "*const fn(userdata: *UserDataType, reader_queue: *std.Io.Queue({s}), writer_queue: *std.Io.Queue({s})) ErrorSet!void",
+                .{ input_type, output_type },
+            );
+        }
+    }
+
+    fn resolveServiceTypeName(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        _: FullName,
+        file: descriptor.FileDescriptorProto,
+        type_name: []const u8,
+    ) ![]const u8 {
+        // Type names in services come with a leading dot (e.g., ".package.MessageType")
+        // We need to strip the dot and resolve relative to the current package
+        if (type_name.len == 0 or type_name[0] != '.') {
+            return type_name; // No leading dot, return as-is
+        }
+
+        const fullTypeName = FullName{ .buf = type_name[1..] }; // Strip leading dot
+
+        // Check if it's in the same package
+        const filePackage = FullName{ .buf = file.package.? };
+        if (fullTypeName.parent()) |parent| {
+            if (parent.eql(filePackage)) {
+                // Same package, return just the type name
+                return fullTypeName.name().buf;
+            }
+        }
+
+        // Check if it's in a known imported package
+        var parent: ?FullName = fullTypeName.parent();
+        while (parent != null) {
+            var it = self.known_packages.valueIterator();
+            while (it.next()) |value| {
+                if (value.eql(parent.?)) {
+                    // Found in an imported package
+                    const prop = try escapeFqn(allocator, parent.?.buf);
+                    const name = fullTypeName.buf[parent.?.buf.len + 1 ..];
+                    return try std.fmt.allocPrint(allocator, "{s}.{s}", .{ prop, name });
+                }
+            }
+            parent = parent.?.parent();
+        }
+
+        // If not found in any known package, return the full name
+        return fullTypeName.buf;
     }
 };
 

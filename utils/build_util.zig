@@ -18,17 +18,6 @@ pub fn fileExists(io: Io, path: []const u8) bool {
     return true;
 }
 
-// Environment utilities
-pub fn isEnvVarTruthy(allocator: std.mem.Allocator, name: []const u8) bool {
-    if (std.process.getEnvVarOwned(allocator, name)) |truthy| {
-        defer allocator.free(truthy);
-        if (std.mem.eql(u8, truthy, "true")) return true;
-        return false;
-    } else |_| {
-        return false;
-    }
-}
-
 pub fn ensureProtocBinaryDownloaded(
     step: *std.Build.Step,
 ) !?[]const u8 {
