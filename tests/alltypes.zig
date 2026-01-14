@@ -158,3 +158,15 @@ test "TestExtremeDefaultValues" {
     try testing.expectEqualSlices(u8, "12\x003", decoded.cord_with_zero.?);
     try testing.expectEqualSlices(u8, "${unknown}", decoded.replacement_string.?);
 }
+
+test "issue 156" {
+    var demo: tests.Issue156 = .{};
+    demo.value = .{ .bool = true };
+    demo.value2 = .{ .kind = .{ .string_value = "abc" } };
+
+    const serialized = try demo.jsonEncode(.{}, testing.allocator);
+    defer testing.allocator.free(serialized);
+    
+    var demo2 = try tests.Issue156.jsonDecode(serialized, .{}, testing.allocator);
+    defer demo2.deinit();
+}

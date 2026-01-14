@@ -4,28 +4,30 @@ const std = @import("std");
 
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
-/// import package tests.oneof
-const tests_oneof = @import("tests/oneof.pb.zig");
-/// import package graphics
-const graphics = @import("graphics.pb.zig");
 /// import package tests.longs
 const tests_longs = @import("tests/longs.pb.zig");
 /// import package opentelemetry.proto.metrics.v1
 const opentelemetry_proto_metrics_v1 = @import("opentelemetry/proto/metrics/v1.pb.zig");
-/// import package opentelemetry.proto.logs.v1
-const opentelemetry_proto_logs_v1 = @import("opentelemetry/proto/logs/v1.pb.zig");
 /// import package protobuf_test_messages.proto3
 pub const protobuf_test_messages_proto3 = @import("protobuf_test_messages/proto3.pb.zig");
-/// import package unittest
-pub const unittest = @import("unittest.pb.zig");
-/// import package selfref
-const selfref = @import("selfref.pb.zig");
+/// import package google.protobuf
+pub const google_protobuf = @import("google/protobuf.pb.zig");
 /// import package oneofselfref
 const oneofselfref = @import("oneofselfref.pb.zig");
+/// import package tests.oneof
+const tests_oneof = @import("tests/oneof.pb.zig");
 /// import package jspb.test
 pub const jspb_test = @import("jspb/test.pb.zig");
 /// import package vector_tile
 pub const vector_tile = @import("vector_tile.pb.zig");
+/// import package graphics
+const graphics = @import("graphics.pb.zig");
+/// import package opentelemetry.proto.logs.v1
+const opentelemetry_proto_logs_v1 = @import("opentelemetry/proto/logs/v1.pb.zig");
+/// import package selfref
+const selfref = @import("selfref.pb.zig");
+/// import package unittest
+pub const unittest = @import("unittest.pb.zig");
 
 pub const FixedSizes = struct {
     sfixed64: i64 = 0,
@@ -811,6 +813,104 @@ pub const WithRepeatedBytes = struct {
 
     pub const _desc_table = .{
         .byte_field = fd(1, .{ .repeated = .{ .scalar = .bytes } }),
+    };
+
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
+    pub fn encode(
+        self: @This(),
+        writer: *std.Io.Writer,
+        allocator: std.mem.Allocator,
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
+        return protobuf.encode(writer, allocator, self);
+    }
+
+    /// Decodes the message from the bytes read from the reader.
+    pub fn decode(
+        reader: *std.Io.Reader,
+        allocator: std.mem.Allocator,
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
+        return protobuf.decode(@This(), reader, allocator);
+    }
+
+    /// Deinitializes and frees the memory associated with the message.
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+        return protobuf.deinit(allocator, self);
+    }
+
+    /// Duplicates the message.
+    pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
+        return protobuf.dupe(@This(), self, allocator);
+    }
+
+    /// Decodes the message from the JSON string.
+    pub fn jsonDecode(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Encodes the message to a JSON string.
+    pub fn jsonEncode(
+        self: @This(),
+        options: std.json.Stringify.Options,
+        allocator: std.mem.Allocator,
+    ) ![]const u8 {
+        return protobuf.json.encode(self, options, allocator);
+    }
+
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
+    pub fn jsonParse(
+        allocator: std.mem.Allocator,
+        source: anytype,
+        options: std.json.ParseOptions,
+    ) !@This() {
+        return protobuf.json.parse(@This(), allocator, source, options);
+    }
+
+    /// This method is used by std.json
+    /// internally for serialization. DO NOT RENAME!
+    pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
+        return protobuf.json.stringify(@This(), self, jws);
+    }
+};
+
+pub const Issue156 = struct {
+    name: ?[]const u8 = null,
+    type: ?[]const u8 = null,
+    propertytype: ?[]const u8 = null,
+    value2: ?google_protobuf.Value = null,
+    value: ?value_union = null,
+
+    pub const _value_case = enum {
+        bool,
+        string,
+        int,
+        double,
+    };
+    pub const value_union = union(_value_case) {
+        bool: bool,
+        string: []const u8,
+        int: i32,
+        double: f64,
+        pub const _desc_table = .{
+            .bool = fd(4, .{ .scalar = .bool }),
+            .string = fd(5, .{ .scalar = .string }),
+            .int = fd(6, .{ .scalar = .int32 }),
+            .double = fd(7, .{ .scalar = .double }),
+        };
+    };
+
+    pub const _desc_table = .{
+        .name = fd(1, .{ .scalar = .string }),
+        .type = fd(2, .{ .scalar = .string }),
+        .propertytype = fd(3, .{ .scalar = .string }),
+        .value2 = fd(8, .submessage),
+        .value = fd(null, .{ .oneof = value_union }),
     };
 
     /// Encodes the message to the writer

@@ -1,5 +1,6 @@
 zig-cache
 .vscode*
+.claude
 .helix*
 .idea*
 *.exe
@@ -22,5 +23,6 @@ devenv.nix
 devenv.yaml
 devenv.lock
 .envrc
+..envrc
 *.nix
 .devenv

@@ -14,12 +14,13 @@ import public "opentelemetry/proto/logs/v1/logs.proto";
 import public "oneofSelfRef.proto";
 import public "selfref.proto";
 
+import "google/protobuf/struct.proto";
+
 enum TopLevelEnum {
   SE_ZERO = 0;
   SE2_ZERO = 3;
   SE2_ONE = 4;
 }
-
 
 message WithEnum {
   enum SomeEnum {
@@ -92,4 +93,17 @@ message WithBytes {
 
 message WithRepeatedBytes {
   repeated bytes byte_field = 1;
+}
+
+message Issue156 { 
+    optional string name = 1; 
+    optional string type = 2; 
+    optional string propertytype = 3; 
+    oneof value { 
+        bool bool = 4; 
+        string string = 5; 
+        int32 int = 6; 
+        double double = 7; 
+    }; 
+    google.protobuf.Value value2 = 8;
 }
