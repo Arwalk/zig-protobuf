@@ -36,6 +36,9 @@
             .url = "git+https://github.com/hendriknielaender/zbench?ref=v0.11.2#2bdf0c62c5bf761d282e889e34fb33bc41484e6f",
             .hash = "zbench-0.11.2-YTdc7zolAQDlBF9i0ywXIvDjafL3Kg27S-aFUq6dU5zy",
         },
+        .protobuf = .{
+            .path = "./..",
+        },
     },
     .paths = .{
         "build.zig",

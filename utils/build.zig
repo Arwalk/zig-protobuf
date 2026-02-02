@@ -1,6 +1,6 @@
 const std = @import("std");
-const build_util = @import("build_util.zig");
-const RunProtocStep = build_util.RunProtocStep;
+const protobuf = @import("protobuf");
+const RunProtocStep = protobuf.RunProtocStep;
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -20,14 +20,12 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
-    const protobuf_module = b.addModule("protobuf", .{
-        .root_source_file = b.path("../src/protobuf.zig"),
-    });
-
-    const generator = buildGenerator(b, .{
+    const protobuf_dep = b.dependency("protobuf", .{
         .target = target,
         .optimize = optimize,
-    }, protobuf_module);
+    });
+
+    const protobuf_module = protobuf_dep.module("protobuf");
 
     benchmark_exe.root_module.addImport("zbench", zbench_module);
     benchmark_exe.root_module.addImport("protobuf", protobuf_module);
@@ -41,18 +39,19 @@ pub fn build(b: *std.Build) void {
 
     run_cmd.step.dependOn(b.getInstallStep());
 
-    // Protoc generation for benchmarks
-    const convertForBenchmarkStep = RunProtocStep.createWithGenerator(b, generator, .{
+    const convertForBenchmarkStep = protobuf.RunProtocStep.create(protobuf_dep.builder, target, .{
+        // out directory for the generated zig files
         .destination_directory = b.path("src/generated"),
         .source_files = &.{ "../tests/protos_for_test/opentelemetry/proto/metrics/v1/metrics.proto", "../tests/protos_for_test/opentelemetry/proto/common/v1/common.proto" },
         .include_directories = &.{"../tests/protos_for_test"},
     });
+
     benchmark_exe.step.dependOn(&convertForBenchmarkStep.step);
 
     // Generate dataset step
     const generate_dataset_step = b.step("generate-dataset", "Generate benchmark dataset");
 
-    var convertForDatasetStep = RunProtocStep.createWithGenerator(b, generator, .{
+    var convertForDatasetStep = RunProtocStep.create(protobuf_dep.builder, target, .{
         .destination_directory = b.path("src/generated"),
         .source_files = &.{ "../tests/protos_for_test/benchmark_data.proto", "../tests/protos_for_test/opentelemetry/proto/metrics/v1/metrics.proto", "../tests/protos_for_test/opentelemetry/proto/common/v1/common.proto" },
         .include_directories = &.{"../tests/protos_for_test"},
@@ -78,19 +77,4 @@ pub fn build(b: *std.Build) void {
     }
 
     generate_dataset_step.dependOn(&run_generate.step);
-}
-
-pub fn buildGenerator(b: *std.Build, opt: build_util.GenOptions, protobuf_module: *std.Build.Module) *std.Build.Step.Compile {
-    const exe = b.addExecutable(.{
-        .name = "protoc-gen-zig",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("../bootstrapped-generator/main.zig"),
-            .target = opt.target,
-            .optimize = opt.optimize,
-        }),
-    });
-
-    exe.root_module.addImport("protobuf", protobuf_module);
-    b.installArtifact(exe);
-    return exe;
 }
