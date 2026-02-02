@@ -19,6 +19,7 @@ jobs:
           version: master
       - run: zig build
       - run: zig build test
+      - run: cd utils && zig build install
 
   bootstrap:
     runs-on: ubuntu-latest

@@ -21,6 +21,7 @@ jobs:
           version: "0.15.1"
       - run: zig build
       - run: zig build test
+      - run: cd utils && zig build install
 
   bootstrap:
     runs-on: ubuntu-latest
