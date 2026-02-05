@@ -51,7 +51,7 @@
     .paths = .{
         "build.zig",
         "build.zig.zon",
-        "utils/build_util.zig",
+        "build_util.zig",
         "LICENSE.md",
         "README.md",
         ".gitignore",
