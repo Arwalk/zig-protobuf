@@ -22,7 +22,7 @@ pub fn main() !void {
 
     var ctx: GenerationContext = try .init(allocator, request);
 
-    try ctx.processRequest(allocator);
+    try ctx.processRequest(io, allocator);
 
     var stdout_buf: [4096]u8 = undefined;
     var stdout = std.Io.File.stdout().writer(io, &stdout_buf);
@@ -109,7 +109,7 @@ const GenerationContext = struct {
         };
     }
 
-    pub fn processRequest(self: *GenerationContext, allocator: std.mem.Allocator) !void {
+    pub fn processRequest(self: *GenerationContext, io: std.Io, allocator: std.mem.Allocator) !void {
         defer {
             // Clean up message dependencies
             var it = self.message_deps.iterator();
@@ -139,7 +139,7 @@ const GenerationContext = struct {
 
             const name = FullName{ .buf = t.package.? };
 
-            try self.printFileDeclarations(allocator, name, file);
+            try self.printFileDeclarations(io, allocator, name, file);
         }
 
         var it = self.fqn_lines.iterator();
@@ -156,7 +156,7 @@ const GenerationContext = struct {
         self.res.supported_features = @intFromEnum(plugin.CodeGeneratorResponse.Feature.FEATURE_PROTO3_OPTIONAL);
     }
 
-    fn getOutputLines(self: *GenerationContext, allocator: std.mem.Allocator, name: FullName) !*std.ArrayList([]const u8) {
+    fn getOutputLines(self: *GenerationContext, io: std.Io, allocator: std.mem.Allocator, name: FullName) !*std.ArrayList([]const u8) {
         const entry = try self.fqn_lines.getOrPut(name.buf);
 
         if (!entry.found_existing) {
@@ -216,7 +216,7 @@ const GenerationContext = struct {
                         .{
                             optional_pub_directive,
                             escapeFqn(allocator, package.key_ptr.*),
-                            resolvePath(allocator, name.buf, package.key_ptr.*),
+                            resolvePath(io, allocator, name.buf, package.key_ptr.*),
                         },
                     ));
                 }
@@ -229,7 +229,7 @@ const GenerationContext = struct {
     }
 
     /// resolves an import path from the file A relative to B
-    fn resolvePath(allocator: std.mem.Allocator, a: []const u8, b: []const u8) ![]const u8 {
+    fn resolvePath(io: std.Io, allocator: std.mem.Allocator, a: []const u8, b: []const u8) ![]const u8 {
         var a_path_buf: [std.fs.max_path_bytes]u8 = undefined;
         var b_path_buf: [std.fs.max_path_bytes]u8 = undefined;
 
@@ -237,7 +237,7 @@ const GenerationContext = struct {
         const bPath = packageToFileName(b, &b_path_buf);
 
         // Get actual current working directory
-        const cwd = try std.process.getCwdAlloc(allocator);
+        const cwd = try std.process.currentPathAlloc(io, allocator);
         defer allocator.free(cwd);
 
         // to resolve some escaping oddities, the windows path separator is canonicalized to /
@@ -247,11 +247,12 @@ const GenerationContext = struct {
 
     pub fn printFileDeclarations(
         self: *GenerationContext,
+        io: std.Io,
         allocator: std.mem.Allocator,
         fqn: FullName,
         file: descriptor.FileDescriptorProto,
     ) !void {
-        const lines = try self.getOutputLines(allocator, fqn);
+        const lines = try self.getOutputLines(io, allocator, fqn);
 
         // For file-level elements, root_path is empty
         const file_root_path: []const i32 = &.{};
