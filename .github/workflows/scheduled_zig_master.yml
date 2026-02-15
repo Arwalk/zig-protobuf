@@ -17,5 +17,3 @@ jobs:
           version: master
       - run: zig build
       - run: zig build test
-      - run: zig build install
-        working-directory: benchmark
