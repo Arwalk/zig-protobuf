@@ -24,3 +24,4 @@ devenv.lock
 .envrc
 *.nix
 .devenv
+zig-pkg/*
