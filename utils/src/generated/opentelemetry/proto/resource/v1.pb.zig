@@ -8,7 +8,7 @@ const fd = protobuf.fd;
 const opentelemetry_proto_common_v1 = @import("../common/v1.pb.zig");
 
 pub const Resource = struct {
-    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue) = .empty,
+    attributes: std.ArrayList(opentelemetry_proto_common_v1.KeyValue) = .empty,
     dropped_attributes_count: u32 = 0,
 
     pub const _desc_table = .{

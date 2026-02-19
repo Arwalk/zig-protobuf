@@ -60,7 +60,7 @@ pub const DataPointFlags = enum(i32) {
 /// When new fields are added into this message, the OTLP request MUST be updated
 /// as well.
 pub const MetricsData = struct {
-    resource_metrics: std.ArrayListUnmanaged(ResourceMetrics) = .empty,
+    resource_metrics: std.ArrayList(ResourceMetrics) = .empty,
 
     pub const _desc_table = .{
         .resource_metrics = fd(1, .{ .repeated = .submessage }),
@@ -133,7 +133,7 @@ pub const MetricsData = struct {
 /// A collection of ScopeMetrics from a Resource.
 pub const ResourceMetrics = struct {
     resource: ?opentelemetry_proto_resource_v1.Resource = null,
-    scope_metrics: std.ArrayListUnmanaged(ScopeMetrics) = .empty,
+    scope_metrics: std.ArrayList(ScopeMetrics) = .empty,
     schema_url: []const u8 = &.{},
 
     pub const _desc_table = .{
@@ -209,7 +209,7 @@ pub const ResourceMetrics = struct {
 /// A collection of Metrics produced by an Scope.
 pub const ScopeMetrics = struct {
     scope: ?opentelemetry_proto_common_v1.InstrumentationScope = null,
-    metrics: std.ArrayListUnmanaged(Metric) = .empty,
+    metrics: std.ArrayList(Metric) = .empty,
     schema_url: []const u8 = &.{},
 
     pub const _desc_table = .{
@@ -370,7 +370,7 @@ pub const Metric = struct {
     name: []const u8 = &.{},
     description: []const u8 = &.{},
     unit: []const u8 = &.{},
-    metadata: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue) = .empty,
+    metadata: std.ArrayList(opentelemetry_proto_common_v1.KeyValue) = .empty,
     data: ?data_union = null,
 
     pub const _data_case = enum {
@@ -477,7 +477,7 @@ pub const Metric = struct {
 /// AggregationTemporality is not included. Consequently, this also means
 /// "StartTimeUnixNano" is ignored for all data points.
 pub const Gauge = struct {
-    data_points: std.ArrayListUnmanaged(NumberDataPoint) = .empty,
+    data_points: std.ArrayList(NumberDataPoint) = .empty,
 
     pub const _desc_table = .{
         .data_points = fd(1, .{ .repeated = .submessage }),
@@ -550,7 +550,7 @@ pub const Gauge = struct {
 /// Sum represents the type of a scalar metric that is calculated as a sum of all
 /// reported measurements over a time interval.
 pub const Sum = struct {
-    data_points: std.ArrayListUnmanaged(NumberDataPoint) = .empty,
+    data_points: std.ArrayList(NumberDataPoint) = .empty,
     aggregation_temporality: AggregationTemporality = @enumFromInt(0),
     is_monotonic: bool = false,
 
@@ -627,7 +627,7 @@ pub const Sum = struct {
 /// Histogram represents the type of a metric that is calculated by aggregating
 /// as a Histogram of all reported measurements over a time interval.
 pub const Histogram = struct {
-    data_points: std.ArrayListUnmanaged(HistogramDataPoint) = .empty,
+    data_points: std.ArrayList(HistogramDataPoint) = .empty,
     aggregation_temporality: AggregationTemporality = @enumFromInt(0),
 
     pub const _desc_table = .{
@@ -702,7 +702,7 @@ pub const Histogram = struct {
 /// ExponentialHistogram represents the type of a metric that is calculated by aggregating
 /// as a ExponentialHistogram of all reported double measurements over a time interval.
 pub const ExponentialHistogram = struct {
-    data_points: std.ArrayListUnmanaged(ExponentialHistogramDataPoint) = .empty,
+    data_points: std.ArrayList(ExponentialHistogramDataPoint) = .empty,
     aggregation_temporality: AggregationTemporality = @enumFromInt(0),
 
     pub const _desc_table = .{
@@ -781,7 +781,7 @@ pub const ExponentialHistogram = struct {
 /// While they can be useful in some applications, histogram data points are
 /// recommended for new applications.
 pub const Summary = struct {
-    data_points: std.ArrayListUnmanaged(SummaryDataPoint) = .empty,
+    data_points: std.ArrayList(SummaryDataPoint) = .empty,
 
     pub const _desc_table = .{
         .data_points = fd(1, .{ .repeated = .submessage }),
@@ -854,10 +854,10 @@ pub const Summary = struct {
 /// NumberDataPoint is a single data point in a timeseries that describes the
 /// time-varying scalar value of a metric.
 pub const NumberDataPoint = struct {
-    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue) = .empty,
+    attributes: std.ArrayList(opentelemetry_proto_common_v1.KeyValue) = .empty,
     start_time_unix_nano: u64 = 0,
     time_unix_nano: u64 = 0,
-    exemplars: std.ArrayListUnmanaged(Exemplar) = .empty,
+    exemplars: std.ArrayList(Exemplar) = .empty,
     flags: u32 = 0,
     value: ?value_union = null,
 
@@ -958,14 +958,14 @@ pub const NumberDataPoint = struct {
 /// "explicit_bounds" and "bucket_counts" must be omitted and only "count" and
 /// "sum" are known.
 pub const HistogramDataPoint = struct {
-    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue) = .empty,
+    attributes: std.ArrayList(opentelemetry_proto_common_v1.KeyValue) = .empty,
     start_time_unix_nano: u64 = 0,
     time_unix_nano: u64 = 0,
     count: u64 = 0,
     sum: ?f64 = null,
-    bucket_counts: std.ArrayListUnmanaged(u64) = .empty,
-    explicit_bounds: std.ArrayListUnmanaged(f64) = .empty,
-    exemplars: std.ArrayListUnmanaged(Exemplar) = .empty,
+    bucket_counts: std.ArrayList(u64) = .empty,
+    explicit_bounds: std.ArrayList(f64) = .empty,
+    exemplars: std.ArrayList(Exemplar) = .empty,
     flags: u32 = 0,
     min: ?f64 = null,
     max: ?f64 = null,
@@ -1053,7 +1053,7 @@ pub const HistogramDataPoint = struct {
 /// summary statistics for a population of values, it may optionally contain the
 /// distribution of those values across a set of buckets.
 pub const ExponentialHistogramDataPoint = struct {
-    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue) = .empty,
+    attributes: std.ArrayList(opentelemetry_proto_common_v1.KeyValue) = .empty,
     start_time_unix_nano: u64 = 0,
     time_unix_nano: u64 = 0,
     count: u64 = 0,
@@ -1063,7 +1063,7 @@ pub const ExponentialHistogramDataPoint = struct {
     positive: ?ExponentialHistogramDataPoint.Buckets = null,
     negative: ?ExponentialHistogramDataPoint.Buckets = null,
     flags: u32 = 0,
-    exemplars: std.ArrayListUnmanaged(Exemplar) = .empty,
+    exemplars: std.ArrayList(Exemplar) = .empty,
     min: ?f64 = null,
     max: ?f64 = null,
     zero_threshold: f64 = 0,
@@ -1089,7 +1089,7 @@ pub const ExponentialHistogramDataPoint = struct {
     /// of counts.
     pub const Buckets = struct {
         offset: i32 = 0,
-        bucket_counts: std.ArrayListUnmanaged(u64) = .empty,
+        bucket_counts: std.ArrayList(u64) = .empty,
 
         pub const _desc_table = .{
             .offset = fd(1, .{ .scalar = .sint32 }),
@@ -1227,12 +1227,12 @@ pub const ExponentialHistogramDataPoint = struct {
 /// SummaryDataPoint is a single data point in a timeseries that describes the
 /// time-varying values of a Summary metric.
 pub const SummaryDataPoint = struct {
-    attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue) = .empty,
+    attributes: std.ArrayList(opentelemetry_proto_common_v1.KeyValue) = .empty,
     start_time_unix_nano: u64 = 0,
     time_unix_nano: u64 = 0,
     count: u64 = 0,
     sum: f64 = 0,
-    quantile_values: std.ArrayListUnmanaged(SummaryDataPoint.ValueAtQuantile) = .empty,
+    quantile_values: std.ArrayList(SummaryDataPoint.ValueAtQuantile) = .empty,
     flags: u32 = 0,
 
     pub const _desc_table = .{
@@ -1395,7 +1395,7 @@ pub const SummaryDataPoint = struct {
 /// was recorded, for example the span and trace ID of the active span when the
 /// exemplar was recorded.
 pub const Exemplar = struct {
-    filtered_attributes: std.ArrayListUnmanaged(opentelemetry_proto_common_v1.KeyValue) = .empty,
+    filtered_attributes: std.ArrayList(opentelemetry_proto_common_v1.KeyValue) = .empty,
     time_unix_nano: u64 = 0,
     span_id: []const u8 = &.{},
     trace_id: []const u8 = &.{},

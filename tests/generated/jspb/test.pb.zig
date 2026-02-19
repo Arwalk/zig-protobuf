@@ -160,7 +160,7 @@ pub const EnumContainer = struct {
 
 pub const Simple1 = struct {
     a_string: []const u8,
-    a_repeated_string: std.ArrayListUnmanaged([]const u8) = .empty,
+    a_repeated_string: std.ArrayList([]const u8) = .empty,
     a_boolean: ?bool = null,
 
     pub const _desc_table = .{
@@ -236,7 +236,7 @@ pub const Simple1 = struct {
 /// A message that differs from Simple1 only by name
 pub const Simple2 = struct {
     a_string: []const u8,
-    a_repeated_string: std.ArrayListUnmanaged([]const u8) = .empty,
+    a_repeated_string: std.ArrayList([]const u8) = .empty,
 
     pub const _desc_table = .{
         .a_string = fd(1, .{ .scalar = .string }),
@@ -388,8 +388,8 @@ pub const OptionalFields = struct {
     a_string: ?[]const u8 = null,
     a_bool: bool,
     a_nested_message: ?OptionalFields.Nested = null,
-    a_repeated_message: std.ArrayListUnmanaged(OptionalFields.Nested) = .empty,
-    a_repeated_string: std.ArrayListUnmanaged([]const u8) = .empty,
+    a_repeated_message: std.ArrayList(OptionalFields.Nested) = .empty,
+    a_repeated_string: std.ArrayList([]const u8) = .empty,
 
     pub const _desc_table = .{
         .a_string = fd(1, .{ .scalar = .string }),
@@ -613,8 +613,8 @@ pub const Complex = struct {
     a_string: []const u8,
     an_out_of_order_bool: bool,
     a_nested_message: ?Complex.Nested = null,
-    a_repeated_message: std.ArrayListUnmanaged(Complex.Nested) = .empty,
-    a_repeated_string: std.ArrayListUnmanaged([]const u8) = .empty,
+    a_repeated_message: std.ArrayList(Complex.Nested) = .empty,
+    a_repeated_string: std.ArrayList([]const u8) = .empty,
 
     pub const _desc_table = .{
         .a_string = fd(1, .{ .scalar = .string }),
@@ -987,11 +987,11 @@ pub const DefaultValues = struct {
 pub const FloatingPointFields = struct {
     optional_float_field: ?f32 = null,
     required_float_field: f32,
-    repeated_float_field: std.ArrayListUnmanaged(f32) = .empty,
+    repeated_float_field: std.ArrayList(f32) = .empty,
     default_float_field: ?f32 = 2,
     optional_double_field: ?f64 = null,
     required_double_field: f64,
-    repeated_double_field: std.ArrayListUnmanaged(f64) = .empty,
+    repeated_double_field: std.ArrayList(f64) = .empty,
     default_double_field: ?f64 = 2,
 
     pub const _desc_table = .{
@@ -1072,7 +1072,7 @@ pub const FloatingPointFields = struct {
 pub const TestClone = struct {
     str: ?[]const u8 = null,
     simple1: ?Simple1 = null,
-    simple2: std.ArrayListUnmanaged(Simple1) = .empty,
+    simple2: std.ArrayList(Simple1) = .empty,
     bytes_field: ?[]const u8 = null,
     unused: ?[]const u8 = null,
 
@@ -1434,7 +1434,7 @@ pub const TestReservedNamesExtension = struct {
 
 pub const TestMessageWithOneof = struct {
     normal_field: ?bool = null,
-    repeated_field: std.ArrayListUnmanaged([]const u8) = .empty,
+    repeated_field: std.ArrayList([]const u8) = .empty,
     partial_oneof: ?partial_oneof_union = null,
     recursive_oneof: ?recursive_oneof_union = null,
     default_oneof_a: ?default_oneof_a_union = null,
@@ -1639,18 +1639,18 @@ pub const TestEndsWithBytes = struct {
 };
 
 pub const TestMapFieldsNoBinary = struct {
-    map_string_string: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringStringEntry) = .empty,
-    map_string_int32: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringInt32Entry) = .empty,
-    map_string_int64: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringInt64Entry) = .empty,
-    map_string_bool: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringBoolEntry) = .empty,
-    map_string_double: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringDoubleEntry) = .empty,
-    map_string_enum: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringEnumEntry) = .empty,
-    map_string_msg: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringMsgEntry) = .empty,
-    map_int32_string: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapInt32StringEntry) = .empty,
-    map_int64_string: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapInt64StringEntry) = .empty,
-    map_bool_string: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapBoolStringEntry) = .empty,
+    map_string_string: std.ArrayList(TestMapFieldsNoBinary.MapStringStringEntry) = .empty,
+    map_string_int32: std.ArrayList(TestMapFieldsNoBinary.MapStringInt32Entry) = .empty,
+    map_string_int64: std.ArrayList(TestMapFieldsNoBinary.MapStringInt64Entry) = .empty,
+    map_string_bool: std.ArrayList(TestMapFieldsNoBinary.MapStringBoolEntry) = .empty,
+    map_string_double: std.ArrayList(TestMapFieldsNoBinary.MapStringDoubleEntry) = .empty,
+    map_string_enum: std.ArrayList(TestMapFieldsNoBinary.MapStringEnumEntry) = .empty,
+    map_string_msg: std.ArrayList(TestMapFieldsNoBinary.MapStringMsgEntry) = .empty,
+    map_int32_string: std.ArrayList(TestMapFieldsNoBinary.MapInt32StringEntry) = .empty,
+    map_int64_string: std.ArrayList(TestMapFieldsNoBinary.MapInt64StringEntry) = .empty,
+    map_bool_string: std.ArrayList(TestMapFieldsNoBinary.MapBoolStringEntry) = .empty,
     test_map_fields: ?*TestMapFieldsNoBinary = null,
-    map_string_testmapfields: std.ArrayListUnmanaged(TestMapFieldsNoBinary.MapStringTestmapfieldsEntry) = .empty,
+    map_string_testmapfields: std.ArrayList(TestMapFieldsNoBinary.MapStringTestmapfieldsEntry) = .empty,
 
     pub const _desc_table = .{
         .map_string_string = fd(1, .{ .repeated = .submessage }),

@@ -87,10 +87,10 @@ pub const Version = struct {
 
 /// An encoded CodeGeneratorRequest is written to the plugin's stdin.
 pub const CodeGeneratorRequest = struct {
-    file_to_generate: std.ArrayListUnmanaged([]const u8) = .empty,
+    file_to_generate: std.ArrayList([]const u8) = .empty,
     parameter: ?[]const u8 = null,
-    proto_file: std.ArrayListUnmanaged(google_protobuf.FileDescriptorProto) = .empty,
-    source_file_descriptors: std.ArrayListUnmanaged(google_protobuf.FileDescriptorProto) = .empty,
+    proto_file: std.ArrayList(google_protobuf.FileDescriptorProto) = .empty,
+    source_file_descriptors: std.ArrayList(google_protobuf.FileDescriptorProto) = .empty,
     compiler_version: ?Version = null,
 
     pub const _desc_table = .{
@@ -171,7 +171,7 @@ pub const CodeGeneratorResponse = struct {
     supported_features: ?u64 = null,
     minimum_edition: ?i32 = null,
     maximum_edition: ?i32 = null,
-    file: std.ArrayListUnmanaged(CodeGeneratorResponse.File) = .empty,
+    file: std.ArrayList(CodeGeneratorResponse.File) = .empty,
 
     pub const _desc_table = .{
         .@"error" = fd(1, .{ .scalar = .string }),

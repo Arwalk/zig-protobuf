@@ -37,7 +37,7 @@ pub const SymbolVisibility = enum(i32) {
 /// The protocol compiler can output a FileDescriptorSet containing the .proto
 /// files it parses.
 pub const FileDescriptorSet = struct {
-    file: std.ArrayListUnmanaged(FileDescriptorProto) = .empty,
+    file: std.ArrayList(FileDescriptorProto) = .empty,
 
     pub const _desc_table = .{
         .file = fd(1, .{ .repeated = .submessage }),
@@ -111,14 +111,14 @@ pub const FileDescriptorSet = struct {
 pub const FileDescriptorProto = struct {
     name: ?[]const u8 = null,
     package: ?[]const u8 = null,
-    dependency: std.ArrayListUnmanaged([]const u8) = .empty,
-    public_dependency: std.ArrayListUnmanaged(i32) = .empty,
-    weak_dependency: std.ArrayListUnmanaged(i32) = .empty,
-    option_dependency: std.ArrayListUnmanaged([]const u8) = .empty,
-    message_type: std.ArrayListUnmanaged(DescriptorProto) = .empty,
-    enum_type: std.ArrayListUnmanaged(EnumDescriptorProto) = .empty,
-    service: std.ArrayListUnmanaged(ServiceDescriptorProto) = .empty,
-    extension: std.ArrayListUnmanaged(FieldDescriptorProto) = .empty,
+    dependency: std.ArrayList([]const u8) = .empty,
+    public_dependency: std.ArrayList(i32) = .empty,
+    weak_dependency: std.ArrayList(i32) = .empty,
+    option_dependency: std.ArrayList([]const u8) = .empty,
+    message_type: std.ArrayList(DescriptorProto) = .empty,
+    enum_type: std.ArrayList(EnumDescriptorProto) = .empty,
+    service: std.ArrayList(ServiceDescriptorProto) = .empty,
+    extension: std.ArrayList(FieldDescriptorProto) = .empty,
     options: ?FileOptions = null,
     source_code_info: ?SourceCodeInfo = null,
     syntax: ?[]const u8 = null,
@@ -208,15 +208,15 @@ pub const FileDescriptorProto = struct {
 /// Describes a message type.
 pub const DescriptorProto = struct {
     name: ?[]const u8 = null,
-    field: std.ArrayListUnmanaged(FieldDescriptorProto) = .empty,
-    extension: std.ArrayListUnmanaged(FieldDescriptorProto) = .empty,
-    nested_type: std.ArrayListUnmanaged(DescriptorProto) = .empty,
-    enum_type: std.ArrayListUnmanaged(EnumDescriptorProto) = .empty,
-    extension_range: std.ArrayListUnmanaged(DescriptorProto.ExtensionRange) = .empty,
-    oneof_decl: std.ArrayListUnmanaged(OneofDescriptorProto) = .empty,
+    field: std.ArrayList(FieldDescriptorProto) = .empty,
+    extension: std.ArrayList(FieldDescriptorProto) = .empty,
+    nested_type: std.ArrayList(DescriptorProto) = .empty,
+    enum_type: std.ArrayList(EnumDescriptorProto) = .empty,
+    extension_range: std.ArrayList(DescriptorProto.ExtensionRange) = .empty,
+    oneof_decl: std.ArrayList(OneofDescriptorProto) = .empty,
     options: ?MessageOptions = null,
-    reserved_range: std.ArrayListUnmanaged(DescriptorProto.ReservedRange) = .empty,
-    reserved_name: std.ArrayListUnmanaged([]const u8) = .empty,
+    reserved_range: std.ArrayList(DescriptorProto.ReservedRange) = .empty,
+    reserved_name: std.ArrayList([]const u8) = .empty,
     visibility: ?SymbolVisibility = null,
 
     pub const _desc_table = .{
@@ -449,8 +449,8 @@ pub const DescriptorProto = struct {
 };
 
 pub const ExtensionRangeOptions = struct {
-    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
-    declaration: std.ArrayListUnmanaged(ExtensionRangeOptions.Declaration) = .empty,
+    uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
+    declaration: std.ArrayList(ExtensionRangeOptions.Declaration) = .empty,
     features: ?FeatureSet = null,
     verification: ?ExtensionRangeOptions.VerificationState = .UNVERIFIED,
 
@@ -809,10 +809,10 @@ pub const OneofDescriptorProto = struct {
 /// Describes an enum type.
 pub const EnumDescriptorProto = struct {
     name: ?[]const u8 = null,
-    value: std.ArrayListUnmanaged(EnumValueDescriptorProto) = .empty,
+    value: std.ArrayList(EnumValueDescriptorProto) = .empty,
     options: ?EnumOptions = null,
-    reserved_range: std.ArrayListUnmanaged(EnumDescriptorProto.EnumReservedRange) = .empty,
-    reserved_name: std.ArrayListUnmanaged([]const u8) = .empty,
+    reserved_range: std.ArrayList(EnumDescriptorProto.EnumReservedRange) = .empty,
+    reserved_name: std.ArrayList([]const u8) = .empty,
     visibility: ?SymbolVisibility = null,
 
     pub const _desc_table = .{
@@ -1046,7 +1046,7 @@ pub const EnumValueDescriptorProto = struct {
 /// Describes a service.
 pub const ServiceDescriptorProto = struct {
     name: ?[]const u8 = null,
-    method: std.ArrayListUnmanaged(MethodDescriptorProto) = .empty,
+    method: std.ArrayList(MethodDescriptorProto) = .empty,
     options: ?ServiceOptions = null,
 
     pub const _desc_table = .{
@@ -1222,7 +1222,7 @@ pub const FileOptions = struct {
     php_metadata_namespace: ?[]const u8 = null,
     ruby_package: ?[]const u8 = null,
     features: ?FeatureSet = null,
-    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
+    uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .java_package = fd(1, .{ .scalar = .string }),
@@ -1327,7 +1327,7 @@ pub const MessageOptions = struct {
     map_entry: ?bool = null,
     deprecated_legacy_json_field_conflicts: ?bool = null,
     features: ?FeatureSet = null,
-    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
+    uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .message_set_wire_format = fd(1, .{ .scalar = .bool }),
@@ -1413,11 +1413,11 @@ pub const FieldOptions = struct {
     weak: ?bool = false,
     debug_redact: ?bool = false,
     retention: ?FieldOptions.OptionRetention = null,
-    targets: std.ArrayListUnmanaged(FieldOptions.OptionTargetType) = .empty,
-    edition_defaults: std.ArrayListUnmanaged(FieldOptions.EditionDefault) = .empty,
+    targets: std.ArrayList(FieldOptions.OptionTargetType) = .empty,
+    edition_defaults: std.ArrayList(FieldOptions.EditionDefault) = .empty,
     features: ?FeatureSet = null,
     feature_support: ?FieldOptions.FeatureSupport = null,
-    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
+    uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .ctype = fd(1, .@"enum"),
@@ -1692,7 +1692,7 @@ pub const FieldOptions = struct {
 
 pub const OneofOptions = struct {
     features: ?FeatureSet = null,
-    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
+    uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .features = fd(1, .submessage),
@@ -1768,7 +1768,7 @@ pub const EnumOptions = struct {
     deprecated: ?bool = false,
     deprecated_legacy_json_field_conflicts: ?bool = null,
     features: ?FeatureSet = null,
-    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
+    uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .allow_alias = fd(2, .{ .scalar = .bool }),
@@ -1847,7 +1847,7 @@ pub const EnumValueOptions = struct {
     features: ?FeatureSet = null,
     debug_redact: ?bool = false,
     feature_support: ?FieldOptions.FeatureSupport = null,
-    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
+    uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .deprecated = fd(1, .{ .scalar = .bool }),
@@ -1924,7 +1924,7 @@ pub const EnumValueOptions = struct {
 pub const ServiceOptions = struct {
     features: ?FeatureSet = null,
     deprecated: ?bool = false,
-    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
+    uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .features = fd(34, .submessage),
@@ -2000,7 +2000,7 @@ pub const MethodOptions = struct {
     deprecated: ?bool = false,
     idempotency_level: ?MethodOptions.IdempotencyLevel = .IDEMPOTENCY_UNKNOWN,
     features: ?FeatureSet = null,
-    uninterpreted_option: std.ArrayListUnmanaged(UninterpretedOption) = .empty,
+    uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
 
     pub const _desc_table = .{
         .deprecated = fd(33, .{ .scalar = .bool }),
@@ -2090,7 +2090,7 @@ pub const MethodOptions = struct {
 /// or produced by Descriptor::CopyTo()) will never have UninterpretedOptions
 /// in them.
 pub const UninterpretedOption = struct {
-    name: std.ArrayListUnmanaged(UninterpretedOption.NamePart) = .empty,
+    name: std.ArrayList(UninterpretedOption.NamePart) = .empty,
     identifier_value: ?[]const u8 = null,
     positive_int_value: ?u64 = null,
     negative_int_value: ?i64 = null,
@@ -2472,7 +2472,7 @@ pub const FeatureSet = struct {
 /// feature resolution. The resolution with this object becomes a simple search
 /// for the closest matching edition, followed by proto merges.
 pub const FeatureSetDefaults = struct {
-    defaults: std.ArrayListUnmanaged(FeatureSetDefaults.FeatureSetEditionDefault) = .empty,
+    defaults: std.ArrayList(FeatureSetDefaults.FeatureSetEditionDefault) = .empty,
     minimum_edition: ?Edition = null,
     maximum_edition: ?Edition = null,
 
@@ -2628,18 +2628,18 @@ pub const FeatureSetDefaults = struct {
 /// Encapsulates information about the original source file from which a
 /// FileDescriptorProto was generated.
 pub const SourceCodeInfo = struct {
-    location: std.ArrayListUnmanaged(SourceCodeInfo.Location) = .empty,
+    location: std.ArrayList(SourceCodeInfo.Location) = .empty,
 
     pub const _desc_table = .{
         .location = fd(1, .{ .repeated = .submessage }),
     };
 
     pub const Location = struct {
-        path: std.ArrayListUnmanaged(i32) = .empty,
-        span: std.ArrayListUnmanaged(i32) = .empty,
+        path: std.ArrayList(i32) = .empty,
+        span: std.ArrayList(i32) = .empty,
         leading_comments: ?[]const u8 = null,
         trailing_comments: ?[]const u8 = null,
-        leading_detached_comments: std.ArrayListUnmanaged([]const u8) = .empty,
+        leading_detached_comments: std.ArrayList([]const u8) = .empty,
 
         pub const _desc_table = .{
             .path = fd(1, .{ .packed_repeated = .{ .scalar = .int32 } }),
@@ -2781,14 +2781,14 @@ pub const SourceCodeInfo = struct {
 /// file. A GeneratedCodeInfo message is associated with only one generated
 /// source file, but may contain references to different source .proto files.
 pub const GeneratedCodeInfo = struct {
-    annotation: std.ArrayListUnmanaged(GeneratedCodeInfo.Annotation) = .empty,
+    annotation: std.ArrayList(GeneratedCodeInfo.Annotation) = .empty,
 
     pub const _desc_table = .{
         .annotation = fd(1, .{ .repeated = .submessage }),
     };
 
     pub const Annotation = struct {
-        path: std.ArrayListUnmanaged(i32) = .empty,
+        path: std.ArrayList(i32) = .empty,
         source_file: ?[]const u8 = null,
         begin: ?i32 = null,
         end: ?i32 = null,
@@ -3428,7 +3428,7 @@ pub const Duration = struct {
 /// request should verify the included field paths, and return an
 /// `INVALID_ARGUMENT` error if any path is unmappable.
 pub const FieldMask = struct {
-    paths: std.ArrayListUnmanaged([]const u8) = .empty,
+    paths: std.ArrayList([]const u8) = .empty,
 
     pub const _desc_table = .{
         .paths = fd(1, .{ .repeated = .{ .scalar = .string } }),
@@ -3516,7 +3516,7 @@ pub const NullValue = enum(i32) {
 ///
 /// The JSON representation for `Struct` is JSON object.
 pub const Struct = struct {
-    fields: std.ArrayListUnmanaged(Struct.FieldsEntry) = .empty,
+    fields: std.ArrayList(Struct.FieldsEntry) = .empty,
 
     pub const _desc_table = .{
         .fields = fd(1, .{ .repeated = .submessage }),
@@ -3765,7 +3765,7 @@ pub const Value = struct {
 ///
 /// The JSON representation for `ListValue` is JSON array.
 pub const ListValue = struct {
-    values: std.ArrayListUnmanaged(Value) = .empty,
+    values: std.ArrayList(Value) = .empty,
 
     pub const _desc_table = .{
         .values = fd(1, .{ .repeated = .submessage }),

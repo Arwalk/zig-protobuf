@@ -6,7 +6,7 @@ const protobuf = @import("protobuf");
 const fd = protobuf.fd;
 
 pub const Tile = struct {
-    layers: std.ArrayListUnmanaged(Tile.Layer) = .empty,
+    layers: std.ArrayList(Tile.Layer) = .empty,
 
     pub const _desc_table = .{
         .layers = fd(3, .{ .repeated = .submessage }),
@@ -105,9 +105,9 @@ pub const Tile = struct {
 
     pub const Feature = struct {
         id: ?u64 = 0,
-        tags: std.ArrayListUnmanaged(u32) = .empty,
+        tags: std.ArrayList(u32) = .empty,
         type: ?Tile.GeomType = .UNKNOWN,
-        geometry: std.ArrayListUnmanaged(u32) = .empty,
+        geometry: std.ArrayList(u32) = .empty,
 
         pub const _desc_table = .{
             .id = fd(1, .{ .scalar = .uint64 }),
@@ -183,9 +183,9 @@ pub const Tile = struct {
     pub const Layer = struct {
         version: u32 = 1,
         name: []const u8,
-        features: std.ArrayListUnmanaged(Tile.Feature) = .empty,
-        keys: std.ArrayListUnmanaged([]const u8) = .empty,
-        values: std.ArrayListUnmanaged(Tile.Value) = .empty,
+        features: std.ArrayList(Tile.Feature) = .empty,
+        keys: std.ArrayList([]const u8) = .empty,
+        values: std.ArrayList(Tile.Value) = .empty,
         extent: ?u32 = 4096,
 
         pub const _desc_table = .{
