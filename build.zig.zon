@@ -4,7 +4,7 @@
 
     .fingerprint = 0x99fac5be6a36efd1,
 
-    .minimum_zig_version = "0.15.1",
+    .minimum_zig_version = "0.16.0-dev.2510+bcb5218a2",
 
     .dependencies = .{
         .@"protoc-linux-64" = .{
