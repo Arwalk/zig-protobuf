@@ -373,7 +373,7 @@ pub fn decodeRepeated(
     const Result = comptime @typeInfo(
         @FieldType(ResultList, "items"),
     ).pointer.child;
-    comptime std.debug.assert(ResultList == std.ArrayListUnmanaged(Result));
+    comptime std.debug.assert(ResultList == std.ArrayList(Result));
 
     const current_capacity = result.capacity;
     errdefer result.shrinkAndFree(allocator, current_capacity);
@@ -474,7 +474,7 @@ test decodeRepeated {
     // length delimited message including a list of varints
     {
         const bytes: []const u8 = &.{ 0x03, 0x8e, 0x02, 0x9e, 0xa7, 0x05 };
-        var list: std.ArrayListUnmanaged(u32) = .empty;
+        var list: std.ArrayList(u32) = .empty;
         defer list.deinit(std.testing.allocator);
 
         var reader: std.Io.Reader = .fixed(bytes);

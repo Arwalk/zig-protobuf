@@ -378,7 +378,7 @@ fn writePackedStringList(
     if (value_list.items.len > 0) {
         try writeTag(writer, field);
 
-        var temp_buffer: std.ArrayListUnmanaged(u8) = .empty;
+        var temp_buffer: std.ArrayList(u8) = .empty;
         defer temp_buffer.deinit(allocator);
 
         const w = temp_buffer.writer(allocator);

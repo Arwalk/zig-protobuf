@@ -258,10 +258,10 @@ pub const Alignment = struct {
 
 pub const Index = struct {
     id: i32 = 0,
-    grh: std.ArrayListUnmanaged(i32) = .empty,
+    grh: std.ArrayList(i32) = .empty,
     offset_x: i32 = 0,
     offset_y: i32 = 0,
-    animations: std.ArrayListUnmanaged(Index.AnimationsEntry) = .empty,
+    animations: std.ArrayList(Index.AnimationsEntry) = .empty,
     name: []const u8 = &.{},
 
     pub const _desc_table = .{
@@ -412,7 +412,7 @@ pub const Index = struct {
 
 pub const StoredChunk = struct {
     chunk_id: i32 = 0,
-    entities: std.ArrayListUnmanaged(MapEntity) = .empty,
+    entities: std.ArrayList(MapEntity) = .empty,
 
     pub const _desc_table = .{
         .chunk_id = fd(1, .{ .scalar = .int32 }),
@@ -719,7 +719,7 @@ pub const Point = struct {
 };
 
 pub const Shape = struct {
-    points: std.ArrayListUnmanaged(Point) = .empty,
+    points: std.ArrayList(Point) = .empty,
 
     pub const _desc_table = .{
         .points = fd(1, .{ .repeated = .submessage }),
@@ -792,7 +792,7 @@ pub const Shape = struct {
 pub const Npc = struct {
     x: i32 = 0,
     y: i32 = 0,
-    items: std.ArrayListUnmanaged(InventoryItem) = .empty,
+    items: std.ArrayList(InventoryItem) = .empty,
     name: []const u8 = &.{},
     alignment: []const u8 = &.{},
     ai: []const u8 = &.{},
@@ -802,8 +802,8 @@ pub const Npc = struct {
     max_mana: i32 = 0,
     min_strenght: i32 = 0,
     max_strenght: i32 = 0,
-    skills: std.ArrayListUnmanaged(Npc.SkillsEntry) = .empty,
-    abilities: std.ArrayListUnmanaged(Npc.AbilitiesEntry) = .empty,
+    skills: std.ArrayList(Npc.SkillsEntry) = .empty,
+    abilities: std.ArrayList(Npc.AbilitiesEntry) = .empty,
     visual: ?Character = null,
 
     pub const _desc_table = .{
@@ -1199,16 +1199,16 @@ pub const MapItem = struct {
 };
 
 pub const GraphicsDB = struct {
-    textures: std.ArrayListUnmanaged(Texture) = .empty,
-    graphics: std.ArrayListUnmanaged(Graphic) = .empty,
-    bodies: std.ArrayListUnmanaged(Index) = .empty,
-    fxs: std.ArrayListUnmanaged(Index) = .empty,
-    heads: std.ArrayListUnmanaged(Index) = .empty,
-    helmets: std.ArrayListUnmanaged(Index) = .empty,
-    shields: std.ArrayListUnmanaged(Index) = .empty,
-    weapons: std.ArrayListUnmanaged(Index) = .empty,
-    scripts: std.ArrayListUnmanaged(Script) = .empty,
-    spine: std.ArrayListUnmanaged(Spine) = .empty,
+    textures: std.ArrayList(Texture) = .empty,
+    graphics: std.ArrayList(Graphic) = .empty,
+    bodies: std.ArrayList(Index) = .empty,
+    fxs: std.ArrayList(Index) = .empty,
+    heads: std.ArrayList(Index) = .empty,
+    helmets: std.ArrayList(Index) = .empty,
+    shields: std.ArrayList(Index) = .empty,
+    weapons: std.ArrayList(Index) = .empty,
+    scripts: std.ArrayList(Script) = .empty,
+    spine: std.ArrayList(Spine) = .empty,
 
     pub const _desc_table = .{
         .textures = fd(1, .{ .repeated = .submessage }),
@@ -1696,7 +1696,7 @@ pub const Sprite = struct {
 };
 
 pub const Animation = struct {
-    frames: std.ArrayListUnmanaged(i32) = .empty,
+    frames: std.ArrayList(i32) = .empty,
     speed: f32 = 0,
 
     pub const _desc_table = .{

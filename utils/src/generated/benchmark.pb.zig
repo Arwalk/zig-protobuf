@@ -8,7 +8,7 @@ const fd = protobuf.fd;
 const opentelemetry_proto_metrics_v1 = @import("opentelemetry/proto/metrics/v1.pb.zig");
 
 pub const BenchmarkData = struct {
-    histogram_points: std.ArrayListUnmanaged(opentelemetry_proto_metrics_v1.ExponentialHistogramDataPoint) = .empty,
+    histogram_points: std.ArrayList(opentelemetry_proto_metrics_v1.ExponentialHistogramDataPoint) = .empty,
 
     pub const _desc_table = .{
         .histogram_points = fd(1, .{ .repeated = .submessage }),

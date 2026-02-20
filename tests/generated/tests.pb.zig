@@ -274,7 +274,7 @@ pub const WithEnumShadow = struct {
 };
 
 pub const RepeatedEnum = struct {
-    value: std.ArrayListUnmanaged(TopLevelEnum) = .empty,
+    value: std.ArrayList(TopLevelEnum) = .empty,
 
     pub const _desc_table = .{
         .value = fd(1, .{ .repeated = .@"enum" }),
@@ -345,16 +345,16 @@ pub const RepeatedEnum = struct {
 };
 
 pub const Packed = struct {
-    int32_list: std.ArrayListUnmanaged(i32) = .empty,
-    uint32_list: std.ArrayListUnmanaged(u32) = .empty,
-    sint32_list: std.ArrayListUnmanaged(i32) = .empty,
-    float_list: std.ArrayListUnmanaged(f32) = .empty,
-    double_list: std.ArrayListUnmanaged(f64) = .empty,
-    int64_list: std.ArrayListUnmanaged(i64) = .empty,
-    sint64_list: std.ArrayListUnmanaged(i64) = .empty,
-    uint64_list: std.ArrayListUnmanaged(u64) = .empty,
-    bool_list: std.ArrayListUnmanaged(bool) = .empty,
-    enum_list: std.ArrayListUnmanaged(TopLevelEnum) = .empty,
+    int32_list: std.ArrayList(i32) = .empty,
+    uint32_list: std.ArrayList(u32) = .empty,
+    sint32_list: std.ArrayList(i32) = .empty,
+    float_list: std.ArrayList(f32) = .empty,
+    double_list: std.ArrayList(f64) = .empty,
+    int64_list: std.ArrayList(i64) = .empty,
+    sint64_list: std.ArrayList(i64) = .empty,
+    uint64_list: std.ArrayList(u64) = .empty,
+    bool_list: std.ArrayList(bool) = .empty,
+    enum_list: std.ArrayList(TopLevelEnum) = .empty,
 
     pub const _desc_table = .{
         .int32_list = fd(1, .{ .packed_repeated = .{ .scalar = .int32 } }),
@@ -434,16 +434,16 @@ pub const Packed = struct {
 };
 
 pub const UnPacked = struct {
-    int32_list: std.ArrayListUnmanaged(i32) = .empty,
-    uint32_list: std.ArrayListUnmanaged(u32) = .empty,
-    sint32_list: std.ArrayListUnmanaged(i32) = .empty,
-    float_list: std.ArrayListUnmanaged(f32) = .empty,
-    double_list: std.ArrayListUnmanaged(f64) = .empty,
-    int64_list: std.ArrayListUnmanaged(i64) = .empty,
-    sint64_list: std.ArrayListUnmanaged(i64) = .empty,
-    uint64_list: std.ArrayListUnmanaged(u64) = .empty,
-    bool_list: std.ArrayListUnmanaged(bool) = .empty,
-    enum_list: std.ArrayListUnmanaged(TopLevelEnum) = .empty,
+    int32_list: std.ArrayList(i32) = .empty,
+    uint32_list: std.ArrayList(u32) = .empty,
+    sint32_list: std.ArrayList(i32) = .empty,
+    float_list: std.ArrayList(f32) = .empty,
+    double_list: std.ArrayList(f64) = .empty,
+    int64_list: std.ArrayList(i64) = .empty,
+    sint64_list: std.ArrayList(i64) = .empty,
+    uint64_list: std.ArrayList(u64) = .empty,
+    bool_list: std.ArrayList(bool) = .empty,
+    enum_list: std.ArrayList(TopLevelEnum) = .empty,
 
     pub const _desc_table = .{
         .int32_list = fd(1, .{ .repeated = .{ .scalar = .int32 } }),
@@ -665,7 +665,7 @@ pub const WithStrings = struct {
 };
 
 pub const WithRepeatedStrings = struct {
-    name: std.ArrayListUnmanaged([]const u8) = .empty,
+    name: std.ArrayList([]const u8) = .empty,
 
     pub const _desc_table = .{
         .name = fd(1, .{ .repeated = .{ .scalar = .string } }),
@@ -807,7 +807,7 @@ pub const WithBytes = struct {
 };
 
 pub const WithRepeatedBytes = struct {
-    byte_field: std.ArrayListUnmanaged([]const u8) = .empty,
+    byte_field: std.ArrayList([]const u8) = .empty,
 
     pub const _desc_table = .{
         .byte_field = fd(1, .{ .repeated = .{ .scalar = .bytes } }),

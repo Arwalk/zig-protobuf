@@ -294,7 +294,7 @@ fn parseStructField(
                     const child_type = @typeInfo(
                         fieldInfo.type.Slice,
                     ).pointer.child;
-                    var array_list: std.ArrayListUnmanaged(child_type) = .empty;
+                    var array_list: std.ArrayList(child_type) = .empty;
                     while (true) {
                         if (.array_end == try source.peekNextTokenType()) {
                             _ = try source.next();

@@ -110,7 +110,7 @@ pub const AnyValue = struct {
 /// ArrayValue is a list of AnyValue messages. We need ArrayValue as a message
 /// since oneof in AnyValue does not allow repeated fields.
 pub const ArrayValue = struct {
-    values: std.ArrayListUnmanaged(AnyValue) = .empty,
+    values: std.ArrayList(AnyValue) = .empty,
 
     pub const _desc_table = .{
         .values = fd(1, .{ .repeated = .submessage }),
@@ -186,7 +186,7 @@ pub const ArrayValue = struct {
 /// avoid unnecessary extra wrapping (which slows down the protocol). The 2 approaches
 /// are semantically equivalent.
 pub const KeyValueList = struct {
-    values: std.ArrayListUnmanaged(KeyValue) = .empty,
+    values: std.ArrayList(KeyValue) = .empty,
 
     pub const _desc_table = .{
         .values = fd(1, .{ .repeated = .submessage }),
@@ -336,7 +336,7 @@ pub const KeyValue = struct {
 pub const InstrumentationScope = struct {
     name: []const u8 = &.{},
     version: []const u8 = &.{},
-    attributes: std.ArrayListUnmanaged(KeyValue) = .empty,
+    attributes: std.ArrayList(KeyValue) = .empty,
     dropped_attributes_count: u32 = 0,
 
     pub const _desc_table = .{
