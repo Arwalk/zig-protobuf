@@ -2,6 +2,17 @@ const std = @import("std");
 
 const protobuf = @import("protobuf.zig");
 
+/// Options for protobuf JSON serialization.
+pub const Options = struct {
+    /// Controls oneof encoding format.
+    /// - `true` (default): wraps the active oneof variant in an object keyed
+    ///   by the oneof field name. Example: `{"someOneof":{"stringInOneof":"x"}}`
+    ///   This is the legacy format emitted by previous versions of this library.
+    /// - `false`: emits oneof variants as flat fields in the parent object.
+    ///   Example: `{"stringInOneof":"x"}` — this matches the protobuf JSON spec.
+    emit_oneof_field_name: bool = true,
+};
+
 pub fn parse(
     Self: type,
     allocator: std.mem.Allocator,
@@ -91,12 +102,79 @@ pub fn parse(
                 break;
             }
         } else {
-            // Didn't match anything.
-            freeAllocated(allocator, name_token.?);
-            if (options.ignore_unknown_fields) {
-                try source.skipValue();
-            } else {
-                return error.UnknownField;
+            // Didn't match any direct struct field.
+            // Try flat-oneof format: check if field_name matches any union
+            // variant in any oneof field of this struct.
+            var matched_as_flat_oneof = false;
+            inline for (structInfo.fields, 0..) |field, i| {
+                if (!matched_as_flat_oneof) {
+                    const field_descriptor = @field(Self._desc_table, field.name);
+                    if (@as(
+                        std.meta.Tag(@TypeOf(field_descriptor.ftype)),
+                        field_descriptor.ftype,
+                    ) == .oneof) {
+                        const oneof_type = field_descriptor.ftype.oneof;
+                        const union_info = @typeInfo(oneof_type).@"union";
+                        inline for (union_info.fields) |union_field| {
+                            if (!matched_as_flat_oneof) {
+                                const camel = comptime to_camel_case(union_field.name);
+                                const matches =
+                                    std.mem.eql(u8, union_field.name, field_name) or
+                                    std.mem.eql(u8, camel, field_name);
+                                if (matches) {
+                                    freeAllocated(allocator, name_token.?);
+                                    name_token = null;
+                                    @field(&result, field.name) = @unionInit(
+                                        oneof_type,
+                                        union_field.name,
+                                        switch (@field(
+                                            oneof_type._desc_table,
+                                            union_field.name,
+                                        ).ftype) {
+                                            .scalar => |scalar| switch (scalar) {
+                                                .bytes => try parse_bytes(
+                                                    allocator,
+                                                    source,
+                                                    options,
+                                                ),
+                                                else => try std.json.innerParse(
+                                                    union_field.type,
+                                                    allocator,
+                                                    source,
+                                                    options,
+                                                ),
+                                            },
+                                            .submessage, .@"enum" => try std.json.innerParse(
+                                                union_field.type,
+                                                allocator,
+                                                source,
+                                                options,
+                                            ),
+                                            .repeated, .packed_repeated => {
+                                                @compileError(
+                                                    "Repeated fields are not allowed in oneof",
+                                                );
+                                            },
+                                            .oneof => {
+                                                @compileError("Nested oneof is not supported");
+                                            },
+                                        },
+                                    );
+                                    fields_seen[i] = true;
+                                    matched_as_flat_oneof = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (!matched_as_flat_oneof) {
+                freeAllocated(allocator, name_token.?);
+                if (options.ignore_unknown_fields) {
+                    try source.skipValue();
+                } else {
+                    return error.UnknownField;
+                }
             }
         }
     }
@@ -123,6 +201,27 @@ pub fn encode(
 }
 
 pub fn stringify(Self: type, self: *const Self, jws: anytype) !void {
+    return stringifyOpts(Self, self, jws, .{});
+}
+
+/// Encode a protobuf message to JSON with explicit options.
+/// Use this when you need the standard protobuf JSON format (flat oneof fields).
+///
+/// Example:
+///   var buf = std.ArrayList(u8).init(allocator);
+///   defer buf.deinit();
+///   var jws = std.json.writeStream(buf.writer(), .{});
+///   try pb.json.stringifyWithOptions(MyMessage, &msg, &jws, .{ .emit_oneof_field_name = false });
+pub fn stringifyWithOptions(
+    Self: type,
+    self: *const Self,
+    jws: anytype,
+    opts: Options,
+) !void {
+    return stringifyOpts(Self, self, jws, opts);
+}
+
+fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) !void {
     // Increase eval branch quota for types with hundreds of fields
     @setEvalBranchQuota(1000000);
 
@@ -130,17 +229,29 @@ pub fn stringify(Self: type, self: *const Self, jws: anytype) !void {
 
     inline for (@typeInfo(Self).@"struct".fields) |fieldInfo| {
         const camel_case_name = comptime to_camel_case(fieldInfo.name);
+        const descriptor = @field(Self._desc_table, fieldInfo.name);
+        const is_oneof = @as(std.meta.Tag(@TypeOf(descriptor.ftype)), descriptor.ftype) == .oneof;
 
-        if (switch (@typeInfo(fieldInfo.type)) {
+        const field_present = switch (@typeInfo(fieldInfo.type)) {
             .optional => @field(self, fieldInfo.name) != null,
             else => true,
-        }) try jws.objectField(camel_case_name);
+        };
 
-        try stringify_struct_field(
-            @field(self, fieldInfo.name),
-            @field(Self._desc_table, fieldInfo.name),
-            jws,
-        );
+        if (field_present) {
+            // For oneof fields in flat mode, skip writing the container field name.
+            // The variant name will be written directly into the parent object by
+            // stringify_struct_field_with_options.
+            if (!is_oneof or opts.emit_oneof_field_name) {
+                try jws.objectField(camel_case_name);
+            }
+            try stringify_struct_field_with_options(
+                @field(self, fieldInfo.name),
+                descriptor,
+                jws,
+                opts,
+            );
+        }
+        // null optionals (including null oneofs): skip entirely
     }
 
     try jws.endObject();
@@ -182,6 +293,96 @@ fn freeAllocated(allocator: std.mem.Allocator, token: std.json.Token) void {
             allocator.free(slice);
         },
         else => {},
+    }
+}
+
+fn stringify_struct_field_with_options(
+    struct_field: anytype,
+    field_descriptor: protobuf.FieldDescriptor,
+    jws: anytype,
+    pb_options: Options,
+) !void {
+    var value: switch (@typeInfo(@TypeOf(struct_field))) {
+        .optional => |optional| optional.child,
+        else => @TypeOf(struct_field),
+    } = undefined;
+
+    switch (@typeInfo(@TypeOf(struct_field))) {
+        .optional => {
+            if (struct_field) |v| {
+                value = v;
+            } else return;
+        },
+        else => {
+            value = struct_field;
+        },
+    }
+
+    switch (field_descriptor.ftype) {
+        .scalar => |scalar| switch (scalar) {
+            .bytes => try print_bytes(value, jws),
+            .string => try jws.write(value),
+            else => try print_numeric(value, jws),
+        },
+        .@"enum" => try print_numeric(value, jws),
+        .repeated, .packed_repeated => |repeated| {
+            const slice = value.items;
+            try jws.beginArray();
+            for (slice) |el| {
+                switch (repeated) {
+                    .scalar => |scalar| switch (scalar) {
+                        .bytes => try print_bytes(el, jws),
+                        .string => try jws.write(el),
+                        else => try print_numeric(el, jws),
+                    },
+                    .@"enum" => try print_numeric(el, jws),
+                    .submessage => try jws.write(el),
+                }
+            }
+            try jws.endArray();
+        },
+        .oneof => |oneof| {
+            const union_info = @typeInfo(@TypeOf(value)).@"union";
+            if (union_info.tag_type == null) {
+                @compileError("Untagged unions are not supported here");
+            }
+
+            if (pb_options.emit_oneof_field_name) {
+                try jws.beginObject();
+            }
+            inline for (union_info.fields) |union_field| {
+                if (value == @field(
+                    union_info.tag_type.?,
+                    union_field.name,
+                )) {
+                    const union_camel_case_name = comptime to_camel_case(union_field.name);
+                    try jws.objectField(union_camel_case_name);
+                    switch (@field(oneof._desc_table, union_field.name).ftype) {
+                        .scalar => |scalar| switch (scalar) {
+                            .bytes => try print_bytes(@field(value, union_field.name), jws),
+                            .string => try jws.write(@field(value, union_field.name)),
+                            else => try print_numeric(@field(value, union_field.name), jws),
+                        },
+                        .@"enum" => try print_numeric(@field(value, union_field.name), jws),
+                        .submessage => try jws.write(@field(value, union_field.name)),
+                        .repeated, .packed_repeated => {
+                            @compileError("Repeated fields are not allowed in oneof");
+                        },
+                        .oneof => {
+                            @compileError("one oneof inside another? really?");
+                        },
+                    }
+                    break;
+                }
+            } else unreachable;
+
+            if (pb_options.emit_oneof_field_name) {
+                try jws.endObject();
+            }
+        },
+        .submessage => {
+            try jws.write(value);
+        },
     }
 }
 
