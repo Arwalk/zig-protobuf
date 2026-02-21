@@ -103,7 +103,7 @@ pub const FileDescriptorSet = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -201,7 +201,7 @@ pub const FileDescriptorProto = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -304,7 +304,7 @@ pub const DescriptorProto = struct {
         /// This method is used by std.json
         /// internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.json.stringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws, null);
         }
     };
 
@@ -380,7 +380,7 @@ pub const DescriptorProto = struct {
         /// This method is used by std.json
         /// internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.json.stringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws, null);
         }
     };
 
@@ -444,7 +444,7 @@ pub const DescriptorProto = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -543,7 +543,7 @@ pub const ExtensionRangeOptions = struct {
         /// This method is used by std.json
         /// internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.json.stringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws, null);
         }
     };
 
@@ -607,7 +607,7 @@ pub const ExtensionRangeOptions = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -728,7 +728,7 @@ pub const FieldDescriptorProto = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -802,7 +802,7 @@ pub const OneofDescriptorProto = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -899,7 +899,7 @@ pub const EnumDescriptorProto = struct {
         /// This method is used by std.json
         /// internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.json.stringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws, null);
         }
     };
 
@@ -963,7 +963,7 @@ pub const EnumDescriptorProto = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -1039,7 +1039,7 @@ pub const EnumValueDescriptorProto = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -1115,7 +1115,7 @@ pub const ServiceDescriptorProto = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -1197,7 +1197,7 @@ pub const MethodDescriptorProto = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -1316,7 +1316,7 @@ pub const FileOptions = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -1399,7 +1399,7 @@ pub const MessageOptions = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -1544,7 +1544,7 @@ pub const FieldOptions = struct {
         /// This method is used by std.json
         /// internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.json.stringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws, null);
         }
     };
 
@@ -1622,7 +1622,7 @@ pub const FieldOptions = struct {
         /// This method is used by std.json
         /// internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.json.stringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws, null);
         }
     };
 
@@ -1686,7 +1686,7 @@ pub const FieldOptions = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -1759,7 +1759,7 @@ pub const OneofOptions = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -1838,7 +1838,7 @@ pub const EnumOptions = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -1917,7 +1917,7 @@ pub const EnumValueOptions = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -1992,7 +1992,7 @@ pub const ServiceOptions = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -2079,7 +2079,7 @@ pub const MethodOptions = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -2182,7 +2182,7 @@ pub const UninterpretedOption = struct {
         /// This method is used by std.json
         /// internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.json.stringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws, null);
         }
     };
 
@@ -2246,7 +2246,7 @@ pub const UninterpretedOption = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -2399,7 +2399,7 @@ pub const FeatureSet = struct {
         /// This method is used by std.json
         /// internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.json.stringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws, null);
         }
     };
 
@@ -2463,7 +2463,7 @@ pub const FeatureSet = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -2557,7 +2557,7 @@ pub const FeatureSetDefaults = struct {
         /// This method is used by std.json
         /// internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.json.stringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws, null);
         }
     };
 
@@ -2621,7 +2621,7 @@ pub const FeatureSetDefaults = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -2709,7 +2709,7 @@ pub const SourceCodeInfo = struct {
         /// This method is used by std.json
         /// internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.json.stringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws, null);
         }
     };
 
@@ -2773,7 +2773,7 @@ pub const SourceCodeInfo = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -2871,7 +2871,7 @@ pub const GeneratedCodeInfo = struct {
         /// This method is used by std.json
         /// internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.json.stringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws, null);
         }
     };
 
@@ -2935,7 +2935,7 @@ pub const GeneratedCodeInfo = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -3093,7 +3093,7 @@ pub const Any = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -3224,7 +3224,7 @@ pub const Duration = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -3494,7 +3494,7 @@ pub const FieldMask = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -3591,7 +3591,7 @@ pub const Struct = struct {
         /// This method is used by std.json
         /// internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.json.stringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws, null);
         }
     };
 
@@ -3655,7 +3655,7 @@ pub const Struct = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -3757,7 +3757,7 @@ pub const Value = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -3831,7 +3831,7 @@ pub const ListValue = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -3993,7 +3993,7 @@ pub const Timestamp = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -4070,7 +4070,7 @@ pub const DoubleValue = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -4147,7 +4147,7 @@ pub const FloatValue = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -4224,7 +4224,7 @@ pub const Int64Value = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -4301,7 +4301,7 @@ pub const UInt64Value = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -4378,7 +4378,7 @@ pub const Int32Value = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -4455,7 +4455,7 @@ pub const UInt32Value = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -4532,7 +4532,7 @@ pub const BoolValue = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -4609,7 +4609,7 @@ pub const StringValue = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -4686,6 +4686,6 @@ pub const BytesValue = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };

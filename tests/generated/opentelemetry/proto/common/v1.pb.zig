@@ -103,7 +103,7 @@ pub const AnyValue = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -176,7 +176,7 @@ pub const ArrayValue = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -252,7 +252,7 @@ pub const KeyValueList = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -327,7 +327,7 @@ pub const KeyValue = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -406,6 +406,6 @@ pub const InstrumentationScope = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };

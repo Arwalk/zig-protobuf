@@ -200,25 +200,8 @@ pub fn encode(
     return std.json.Stringify.valueAlloc(allocator, data, options);
 }
 
-pub fn stringify(Self: type, self: *const Self, jws: anytype) !void {
-    return stringifyOpts(Self, self, jws, .{});
-}
-
-/// Encode a protobuf message to JSON with explicit options.
-/// Use this when you need the standard protobuf JSON format (flat oneof fields).
-///
-/// Example:
-///   var buf = std.ArrayList(u8).init(allocator);
-///   defer buf.deinit();
-///   var jws = std.json.writeStream(buf.writer(), .{});
-///   try pb.json.stringifyWithOptions(MyMessage, &msg, &jws, .{ .emit_oneof_field_name = false });
-pub fn stringifyWithOptions(
-    Self: type,
-    self: *const Self,
-    jws: anytype,
-    opts: Options,
-) !void {
-    return stringifyOpts(Self, self, jws, opts);
+pub fn stringify(Self: type, self: *const Self, jws: anytype, opts: ?Options) !void {
+    return stringifyOpts(Self, self, jws, opts orelse .{});
 }
 
 fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) !void {

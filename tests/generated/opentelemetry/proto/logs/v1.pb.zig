@@ -129,7 +129,7 @@ pub const LogsData = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -205,7 +205,7 @@ pub const ResourceLogs = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -281,7 +281,7 @@ pub const ScopeLogs = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
@@ -372,6 +372,6 @@ pub const LogRecord = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };

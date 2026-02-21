@@ -1037,7 +1037,7 @@ test "JSON: encode oneof flat format (emit_oneof_field_name=false)" {
     const Wrapper = struct {
         ptr: *const OneofContainer,
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.json.stringifyWithOptions(
+            return protobuf.json.stringify(
                 OneofContainer,
                 self.ptr,
                 jws,
@@ -1123,7 +1123,7 @@ test "JSON: roundtrip oneof flat format" {
     const Wrapper = struct {
         ptr: *const OneofContainer,
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.json.stringifyWithOptions(
+            return protobuf.json.stringify(
                 OneofContainer,
                 self.ptr,
                 jws,
