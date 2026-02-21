@@ -1023,3 +1023,136 @@ test "JSON: decode selfref structs" {
 test "JSON: encode selfref structs" {
     // TODO
 }
+
+// OneofContainer flat-format (issue #147) tests
+const oneof_zig = @import("./generated/tests/oneof.pb.zig");
+const OneofContainer = oneof_zig.OneofContainer;
+
+test "JSON: encode oneof flat format (emit_oneof_field_name=false)" {
+    const msg = OneofContainer{
+        .regular_field = "hello",
+        .some_oneof = .{ .string_in_oneof = "world" },
+    };
+    // Use a wrapper so std.json.Stringify.valueAlloc calls our stringifyTo
+    const Wrapper = struct {
+        ptr: *const OneofContainer,
+        pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
+            return protobuf.json.stringify(
+                OneofContainer,
+                self.ptr,
+                jws,
+                .{ .emit_oneof_field_name = false },
+            );
+        }
+    };
+    const encoded = try std.json.Stringify.valueAlloc(
+        allocator,
+        Wrapper{ .ptr = &msg },
+        .{},
+    );
+    defer allocator.free(encoded);
+    // Flat format: no "someOneof" wrapper key; variant key directly in parent object
+    try expect(std.mem.indexOf(u8, encoded, "someOneof") == null);
+    try expect(std.mem.indexOf(u8, encoded, "stringInOneof") != null);
+    try expect(std.mem.indexOf(u8, encoded, "regularField") != null);
+}
+
+test "JSON: encode oneof legacy wrapped format (emit_oneof_field_name=true)" {
+    var pb_instance = try string_in_oneof_init(allocator);
+    defer pb_instance.deinit(allocator);
+    // Default jsonEncode uses wrapped format (backward compat)
+    const encoded = try pb_instance.jsonEncode(.{}, allocator);
+    defer allocator.free(encoded);
+    // Legacy format: "someOneof" wrapper key present
+    try expect(std.mem.indexOf(u8, encoded, "someOneof") != null);
+    try expect(std.mem.indexOf(u8, encoded, "stringInOneof") != null);
+}
+
+test "JSON: decode oneof flat format (variant key directly in parent)" {
+    // Flat format: variant name at top level, no "someOneof" wrapper
+    const json_str =
+        \\{"regularField":"hello","stringInOneof":"world"}
+    ;
+    const result = try std.json.parseFromSlice(
+        OneofContainer,
+        allocator,
+        json_str,
+        .{},
+    );
+    defer result.deinit();
+    try std.testing.expectEqualStrings("hello", result.value.regular_field);
+    try expect(result.value.some_oneof != null);
+    try std.testing.expectEqualStrings("world", result.value.some_oneof.?.string_in_oneof);
+}
+
+test "JSON: decode oneof flat format with camelCase variant name" {
+    const json_str =
+        \\{"stringInOneof":"camelTest"}
+    ;
+    const result = try std.json.parseFromSlice(
+        OneofContainer,
+        allocator,
+        json_str,
+        .{},
+    );
+    defer result.deinit();
+    try expect(result.value.some_oneof != null);
+    try std.testing.expectEqualStrings("camelTest", result.value.some_oneof.?.string_in_oneof);
+}
+
+test "JSON: decode oneof flat format with snake_case variant name" {
+    const json_str =
+        \\{"string_in_oneof":"snake_test"}
+    ;
+    const result = try std.json.parseFromSlice(
+        OneofContainer,
+        allocator,
+        json_str,
+        .{},
+    );
+    defer result.deinit();
+    try expect(result.value.some_oneof != null);
+    try std.testing.expectEqualStrings("snake_test", result.value.some_oneof.?.string_in_oneof);
+}
+
+test "JSON: roundtrip oneof flat format" {
+    const original = OneofContainer{
+        .regular_field = "roundtrip",
+        .some_oneof = .{ .string_in_oneof = "value" },
+    };
+    const Wrapper = struct {
+        ptr: *const OneofContainer,
+        pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
+            return protobuf.json.stringify(
+                OneofContainer,
+                self.ptr,
+                jws,
+                .{ .emit_oneof_field_name = false },
+            );
+        }
+    };
+    const encoded = try std.json.Stringify.valueAlloc(
+        allocator,
+        Wrapper{ .ptr = &original },
+        .{},
+    );
+    defer allocator.free(encoded);
+
+    // Encoded JSON should not contain "someOneof" wrapper
+    try expect(std.mem.indexOf(u8, encoded, "someOneof") == null);
+
+    // Decode flat format
+    const result = try std.json.parseFromSlice(
+        OneofContainer,
+        allocator,
+        encoded,
+        .{},
+    );
+    defer result.deinit();
+    try std.testing.expectEqualStrings(original.regular_field, result.value.regular_field);
+    try expect(result.value.some_oneof != null);
+    try std.testing.expectEqualStrings(
+        original.some_oneof.?.string_in_oneof,
+        result.value.some_oneof.?.string_in_oneof,
+    );
+}

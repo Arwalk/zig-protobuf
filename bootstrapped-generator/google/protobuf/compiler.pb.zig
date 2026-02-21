@@ -7,6 +7,7 @@ const fd = protobuf.fd;
 /// import package google.protobuf
 const google_protobuf = @import("../protobuf.pb.zig");
 
+/// The version number of protocol compiler.
 pub const Version = struct {
     major: ?i32 = null,
     minor: ?i32 = null,
@@ -80,10 +81,11 @@ pub const Version = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
+/// An encoded CodeGeneratorRequest is written to the plugin's stdin.
 pub const CodeGeneratorRequest = struct {
     file_to_generate: std.ArrayListUnmanaged([]const u8) = .empty,
     parameter: ?[]const u8 = null,
@@ -159,10 +161,11 @@ pub const CodeGeneratorRequest = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
 
+/// The plugin writes an encoded CodeGeneratorResponse to stdout.
 pub const CodeGeneratorResponse = struct {
     @"error": ?[]const u8 = null,
     supported_features: ?u64 = null,
@@ -178,6 +181,7 @@ pub const CodeGeneratorResponse = struct {
         .file = fd(15, .{ .repeated = .submessage }),
     };
 
+    /// Sync with code_generator.h.
     pub const Feature = enum(i32) {
         FEATURE_NONE = 0,
         FEATURE_PROTO3_OPTIONAL = 1,
@@ -185,6 +189,7 @@ pub const CodeGeneratorResponse = struct {
         _,
     };
 
+    /// Represents a single generated file.
     pub const File = struct {
         name: ?[]const u8 = null,
         insertion_point: ?[]const u8 = null,
@@ -258,7 +263,7 @@ pub const CodeGeneratorResponse = struct {
         /// This method is used by std.json
         /// internally for serialization. DO NOT RENAME!
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.json.stringify(@This(), self, jws);
+            return protobuf.json.stringify(@This(), self, jws, null);
         }
     };
 
@@ -322,6 +327,6 @@ pub const CodeGeneratorResponse = struct {
     /// This method is used by std.json
     /// internally for serialization. DO NOT RENAME!
     pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-        return protobuf.json.stringify(@This(), self, jws);
+        return protobuf.json.stringify(@This(), self, jws, null);
     }
 };
