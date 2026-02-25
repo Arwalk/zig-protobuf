@@ -177,4 +177,21 @@ pub fn build(b: *std.Build) !void {
     });
 
     bootstrap.dependOn(&bootstrapConversion.step);
+
+    // OTLP Logs Benchmark
+    const bench_step = b.step("bench", "Run OTLP logs benchmark");
+
+    const bench_exe = b.addExecutable(.{
+        .name = "bench_otlp_logs",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tests/bench_otlp_logs.zig"),
+            .target = target,
+            .optimize = .ReleaseFast,
+        }),
+    });
+
+    bench_exe.root_module.addImport("protobuf", module);
+
+    const run_bench = b.addRunArtifact(bench_exe);
+    bench_step.dependOn(&run_bench.step);
 }

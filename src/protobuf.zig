@@ -686,7 +686,7 @@ fn dupeField(
                 .scalar => |scalar| switch (scalar) {
                     .string, .bytes => {
                         for (@field(original, field_name).items) |item| {
-                            try list.append(allocator, try item.dupe(allocator));
+                            try list.append(allocator, try allocator.dupe(u8, item));
                         }
                     },
                     else => {

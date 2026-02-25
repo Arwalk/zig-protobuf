@@ -1023,3 +1023,178 @@ test "JSON: decode selfref structs" {
 test "JSON: encode selfref structs" {
     // TODO
 }
+
+// ------------------------------------------
+// Tests for emit_oneof_field_name option
+// ------------------------------------------
+
+test "JSON: encode oneof with emit_oneof_field_name=false (flattened)" {
+    // Save original option value
+    const original = protobuf.json.pb_options.emit_oneof_field_name;
+    defer protobuf.json.pb_options.emit_oneof_field_name = original;
+
+    // Set to false to get flattened/standard protobuf JSON format
+    protobuf.json.pb_options.emit_oneof_field_name = false;
+
+    var pb_instance = try string_in_oneof_init(allocator);
+    defer pb_instance.deinit(allocator);
+
+    const encoded = try pb_instance.jsonEncode(
+        .{ .whitespace = .indent_2 },
+        allocator,
+    );
+    defer allocator.free(encoded);
+
+    // With emit_oneof_field_name=false, the oneof field name should NOT appear
+    // The union field should be directly in the parent object
+    const expected =
+        \\{
+        \\  "regularField": "this field is always the same",
+        \\  "enumField": "UNSPECIFIED",
+        \\  "stringInOneof": "testing oneof field being the string"
+        \\}
+    ;
+
+    try expect(compare_pb_jsons(encoded, expected));
+}
+
+test "JSON: decode oneof with emit_oneof_field_name=false (flattened)" {
+    // Save original option value
+    const original = protobuf.json.pb_options.emit_oneof_field_name;
+    defer protobuf.json.pb_options.emit_oneof_field_name = original;
+
+    // Set to false to parse flattened/standard protobuf JSON format
+    protobuf.json.pb_options.emit_oneof_field_name = false;
+
+    var pb_instance = try string_in_oneof_init(allocator);
+    defer pb_instance.deinit(allocator);
+
+    // Flattened format - no wrapper object around the oneof field
+    const flattened_json =
+        \\{
+        \\  "regularField": "this field is always the same",
+        \\  "enumField": "UNSPECIFIED",
+        \\  "stringInOneof": "testing oneof field being the string"
+        \\}
+    ;
+
+    const decoded = try @TypeOf(pb_instance).jsonDecode(
+        flattened_json,
+        .{},
+        allocator,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: roundtrip oneof with emit_oneof_field_name=false" {
+    // Save original option value
+    const original = protobuf.json.pb_options.emit_oneof_field_name;
+    defer protobuf.json.pb_options.emit_oneof_field_name = original;
+
+    // Set to false for flattened format
+    protobuf.json.pb_options.emit_oneof_field_name = false;
+
+    var pb_instance = try message_in_oneof_init(allocator);
+    defer pb_instance.deinit(allocator);
+
+    // Encode
+    const encoded = try pb_instance.jsonEncode(
+        .{ .whitespace = .indent_2 },
+        allocator,
+    );
+    defer allocator.free(encoded);
+
+    // Decode back
+    const decoded = try @TypeOf(pb_instance).jsonDecode(
+        encoded,
+        .{},
+        allocator,
+    );
+    defer decoded.deinit();
+
+    // Should match original
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+// ------------------------------------------
+// Tests for bytes_as_hex option
+// ------------------------------------------
+
+test "JSON: encode Bytes with bytes_as_hex=true" {
+    const original = protobuf.json.pb_options.bytes_as_hex;
+    defer protobuf.json.pb_options.bytes_as_hex = original;
+    protobuf.json.pb_options.bytes_as_hex = true;
+
+    // With bytes_as_hex, in-memory representation is the hex string itself.
+    const WithBytes = @import("./generated/tests.pb.zig").WithBytes;
+    var pb_instance = WithBytes{
+        .byte_field = try allocator.dupe(u8, "cafecafe"),
+    };
+    defer pb_instance.deinit(allocator);
+
+    const encoded = try pb_instance.jsonEncode(
+        .{ .whitespace = .indent_2 },
+        allocator,
+    );
+    defer allocator.free(encoded);
+
+    const expected =
+        \\{
+        \\  "byteField": "cafecafe"
+        \\}
+    ;
+    try expect(compare_pb_jsons(encoded, expected));
+}
+
+test "JSON: decode Bytes with bytes_as_hex=true" {
+    const original = protobuf.json.pb_options.bytes_as_hex;
+    defer protobuf.json.pb_options.bytes_as_hex = original;
+    protobuf.json.pb_options.bytes_as_hex = true;
+
+    const hex_json =
+        \\{
+        \\  "byteField": "cafecafe"
+        \\}
+    ;
+
+    const WithBytes = @import("./generated/tests.pb.zig").WithBytes;
+    const decoded = try WithBytes.jsonDecode(
+        hex_json,
+        .{},
+        allocator,
+    );
+    defer decoded.deinit();
+
+    // With bytes_as_hex, decoded value keeps the hex string as-is.
+    try expect(std.mem.eql(u8, decoded.value.byte_field, "cafecafe"));
+}
+
+test "JSON: roundtrip Bytes with bytes_as_hex=true" {
+    const original = protobuf.json.pb_options.bytes_as_hex;
+    defer protobuf.json.pb_options.bytes_as_hex = original;
+    protobuf.json.pb_options.bytes_as_hex = true;
+
+    // Start with hex string in memory (the new in-memory representation).
+    const WithBytes = @import("./generated/tests.pb.zig").WithBytes;
+    var pb_instance = WithBytes{
+        .byte_field = try allocator.dupe(u8, "cafecafe"),
+    };
+    defer pb_instance.deinit(allocator);
+
+    const encoded = try pb_instance.jsonEncode(
+        .{ .whitespace = .indent_2 },
+        allocator,
+    );
+    defer allocator.free(encoded);
+
+    const decoded = try WithBytes.jsonDecode(
+        encoded,
+        .{},
+        allocator,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
