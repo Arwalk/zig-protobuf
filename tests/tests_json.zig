@@ -1127,7 +1127,11 @@ test "JSON: encode Bytes with bytes_as_hex=true" {
     defer protobuf.json.pb_options.bytes_as_hex = original;
     protobuf.json.pb_options.bytes_as_hex = true;
 
-    var pb_instance = try bytes_init(allocator);
+    // With bytes_as_hex, in-memory representation is the hex string itself.
+    const WithBytes = @import("./generated/tests.pb.zig").WithBytes;
+    var pb_instance = WithBytes{
+        .byte_field = try allocator.dupe(u8, "cafecafe"),
+    };
     defer pb_instance.deinit(allocator);
 
     const encoded = try pb_instance.jsonEncode(
@@ -1136,7 +1140,6 @@ test "JSON: encode Bytes with bytes_as_hex=true" {
     );
     defer allocator.free(encoded);
 
-    // 0xCA, 0xFE, 0xCA, 0xFE → "cafecafe"
     const expected =
         \\{
         \\  "byteField": "cafecafe"
@@ -1150,23 +1153,22 @@ test "JSON: decode Bytes with bytes_as_hex=true" {
     defer protobuf.json.pb_options.bytes_as_hex = original;
     protobuf.json.pb_options.bytes_as_hex = true;
 
-    var pb_instance = try bytes_init(allocator);
-    defer pb_instance.deinit(allocator);
-
     const hex_json =
         \\{
         \\  "byteField": "cafecafe"
         \\}
     ;
 
-    const decoded = try @TypeOf(pb_instance).jsonDecode(
+    const WithBytes = @import("./generated/tests.pb.zig").WithBytes;
+    const decoded = try WithBytes.jsonDecode(
         hex_json,
         .{},
         allocator,
     );
     defer decoded.deinit();
 
-    try expect(compare_pb_structs(pb_instance, decoded.value));
+    // With bytes_as_hex, decoded value keeps the hex string as-is.
+    try expect(std.mem.eql(u8, decoded.value.byte_field, "cafecafe"));
 }
 
 test "JSON: roundtrip Bytes with bytes_as_hex=true" {
@@ -1174,7 +1176,11 @@ test "JSON: roundtrip Bytes with bytes_as_hex=true" {
     defer protobuf.json.pb_options.bytes_as_hex = original;
     protobuf.json.pb_options.bytes_as_hex = true;
 
-    var pb_instance = try bytes_init(allocator);
+    // Start with hex string in memory (the new in-memory representation).
+    const WithBytes = @import("./generated/tests.pb.zig").WithBytes;
+    var pb_instance = WithBytes{
+        .byte_field = try allocator.dupe(u8, "cafecafe"),
+    };
     defer pb_instance.deinit(allocator);
 
     const encoded = try pb_instance.jsonEncode(
@@ -1183,7 +1189,7 @@ test "JSON: roundtrip Bytes with bytes_as_hex=true" {
     );
     defer allocator.free(encoded);
 
-    const decoded = try @TypeOf(pb_instance).jsonDecode(
+    const decoded = try WithBytes.jsonDecode(
         encoded,
         .{},
         allocator,

@@ -570,10 +570,7 @@ fn print_bytes(value: anytype, jws: anytype) !void {
     try jws.writer.writeByte('"');
 
     if (pb_options.bytes_as_hex) {
-        for (value) |b| {
-            try jws.writer.writeByte(std.fmt.hex_charset[b >> 4]);
-            try jws.writer.writeByte(std.fmt.hex_charset[b & 0x0f]);
-        }
+        try jws.writer.writeAll(value);
     } else {
         try std.base64.standard.Encoder.encodeWriter(jws.writer, value);
     }
@@ -645,15 +642,12 @@ fn parse_bytes(
 ) ![]const u8 {
     const temp_raw = try std.json.innerParse([]u8, allocator, source, options);
     if (pb_options.bytes_as_hex) {
-        if (temp_raw.len % 2 != 0) return error.UnexpectedToken;
-        const decoded = try allocator.alloc(u8, temp_raw.len / 2);
-        errdefer allocator.free(decoded);
-        for (decoded, 0..) |*out, i| {
-            const hi = std.fmt.charToDigit(temp_raw[i * 2], 16) catch return error.UnexpectedToken;
-            const lo = std.fmt.charToDigit(temp_raw[i * 2 + 1], 16) catch return error.UnexpectedToken;
-            out.* = (hi << 4) | lo;
+        // Validate hex but keep as string — no decode to binary.
+        // OTel consumers expect hex strings for trace_id/span_id matching.
+        for (temp_raw) |c| {
+            _ = std.fmt.charToDigit(c, 16) catch return error.UnexpectedToken;
         }
-        return decoded;
+        return temp_raw;
     }
     const size = std.base64.standard.Decoder.calcSizeForSlice(temp_raw) catch |err| {
         return base64ErrorToJsonParseError(err);
