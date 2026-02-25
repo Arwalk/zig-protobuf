@@ -18,6 +18,11 @@ pub const Options = struct {
     /// Set to false for standard protobuf JSON mapping where oneof union fields
     /// are flattened into the parent message object.
     emit_oneof_field_name: bool = true,
+
+    /// When true, bytes fields are encoded/decoded as lowercase hex strings
+    /// instead of base64. This is useful for OpenTelemetry JSON format which
+    /// uses hex encoding for traceId, spanId, etc.
+    bytes_as_hex: bool = false,
 };
 
 /// Global options for protobuf JSON serialization/deserialization.
@@ -564,7 +569,14 @@ fn print_bytes(value: anytype, jws: anytype) !void {
     try jsonValueStartAssumeTypeOk(jws);
     try jws.writer.writeByte('"');
 
-    try std.base64.standard.Encoder.encodeWriter(jws.writer, value);
+    if (pb_options.bytes_as_hex) {
+        for (value) |b| {
+            try jws.writer.writeByte(std.fmt.hex_charset[b >> 4]);
+            try jws.writer.writeByte(std.fmt.hex_charset[b & 0x0f]);
+        }
+    } else {
+        try std.base64.standard.Encoder.encodeWriter(jws.writer, value);
+    }
 
     try jws.writer.writeByte('"');
 
@@ -632,6 +644,17 @@ fn parse_bytes(
     options: std.json.ParseOptions,
 ) ![]const u8 {
     const temp_raw = try std.json.innerParse([]u8, allocator, source, options);
+    if (pb_options.bytes_as_hex) {
+        if (temp_raw.len % 2 != 0) return error.UnexpectedToken;
+        const decoded = try allocator.alloc(u8, temp_raw.len / 2);
+        errdefer allocator.free(decoded);
+        for (decoded, 0..) |*out, i| {
+            const hi = std.fmt.charToDigit(temp_raw[i * 2], 16) catch return error.UnexpectedToken;
+            const lo = std.fmt.charToDigit(temp_raw[i * 2 + 1], 16) catch return error.UnexpectedToken;
+            out.* = (hi << 4) | lo;
+        }
+        return decoded;
+    }
     const size = std.base64.standard.Decoder.calcSizeForSlice(temp_raw) catch |err| {
         return base64ErrorToJsonParseError(err);
     };

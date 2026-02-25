@@ -1117,3 +1117,78 @@ test "JSON: roundtrip oneof with emit_oneof_field_name=false" {
     // Should match original
     try expect(compare_pb_structs(pb_instance, decoded.value));
 }
+
+// ------------------------------------------
+// Tests for bytes_as_hex option
+// ------------------------------------------
+
+test "JSON: encode Bytes with bytes_as_hex=true" {
+    const original = protobuf.json.pb_options.bytes_as_hex;
+    defer protobuf.json.pb_options.bytes_as_hex = original;
+    protobuf.json.pb_options.bytes_as_hex = true;
+
+    var pb_instance = try bytes_init(allocator);
+    defer pb_instance.deinit(allocator);
+
+    const encoded = try pb_instance.jsonEncode(
+        .{ .whitespace = .indent_2 },
+        allocator,
+    );
+    defer allocator.free(encoded);
+
+    // 0xCA, 0xFE, 0xCA, 0xFE → "cafecafe"
+    const expected =
+        \\{
+        \\  "byteField": "cafecafe"
+        \\}
+    ;
+    try expect(compare_pb_jsons(encoded, expected));
+}
+
+test "JSON: decode Bytes with bytes_as_hex=true" {
+    const original = protobuf.json.pb_options.bytes_as_hex;
+    defer protobuf.json.pb_options.bytes_as_hex = original;
+    protobuf.json.pb_options.bytes_as_hex = true;
+
+    var pb_instance = try bytes_init(allocator);
+    defer pb_instance.deinit(allocator);
+
+    const hex_json =
+        \\{
+        \\  "byteField": "cafecafe"
+        \\}
+    ;
+
+    const decoded = try @TypeOf(pb_instance).jsonDecode(
+        hex_json,
+        .{},
+        allocator,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: roundtrip Bytes with bytes_as_hex=true" {
+    const original = protobuf.json.pb_options.bytes_as_hex;
+    defer protobuf.json.pb_options.bytes_as_hex = original;
+    protobuf.json.pb_options.bytes_as_hex = true;
+
+    var pb_instance = try bytes_init(allocator);
+    defer pb_instance.deinit(allocator);
+
+    const encoded = try pb_instance.jsonEncode(
+        .{ .whitespace = .indent_2 },
+        allocator,
+    );
+    defer allocator.free(encoded);
+
+    const decoded = try @TypeOf(pb_instance).jsonDecode(
+        encoded,
+        .{},
+        allocator,
+    );
+    defer decoded.deinit();
+
+    try expect(compare_pb_structs(pb_instance, decoded.value));
+}
