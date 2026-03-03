@@ -165,6 +165,7 @@ test "JSON: encode ComplexType with many fields" {
     // Encoding should also work with the fixes in place
     const encoded = try complex_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);

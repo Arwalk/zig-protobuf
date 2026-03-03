@@ -193,6 +193,7 @@ test "JSON: encode FixedSizes" {
     const pb_instance = fixed_sizes_init();
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -273,6 +274,7 @@ test "JSON: encode RepeatedEnum" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -332,6 +334,7 @@ test "JSON: encode WithStrings" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -371,6 +374,7 @@ test "JSON: encode WithSubmessages" {
     const pb_instance = with_submessages_init();
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -433,6 +437,7 @@ test "JSON: encode Packed" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -521,6 +526,7 @@ test "JSON: encode OneofContainer (string_in_oneof)" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -609,6 +615,7 @@ test "JSON: encode OneofContainer (message_in_oneof)" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -685,6 +692,7 @@ test "JSON: encode Bytes" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -732,6 +740,7 @@ test "JSON: encode MoreBytes" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -773,6 +782,7 @@ test "JSON: encode Value (.number_value=NaN)" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -785,6 +795,7 @@ test "JSON: encode Value (.number_value=-Infinity)" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -797,6 +808,7 @@ test "JSON: encode Value (.number_value=Infinity)" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -809,6 +821,7 @@ test "JSON: encode Value (.number_value=1.0)" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -958,6 +971,7 @@ test "JSON: encode TestOneof2 (oneof=.Bytes)" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -995,6 +1009,7 @@ test "JSON: encode TestPackedTypes (repeated NaNs/infs)" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -1033,23 +1048,7 @@ test "JSON: encode oneof flat format (emit_oneof_field_name=false)" {
         .regular_field = "hello",
         .some_oneof = .{ .string_in_oneof = "world" },
     };
-    // Use a wrapper so std.json.Stringify.valueAlloc calls our stringifyTo
-    const Wrapper = struct {
-        ptr: *const OneofContainer,
-        pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.json.stringify(
-                OneofContainer,
-                self.ptr,
-                jws,
-                .{ .emit_oneof_field_name = false },
-            );
-        }
-    };
-    const encoded = try std.json.Stringify.valueAlloc(
-        allocator,
-        Wrapper{ .ptr = &msg },
-        .{},
-    );
+    const encoded = try msg.jsonEncode(.{}, .{ .emit_oneof_field_name = false }, allocator);
     defer allocator.free(encoded);
     // Flat format: no "someOneof" wrapper key; variant key directly in parent object
     try expect(std.mem.indexOf(u8, encoded, "someOneof") == null);
@@ -1061,7 +1060,7 @@ test "JSON: encode oneof legacy wrapped format (emit_oneof_field_name=true)" {
     var pb_instance = try string_in_oneof_init(allocator);
     defer pb_instance.deinit(allocator);
     // Default jsonEncode uses wrapped format (backward compat)
-    const encoded = try pb_instance.jsonEncode(.{}, allocator);
+    const encoded = try pb_instance.jsonEncode(.{}, .{}, allocator);
     defer allocator.free(encoded);
     // Legacy format: "someOneof" wrapper key present
     try expect(std.mem.indexOf(u8, encoded, "someOneof") != null);
@@ -1120,22 +1119,7 @@ test "JSON: roundtrip oneof flat format" {
         .regular_field = "roundtrip",
         .some_oneof = .{ .string_in_oneof = "value" },
     };
-    const Wrapper = struct {
-        ptr: *const OneofContainer,
-        pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return protobuf.json.stringify(
-                OneofContainer,
-                self.ptr,
-                jws,
-                .{ .emit_oneof_field_name = false },
-            );
-        }
-    };
-    const encoded = try std.json.Stringify.valueAlloc(
-        allocator,
-        Wrapper{ .ptr = &original },
-        .{},
-    );
+    const encoded = try original.jsonEncode(.{}, .{ .emit_oneof_field_name = false }, allocator);
     defer allocator.free(encoded);
 
     // Encoded JSON should not contain "someOneof" wrapper
