@@ -194,17 +194,26 @@ pub fn decode(
 
 pub fn encode(
     data: anytype,
-    options: std.json.Stringify.Options,
+    std_options: std.json.Stringify.Options,
+    pb_options: Options,
     allocator: std.mem.Allocator,
 ) ![]u8 {
-    return std.json.Stringify.valueAlloc(allocator, data, options);
+    const DataType = @TypeOf(data);
+    const CustomEncoder = struct {
+        inner: DataType,
+        opts: Options,
+        pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
+            return stringifyOpts(DataType, &self.inner, jws, self.opts);
+        }
+    };
+    return std.json.Stringify.valueAlloc(
+        allocator,
+        CustomEncoder{ .inner = data, .opts = pb_options },
+        std_options,
+    );
 }
 
-pub fn stringify(Self: type, self: *const Self, jws: anytype, opts: ?Options) !void {
-    return stringifyOpts(Self, self, jws, opts orelse .{});
-}
-
-fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) !void {
+fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std.meta.Child(@TypeOf(jws)).Error!void {
     // Increase eval branch quota for types with hundreds of fields
     @setEvalBranchQuota(1000000);
 
@@ -319,7 +328,7 @@ fn stringify_struct_field_with_options(
                         else => try print_numeric(el, jws),
                     },
                     .@"enum" => try print_numeric(el, jws),
-                    .submessage => try jws.write(el),
+                    .submessage => try stringifyOpts(@TypeOf(el), &el, jws, pb_options),
                 }
             }
             try jws.endArray();
@@ -347,7 +356,7 @@ fn stringify_struct_field_with_options(
                             else => try print_numeric(@field(value, union_field.name), jws),
                         },
                         .@"enum" => try print_numeric(@field(value, union_field.name), jws),
-                        .submessage => try jws.write(@field(value, union_field.name)),
+                        .submessage => try stringifyOpts(union_field.type, &@field(value, union_field.name), jws, pb_options),
                         .repeated, .packed_repeated => {
                             @compileError("Repeated fields are not allowed in oneof");
                         },
@@ -364,7 +373,7 @@ fn stringify_struct_field_with_options(
             }
         },
         .submessage => {
-            try jws.write(value);
+            try stringifyOpts(@TypeOf(value), &value, jws, pb_options);
         },
     }
 }
