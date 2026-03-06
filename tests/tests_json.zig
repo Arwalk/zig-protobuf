@@ -1050,10 +1050,9 @@ test "JSON: encode oneof flat format (emit_oneof_field_name=false)" {
     };
     const encoded = try msg.jsonEncode(.{}, .{ .emit_oneof_field_name = false }, allocator);
     defer allocator.free(encoded);
-    // Flat format: no "someOneof" wrapper key; variant key directly in parent object
-    try expect(std.mem.indexOf(u8, encoded, "someOneof") == null);
-    try expect(std.mem.indexOf(u8, encoded, "stringInOneof") != null);
-    try expect(std.mem.indexOf(u8, encoded, "regularField") != null);
+    try std.testing.expectEqualStrings(
+        \\{"regularField":"hello","enumField":"UNSPECIFIED","stringInOneof":"world"}
+    , encoded);
 }
 
 test "JSON: encode oneof legacy wrapped format (emit_oneof_field_name=true)" {
@@ -1062,9 +1061,9 @@ test "JSON: encode oneof legacy wrapped format (emit_oneof_field_name=true)" {
     // Default jsonEncode uses wrapped format (backward compat)
     const encoded = try pb_instance.jsonEncode(.{}, .{}, allocator);
     defer allocator.free(encoded);
-    // Legacy format: "someOneof" wrapper key present
-    try expect(std.mem.indexOf(u8, encoded, "someOneof") != null);
-    try expect(std.mem.indexOf(u8, encoded, "stringInOneof") != null);
+    try std.testing.expectEqualStrings(
+        \\{"regularField":"this field is always the same","enumField":"UNSPECIFIED","someOneof":{"stringInOneof":"testing oneof field being the string"}}
+    , encoded);
 }
 
 test "JSON: decode oneof flat format (variant key directly in parent)" {
@@ -1122,8 +1121,9 @@ test "JSON: roundtrip oneof flat format" {
     const encoded = try original.jsonEncode(.{}, .{ .emit_oneof_field_name = false }, allocator);
     defer allocator.free(encoded);
 
-    // Encoded JSON should not contain "someOneof" wrapper
-    try expect(std.mem.indexOf(u8, encoded, "someOneof") == null);
+    try std.testing.expectEqualStrings(
+        \\{"regularField":"roundtrip","enumField":"UNSPECIFIED","stringInOneof":"value"}
+    , encoded);
 
     // Decode flat format
     const result = try std.json.parseFromSlice(
