@@ -5,6 +5,9 @@ const std = @import("std");
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
 
+/// AnyValue is used to represent any type of attribute value. AnyValue may contain a
+/// primitive value such as a string or integer or it may contain an arbitrary nested
+/// object containing arrays, key-value lists and primitives.
 pub const AnyValue = struct {
     value: ?value_union = null,
 
@@ -104,8 +107,10 @@ pub const AnyValue = struct {
     }
 };
 
+/// ArrayValue is a list of AnyValue messages. We need ArrayValue as a message
+/// since oneof in AnyValue does not allow repeated fields.
 pub const ArrayValue = struct {
-    values: std.ArrayList(AnyValue) = .empty,
+    values: std.ArrayListUnmanaged(AnyValue) = .empty,
 
     pub const _desc_table = .{
         .values = fd(1, .{ .repeated = .submessage }),
@@ -175,8 +180,13 @@ pub const ArrayValue = struct {
     }
 };
 
+/// KeyValueList is a list of KeyValue messages. We need KeyValueList as a message
+/// since `oneof` in AnyValue does not allow repeated fields. Everywhere else where we need
+/// a list of KeyValue messages (e.g. in Span) we use `repeated KeyValue` directly to
+/// avoid unnecessary extra wrapping (which slows down the protocol). The 2 approaches
+/// are semantically equivalent.
 pub const KeyValueList = struct {
-    values: std.ArrayList(KeyValue) = .empty,
+    values: std.ArrayListUnmanaged(KeyValue) = .empty,
 
     pub const _desc_table = .{
         .values = fd(1, .{ .repeated = .submessage }),
@@ -246,6 +256,8 @@ pub const KeyValueList = struct {
     }
 };
 
+/// KeyValue is a key-value pair that is used to store Span attributes, Link
+/// attributes, etc.
 pub const KeyValue = struct {
     key: []const u8 = &.{},
     value: ?AnyValue = null,
@@ -319,10 +331,12 @@ pub const KeyValue = struct {
     }
 };
 
+/// InstrumentationScope is a message representing the instrumentation scope information
+/// such as the fully qualified name and version.
 pub const InstrumentationScope = struct {
     name: []const u8 = &.{},
     version: []const u8 = &.{},
-    attributes: std.ArrayList(KeyValue) = .empty,
+    attributes: std.ArrayListUnmanaged(KeyValue) = .empty,
     dropped_attributes_count: u32 = 0,
 
     pub const _desc_table = .{

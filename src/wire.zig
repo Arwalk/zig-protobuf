@@ -2,7 +2,14 @@
 const std = @import("std");
 
 const protobuf = @import("protobuf.zig");
-const log = std.log.scoped(.zig_protobuf);
+const builtin = @import("builtin");
+const log = if (builtin.os.tag != .freestanding) std.log.scoped(.zig_protobuf) else struct {
+    // no-op log implementation for freestanding targets
+    pub fn debug(
+        comptime _: []const u8,
+        _: anytype,
+    ) void {}
+};
 
 /// Wire type.
 pub const Type = enum(u3) {

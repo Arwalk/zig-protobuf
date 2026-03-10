@@ -5,7 +5,7 @@ const Step = std.Build.Step;
 const fs = std.fs;
 const mem = std.mem;
 const LazyPath = std.Build.LazyPath;
-const build_util = @import("utils/build_util.zig");
+const build_util = @import("build_util.zig");
 pub const RunProtocStep = build_util.RunProtocStep;
 
 const PROTOC_VERSION = build_util.PROTOC_VERSION;

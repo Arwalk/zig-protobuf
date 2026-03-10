@@ -193,6 +193,7 @@ test "JSON: encode FixedSizes" {
     const pb_instance = fixed_sizes_init();
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -273,6 +274,7 @@ test "JSON: encode RepeatedEnum" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -332,6 +334,7 @@ test "JSON: encode WithStrings" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -371,6 +374,7 @@ test "JSON: encode WithSubmessages" {
     const pb_instance = with_submessages_init();
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -433,6 +437,7 @@ test "JSON: encode Packed" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -521,6 +526,7 @@ test "JSON: encode OneofContainer (string_in_oneof)" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -609,6 +615,7 @@ test "JSON: encode OneofContainer (message_in_oneof)" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -685,6 +692,7 @@ test "JSON: encode Bytes" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -732,6 +740,7 @@ test "JSON: encode MoreBytes" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -773,6 +782,7 @@ test "JSON: encode Value (.number_value=NaN)" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -785,6 +795,7 @@ test "JSON: encode Value (.number_value=-Infinity)" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -797,6 +808,7 @@ test "JSON: encode Value (.number_value=Infinity)" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -809,6 +821,7 @@ test "JSON: encode Value (.number_value=1.0)" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -958,6 +971,7 @@ test "JSON: encode TestOneof2 (oneof=.Bytes)" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -995,6 +1009,7 @@ test "JSON: encode TestPackedTypes (repeated NaNs/infs)" {
 
     const encoded = try pb_instance.jsonEncode(
         .{ .whitespace = .indent_2 },
+        .{},
         allocator,
     );
     defer allocator.free(encoded);
@@ -1022,4 +1037,106 @@ test "JSON: decode selfref structs" {
 
 test "JSON: encode selfref structs" {
     // TODO
+}
+
+// OneofContainer flat-format (issue #147) tests
+const oneof_zig = @import("./generated/tests/oneof.pb.zig");
+const OneofContainer = oneof_zig.OneofContainer;
+
+test "JSON: encode oneof flat format (emit_oneof_field_name=false)" {
+    const msg = OneofContainer{
+        .regular_field = "hello",
+        .some_oneof = .{ .string_in_oneof = "world" },
+    };
+    const encoded = try msg.jsonEncode(.{}, .{ .emit_oneof_field_name = false }, allocator);
+    defer allocator.free(encoded);
+    try std.testing.expectEqualStrings(
+        \\{"regularField":"hello","enumField":"UNSPECIFIED","stringInOneof":"world"}
+    , encoded);
+}
+
+test "JSON: encode oneof legacy wrapped format (emit_oneof_field_name=true)" {
+    var pb_instance = try string_in_oneof_init(allocator);
+    defer pb_instance.deinit(allocator);
+    // Default jsonEncode uses wrapped format (backward compat)
+    const encoded = try pb_instance.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try std.testing.expectEqualStrings(
+        \\{"regularField":"this field is always the same","enumField":"UNSPECIFIED","someOneof":{"stringInOneof":"testing oneof field being the string"}}
+    , encoded);
+}
+
+test "JSON: decode oneof flat format (variant key directly in parent)" {
+    // Flat format: variant name at top level, no "someOneof" wrapper
+    const json_str =
+        \\{"regularField":"hello","stringInOneof":"world"}
+    ;
+    const result = try std.json.parseFromSlice(
+        OneofContainer,
+        allocator,
+        json_str,
+        .{},
+    );
+    defer result.deinit();
+    try std.testing.expectEqualStrings("hello", result.value.regular_field);
+    try expect(result.value.some_oneof != null);
+    try std.testing.expectEqualStrings("world", result.value.some_oneof.?.string_in_oneof);
+}
+
+test "JSON: decode oneof flat format with camelCase variant name" {
+    const json_str =
+        \\{"stringInOneof":"camelTest"}
+    ;
+    const result = try std.json.parseFromSlice(
+        OneofContainer,
+        allocator,
+        json_str,
+        .{},
+    );
+    defer result.deinit();
+    try expect(result.value.some_oneof != null);
+    try std.testing.expectEqualStrings("camelTest", result.value.some_oneof.?.string_in_oneof);
+}
+
+test "JSON: decode oneof flat format with snake_case variant name" {
+    const json_str =
+        \\{"string_in_oneof":"snake_test"}
+    ;
+    const result = try std.json.parseFromSlice(
+        OneofContainer,
+        allocator,
+        json_str,
+        .{},
+    );
+    defer result.deinit();
+    try expect(result.value.some_oneof != null);
+    try std.testing.expectEqualStrings("snake_test", result.value.some_oneof.?.string_in_oneof);
+}
+
+test "JSON: roundtrip oneof flat format" {
+    const original = OneofContainer{
+        .regular_field = "roundtrip",
+        .some_oneof = .{ .string_in_oneof = "value" },
+    };
+    const encoded = try original.jsonEncode(.{}, .{ .emit_oneof_field_name = false }, allocator);
+    defer allocator.free(encoded);
+
+    try std.testing.expectEqualStrings(
+        \\{"regularField":"roundtrip","enumField":"UNSPECIFIED","stringInOneof":"value"}
+    , encoded);
+
+    // Decode flat format
+    const result = try std.json.parseFromSlice(
+        OneofContainer,
+        allocator,
+        encoded,
+        .{},
+    );
+    defer result.deinit();
+    try std.testing.expectEqualStrings(original.regular_field, result.value.regular_field);
+    try expect(result.value.some_oneof != null);
+    try std.testing.expectEqualStrings(
+        original.some_oneof.?.string_in_oneof,
+        result.value.some_oneof.?.string_in_oneof,
+    );
 }
