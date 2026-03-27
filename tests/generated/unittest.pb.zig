@@ -7944,6 +7944,7 @@ pub const EnumParseTester = struct {
 
 pub fn TestService(comptime UserDataType: type, comptime ErrorSet: type) type {
     return struct {
+        pub const package = "unittest";
         pub const service_name = "TestService";
 
         Foo: *const fn (userdata: *UserDataType, request: FooRequest) ErrorSet!FooResponse,

@@ -990,6 +990,14 @@ const GenerationContext = struct {
                 allocator,
                 try std.fmt.allocPrint(
                     allocator,
+                    "        pub const package = \"{s}\";\n",
+                    .{fqn.buf},
+                ),
+            );
+            try lines.append(
+                allocator,
+                try std.fmt.allocPrint(
+                    allocator,
                     "        pub const service_name = \"{s}\";\n\n",
                     .{service_name},
                 ),
