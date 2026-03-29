@@ -281,6 +281,7 @@ pub const StreamResponse = struct {
 /// This service demonstrates basic request-response pattern
 pub fn SimpleService(comptime UserDataType: type, comptime ErrorSet: type) type {
     return struct {
+        pub const package = "tests.service";
         pub const service_name = "SimpleService";
 
         /// Performs a simple unary call
@@ -293,6 +294,7 @@ pub fn SimpleService(comptime UserDataType: type, comptime ErrorSet: type) type 
 /// Service demonstrating all streaming patterns
 pub fn StreamingService(comptime UserDataType: type, comptime ErrorSet: type) type {
     return struct {
+        pub const package = "tests.service";
         pub const service_name = "StreamingService";
 
         /// Server streaming RPC - client sends one request, server sends stream of responses
