@@ -1,10 +1,12 @@
-const warn = @import("std").debug.warn;
 const std = @import("std");
-const pb = @import("protobuf");
-const plugin = @import("google/protobuf/compiler.pb.zig");
-const descriptor = @import("google/protobuf.pb.zig");
 const mem = std.mem;
+const warn = @import("std").debug.warn;
+
+const pb = @import("protobuf");
+
 const FullName = @import("./FullName.zig").FullName;
+const descriptor = @import("google/protobuf.pb.zig");
+const plugin = @import("google/protobuf/compiler.pb.zig");
 
 pub const std_options: std.Options = .{ .log_scope_levels = &[_]std.log.ScopeLevel{.{ .level = .warn, .scope = .zig_protobuf }} };
 
@@ -325,7 +327,7 @@ const GenerationContext = struct {
         field: descriptor.FieldDescriptorProto,
     ) ![]const u8 {
         if (field.type_name) |typeName| {
-            const fullTypeName = FullName{ .buf = typeName[1..] };
+            const fullTypeName = FullName{ .buf = normalizeTypeName(typeName) };
             if (fullTypeName.parent()) |parent| {
                 if (parent.eql(parentFqn)) {
                     const diff_idx = std.mem.indexOfDiff(
@@ -385,39 +387,24 @@ const GenerationContext = struct {
         var postfix: []const u8 = "";
         const repeated = isRepeated(field);
         const t = field.type.?;
+        const pointerize_message = if (t == .TYPE_MESSAGE)
+            try self.fieldNeedsPointer(allocator, field)
+        else
+            false;
 
-        if (!repeated) {
-            if (!is_union) {
-                // look for optional types
-                switch (t) {
-                    .TYPE_MESSAGE => {
-                        // Check if the field type is self-referential
-                        if (field.type_name) |type_name| {
-                            const raw_type = type_name;
-                            const dep_name = raw_type[1..]; // Remove leading dot
-                            const last_dot = std.mem.lastIndexOf(u8, dep_name, ".");
-                            const simple_name = if (last_dot) |idx| dep_name[idx + 1 ..] else dep_name;
-
-                            // Get the current message name from fqn
-                            const current_msg = fqn.name().buf;
-
-                            if (std.mem.eql(u8, simple_name, current_msg)) {
-                                prefix = "?*";
-                            } else {
-                                prefix = "?";
-                            }
-                        } else {
-                            prefix = "?";
-                        }
-                    },
-                    else => if (isOptional(file, field)) {
-                        prefix = "?";
-                    },
-                }
-            }
-        } else {
-            prefix = "std.ArrayList(";
+        if (repeated) {
+            prefix = if (pointerize_message) "std.ArrayList(*" else "std.ArrayList(";
             postfix = ")";
+        } else if (t == .TYPE_MESSAGE and pointerize_message) {
+            prefix = if (is_union) "*" else "?*";
+        } else if (!is_union) {
+            // look for optional types
+            switch (t) {
+                .TYPE_MESSAGE => prefix = "?",
+                else => if (isOptional(file, field)) {
+                    prefix = "?";
+                },
+            }
         }
 
         const infix: []const u8 = switch (t) {
@@ -437,6 +424,27 @@ const GenerationContext = struct {
         };
 
         return try std.mem.concat(allocator, u8, &.{ prefix, infix, postfix });
+    }
+
+    fn normalizeTypeName(type_name: []const u8) []const u8 {
+        if (type_name.len > 0 and type_name[0] == '.') {
+            return type_name[1..];
+        }
+        return type_name;
+    }
+
+    fn fieldNeedsPointer(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        field: descriptor.FieldDescriptorProto,
+    ) !bool {
+        const type_name = field.type_name orelse return false;
+        const dep_name = normalizeTypeName(type_name);
+
+        var visited: std.StringHashMap(bool) = .init(allocator);
+        defer visited.deinit();
+
+        return self.isMessageSelfReferential(dep_name, &visited);
     }
 
     fn getFieldDefault(
@@ -655,6 +663,7 @@ const GenerationContext = struct {
         for (messages.items, 0..) |message, message_i| {
             const m: descriptor.DescriptorProto = message;
             const messageFqn = try fqn.append(allocator, m.name.?);
+            _ = try self.analyzeMessageDependencies(allocator, messageFqn, m);
 
             // Build the path for this message: root_path + [message_field_number, message_i]
             var message_path: std.ArrayList(i32) = .empty;
@@ -826,7 +835,7 @@ const GenerationContext = struct {
                 \\    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {{
                 \\        return protobuf.decode(@This(), reader, allocator);
                 \\    }}
-                \\    
+                \\
                 \\    /// Deinitializes and frees the memory associated with the message.
                 \\    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {{
                 \\        return protobuf.deinit(allocator, self);
@@ -845,7 +854,7 @@ const GenerationContext = struct {
                 \\    ) !std.json.Parsed(@This()) {{
                 \\        return protobuf.json.decode(@This(), input, options, allocator);
                 \\    }}
-                \\  
+                \\
                 \\    /// Encodes the message to a JSON string.
                 \\    pub fn jsonEncode(
                 \\        self: @This(),
@@ -882,6 +891,7 @@ const GenerationContext = struct {
         const message_name = message.name.?;
         const full_message_name = fqn.buf; // Use package name directly
         var deps: std.ArrayList([]const u8) = .empty;
+        var direct_self_reference = false;
 
         // Check fields for message types
         for (message.field.items) |field| {
@@ -889,7 +899,7 @@ const GenerationContext = struct {
                 if (t == .TYPE_MESSAGE) {
                     if (field.type_name) |type_name| {
                         const raw_type = type_name;
-                        const dep_name = raw_type[1..]; // Remove leading dot
+                        const dep_name = normalizeTypeName(raw_type);
                         try deps.append(allocator, dep_name);
 
                         // Check for direct self-reference by comparing the last part of the type name
@@ -897,7 +907,7 @@ const GenerationContext = struct {
                         const simple_name = if (last_dot) |idx| dep_name[idx + 1 ..] else dep_name;
 
                         if (std.mem.eql(u8, simple_name, message_name)) {
-                            return true;
+                            direct_self_reference = true;
                         }
                     }
                 }
@@ -910,7 +920,7 @@ const GenerationContext = struct {
         // Check if this message is self-referential (directly or indirectly)
         var visited: std.StringHashMap(bool) = .init(allocator);
         defer visited.deinit();
-        return self.isMessageSelfReferential(full_message_name, &visited);
+        return direct_self_reference or self.isMessageSelfReferential(full_message_name, &visited);
     }
 
     /// Recursively checks if a message is self-referential
