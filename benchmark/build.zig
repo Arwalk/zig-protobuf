@@ -42,8 +42,11 @@ pub fn build(b: *std.Build) void {
     const convertForBenchmarkStep = protobuf.RunProtocStep.create(protobuf_dep.builder, target, .{
         // out directory for the generated zig files
         .destination_directory = b.path("src/generated"),
-        .source_files = &.{ "../tests/protos_for_test/opentelemetry/proto/metrics/v1/metrics.proto", "../tests/protos_for_test/opentelemetry/proto/common/v1/common.proto" },
-        .include_directories = &.{"../tests/protos_for_test"},
+        .source_files = &.{
+            b.path("../tests/protos_for_test/opentelemetry/proto/metrics/v1/metrics.proto"),
+            b.path("../tests/protos_for_test/opentelemetry/proto/common/v1/common.proto"),
+        },
+        .include_directories = &.{b.path("../tests/protos_for_test")},
     });
 
     benchmark_exe.step.dependOn(&convertForBenchmarkStep.step);
@@ -53,8 +56,12 @@ pub fn build(b: *std.Build) void {
 
     var convertForDatasetStep = RunProtocStep.create(protobuf_dep.builder, target, .{
         .destination_directory = b.path("src/generated"),
-        .source_files = &.{ "../tests/protos_for_test/benchmark_data.proto", "../tests/protos_for_test/opentelemetry/proto/metrics/v1/metrics.proto", "../tests/protos_for_test/opentelemetry/proto/common/v1/common.proto" },
-        .include_directories = &.{"../tests/protos_for_test"},
+        .source_files = &.{
+            b.path("../tests/protos_for_test/benchmark_data.proto"),
+            b.path("../tests/protos_for_test/opentelemetry/proto/metrics/v1/metrics.proto"),
+            b.path("../tests/protos_for_test/opentelemetry/proto/common/v1/common.proto"),
+        },
+        .include_directories = &.{b.path("../tests/protos_for_test")},
     });
 
     const generate_dataset_exe = b.addExecutable(.{

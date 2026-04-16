@@ -25,7 +25,7 @@
     .fingerprint = 0xb70c48fe6fe0386e, // Changing this has security and trust implications.
     // Tracks the earliest Zig version that the package considers to be a
     // supported use case.
-    .minimum_zig_version = "0.15.1",
+    .minimum_zig_version = "0.16.0",
     // This field is optional.
     // Each dependency must either provide a `url` and `hash`, or a `path`.
     // `zig build --fetch` can be used to fetch all dependencies of a package, recursively.
@@ -33,8 +33,8 @@
     // internet connectivity.
     .dependencies = .{
         .zbench = .{
-            .url = "git+https://github.com/hendriknielaender/zbench?ref=v0.11.2#2bdf0c62c5bf761d282e889e34fb33bc41484e6f",
-            .hash = "zbench-0.11.2-YTdc7zolAQDlBF9i0ywXIvDjafL3Kg27S-aFUq6dU5zy",
+            .url = "https://github.com/hendriknielaender/zBench/archive/refs/tags/v0.13.0.zip",
+            .hash = "zbench-0.13.0-YTdc7xVBAQCCMC-IdLLuotBeiNNNm8k9Pi2V4VYqrwfI",
         },
         .protobuf = .{
             .path = "./..",

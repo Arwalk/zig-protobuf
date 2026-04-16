@@ -33,27 +33,25 @@ const DataSet = struct {
     encoded: []u8,
 };
 
-fn loadFixedDataset(allocator: std.mem.Allocator) !DataSet {
+fn loadFixedDataset(allocator: std.mem.Allocator, io: std.Io) !DataSet {
     // Try to open the test.data file
     std.debug.print("Loading dataset from {s}...\n", .{DATASET_FILENAME});
 
     // NOTE: it is important to always load the file from disk at runtime to prevent
     // early optimizations of the compiler that may impact(tint) the benchmark
-    const file = try std.fs.cwd().openFile(DATASET_FILENAME, .{});
-    defer file.close();
+    const file = try std.Io.Dir.cwd().openFile(io, DATASET_FILENAME, .{});
+    defer file.close(io);
 
     // Get file size and allocate buffer
-    const size = (try file.stat()).size;
+    const size = (try file.stat(io)).size;
     std.debug.print("Dataset file size: {d} bytes\n", .{size});
 
     const buffer = try allocator.alloc(u8, size);
 
-    _ = try file.readAll(buffer); // Read the entire file into the buffer
+    var reader = file.reader(io, buffer); // Read the entire file into the buffer
     std.debug.print("Read file contents\n", .{});
 
-    var reader: std.Io.Reader = .fixed(buffer);
-
-    const data = try benchmark_data.BenchmarkData.decode(&reader, allocator);
+    const data = try benchmark_data.BenchmarkData.decode(&reader.interface, allocator);
 
     if (data.histogram_points.items.len == 0) {
         std.debug.print("Dataset contains no histogram points\n", .{});
@@ -71,15 +69,15 @@ fn loadFixedDataset(allocator: std.mem.Allocator) !DataSet {
 var input_to_encode: benchmark_data.BenchmarkData = undefined;
 var input_to_decode: []u8 = undefined;
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
-    var arena = std.heap.ArenaAllocator.init(gpa.allocator());
+pub fn main(init: std.process.Init) !void {
+    const gpa = init.gpa;
+    const io = init.io;
+    var arena = std.heap.ArenaAllocator.init(gpa);
     defer arena.deinit();
     const arena_allocator = arena.allocator();
 
     // Try to load dataset from file
-    if (loadFixedDataset(arena_allocator)) |fixed_data| {
+    if (loadFixedDataset(arena_allocator, io)) |fixed_data| {
         // Use the loaded dataset
         input_to_encode = fixed_data.data;
         input_to_decode = fixed_data.encoded;
@@ -110,9 +108,6 @@ pub fn main() !void {
     try bench.add("encoding (arena)", bench_encode_arena, .{});
     try bench.add("decoding", bench_decode, .{});
 
-    var buf: [1024]u8 = undefined;
-    var stderr = std.fs.File.stderr().writer(&buf);
-    const writer = &stderr.interface;
-    try bench.run(writer);
-    try writer.flush();
+    const stderr = std.Io.File.stderr();
+    try bench.run(io, stderr);
 }

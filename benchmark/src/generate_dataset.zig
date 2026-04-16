@@ -135,7 +135,7 @@ pub fn generateRandomExponentialHistogramDataPoint(allocator: std.mem.Allocator)
 
 const OUTPUT_FILENAME = "test.data";
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     var args = try std.process.argsWithAllocator(std.heap.page_allocator);
     defer args.deinit();
 
@@ -147,7 +147,7 @@ pub fn main() !void {
         try std.fmt.parseInt(usize, arg, 10)
     else
         10;
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa = init.gpa;
     defer _ = gpa.deinit();
 
     var arena = std.heap.ArenaAllocator.init(gpa.allocator());
