@@ -1,8 +1,9 @@
 //! Protocol Buffers definitions and functions for wire encoding/decoding.
 const std = @import("std");
+const builtin = @import("builtin");
 
 const protobuf = @import("protobuf.zig");
-const builtin = @import("builtin");
+
 const log = if (builtin.os.tag != .freestanding) std.log.scoped(.zig_protobuf) else struct {
     // no-op log implementation for freestanding targets
     pub fn debug(
@@ -456,10 +457,26 @@ pub fn decodeRepeated(
             // Submessages are length-delimited, and cannot be packed.
             std.debug.assert(options.bytes != null);
 
-            try result.append(
-                allocator,
-                try protobuf.init(Result, allocator),
-            );
+            const result_ti = comptime @typeInfo(Result);
+            if (comptime result_ti == .pointer) {
+                const SubMessage = result_ti.pointer.child;
+                const msg = try allocator.create(SubMessage);
+                errdefer allocator.destroy(msg);
+
+                msg.* = try protobuf.init(SubMessage, allocator);
+                errdefer msg.deinit(allocator);
+
+                try result.append(allocator, msg);
+                const consumed = try decodeMessage(
+                    msg,
+                    allocator,
+                    reader,
+                    .{ .bytes = options.bytes },
+                );
+                return consumed;
+            }
+
+            try result.append(allocator, try protobuf.init(Result, allocator));
             errdefer result.items[result.items.len - 1].deinit(allocator);
             const msg = &result.items[result.items.len - 1];
             const consumed = try decodeMessage(

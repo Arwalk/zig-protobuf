@@ -1,9 +1,9 @@
 const std = @import("std");
 
-const log = std.log.scoped(.zig_protobuf);
-
 pub const json = @import("json.zig");
 pub const wire = @import("wire.zig");
+
+const log = std.log.scoped(.zig_protobuf);
 
 pub const DecodingError = error{ NotEnoughData, InvalidInput };
 
@@ -966,10 +966,17 @@ pub fn deinitField(
                         const ListItem = @typeInfo(@FieldType(o.child, "items")).pointer.child;
                         switch (comptime @typeInfo(ListItem)) {
                             .pointer => {
-                                std.debug.assert(ListItem == []const u8);
-                                for (@field(root, field_name).?.items) |item| {
-                                    if (item.len > 0) allocator.free(item);
-                                }
+                                const ptr_info = @typeInfo(ListItem).pointer;
+                                if (comptime ptr_info.child == u8) {
+                                    for (@field(root, field_name).?.items) |item| {
+                                        if (item.len > 0) allocator.free(item);
+                                    }
+                                } else if (comptime ptr_info.size == .one and @typeInfo(ptr_info.child) == .@"struct") {
+                                    for (@field(root, field_name).?.items) |item| {
+                                        item.deinit(allocator);
+                                        allocator.destroy(item);
+                                    }
+                                } else unreachable;
                             },
                             .@"struct" => {
                                 for (@field(root, field_name).?.items) |*item| {
@@ -1001,10 +1008,17 @@ pub fn deinitField(
                 const ListItem = @typeInfo(@FieldType(Field, "items")).pointer.child;
                 switch (comptime @typeInfo(ListItem)) {
                     .pointer => {
-                        std.debug.assert(ListItem == []const u8);
-                        for (@field(root, field_name).items) |item| {
-                            if (item.len > 0) allocator.free(item);
-                        }
+                        const ptr_info = @typeInfo(ListItem).pointer;
+                        if (comptime ptr_info.child == u8) {
+                            for (@field(root, field_name).items) |item| {
+                                if (item.len > 0) allocator.free(item);
+                            }
+                        } else if (comptime ptr_info.size == .one and @typeInfo(ptr_info.child) == .@"struct") {
+                            for (@field(root, field_name).items) |item| {
+                                item.deinit(allocator);
+                                allocator.destroy(item);
+                            }
+                        } else unreachable;
                     },
                     .@"struct" => {
                         for (@field(root, field_name).items) |*item| {
