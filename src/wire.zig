@@ -382,11 +382,8 @@ pub fn decodeRepeated(
     ).pointer.child;
     comptime std.debug.assert(ResultList == std.ArrayList(Result));
 
-    const current_capacity = result.capacity;
-    errdefer result.shrinkAndFree(allocator, current_capacity);
-
     const current_items = result.items.len;
-    errdefer result.shrinkRetainingCapacity(current_items);
+    errdefer result.shrinkAndFree(allocator, current_items);
 
     switch (comptime field) {
         .scalar => |scalar| {
@@ -501,6 +498,31 @@ test decodeRepeated {
             &.{ 3, 270, 86942 },
             list.items,
         );
+    }
+    // Pre-allocated capacity (capacity=8, items=0) + malformed packed field:
+    // two 2-byte varints (4 bytes consumed) against options.bytes=3 triggers
+    // error.InvalidInput. The buggy errdefer then calls
+    // shrinkAndFree(allocator, current_capacity=8) with items.len==0, panicking.
+    {
+        var list: std.ArrayList(u32) = .empty;
+        defer list.deinit(std.testing.allocator);
+        try list.ensureTotalCapacity(std.testing.allocator, 8);
+
+        // Two varints encoding 270 (0x8e 0x02 each); consumed=4 but options.bytes=3.
+        const input: []const u8 = &.{ 0x8e, 0x02, 0x8e, 0x02 };
+        var reader: std.Io.Reader = .fixed(input);
+
+        try std.testing.expectError(
+            error.InvalidInput,
+            decodeRepeated(
+                &list,
+                std.testing.allocator,
+                .{ .scalar = .uint32 },
+                &reader,
+                .{ .bytes = 3 },
+            ),
+        );
+        try std.testing.expectEqual(0, list.items.len);
     }
 }
 
