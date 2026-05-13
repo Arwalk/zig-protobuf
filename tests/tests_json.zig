@@ -779,41 +779,26 @@ const value_camel_case4_6_json = @embedFile("./json_data/value/camelCase4_6.json
 
 test "JSON: encode Value (.number_value=NaN)" {
     const pb_instance = value_inits.get1();
-
-    const encoded = try pb_instance.jsonEncode(
-        .{ .whitespace = .indent_2 },
-        .{},
-        allocator,
-    );
-    defer allocator.free(encoded);
-
-    try expect(compare_pb_jsons(encoded, value_camel_case1_json));
+    if (pb_instance.jsonEncode(.{ .whitespace = .indent_2 }, .{}, allocator)) |slice| {
+        defer allocator.free(slice);
+        return error.ExpectedEncodingFailure;
+    } else |_| {}
 }
 
 test "JSON: encode Value (.number_value=-Infinity)" {
     const pb_instance = value_inits.get2();
-
-    const encoded = try pb_instance.jsonEncode(
-        .{ .whitespace = .indent_2 },
-        .{},
-        allocator,
-    );
-    defer allocator.free(encoded);
-
-    try expect(compare_pb_jsons(encoded, value_camel_case2_json));
+    if (pb_instance.jsonEncode(.{ .whitespace = .indent_2 }, .{}, allocator)) |slice| {
+        defer allocator.free(slice);
+        return error.ExpectedEncodingFailure;
+    } else |_| {}
 }
 
 test "JSON: encode Value (.number_value=Infinity)" {
     const pb_instance = value_inits.get3();
-
-    const encoded = try pb_instance.jsonEncode(
-        .{ .whitespace = .indent_2 },
-        .{},
-        allocator,
-    );
-    defer allocator.free(encoded);
-
-    try expect(compare_pb_jsons(encoded, value_camel_case3_json));
+    if (pb_instance.jsonEncode(.{ .whitespace = .indent_2 }, .{}, allocator)) |slice| {
+        defer allocator.free(slice);
+        return error.ExpectedEncodingFailure;
+    } else |_| {}
 }
 
 test "JSON: encode Value (.number_value=1.0)" {
@@ -1051,7 +1036,7 @@ test "JSON: encode oneof flat format (emit_oneof_field_name=false)" {
     const encoded = try msg.jsonEncode(.{}, .{ .emit_oneof_field_name = false }, allocator);
     defer allocator.free(encoded);
     try std.testing.expectEqualStrings(
-        \\{"regularField":"hello","enumField":"UNSPECIFIED","stringInOneof":"world"}
+        \\{"regularField":"hello","stringInOneof":"world"}
     , encoded);
 }
 
@@ -1062,7 +1047,7 @@ test "JSON: encode oneof legacy wrapped format (emit_oneof_field_name=true)" {
     const encoded = try pb_instance.jsonEncode(.{}, .{}, allocator);
     defer allocator.free(encoded);
     try std.testing.expectEqualStrings(
-        \\{"regularField":"this field is always the same","enumField":"UNSPECIFIED","someOneof":{"stringInOneof":"testing oneof field being the string"}}
+        \\{"regularField":"this field is always the same","someOneof":{"stringInOneof":"testing oneof field being the string"}}
     , encoded);
 }
 
@@ -1122,7 +1107,7 @@ test "JSON: roundtrip oneof flat format" {
     defer allocator.free(encoded);
 
     try std.testing.expectEqualStrings(
-        \\{"regularField":"roundtrip","enumField":"UNSPECIFIED","stringInOneof":"value"}
+        \\{"regularField":"roundtrip","stringInOneof":"value"}
     , encoded);
 
     // Decode flat format

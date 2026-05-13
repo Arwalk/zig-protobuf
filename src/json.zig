@@ -28,6 +28,7 @@ pub fn parse(
 
     // Mainly taken from 0.13.0's source code
     var result: Self = undefined;
+    protobuf.internal_init(Self, &result);
     const structInfo = @typeInfo(Self).@"struct";
     var fields_seen = [_]bool{false} ** structInfo.fields.len;
 
@@ -48,6 +49,7 @@ pub fn parse(
         };
 
         inline for (structInfo.fields, 0..) |field, i| {
+            if (comptime !@hasField(@TypeOf(Self._desc_table), field.name)) continue;
             if (field.is_comptime) {
                 @compileError("comptime fields are not supported: " ++ @typeName(Self) ++ "." ++ field.name);
             }
@@ -70,6 +72,20 @@ pub fn parse(
                 // might trigger more allocations.)
                 freeAllocated(allocator, name_token.?);
                 name_token = null;
+
+                // Proto3 JSON: null for scalar/repeated/enum fields means "use default", skip it.
+                // Submessage fields may have special null semantics (e.g. google.protobuf.Value
+                // maps JSON null to null_value kind), so we let parseStructField handle them.
+                const skip_null_for_field = comptime blk: {
+                    const desc = @field(Self._desc_table, field.name);
+                    const tag = @as(std.meta.Tag(@TypeOf(desc.ftype)), desc.ftype);
+                    break :blk tag != .submessage;
+                };
+                if (skip_null_for_field and try source.peekNextTokenType() == .null) {
+                    _ = try source.next();
+                    break;
+                }
+
                 if (fields_seen[i]) {
                     switch (options.duplicate_field_behavior) {
                         .use_first => {
@@ -107,6 +123,7 @@ pub fn parse(
             // variant in any oneof field of this struct.
             var matched_as_flat_oneof = false;
             inline for (structInfo.fields, 0..) |field, i| {
+                if (comptime !@hasField(@TypeOf(Self._desc_table), field.name)) continue;
                 if (!matched_as_flat_oneof) {
                     const field_descriptor = @field(Self._desc_table, field.name);
                     if (@as(
@@ -124,6 +141,43 @@ pub fn parse(
                                 if (matches) {
                                     freeAllocated(allocator, name_token.?);
                                     name_token = null;
+
+                                    // Proto3 JSON: for NullValue-typed oneof variants,
+                                    // null means set the variant to NULL_VALUE.
+                                    // For other types, null clears the active variant.
+                                    if (try source.peekNextTokenType() == .null) {
+                                        const is_null_value_field = comptime union_field.type == protobuf.wkt.NullValue;
+                                        if (comptime is_null_value_field) {
+                                            // null JSON for NullValue means NULL_VALUE = 0
+                                            _ = try source.next();
+                                            @field(&result, field.name) = @unionInit(
+                                                oneof_type,
+                                                union_field.name,
+                                                @as(union_field.type, @enumFromInt(0)),
+                                            );
+                                            fields_seen[i] = true;
+                                            matched_as_flat_oneof = true;
+                                            break;
+                                        }
+                                        // Other types: null clears the active variant.
+                                        _ = try source.next();
+                                        const is_active = if (@field(&result, field.name)) |cur|
+                                            cur == @field(std.meta.Tag(oneof_type), union_field.name)
+                                        else
+                                            false;
+                                        if (is_active) {
+                                            @field(&result, field.name) = null;
+                                            fields_seen[i] = false;
+                                        }
+                                        matched_as_flat_oneof = true;
+                                        break;
+                                    }
+
+                                    // Duplicate oneof variant in same object is an error.
+                                    if (fields_seen[i]) {
+                                        return error.DuplicateField;
+                                    }
+
                                     @field(&result, field.name) = @unionInit(
                                         oneof_type,
                                         union_field.name,
@@ -144,7 +198,13 @@ pub fn parse(
                                                     options,
                                                 ),
                                             },
-                                            .submessage, .@"enum" => try std.json.innerParse(
+                                            .submessage => try std.json.innerParse(
+                                                union_field.type,
+                                                allocator,
+                                                source,
+                                                options,
+                                            ),
+                                            .@"enum" => try parseEnumField(
                                                 union_field.type,
                                                 allocator,
                                                 source,
@@ -206,6 +266,10 @@ pub fn encode(
             return stringifyOpts(DataType, &self.inner, jws, self.opts);
         }
     };
+    // Set thread-local allocator for Any.jsonStringify.
+    const prev_alloc = protobuf.wkt.tl_any_alloc;
+    protobuf.wkt.tl_any_alloc = allocator;
+    defer protobuf.wkt.tl_any_alloc = prev_alloc;
     return std.json.Stringify.valueAlloc(
         allocator,
         CustomEncoder{ .inner = data, .opts = pb_options },
@@ -217,15 +281,35 @@ fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std
     // Increase eval branch quota for types with hundreds of fields
     @setEvalBranchQuota(1000000);
 
+    // Well-known types (e.g. Duration, Timestamp, wrappers) override jsonStringify
+    // to emit their special JSON representation instead of a plain object.
+    if (comptime @hasDecl(Self, "jsonStringify")) {
+        return self.jsonStringify(jws);
+    }
+
     try jws.beginObject();
 
     inline for (@typeInfo(Self).@"struct".fields) |fieldInfo| {
+        if (comptime !@hasField(@TypeOf(Self._desc_table), fieldInfo.name)) continue;
         const camel_case_name = comptime to_camel_case(fieldInfo.name);
         const descriptor = @field(Self._desc_table, fieldInfo.name);
         const is_oneof = @as(std.meta.Tag(@TypeOf(descriptor.ftype)), descriptor.ftype) == .oneof;
 
+        const field_value = @field(self, fieldInfo.name);
         const field_present = switch (@typeInfo(fieldInfo.type)) {
-            .optional => @field(self, fieldInfo.name) != null,
+            .optional => field_value != null,
+            // For non-optional fields, skip if value is proto3 default.
+            .bool => field_value,
+            .int, .float => field_value != 0,
+            .@"enum" => @intFromEnum(field_value) != 0,
+            .pointer => |ptr| if (ptr.size == .slice) field_value.len != 0 else true,
+            .@"struct" => blk: {
+                // ArrayList (repeated/map/packed_repeated): skip when empty.
+                if (comptime @hasField(fieldInfo.type, "items")) {
+                    break :blk field_value.items.len != 0;
+                }
+                break :blk true;
+            },
             else => true,
         };
 
@@ -237,7 +321,7 @@ fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std
                 try jws.objectField(camel_case_name);
             }
             try stringify_struct_field_with_options(
-                @field(self, fieldInfo.name),
+                field_value,
                 descriptor,
                 jws,
                 opts,
@@ -250,29 +334,23 @@ fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std
 }
 
 fn to_camel_case(not_camel_cased_string: []const u8) []const u8 {
+    // Matches protobuf's ToJsonName (descriptor.cc): underscores are consumed
+    // and the following character is uppercased. The first character is NOT
+    // lowercased — fields like `_field_name3` produce `FieldName3`, not `fieldName3`.
     comptime var capitalize_next_letter = false;
     comptime var camel_cased_string: []const u8 = "";
-    comptime var i: usize = 0;
 
     inline for (not_camel_cased_string) |char| {
         if (char == '_') {
-            capitalize_next_letter = i > 0;
+            capitalize_next_letter = true;
         } else if (capitalize_next_letter) {
             camel_cased_string = camel_cased_string ++ .{
                 comptime std.ascii.toUpper(char),
             };
             capitalize_next_letter = false;
-            i += 1;
         } else {
             camel_cased_string = camel_cased_string ++ .{char};
-            i += 1;
         }
-    }
-
-    // Build a new string with lowercase first letter instead of mutating const
-    if (comptime std.ascii.isUpper(camel_cased_string[0])) {
-        const lower_first = .{std.ascii.toLower(camel_cased_string[0])};
-        camel_cased_string = lower_first ++ camel_cased_string[1..];
     }
 
     return camel_cased_string;
@@ -319,19 +397,52 @@ fn stringify_struct_field_with_options(
         .@"enum" => try print_numeric(value, jws),
         .repeated, .packed_repeated => |repeated| {
             const slice = value.items;
-            try jws.beginArray();
-            for (slice) |el| {
-                switch (repeated) {
-                    .scalar => |scalar| switch (scalar) {
-                        .bytes => try print_bytes(el, jws),
-                        .string => try jws.write(el),
-                        else => try print_numeric(el, jws),
-                    },
-                    .@"enum" => try print_numeric(el, jws),
-                    .submessage => try stringifyOpts(@TypeOf(el), &el, jws, pb_options),
+            const Elem = std.meta.Elem(@TypeOf(slice));
+            if (comptime isMapEntry(Elem)) {
+                // Proto3: duplicate map keys use last-wins semantics.
+                try jws.beginObject();
+                for (slice, 0..) |entry, i| {
+                    var is_dup = false;
+                    for (slice[i + 1 ..]) |later| {
+                        if (mapKeyEq(entry.key, later.key)) {
+                            is_dup = true;
+                            break;
+                        }
+                    }
+                    if (is_dup) continue;
+                    try stringifyMapKey(entry.key, jws);
+                    // Map values must always produce a JSON value. For a null optional
+                    // submessage (missing default), emit the empty message {}.
+                    if (comptime @typeInfo(@TypeOf(entry.value)) == .optional) {
+                        if (entry.value == null) {
+                            try jws.beginObject();
+                            try jws.endObject();
+                            continue;
+                        }
+                    }
+                    try stringify_struct_field_with_options(
+                        entry.value,
+                        @field(Elem._desc_table, "value"),
+                        jws,
+                        pb_options,
+                    );
                 }
+                try jws.endObject();
+            } else {
+                try jws.beginArray();
+                for (slice) |el| {
+                    switch (repeated) {
+                        .scalar => |scalar| switch (scalar) {
+                            .bytes => try print_bytes(el, jws),
+                            .string => try jws.write(el),
+                            else => try print_numeric(el, jws),
+                        },
+                        .@"enum" => try print_numeric(el, jws),
+                        .submessage => try stringifyOpts(@TypeOf(el), &el, jws, pb_options),
+                    }
+                }
+                try jws.endArray();
             }
-            try jws.endArray();
         },
         .oneof => |oneof| {
             const union_info = @typeInfo(@TypeOf(value)).@"union";
@@ -356,7 +467,14 @@ fn stringify_struct_field_with_options(
                             else => try print_numeric(@field(value, union_field.name), jws),
                         },
                         .@"enum" => try print_numeric(@field(value, union_field.name), jws),
-                        .submessage => try stringifyOpts(union_field.type, &@field(value, union_field.name), jws, pb_options),
+                        .submessage => {
+                            const uf = @field(value, union_field.name);
+                            if (comptime @typeInfo(union_field.type) == .pointer) {
+                                try stringifyOpts(@typeInfo(union_field.type).pointer.child, uf, jws, pb_options);
+                            } else {
+                                try stringifyOpts(union_field.type, &uf, jws, pb_options);
+                            }
+                        },
                         .repeated, .packed_repeated => {
                             @compileError("Repeated fields are not allowed in oneof");
                         },
@@ -373,7 +491,12 @@ fn stringify_struct_field_with_options(
             }
         },
         .submessage => {
-            try stringifyOpts(@TypeOf(value), &value, jws, pb_options);
+            const V = @TypeOf(value);
+            if (comptime @typeInfo(V) == .pointer) {
+                try stringifyOpts(@typeInfo(V).pointer.child, value, jws, pb_options);
+            } else {
+                try stringifyOpts(V, &value, jws, pb_options);
+            }
         },
     }
 }
@@ -467,6 +590,42 @@ fn stringify_struct_field(
     }
 }
 
+/// Parse a protobuf enum field from JSON.
+/// Accepts both integer values and string names (case-insensitive per proto3 JSON spec).
+/// When options.ignore_unknown_fields is true, unknown string names return the default (0).
+fn parseEnumField(comptime EnumType: type, allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !EnumType {
+    switch (try source.peekNextTokenType()) {
+        .number => {
+            const tag_type = @typeInfo(EnumType).@"enum".tag_type;
+            const n = try std.json.innerParse(tag_type, allocator, source, options);
+            return @enumFromInt(n);
+        },
+        else => {},
+    }
+    const name_token = try source.nextAllocMax(allocator, .alloc_if_needed, options.max_value_len.?);
+    defer freeAllocated(allocator, name_token);
+    const name = switch (name_token) {
+        inline .string, .allocated_string => |s| s,
+        else => return error.UnexpectedToken,
+    };
+    if (std.meta.stringToEnum(EnumType, name)) |v| return v;
+    // Case-insensitive fallback over enum fields (handles "moo" → MOO)
+    inline for (@typeInfo(EnumType).@"enum".fields) |field| {
+        if (std.ascii.eqlIgnoreCase(field.name, name)) {
+            return @enumFromInt(field.value);
+        }
+    }
+    // Check allow_alias table if present (case-insensitive)
+    if (comptime @hasDecl(EnumType, "_json_aliases")) {
+        for (EnumType._json_aliases) |alias| {
+            if (std.ascii.eqlIgnoreCase(alias.name, name)) {
+                return @enumFromInt(alias.value);
+            }
+        }
+    }
+    return error.InvalidEnumTag;
+}
+
 fn parseStructField(
     comptime T: type,
     result: *T,
@@ -481,38 +640,87 @@ fn parseStructField(
     ).ftype) {
         .repeated, .packed_repeated => |repeated| list: {
             // repeated T -> ArrayListUnmanaged(T)
+            const child_type = @typeInfo(
+                fieldInfo.type.Slice,
+            ).pointer.child;
+
+            // Map fields are encoded as JSON objects; regular repeated as arrays.
+            if (comptime isMapEntry(child_type)) {
+                if (.object_begin != try source.next()) return error.UnexpectedToken;
+                var array_list: std.ArrayList(child_type) = .empty;
+                while (true) {
+                    const key_token = try source.nextAllocMax(
+                        allocator,
+                        .alloc_if_needed,
+                        options.max_value_len.?,
+                    );
+                    const key_str = switch (key_token) {
+                        inline .string, .allocated_string => |s| s,
+                        .object_end => break,
+                        else => return error.UnexpectedToken,
+                    };
+                    defer freeAllocated(allocator, key_token);
+
+                    const KeyType = @TypeOf(@as(child_type, undefined).key);
+                    const ValueType = @TypeOf(@as(child_type, undefined).value);
+                    const parsed_key: KeyType = switch (comptime @typeInfo(KeyType)) {
+                        .bool => if (std.mem.eql(u8, key_str, "true"))
+                            true
+                        else if (std.mem.eql(u8, key_str, "false"))
+                            false
+                        else
+                            return error.UnexpectedToken,
+                        .int => std.fmt.parseInt(KeyType, key_str, 10) catch
+                            return error.UnexpectedToken,
+                        .pointer => try allocator.dupe(u8, key_str),
+                        else => return error.UnexpectedToken,
+                    };
+                    // For enum map values, use parseEnumField for alias/case support.
+                    const parsed_value: ValueType = if (comptime @typeInfo(ValueType) == .@"enum") val: {
+                        break :val parseEnumField(ValueType, allocator, source, options) catch |e| {
+                            if (e == error.InvalidEnumTag and options.ignore_unknown_fields) {
+                                // Skip map entries with unknown enum values
+                                if (comptime @typeInfo(KeyType) == .pointer) allocator.free(parsed_key);
+                                continue;
+                            }
+                            return e;
+                        };
+                    } else try std.json.innerParse(ValueType, allocator, source, options);
+                    try array_list.append(allocator, .{ .key = parsed_key, .value = parsed_value });
+                }
+                break :list array_list;
+            }
+
             switch (try source.peekNextTokenType()) {
                 .array_begin => {
                     std.debug.assert(.array_begin == try source.next());
-                    const child_type = @typeInfo(
-                        fieldInfo.type.Slice,
-                    ).pointer.child;
                     var array_list: std.ArrayList(child_type) = .empty;
                     while (true) {
                         if (.array_end == try source.peekNextTokenType()) {
                             _ = try source.next();
                             break;
                         }
-                        try array_list.ensureUnusedCapacity(allocator, 1);
-                        array_list.appendAssumeCapacity(switch (repeated) {
-                            .scalar => |scalar| switch (scalar) {
-                                .bytes => try parse_bytes(allocator, source, options),
-                                else => try std.json.innerParse(
-                                    child_type,
-                                    allocator,
-                                    source,
-                                    options,
-                                ),
+                        switch (repeated) {
+                            .scalar => |scalar| {
+                                try array_list.ensureUnusedCapacity(allocator, 1);
+                                array_list.appendAssumeCapacity(switch (scalar) {
+                                    .bytes => try parse_bytes(allocator, source, options),
+                                    else => try std.json.innerParse(child_type, allocator, source, options),
+                                });
                             },
-                            .submessage, .@"enum" => other: {
-                                break :other try std.json.innerParse(
-                                    child_type,
-                                    allocator,
-                                    source,
-                                    options,
-                                );
+                            .submessage => {
+                                try array_list.ensureUnusedCapacity(allocator, 1);
+                                array_list.appendAssumeCapacity(try std.json.innerParse(child_type, allocator, source, options));
                             },
-                        });
+                            .@"enum" => {
+                                const v = parseEnumField(child_type, allocator, source, options) catch |e| {
+                                    if (e == error.InvalidEnumTag and options.ignore_unknown_fields) continue;
+                                    return e;
+                                };
+                                try array_list.ensureUnusedCapacity(allocator, 1);
+                                array_list.appendAssumeCapacity(v);
+                            },
+                        }
                     }
                     break :list array_list;
                 },
@@ -578,8 +786,16 @@ fn parseStructField(
                                     options,
                                 ),
                             },
-                            .submessage, .@"enum" => other: {
+                            .submessage => other: {
                                 break :other try std.json.innerParse(
+                                    union_field.type,
+                                    allocator,
+                                    source,
+                                    options,
+                                );
+                            },
+                            .@"enum" => other: {
+                                break :other try parseEnumField(
                                     union_field.type,
                                     allocator,
                                     source,
@@ -601,15 +817,60 @@ fn parseStructField(
                 }
             } else return error.UnknownField;
         },
-        // `.submessage`s (generated structs) have their own jsonParse implementation
-        .@"enum", .submessage => try std.json.innerParse(
-            fieldInfo.type,
-            allocator,
-            source,
-            options,
-        ),
+        // `.submessage`s (generated structs) have their own jsonParse implementation.
+        // For optional submessages, if the next JSON token is null, let the inner type's
+        // jsonParse handle it (e.g. google.protobuf.Value maps null → null_value kind).
+        // If the inner type's jsonParse rejects null, fall back to returning null (absent).
+        .@"enum" => blk: {
+            if (comptime @typeInfo(fieldInfo.type) == .optional) {
+                if (try source.peekNextTokenType() == .null) {
+                    _ = try source.next();
+                    break :blk @as(fieldInfo.type, null);
+                }
+                const InnerType = @typeInfo(fieldInfo.type).optional.child;
+                const v = parseEnumField(InnerType, allocator, source, options) catch |e| {
+                    if (e == error.InvalidEnumTag and options.ignore_unknown_fields) break :blk @as(fieldInfo.type, @enumFromInt(0));
+                    return e;
+                };
+                break :blk @as(fieldInfo.type, v);
+            }
+            const v = parseEnumField(fieldInfo.type, allocator, source, options) catch |e| {
+                if (e == error.InvalidEnumTag and options.ignore_unknown_fields) break :blk @as(fieldInfo.type, @enumFromInt(0));
+                return e;
+            };
+            break :blk v;
+        },
+        .submessage => blk: {
+            if (comptime @typeInfo(fieldInfo.type) == .optional) {
+                const InnerType = @typeInfo(fieldInfo.type).optional.child;
+                if (comptime @typeInfo(InnerType) != .pointer) {
+                    if (comptime @hasDecl(InnerType, "jsonParse")) {
+                        if (try source.peekNextTokenType() == .null) {
+                            const inner = InnerType.jsonParse(allocator, source, options) catch {
+                                // The inner type rejected null. Some parsers peek without
+                                // consuming on error, so consume the null token if still pending.
+                                if (try source.peekNextTokenType() == .null) {
+                                    _ = try source.next();
+                                }
+                                break :blk @as(fieldInfo.type, null);
+                            };
+                            break :blk @as(fieldInfo.type, inner);
+                        }
+                    }
+                }
+            }
+            break :blk try std.json.innerParse(fieldInfo.type, allocator, source, options);
+        },
         .scalar => |scalar| switch (scalar) {
             .bytes => try parse_bytes(allocator, source, options),
+            .float, .double => blk: {
+                // Proto3 JSON: reject JSON numbers that overflow to ±inf. However,
+                // the string tokens "Infinity", "-Infinity", and "NaN" are valid per spec.
+                const next_type = try source.peekNextTokenType();
+                const v = try std.json.innerParse(fieldInfo.type, allocator, source, options);
+                if (next_type == .number and std.math.isInf(v)) return error.InvalidCharacter;
+                break :blk v;
+            },
             // `.string`s have their own jsonParse implementation
             // Numeric types will be handled using default std.json parser
             else => try std.json.innerParse(
@@ -632,7 +893,25 @@ fn parseStructField(
 fn print_numeric(value: anytype, jws: anytype) !void {
     switch (@typeInfo(@TypeOf(value))) {
         .float, .comptime_float => {},
-        .int, .comptime_int, .@"enum", .bool => {
+        .int => |info| {
+            // Proto3 JSON: 64-bit integers must be encoded as strings.
+            if (info.bits == 64) {
+                var buf: [32]u8 = undefined;
+                const s = std.fmt.bufPrint(&buf, "{}", .{value}) catch unreachable;
+                try jws.write(s);
+                return;
+            }
+            try jws.write(value);
+            return;
+        },
+        .@"enum" => {
+            if (comptime std.meta.hasFn(@TypeOf(value), "jsonStringify")) {
+                return value.jsonStringify(jws);
+            }
+            try jws.write(value);
+            return;
+        },
+        .comptime_int, .bool => {
             try jws.write(value);
             return;
         },
@@ -647,6 +926,38 @@ fn print_numeric(value: anytype, jws: anytype) !void {
         try jws.write("-Infinity");
     } else {
         try jws.write(value);
+    }
+}
+
+fn isMapEntry(comptime T: type) bool {
+    switch (@typeInfo(T)) {
+        .@"struct" => |s| {
+            if (s.fields.len != 2) return false;
+            return std.mem.eql(u8, s.fields[0].name, "key") and
+                std.mem.eql(u8, s.fields[1].name, "value");
+        },
+        else => return false,
+    }
+}
+
+fn stringifyMapKey(key: anytype, jws: anytype) !void {
+    switch (comptime @typeInfo(@TypeOf(key))) {
+        .bool => try jws.objectField(if (key) "true" else "false"),
+        .int => {
+            var buf: [32]u8 = undefined;
+            const s = std.fmt.bufPrint(&buf, "{}", .{key}) catch unreachable;
+            try jws.objectField(s);
+        },
+        .pointer => try jws.objectField(key), // []const u8 string key
+        else => @compileError("unsupported map key type: " ++ @typeName(@TypeOf(key))),
+    }
+}
+
+fn mapKeyEq(a: anytype, b: @TypeOf(a)) bool {
+    switch (comptime @typeInfo(@TypeOf(a))) {
+        .bool, .int => return a == b,
+        .pointer => return std.mem.eql(u8, a, b),
+        else => return false,
     }
 }
 
@@ -716,21 +1027,64 @@ fn base64ErrorToJsonParseError(err: std.base64.Error) std.json.ParseFromValueErr
     };
 }
 
+/// Decode a base64 character (standard or url-safe). Returns 64 for '=', 255 for invalid.
+fn decodeBase64Char(c: u8) u8 {
+    return switch (c) {
+        'A'...'Z' => c - 'A',
+        'a'...'z' => c - 'a' + 26,
+        '0'...'9' => c - '0' + 52,
+        '+', '-' => 62, // standard '+' and url-safe '-'
+        '/', '_' => 63, // standard '/' and url-safe '_'
+        '=' => 64, // padding
+        else => 255,
+    };
+}
+
+/// Lenient base64/base64url decoder. Accepts standard and url-safe characters,
+/// with or without padding, and ignores non-zero trailing bits.
+pub fn decodeBase64Lenient(allocator: std.mem.Allocator, input: []const u8) ![]const u8 {
+    // Strip optional trailing '=' padding
+    var stripped = input;
+    while (stripped.len > 0 and stripped[stripped.len - 1] == '=') {
+        stripped = stripped[0 .. stripped.len - 1];
+    }
+    // Output size: floor(len * 6 / 8)
+    const out_len = stripped.len * 6 / 8;
+    const out = try allocator.alloc(u8, out_len);
+    errdefer allocator.free(out);
+    var out_idx: usize = 0;
+    var i: usize = 0;
+    while (i + 1 < stripped.len) : (i += 4) {
+        const remaining = stripped.len - i;
+        const a = decodeBase64Char(stripped[i]);
+        if (a >= 64) return error.UnexpectedToken;
+        if (remaining == 1) break;
+        const b = decodeBase64Char(stripped[i + 1]);
+        if (b >= 64) return error.UnexpectedToken;
+        out[out_idx] = (a << 2) | (b >> 4);
+        out_idx += 1;
+        if (remaining == 2) break;
+        const c = decodeBase64Char(stripped[i + 2]);
+        if (c >= 64) return error.UnexpectedToken;
+        out[out_idx] = (b << 4) | (c >> 2);
+        out_idx += 1;
+        if (remaining == 3) break;
+        const d = decodeBase64Char(stripped[i + 3]);
+        if (d >= 64) return error.UnexpectedToken;
+        out[out_idx] = (c << 6) | d;
+        out_idx += 1;
+    }
+    return out[0..out_idx];
+}
+
 fn parse_bytes(
     allocator: std.mem.Allocator,
     source: anytype,
     options: std.json.ParseOptions,
 ) ![]const u8 {
     const temp_raw = try std.json.innerParse([]u8, allocator, source, options);
-    const size = std.base64.standard.Decoder.calcSizeForSlice(temp_raw) catch |err| {
-        return base64ErrorToJsonParseError(err);
-    };
-    const tempstring = try allocator.alloc(u8, size);
-    errdefer allocator.free(tempstring);
-    std.base64.standard.Decoder.decode(tempstring, temp_raw) catch |err| {
-        return base64ErrorToJsonParseError(err);
-    };
-    return tempstring;
+    defer allocator.free(temp_raw);
+    return decodeBase64Lenient(allocator, temp_raw) catch error.UnexpectedToken;
 }
 
 fn fillDefaultStructValues(

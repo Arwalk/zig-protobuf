@@ -16,6 +16,9 @@ debug
 .specstory/*
 test.data
 benchmark/generated/**/*
+conformance/zig-out/
+conformance/zig-pkg/
+conformance/.zig-cache/
 
 # nix devenv
 devenv.nix
@@ -25,3 +28,4 @@ devenv.lock
 *.nix
 .devenv
 **/zig-pkg/**/*
+.claude

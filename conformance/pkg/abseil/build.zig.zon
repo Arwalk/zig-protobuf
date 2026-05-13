@@ -1,0 +1,12 @@
+.{
+    .name = .abseil,
+    .version = "0.0.0",
+    .fingerprint = 0x5635a25586b2e933,
+    .dependencies = .{
+        .@"abseil-cpp" = .{
+            .url = "https://github.com/abseil/abseil-cpp/releases/download/20250814.1/abseil-cpp-20250814.1.tar.gz",
+            .hash = "N-V-__8AAB93oAAhnlSUqVkNHA2gdowdBZ0UVZ9rNp_RVkT0",
+        },
+    },
+    .paths = .{""},
+}

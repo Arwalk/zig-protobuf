@@ -163,6 +163,7 @@ pub const TestAllTypesProto3 = struct {
     field_name17__: i32 = 0,
     Field_name18__: i32 = 0,
     oneof_field: ?oneof_field_union = null,
+    _unknown_fields: []const u8 = &.{},
 
     pub const _oneof_field_case = enum {
         oneof_uint32,
@@ -358,13 +359,22 @@ pub const TestAllTypesProto3 = struct {
         ALIAS_BAR = 1,
         MOO = 2,
         _,
+        // allow_alias = true: these additional names also map to integer value 2
+        pub const _json_aliases = &[_]struct { name: []const u8, value: i32 }{
+            .{ .name = "ALIAS_BAZ", .value = 2 },
+            .{ .name = "moo", .value = 2 },
+            .{ .name = "bAz", .value = 2 },
+        };
     };
 
     pub const NestedMessage = struct {
         a: i32 = 0,
+        corecursive: ?*TestAllTypesProto3 = null,
+        _unknown_fields: []const u8 = &.{},
 
         pub const _desc_table = .{
             .a = fd(1, .{ .scalar = .int32 }),
+            .corecursive = fd(2, .submessage),
         };
 
         /// Encodes the message to the writer

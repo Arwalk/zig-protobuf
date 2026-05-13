@@ -1,0 +1,10 @@
+.{
+    .name = .conformance,
+    .version = "0.0.0",
+    .fingerprint = 0xe81515e77c853519,
+    .dependencies = .{
+        .protobuf_pkg = .{ .path = "pkg/protobuf" },
+        .zig_protobuf = .{ .path = ".." },
+    },
+    .paths = .{""},
+}
