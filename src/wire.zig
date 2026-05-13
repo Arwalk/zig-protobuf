@@ -382,9 +382,6 @@ pub fn decodeRepeated(
     ).pointer.child;
     comptime std.debug.assert(ResultList == std.ArrayList(Result));
 
-    const current_capacity = result.capacity;
-    errdefer result.shrinkAndFree(allocator, current_capacity);
-
     const current_items = result.items.len;
     errdefer result.shrinkRetainingCapacity(current_items);
 

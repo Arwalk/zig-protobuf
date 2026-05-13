@@ -225,7 +225,5 @@ pub fn buildGenerator(b: *std.Build, opt: GenOptions) *std.Build.Step.Compile {
 
     exe.root_module.addImport("protobuf", module);
 
-    b.installArtifact(exe);
-
     return exe;
 }

@@ -1,0 +1,68 @@
+// Protocol Buffers conformance test protocol.
+// Field numbers match https://github.com/protocolbuffers/protobuf/blob/v33.1/conformance/conformance.proto
+
+syntax = "proto3";
+
+package conformance;
+
+option java_package = "com.google.protobuf.conformance";
+option objc_class_prefix = "Conformance";
+
+enum WireFormat {
+  UNSPECIFIED = 0;
+  PROTOBUF = 1;
+  JSON = 2;
+  JSPB = 3;
+  TEXT_FORMAT = 4;
+}
+
+enum TestCategory {
+  UNSPECIFIED_TEST = 0;
+  BINARY_TEST = 1;
+  JSON_TEST = 2;
+  JSON_IGNORE_UNKNOWN_PARSING_TEST = 3;
+  JSPB_TEST = 4;
+  TEXT_FORMAT_TEST = 5;
+}
+
+message TestStatus {
+  string name = 1;
+  string failure_message = 2;
+  string matched_name = 3;
+}
+
+message FailureSet {
+  repeated TestStatus test = 2;
+}
+
+message JspbEncodingConfig {
+  bool use_jspb_array_any_format = 1;
+}
+
+message ConformanceRequest {
+  oneof payload {
+    bytes protobuf_payload = 1;
+    string json_payload = 2;
+    string jspb_payload = 7;
+    string text_payload = 8;
+  }
+  WireFormat requested_output_format = 3;
+  string message_type = 4;
+  TestCategory test_category = 5;
+  JspbEncodingConfig jspb_encoding_options = 6;
+  bool print_unknown_fields = 9;
+}
+
+message ConformanceResponse {
+  oneof result {
+    string parse_error = 1;
+    string serialize_error = 6;
+    string timeout_error = 9;
+    string runtime_error = 2;
+    bytes protobuf_payload = 3;
+    string json_payload = 4;
+    string skipped = 5;
+    string jspb_payload = 7;
+    string text_payload = 8;
+  }
+}
