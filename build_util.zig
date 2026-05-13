@@ -85,6 +85,11 @@ pub const RunProtocStep = struct {
     include_directories: []std.Build.LazyPath,
     destination_directory: std.Build.LazyPath,
     generator: *std.Build.Step.Compile,
+    /// Optional external protoc binary. When set, skips the built-in download
+    /// mechanism and uses this artifact's emitted binary instead. Useful for
+    /// consumers (e.g. conformance tests) that already have protoc from another
+    /// dependency.
+    protoc_override: ?*std.Build.Step.Compile = null,
     verbose: bool = false,
 
     pub const base_id = .protoc;
@@ -93,6 +98,9 @@ pub const RunProtocStep = struct {
         source_files: []const std.Build.LazyPath,
         include_directories: []const std.Build.LazyPath = &.{},
         destination_directory: std.Build.LazyPath,
+        /// Optional pre-built protoc artifact. When provided, overrides the
+        /// built-in protoc download mechanism.
+        protoc: ?*std.Build.Step.Compile = null,
     };
 
     pub const StepErr = error{
@@ -116,9 +124,11 @@ pub const RunProtocStep = struct {
             .include_directories = dupeLazyPaths(owner, options.include_directories),
             .destination_directory = options.destination_directory.dupe(owner),
             .generator = buildGenerator(owner, .{ .target = target }),
+            .protoc_override = options.protoc,
         };
 
         self.step.dependOn(&self.generator.step);
+        if (options.protoc) |p| self.step.dependOn(&p.step);
         return self;
     }
 
@@ -139,9 +149,11 @@ pub const RunProtocStep = struct {
             .include_directories = dupeLazyPaths(owner, options.include_directories),
             .destination_directory = options.destination_directory.dupe(owner),
             .generator = generator,
+            .protoc_override = options.protoc,
         };
 
         self.step.dependOn(&self.generator.step);
+        if (options.protoc) |p| self.step.dependOn(&p.step);
         return self;
     }
 
@@ -158,7 +170,12 @@ pub const RunProtocStep = struct {
         { // run protoc
             var argv: std.ArrayList([]const u8) = .empty;
 
-            if (try ensureProtocBinaryDownloaded(step)) |protoc_path| {
+            const maybe_protoc_path: ?[]const u8 = if (self.protoc_override) |p|
+                p.getEmittedBin().getPath2(b, step)
+            else
+                try ensureProtocBinaryDownloaded(step);
+
+            if (maybe_protoc_path) |protoc_path| {
                 try argv.append(b.allocator, protoc_path);
 
                 try argv.append(b.allocator, try std.mem.concat(b.allocator, u8, &.{

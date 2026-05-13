@@ -95,6 +95,12 @@ pub const Tag = packed struct(u32) {
             return error.InvalidInput;
         }
 
+        // Field number 0 is reserved/invalid in proto3.
+        if (raw_result >> 3 == 0) {
+            @branchHint(.cold);
+            return error.InvalidInput;
+        }
+
         return .{ @bitCast(raw_result), consumed };
     }
 
@@ -189,6 +195,16 @@ pub const ZigZag = struct {
     }
 };
 
+/// Decode an enum value from a raw integer. For non-exhaustive enums (proto3 style,
+/// with `_`), any integer value is valid. For exhaustive enums, only declared values
+/// are accepted.
+inline fn enumFromRaw(comptime E: type, raw: i32) ?E {
+    if (comptime !@typeInfo(E).@"enum".is_exhaustive) {
+        return @enumFromInt(raw);
+    }
+    return std.enums.fromInt(E, raw);
+}
+
 /// Decode a non-slice scalar type from reader. Slice scalar types should be
 /// decoded by directly reading a slice from the reader.
 pub fn decodeScalar(
@@ -203,8 +219,12 @@ pub fn decodeScalar(
     comptime std.debug.assert(!scalar.isSlice());
 
     if (comptime scalar.isVariable()) {
+        // int32 uses i64 to handle negative values sign-extended to 64 bits.
+        // uint32 uses u64 to handle over-long encodings; truncated to 32 bits.
         const Result = if (comptime scalar == .int32)
             i64
+        else if (comptime scalar == .uint32)
+            u64
         else
             comptime scalar.toType();
 
@@ -215,9 +235,8 @@ pub fn decodeScalar(
                 byte_count += 1;
             }
 
-            // Valid negative values for `int32`, e.g. -1, may be sent in the
-            // `int64` equivalent encoding.
-            if (scalar == .int32) byte_count = 10;
+            // int32/uint32 may be encoded with int64 sizing (up to 10 bytes).
+            if (scalar == .int32 or scalar == .uint32) byte_count = 10;
             break :b byte_count;
         };
         const consumed = for (0..max_bytes) |i| {
@@ -230,20 +249,13 @@ pub fn decodeScalar(
             return error.InvalidInput;
         };
 
-        // As `int32` may receive `int64` equivalent encoding values, ensure
-        // that values actually fit within `int32` range.
+        // Proto3 spec: int32/uint32 may be encoded with int64 sizing.
+        // Out-of-range values are truncated to 32 bits.
         if (comptime scalar == .int32) {
-            // Encoded as `int32`
-            if (val & @as(i64, @bitCast(@as(u64, 0xFFFFFFFF00000000))) == 0) {
-                return .{ @truncate(val), consumed };
-            }
-
-            if (val < std.math.minInt(i32) or val > std.math.maxInt(i32)) {
-                @branchHint(.cold);
-                return error.InvalidInput;
-            }
-
-            return .{ @intCast(val), consumed };
+            return .{ @truncate(val), consumed };
+        }
+        if (comptime scalar == .uint32) {
+            return .{ @truncate(val), consumed };
         }
 
         if (comptime scalar.isZigZag()) {
@@ -268,15 +280,17 @@ pub fn decodeScalar(
     }
 
     if (comptime scalar == .bool) {
-        const b = try reader.takeByte();
-        if (b == 0) {
-            return .{ false, 1 };
-        } else if (b == 1) {
-            return .{ true, 1 };
+        // Proto3: any non-zero varint value is true; multi-byte encodings are accepted.
+        var val: u64 = 0;
+        const consumed = for (0..10) |i| {
+            const b = try reader.takeByte();
+            val |= @as(u64, b & 0x7F) << @intCast(7 * i);
+            if (b >> 7 == 0) break i + 1;
         } else {
             @branchHint(.cold);
             return error.InvalidInput;
-        }
+        };
+        return .{ val != 0, consumed };
     }
 }
 
@@ -301,7 +315,7 @@ test decodeScalar {
         try std.testing.expectEqual(std.math.minInt(i32), decoded);
     }
 
-    { // Oversized `int32` value
+    { // int32 with 9-byte encoding (truncated to i32)
         const bytes: []const u8 = &.{
             0xFF,
             0xFF,
@@ -315,16 +329,18 @@ test decodeScalar {
         };
         var reader: std.Io.Reader = .fixed(bytes);
 
-        const max_u64 = decodeScalar(.int32, &reader);
-        try std.testing.expectError(error.InvalidInput, max_u64);
+        const result: i32, const consumed = try decodeScalar(.int32, &reader);
+        try std.testing.expectEqual(9, consumed);
+        try std.testing.expectEqual(-1, result); // lower 32 bits of i64_max
     }
 
-    { // Barely oversized `int32` value
+    { // int32 with 5-byte encoding exceeding 32-bit range (truncated)
         const bytes: []const u8 = &.{ 0xFF, 0xFF, 0xFF, 0xFF, 0x10 };
         var reader: std.Io.Reader = .fixed(bytes);
 
-        const barely_too_big = decodeScalar(.int32, &reader);
-        try std.testing.expectError(error.InvalidInput, barely_too_big);
+        const result: i32, const consumed = try decodeScalar(.int32, &reader);
+        try std.testing.expectEqual(5, consumed);
+        try std.testing.expectEqual(268435455, result); // lower 32 bits
     }
 
     { // Valid `int32` encoded as `int64`
@@ -425,7 +441,7 @@ pub fn decodeRepeated(
                 var consumed: usize = 0;
                 while (consumed < bytes) {
                     const raw, const c = try decodeScalar(.int32, reader);
-                    const decoded = std.enums.fromInt(Result, raw) orelse {
+                    const decoded = enumFromRaw(Result, raw) orelse {
                         @branchHint(.cold);
                         return error.InvalidInput;
                     };
@@ -441,7 +457,7 @@ pub fn decodeRepeated(
             // Unpacked repeated enum.
             else {
                 const raw, const consumed = try decodeScalar(.int32, reader);
-                const decoded = std.enums.fromInt(Result, raw) orelse {
+                const decoded = enumFromRaw(Result, raw) orelse {
                     @branchHint(.cold);
                     return error.InvalidInput;
                 };
@@ -518,6 +534,11 @@ pub fn decodeMessage(
     const desc_table = Result._desc_table;
 
     var consumed: usize = 0;
+    // Accumulate unknown fields if the struct declares _unknown_fields.
+    const has_unknown_fields = comptime @hasField(Result, "_unknown_fields");
+    var unknown_buf: if (has_unknown_fields) std.ArrayList(u8) else void =
+        if (comptime has_unknown_fields) .empty else {};
+    defer if (comptime has_unknown_fields) unknown_buf.deinit(allocator);
     main_loop: while (true) {
         const tag: Tag, const tag_c = b: {
             if (options.bytes) |b| {
@@ -639,12 +660,12 @@ pub fn decodeMessage(
                     consumed += c;
                     const decoded = b: {
                         if (comptime field_ti == .optional) {
-                            break :b std.enums.fromInt(
+                            break :b enumFromRaw(
                                 field_ti.optional.child,
                                 raw,
                             );
                         } else {
-                            break :b std.enums.fromInt(Field, raw);
+                            break :b enumFromRaw(Field, raw);
                         }
                     } orelse {
                         @branchHint(.cold);
@@ -890,7 +911,7 @@ pub fn decodeMessage(
                                 const raw, const c =
                                     try decodeScalar(.int32, reader);
                                 consumed += c;
-                                const decoded = std.enums.fromInt(
+                                const decoded = enumFromRaw(
                                     oo_field.type,
                                     raw,
                                 ) orelse {
@@ -1044,11 +1065,26 @@ pub fn decodeMessage(
                             => unreachable,
                         }
                         break :oo_fields;
-                    } else consumed += try skipField(reader, tag);
+                    } else {
+                        if (comptime has_unknown_fields) {
+                            consumed += try captureField(allocator, reader, tag, &unknown_buf);
+                        } else {
+                            consumed += try skipField(reader, tag);
+                        }
+                    }
                 },
             }
             comptime break;
-        } else consumed += try skipField(reader, tag);
+        } else {
+            if (comptime has_unknown_fields) {
+                consumed += try captureField(allocator, reader, tag, &unknown_buf);
+            } else {
+                consumed += try skipField(reader, tag);
+            }
+        }
+    }
+    if (comptime has_unknown_fields) {
+        result._unknown_fields = try unknown_buf.toOwnedSlice(allocator);
     }
     return consumed;
 }
@@ -1084,12 +1120,98 @@ fn skipField(reader: *std.Io.Reader, tag: Tag) !usize {
             _, const c = try decodeScalar(.uint64, reader);
             consumed += c;
         },
-        .sgroup, .egroup => {
-            // `sgroup`/`egroup` not supported.
+        .sgroup => {
+            // Skip the entire group by consuming fields until the matching egroup tag.
+            while (true) {
+                const inner_tag, const tag_c = try Tag.decode(reader);
+                consumed += tag_c;
+                if (inner_tag.wire_type == .egroup) {
+                    if (inner_tag.field != tag.field)
+                        return error.InvalidInput;
+                    break;
+                }
+                consumed += try skipField(reader, inner_tag);
+            }
+        },
+        .egroup => {
+            // An unmatched egroup tag is invalid.
+            @branchHint(.cold);
+            return error.InvalidInput;
         },
     }
 
     return consumed;
+}
+
+// Encode a runtime tag value as a varint to a buffer. Returns bytes written.
+fn encodeTagBytes(tag: Tag, buf: *[10]u8) usize {
+    const tag_u64: u64 = (@as(u64, tag.field) << 3) | @intFromEnum(tag.wire_type);
+    var raw = tag_u64;
+    var i: usize = 0;
+    while (raw > 0x7F) {
+        buf[i] = 0x80 | @as(u8, @intCast(raw & 0x7F));
+        raw >>= 7;
+        i += 1;
+    }
+    buf[i] = @intCast(raw & 0x7F);
+    return i + 1;
+}
+
+// Capture an unknown field's tag+data bytes into buf, return total bytes consumed (after tag).
+fn captureField(
+    allocator: std.mem.Allocator,
+    reader: *std.Io.Reader,
+    tag: Tag,
+    buf: *std.ArrayList(u8),
+) !usize {
+    var tag_bytes: [10]u8 = undefined;
+    const tag_len = encodeTagBytes(tag, &tag_bytes);
+    try buf.appendSlice(allocator, tag_bytes[0..tag_len]);
+
+    var data_consumed: usize = 0;
+    switch (tag.wire_type) {
+        .varint => {
+            while (true) {
+                const b = try reader.takeByte();
+                try buf.append(allocator, b);
+                data_consumed += 1;
+                if (b & 0x80 == 0) break;
+            }
+        },
+        .fixed32 => {
+            const bytes = try reader.takeArray(4);
+            try buf.appendSlice(allocator, bytes);
+            data_consumed += 4;
+        },
+        .fixed64 => {
+            const bytes = try reader.takeArray(8);
+            try buf.appendSlice(allocator, bytes);
+            data_consumed += 8;
+        },
+        .len => {
+            var len_buf: [10]u8 = undefined;
+            var len_i: usize = 0;
+            var len_val: u64 = 0;
+            var shift: u6 = 0;
+            while (true) {
+                const b = try reader.takeByte();
+                len_buf[len_i] = b;
+                len_i += 1;
+                len_val |= @as(u64, b & 0x7F) << shift;
+                shift += 7;
+                if (b & 0x80 == 0) break;
+            }
+            try buf.appendSlice(allocator, len_buf[0..len_i]);
+            data_consumed += len_i;
+            const data = try reader.take(@intCast(len_val));
+            try buf.appendSlice(allocator, data);
+            data_consumed += @intCast(len_val);
+        },
+        .sgroup, .egroup => {
+            data_consumed += try skipField(reader, tag);
+        },
+    }
+    return data_consumed;
 }
 
 test {

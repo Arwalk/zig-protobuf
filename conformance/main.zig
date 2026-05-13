@@ -22,10 +22,215 @@ const FailureSet = conformance_pb.FailureSet;
 const proto3_pb = @import("generated/protobuf_test_messages/proto3.pb.zig");
 const TestAllTypesProto3 = proto3_pb.TestAllTypesProto3;
 
+const wkt = protobuf.wkt;
+const pb_json_opts_flat: protobuf.json.Options = .{ .emit_oneof_field_name = false };
+
 fn encodeToBytes(allocator: std.mem.Allocator, msg: anytype) ![]const u8 {
     var w: std.Io.Writer.Allocating = .init(allocator);
     try msg.encode(&w.writer, allocator);
     return w.written();
+}
+
+// Returns the type name (last segment after the final '/') from a type URL.
+fn typeUrlName(type_url: []const u8) []const u8 {
+    const idx = std.mem.lastIndexOfScalar(u8, type_url, '/') orelse return type_url;
+    return type_url[idx + 1 ..];
+}
+
+// Stringify a std.json.Value to a JSON bytes slice (caller owns).
+fn jsonValueToBytes(alloc: std.mem.Allocator, val: std.json.Value) ![]const u8 {
+    return std.json.Stringify.valueAlloc(alloc, val, .{});
+}
+
+// Parse JSON bytes to a std.json.Value (arena-allocated, no dealloc needed).
+fn jsonBytesToValue(alloc: std.mem.Allocator, json: []const u8) !std.json.Value {
+    const result = try std.json.parseFromSliceLeaky(std.json.Value, alloc, json, .{});
+    return result;
+}
+
+// Parse the JSON for a WKT: extract the "value" field and decode the WKT from its JSON.
+fn parseWktFromValue(comptime T: type, obj: std.json.ObjectMap, alloc: std.mem.Allocator) ![]const u8 {
+    const val = obj.get("value") orelse return error.MissingField;
+    const val_json = try jsonValueToBytes(alloc, val);
+    const parsed = try T.jsonDecode(val_json, .{}, alloc);
+    defer parsed.deinit();
+    return try encodeToBytes(alloc, parsed.value);
+}
+
+// Encode a WKT to its JSON value, wrapped as AnyJsonOutput.wkt.
+fn wktToJsonOutput(msg: anytype, alloc: std.mem.Allocator) !wkt.AnyJsonOutput {
+    const json_str = try wkt_jsonEncode(msg, alloc);
+    const val = try jsonBytesToValue(alloc, json_str);
+    return .{ .wkt = val };
+}
+
+fn wkt_jsonEncode(msg: anytype, alloc: std.mem.Allocator) ![]const u8 {
+    return msg.jsonEncode(.{}, .{}, alloc);
+}
+
+// AnyJsonResolver.from_json: JSON object → binary protobuf bytes.
+fn anyFromJson(type_url: []const u8, obj: std.json.ObjectMap, alloc: std.mem.Allocator) anyerror![]const u8 {
+    const name = typeUrlName(type_url);
+
+    if (std.mem.eql(u8, name, "protobuf_test_messages.proto3.TestAllTypesProto3")) {
+        // Build JSON object from obj fields, excluding "@type".
+        var writer: std.Io.Writer.Allocating = .init(alloc);
+        var s: std.json.Stringify = .{ .writer = &writer.writer, .options = .{} };
+        try s.beginObject();
+        var it = obj.iterator();
+        while (it.next()) |entry| {
+            if (std.mem.eql(u8, entry.key_ptr.*, "@type")) continue;
+            try s.objectField(entry.key_ptr.*);
+            try s.write(entry.value_ptr.*);
+        }
+        try s.endObject();
+        const json_str = writer.written();
+        const parsed = try TestAllTypesProto3.jsonDecode(json_str, .{}, alloc);
+        defer parsed.deinit();
+        return try encodeToBytes(alloc, parsed.value);
+    }
+
+    if (std.mem.eql(u8, name, "google.protobuf.Duration"))
+        return parseWktFromValue(wkt.Duration, obj, alloc);
+    if (std.mem.eql(u8, name, "google.protobuf.Timestamp"))
+        return parseWktFromValue(wkt.Timestamp, obj, alloc);
+    if (std.mem.eql(u8, name, "google.protobuf.FieldMask"))
+        return parseWktFromValue(wkt.FieldMask, obj, alloc);
+    if (std.mem.eql(u8, name, "google.protobuf.Int32Value"))
+        return parseWktFromValue(wkt.Int32Value, obj, alloc);
+    if (std.mem.eql(u8, name, "google.protobuf.Int64Value"))
+        return parseWktFromValue(wkt.Int64Value, obj, alloc);
+    if (std.mem.eql(u8, name, "google.protobuf.UInt32Value"))
+        return parseWktFromValue(wkt.UInt32Value, obj, alloc);
+    if (std.mem.eql(u8, name, "google.protobuf.UInt64Value"))
+        return parseWktFromValue(wkt.UInt64Value, obj, alloc);
+    if (std.mem.eql(u8, name, "google.protobuf.FloatValue"))
+        return parseWktFromValue(wkt.FloatValue, obj, alloc);
+    if (std.mem.eql(u8, name, "google.protobuf.DoubleValue"))
+        return parseWktFromValue(wkt.DoubleValue, obj, alloc);
+    if (std.mem.eql(u8, name, "google.protobuf.BoolValue"))
+        return parseWktFromValue(wkt.BoolValue, obj, alloc);
+    if (std.mem.eql(u8, name, "google.protobuf.StringValue"))
+        return parseWktFromValue(wkt.StringValue, obj, alloc);
+    if (std.mem.eql(u8, name, "google.protobuf.BytesValue"))
+        return parseWktFromValue(wkt.BytesValue, obj, alloc);
+    if (std.mem.eql(u8, name, "google.protobuf.Struct"))
+        return parseWktFromValue(wkt.Struct, obj, alloc);
+    if (std.mem.eql(u8, name, "google.protobuf.Value"))
+        return parseWktFromValue(wkt.Value, obj, alloc);
+    if (std.mem.eql(u8, name, "google.protobuf.ListValue"))
+        return parseWktFromValue(wkt.ListValue, obj, alloc);
+
+    if (std.mem.eql(u8, name, "google.protobuf.Any")) {
+        // value field holds the nested Any JSON object.
+        const val = obj.get("value") orelse return error.MissingField;
+        const val_json = try jsonValueToBytes(alloc, val);
+        const parsed = try wkt.Any.jsonDecode(val_json, .{}, alloc);
+        defer parsed.deinit();
+        return try encodeToBytes(alloc, parsed.value);
+    }
+
+    return error.UnknownType;
+}
+
+// AnyJsonResolver.to_json: binary protobuf bytes → AnyJsonOutput.
+fn anyToJson(type_url: []const u8, bytes: []const u8, alloc: std.mem.Allocator) anyerror!wkt.AnyJsonOutput {
+    const name = typeUrlName(type_url);
+    var reader: std.Io.Reader = .fixed(bytes);
+
+    if (std.mem.eql(u8, name, "protobuf_test_messages.proto3.TestAllTypesProto3")) {
+        var msg = try TestAllTypesProto3.decode(&reader, alloc);
+        defer msg.deinit(alloc);
+        const json_str = try msg.jsonEncode(.{}, pb_json_opts_flat, alloc);
+        const val = try jsonBytesToValue(alloc, json_str);
+        return .{ .message = val.object };
+    }
+
+    if (std.mem.eql(u8, name, "google.protobuf.Duration")) {
+        var msg = try wkt.Duration.decode(&reader, alloc);
+        defer msg.deinit(alloc);
+        return wktToJsonOutput(msg, alloc);
+    }
+    if (std.mem.eql(u8, name, "google.protobuf.Timestamp")) {
+        var msg = try wkt.Timestamp.decode(&reader, alloc);
+        defer msg.deinit(alloc);
+        return wktToJsonOutput(msg, alloc);
+    }
+    if (std.mem.eql(u8, name, "google.protobuf.FieldMask")) {
+        var msg = try wkt.FieldMask.decode(&reader, alloc);
+        defer msg.deinit(alloc);
+        return wktToJsonOutput(msg, alloc);
+    }
+    if (std.mem.eql(u8, name, "google.protobuf.Int32Value")) {
+        var msg = try wkt.Int32Value.decode(&reader, alloc);
+        defer msg.deinit(alloc);
+        return wktToJsonOutput(msg, alloc);
+    }
+    if (std.mem.eql(u8, name, "google.protobuf.Int64Value")) {
+        var msg = try wkt.Int64Value.decode(&reader, alloc);
+        defer msg.deinit(alloc);
+        return wktToJsonOutput(msg, alloc);
+    }
+    if (std.mem.eql(u8, name, "google.protobuf.UInt32Value")) {
+        var msg = try wkt.UInt32Value.decode(&reader, alloc);
+        defer msg.deinit(alloc);
+        return wktToJsonOutput(msg, alloc);
+    }
+    if (std.mem.eql(u8, name, "google.protobuf.UInt64Value")) {
+        var msg = try wkt.UInt64Value.decode(&reader, alloc);
+        defer msg.deinit(alloc);
+        return wktToJsonOutput(msg, alloc);
+    }
+    if (std.mem.eql(u8, name, "google.protobuf.FloatValue")) {
+        var msg = try wkt.FloatValue.decode(&reader, alloc);
+        defer msg.deinit(alloc);
+        return wktToJsonOutput(msg, alloc);
+    }
+    if (std.mem.eql(u8, name, "google.protobuf.DoubleValue")) {
+        var msg = try wkt.DoubleValue.decode(&reader, alloc);
+        defer msg.deinit(alloc);
+        return wktToJsonOutput(msg, alloc);
+    }
+    if (std.mem.eql(u8, name, "google.protobuf.BoolValue")) {
+        var msg = try wkt.BoolValue.decode(&reader, alloc);
+        defer msg.deinit(alloc);
+        return wktToJsonOutput(msg, alloc);
+    }
+    if (std.mem.eql(u8, name, "google.protobuf.StringValue")) {
+        var msg = try wkt.StringValue.decode(&reader, alloc);
+        defer msg.deinit(alloc);
+        return wktToJsonOutput(msg, alloc);
+    }
+    if (std.mem.eql(u8, name, "google.protobuf.BytesValue")) {
+        var msg = try wkt.BytesValue.decode(&reader, alloc);
+        defer msg.deinit(alloc);
+        return wktToJsonOutput(msg, alloc);
+    }
+    if (std.mem.eql(u8, name, "google.protobuf.Struct")) {
+        var msg = try wkt.Struct.decode(&reader, alloc);
+        defer msg.deinit(alloc);
+        return wktToJsonOutput(msg, alloc);
+    }
+    if (std.mem.eql(u8, name, "google.protobuf.Value")) {
+        var msg = try wkt.Value.decode(&reader, alloc);
+        defer msg.deinit(alloc);
+        return wktToJsonOutput(msg, alloc);
+    }
+    if (std.mem.eql(u8, name, "google.protobuf.ListValue")) {
+        var msg = try wkt.ListValue.decode(&reader, alloc);
+        defer msg.deinit(alloc);
+        return wktToJsonOutput(msg, alloc);
+    }
+    if (std.mem.eql(u8, name, "google.protobuf.Any")) {
+        var msg = try wkt.Any.decode(&reader, alloc);
+        defer msg.deinit(alloc);
+        // Encode the nested Any to JSON (uses the resolver recursively).
+        const json_str = try msg.jsonEncode(.{}, .{}, alloc);
+        const val = try jsonBytesToValue(alloc, json_str);
+        return .{ .wkt = val };
+    }
+
+    return error.UnknownType;
 }
 
 // Decode from protobuf binary or JSON, re-encode to the requested format.
@@ -35,9 +240,8 @@ fn doRoundTrip(
     payload_union: ConformanceRequest.payload_union,
     is_protobuf_input: bool,
     is_protobuf_output: bool,
+    test_category: conformance_pb.TestCategory,
 ) ConformanceResponse {
-    // Emit flat oneof fields per the protobuf JSON spec.
-    const pb_json_opts: protobuf.json.Options = .{ .emit_oneof_field_name = false };
 
     if (is_protobuf_input) {
         const payload = payload_union.protobuf_payload;
@@ -51,15 +255,19 @@ fn doRoundTrip(
                 return makeResponse(.{ .serialize_error = "Failed to encode protobuf" });
             return makeResponse(.{ .protobuf_payload = bytes });
         } else {
-            const json_str = msg.jsonEncode(.{}, pb_json_opts, allocator) catch
+            const json_str = msg.jsonEncode(.{}, pb_json_opts_flat, allocator) catch
                 return makeResponse(.{ .serialize_error = "Failed to encode JSON" });
             return makeResponse(.{ .json_payload = json_str });
         }
     } else {
         // JSON input
         const json_payload = payload_union.json_payload;
-        const parsed = MsgType.jsonDecode(json_payload, .{ .ignore_unknown_fields = true }, allocator) catch
+        const json_opts = std.json.ParseOptions{
+            .ignore_unknown_fields = test_category == .JSON_IGNORE_UNKNOWN_PARSING_TEST,
+        };
+        const parsed = MsgType.jsonDecode(json_payload, json_opts, allocator) catch {
             return makeResponse(.{ .parse_error = "Failed to decode JSON" });
+        };
         defer parsed.deinit();
         const msg = parsed.value;
 
@@ -68,7 +276,7 @@ fn doRoundTrip(
                 return makeResponse(.{ .serialize_error = "Failed to encode protobuf" });
             return makeResponse(.{ .protobuf_payload = bytes });
         } else {
-            const json_str = msg.jsonEncode(.{}, pb_json_opts, allocator) catch
+            const json_str = msg.jsonEncode(.{}, pb_json_opts_flat, allocator) catch
                 return makeResponse(.{ .serialize_error = "Failed to encode JSON" });
             return makeResponse(.{ .json_payload = json_str });
         }
@@ -104,7 +312,7 @@ fn runTest(allocator: std.mem.Allocator, req: ConformanceRequest) ConformanceRes
     }
 
     if (std.mem.eql(u8, req.message_type, "protobuf_test_messages.proto3.TestAllTypesProto3")) {
-        return doRoundTrip(TestAllTypesProto3, allocator, payload_union, is_protobuf_input, is_protobuf_output);
+        return doRoundTrip(TestAllTypesProto3, allocator, payload_union, is_protobuf_input, is_protobuf_output, req.test_category);
     }
 
     return makeResponse(.{ .skipped = "Unsupported message type" });
@@ -172,6 +380,12 @@ fn serveConformanceRequest(
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
     const gpa = init.gpa;
+
+    // Install the Any JSON resolver for google.protobuf.Any support.
+    protobuf.wkt.any_json_resolver = .{
+        .from_json = &anyFromJson,
+        .to_json = &anyToJson,
+    };
 
     var stdin_buf: [65536]u8 = undefined;
     var stdin_file_reader = std.Io.File.reader(std.Io.File.stdin(), io, &stdin_buf);

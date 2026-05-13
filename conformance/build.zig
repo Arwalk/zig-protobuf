@@ -1,4 +1,5 @@
 const std = @import("std");
+const zig_protobuf = @import("zig_protobuf");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -15,13 +16,15 @@ pub fn build(b: *std.Build) void {
 
     // Regenerate Zig bindings using source-built protoc.
     // Run with: zig build generate
-    const gen_zig = b.addRunArtifact(protoc);
-    gen_zig.addPrefixedFileArg("--plugin=protoc-gen-zig=", protoc_gen_zig.getEmittedBin());
-    gen_zig.addPrefixedDirectoryArg("--zig_out=", b.path("generated"));
-    gen_zig.addPrefixedDirectoryArg("-I", b.path("protos"));
-    gen_zig.addPrefixedDirectoryArg("-I", upstream.path("src"));
-    gen_zig.addFileArg(b.path("protos/conformance.proto"));
-    gen_zig.addFileArg(b.path("protos/test_messages_proto3.proto"));
+    const gen_zig = zig_protobuf.RunProtocStep.createWithGenerator(b, protoc_gen_zig, .{
+        .source_files = &.{
+            b.path("protos/conformance.proto"),
+            b.path("protos/test_messages_proto3.proto"),
+        },
+        .include_directories = &.{ b.path("protos"), upstream.path("src") },
+        .destination_directory = b.path("generated"),
+        .protoc = protoc,
+    });
     b.step("generate", "Regenerate Zig bindings for conformance protos").dependOn(&gen_zig.step);
 
     // Testee binary — uses pre-generated bindings from conformance/generated/.
@@ -44,7 +47,7 @@ pub fn build(b: *std.Build) void {
 
     // Run the full conformance suite.
     const run_cmd = b.addRunArtifact(runner_artifact);
-    run_cmd.addArgs(&.{ "--enforce_recommended", "--maximum_edition", "2023" });
+    run_cmd.addArgs(&.{ "--enforce_recommended", "--maximum_edition", "2024", "--output_dir", "out" });
     run_cmd.addArtifactArg(testee);
     b.step("conformance-run", "Run the protobuf conformance test suite").dependOn(&run_cmd.step);
 }

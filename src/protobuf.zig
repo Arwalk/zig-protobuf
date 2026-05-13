@@ -4,6 +4,7 @@ const log = std.log.scoped(.zig_protobuf);
 
 pub const json = @import("json.zig");
 pub const wire = @import("wire.zig");
+pub const wkt = @import("wkt.zig");
 
 pub const DecodingError = error{ NotEnoughData, InvalidInput };
 
@@ -540,6 +541,8 @@ pub fn encode(
         else => @TypeOf(data),
     };
     inline for (@typeInfo(Data).@"struct".fields) |field| {
+        // Skip fields not present in _desc_table (e.g. _unknown_fields).
+        if (comptime !@hasField(@TypeOf(Data._desc_table), field.name)) continue;
         if (comptime @typeInfo(field.type) == .optional) {
             const temp = data;
             if (@field(temp, field.name)) |value| {
@@ -549,6 +552,11 @@ pub fn encode(
             const value = data;
             try writeValue(writer, allocator, @field(Data._desc_table, field.name), @field(value, field.name), false);
         }
+    }
+    // Re-emit unknown fields verbatim at the end.
+    if (comptime @hasField(Data, "_unknown_fields")) {
+        const uf = @field(data, "_unknown_fields");
+        if (uf.len > 0) try writer.writeAll(uf);
     }
 }
 
@@ -566,7 +574,7 @@ fn get_field_default_value(comptime for_type: anytype) for_type {
     };
 }
 
-inline fn internal_init(comptime T: type, value: *T) void {
+pub inline fn internal_init(comptime T: type, value: *T) void {
     if (comptime @typeInfo(T) != .@"struct") {
         @compileError(std.fmt.comptimePrint(
             "Invalid internal init type {s}",
@@ -574,6 +582,12 @@ inline fn internal_init(comptime T: type, value: *T) void {
         ));
     }
     inline for (@typeInfo(T).@"struct".fields) |field| {
+        if (comptime !@hasField(@TypeOf(T._desc_table), field.name)) {
+            if (field.defaultValue()) |val| {
+                @field(value, field.name) = val;
+            }
+            continue;
+        }
         switch (comptime @field(T._desc_table, field.name).ftype) {
             .@"enum", .scalar => {
                 if (field.defaultValue()) |val| {
@@ -620,7 +634,11 @@ pub fn dupe(comptime T: type, original: T, allocator: std.mem.Allocator) std.mem
     var result: T = undefined;
 
     inline for (@typeInfo(T).@"struct".fields) |field| {
+        if (comptime !@hasField(@TypeOf(T._desc_table), field.name)) continue;
         @field(result, field.name) = try dupeField(original, field.name, @field(T._desc_table, field.name).ftype, allocator);
+    }
+    if (comptime @hasField(T, "_unknown_fields")) {
+        result._unknown_fields = try allocator.dupe(u8, original._unknown_fields);
     }
 
     return result;
@@ -808,7 +826,11 @@ pub fn deinit(allocator: std.mem.Allocator, data: anytype) void {
     const T = @typeInfo(@TypeOf(data)).pointer.child;
 
     inline for (@typeInfo(T).@"struct".fields) |field| {
+        if (comptime !@hasField(@TypeOf(T._desc_table), field.name)) continue;
         deinitField(allocator, data, field.name);
+    }
+    if (comptime @hasField(T, "_unknown_fields")) {
+        if (data._unknown_fields.len > 0) allocator.free(data._unknown_fields);
     }
 }
 
@@ -1098,6 +1120,7 @@ pub fn decode(
 ) (DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!T {
     var result: T = undefined;
     internal_init(T, &result);
+    errdefer deinit(allocator, &result);
 
     _ = try wire.decodeMessage(&result, allocator, reader, .{});
 
