@@ -242,7 +242,6 @@ fn doRoundTrip(
     is_protobuf_output: bool,
     test_category: conformance_pb.TestCategory,
 ) ConformanceResponse {
-
     if (is_protobuf_input) {
         const payload = payload_union.protobuf_payload;
         var reader: std.Io.Reader = .fixed(payload);
