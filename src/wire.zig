@@ -383,7 +383,7 @@ pub fn decodeRepeated(
     comptime std.debug.assert(ResultList == std.ArrayList(Result));
 
     const current_items = result.items.len;
-    errdefer result.shrinkAndFree(allocator, current_items);
+    errdefer result.shrinkRetainingCapacity(current_items);
 
     switch (comptime field) {
         .scalar => |scalar| {
