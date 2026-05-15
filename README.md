@@ -61,7 +61,7 @@ pub fn build(b: *std.Build) !void {
         // out directory for the generated zig files
         .destination_directory = b.path("src/proto"),
         .source_files = &.{
-            "protocol/all.proto",
+            b.path("protocol/all.proto"),
         },
         .include_directories = &.{},
     });
