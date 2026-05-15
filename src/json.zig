@@ -29,7 +29,7 @@ pub fn parse(
     // Mainly taken from 0.13.0's source code
     var result: Self = undefined;
     const structInfo = @typeInfo(Self).@"struct";
-    var fields_seen = [_]bool{false} ** structInfo.fields.len;
+    var fields_seen: [structInfo.fields.len]bool = @splat(false);
 
     while (true) {
         var name_token: ?std.json.Token = try source.nextAllocMax(
