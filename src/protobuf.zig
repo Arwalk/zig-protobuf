@@ -252,7 +252,7 @@ fn writeFixed(writer: *std.Io.Writer, value: anytype) std.Io.Writer.Error!void {
     const bitsize = @bitSizeOf(@TypeOf(value));
 
     var as_unsigned_int = switch (@TypeOf(value)) {
-        f32, f64, i32, i64 => @as(std.meta.Int(.unsigned, bitsize), @bitCast(value)),
+        f32, f64, i32, i64 => @as(@Int(.unsigned, bitsize), @bitCast(value)),
         u32, u64, u8 => @as(u64, value),
         else => @compileError("Invalid type for append_fixed"),
     };
