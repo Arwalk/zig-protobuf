@@ -7,34 +7,40 @@ const benchmark_data = @import("./generated/benchmark.pb.zig");
 const ArrayList = std.ArrayList;
 const AllocatorError = std.mem.Allocator.Error;
 
+var prng = std.Random.DefaultPrng.init(0);
+
+fn random() std.Random {
+    return prng.random();
+}
+
 pub fn generateRandomManagedString(allocator: std.mem.Allocator) AllocatorError![]const u8 {
     // 50% chance of returning Empty
-    if (std.crypto.random.boolean()) {
+    if (random().boolean()) {
         return "";
     }
 
     // Generate random string length between 1-20 chars
-    const len = std.crypto.random.intRangeAtMost(usize, 1, 20);
+    const len = random().intRangeAtMost(usize, 1, 20);
 
     var str = try allocator.alloc(u8, len);
 
     // Fill with random ASCII letters
     for (0..len) |i| {
-        str[i] = std.crypto.random.intRangeAtMost(u8, 'a', 'z');
+        str[i] = random().intRangeAtMost(u8, 'a', 'z');
     }
 
     return str;
 }
 
 fn generateRandomAnyValue(allocator: std.mem.Allocator) AllocatorError!common.AnyValue {
-    const value_case = std.crypto.random.intRangeAtMost(usize, 0, 6);
+    const value_case = random().intRangeAtMost(usize, 0, 6);
     const to_enum: common.AnyValue._value_case = @enumFromInt(value_case);
 
     return switch (to_enum) {
         .string_value => .{ .value = .{ .string_value = try generateRandomManagedString(allocator) } },
-        .bool_value => .{ .value = .{ .bool_value = std.crypto.random.boolean() } },
-        .int_value => .{ .value = .{ .int_value = std.crypto.random.int(i64) } },
-        .double_value => .{ .value = .{ .double_value = std.crypto.random.float(f64) } },
+        .bool_value => .{ .value = .{ .bool_value = random().boolean() } },
+        .int_value => .{ .value = .{ .int_value = random().int(i64) } },
+        .double_value => .{ .value = .{ .double_value = random().float(f64) } },
         .array_value => .{ .value = .{ .array_value = try generateRandomArrayValue(allocator) } },
         .kvlist_value => .{ .value = .{ .kvlist_value = try generateRandomKeyValueList(allocator) } },
         .bytes_value => .{ .value = .{ .bytes_value = try generateRandomManagedString(allocator) } },
@@ -43,7 +49,7 @@ fn generateRandomAnyValue(allocator: std.mem.Allocator) AllocatorError!common.An
 
 fn generateRandomArrayValue(allocator: std.mem.Allocator) AllocatorError!common.ArrayValue {
     var list: common.ArrayValue = .{};
-    const count = std.crypto.random.intRangeAtMost(usize, 0, 5);
+    const count = random().intRangeAtMost(usize, 0, 5);
     for (0..count) |_| {
         try list.values.append(allocator, try generateRandomAnyValue(allocator));
     }
@@ -53,7 +59,7 @@ fn generateRandomArrayValue(allocator: std.mem.Allocator) AllocatorError!common.
 
 fn generateRandomKeyValueList(allocator: std.mem.Allocator) AllocatorError!common.KeyValueList {
     var list: common.KeyValueList = .{};
-    const count = std.crypto.random.intRangeAtMost(usize, 0, 5);
+    const count = random().intRangeAtMost(usize, 0, 5);
     for (0..count) |_| {
         try list.values.append(allocator, try generateRandomKeyValue(allocator));
     }
@@ -62,7 +68,7 @@ fn generateRandomKeyValueList(allocator: std.mem.Allocator) AllocatorError!commo
 }
 
 fn generateRandomKeyValue(allocator: std.mem.Allocator) AllocatorError!common.KeyValue {
-    const value: ?common.AnyValue = if (std.crypto.random.boolean())
+    const value: ?common.AnyValue = if (random().boolean())
         try generateRandomAnyValue(allocator)
     else
         null;
@@ -72,18 +78,18 @@ fn generateRandomKeyValue(allocator: std.mem.Allocator) AllocatorError!common.Ke
 
 fn generateRandomBuckets(allocator: std.mem.Allocator) AllocatorError!metrics.ExponentialHistogramDataPoint.Buckets {
     var buckets: metrics.ExponentialHistogramDataPoint.Buckets = .{};
-    const count = std.crypto.random.intRangeAtMost(usize, 0, 5);
+    const count = random().intRangeAtMost(usize, 0, 5);
     for (0..count) |_| {
-        try buckets.bucket_counts.append(allocator, std.crypto.random.int(u64));
+        try buckets.bucket_counts.append(allocator, random().int(u64));
     }
 
-    buckets.offset = std.crypto.random.int(i32);
+    buckets.offset = random().int(i32);
 
     return buckets;
 }
 
 fn nullOrItem(comptime T: type, function: anytype, allocator: std.mem.Allocator) AllocatorError!?T {
-    if (std.crypto.random.boolean()) {
+    if (random().boolean()) {
         return try function(allocator);
     } else {
         return null;
@@ -93,7 +99,7 @@ fn nullOrItem(comptime T: type, function: anytype, allocator: std.mem.Allocator)
 fn generateRandomExemplar(allocator: std.mem.Allocator) AllocatorError!metrics.Exemplar {
     var exemplar: metrics.Exemplar = .{};
     exemplar.filtered_attributes = (try generateRandomKeyValueList(allocator)).values;
-    exemplar.time_unix_nano = std.crypto.random.int(u64);
+    exemplar.time_unix_nano = random().int(u64);
     exemplar.span_id = try generateRandomManagedString(allocator);
     exemplar.trace_id = try generateRandomManagedString(allocator);
     return exemplar;
@@ -101,7 +107,7 @@ fn generateRandomExemplar(allocator: std.mem.Allocator) AllocatorError!metrics.E
 
 fn generateRandomExemplarList(allocator: std.mem.Allocator) AllocatorError!ArrayList(metrics.Exemplar) {
     var list: ArrayList(metrics.Exemplar) = .empty;
-    const count = std.crypto.random.intRangeAtMost(usize, 0, 5);
+    const count = random().intRangeAtMost(usize, 0, 5);
     for (0..count) |_| {
         try list.append(allocator, try generateRandomExemplar(allocator));
     }
@@ -114,21 +120,21 @@ pub fn generateRandomExponentialHistogramDataPoint(allocator: std.mem.Allocator)
     var point: metrics.ExponentialHistogramDataPoint = .{};
 
     point.attributes = (try generateRandomKeyValueList(allocator)).values;
-    point.start_time_unix_nano = std.crypto.random.int(u64);
-    point.time_unix_nano = std.crypto.random.int(u64);
-    point.count = std.crypto.random.int(u64);
-    point.sum = std.crypto.random.float(f64);
-    point.scale = std.crypto.random.int(i32);
-    point.zero_count = std.crypto.random.int(u64);
+    point.start_time_unix_nano = random().int(u64);
+    point.time_unix_nano = random().int(u64);
+    point.count = random().int(u64);
+    point.sum = random().float(f64);
+    point.scale = random().int(i32);
+    point.zero_count = random().int(u64);
 
     point.positive = try nullOrItem(metrics.ExponentialHistogramDataPoint.Buckets, generateRandomBuckets, allocator);
     point.negative = try nullOrItem(metrics.ExponentialHistogramDataPoint.Buckets, generateRandomBuckets, allocator);
 
-    point.flags = std.crypto.random.int(u32);
+    point.flags = random().int(u32);
     point.exemplars = try generateRandomExemplarList(allocator);
-    point.min = std.crypto.random.float(f64);
-    point.max = std.crypto.random.float(f64);
-    point.zero_threshold = std.crypto.random.float(f64);
+    point.min = random().float(f64);
+    point.max = random().float(f64);
+    point.zero_threshold = random().float(f64);
 
     return point;
 }
@@ -136,21 +142,21 @@ pub fn generateRandomExponentialHistogramDataPoint(allocator: std.mem.Allocator)
 const OUTPUT_FILENAME = "test.data";
 
 pub fn main(init: std.process.Init) !void {
-    var args = try std.process.argsWithAllocator(std.heap.page_allocator);
+    const gpa = init.gpa;
+
+    var args = try std.process.Args.Iterator.initAllocator(init.minimal.args, gpa);
     defer args.deinit();
 
     // Skip executable name
-    _ = args.next();
+    _ = args.skip();
 
     // Get dataset size from args or use default
     const DATASET_SIZE = if (args.next()) |arg|
         try std.fmt.parseInt(usize, arg, 10)
     else
         10;
-    var gpa = init.gpa;
-    defer _ = gpa.deinit();
 
-    var arena = std.heap.ArenaAllocator.init(gpa.allocator());
+    var arena = std.heap.ArenaAllocator.init(gpa);
     defer arena.deinit();
     const arena_allocator = arena.allocator();
 
@@ -174,10 +180,10 @@ pub fn main(init: std.process.Init) !void {
 
     // Write to file
     std.debug.print("Writing to file: {s}...\n", .{OUTPUT_FILENAME});
-    const file = try std.fs.cwd().createFile(OUTPUT_FILENAME, .{});
-    defer file.close();
+    const file = try std.Io.Dir.cwd().createFile(init.io, OUTPUT_FILENAME, .{});
+    defer file.close(init.io);
 
-    try file.writeAll(encoded_data);
+    try file.writeStreamingAll(init.io, encoded_data);
 
     std.debug.print("Dataset generation complete: {d} bytes written to {s}\n", .{ encoded_data.len, OUTPUT_FILENAME });
 }

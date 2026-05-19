@@ -60,6 +60,8 @@ pub fn build(b: *std.Build) !void {
     const protoc_step = protobuf.RunProtocStep.create(protobuf_dep.builder, target, .{
         // out directory for the generated zig files
         .destination_directory = b.path("src/proto"),
+        // Optional custom generator, otherwise it will use the built-in generator + google's protoc
+        // .generator = protobuf_dep.artifact("protoc-gen-zig"),
         .source_files = &.{
             b.path("protocol/all.proto"),
         },
