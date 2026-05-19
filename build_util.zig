@@ -19,9 +19,10 @@ pub fn fileExists(io: Io, path: []const u8) bool {
 }
 
 pub fn ensureProtocBinaryDownloaded(
+    protoc_owner: *std.Build,
     step: *std.Build.Step,
 ) !?[]const u8 {
-    if (try getProtocBin(step)) |executable_path| {
+    if (try getProtocBin(protoc_owner, step)) |executable_path| {
         if (fileExists(step.owner.graph.io, executable_path)) {
             return executable_path;
         }
@@ -62,12 +63,12 @@ pub fn getProtocDependency(b: *std.Build) !?*std.Build.Dependency {
     return null;
 }
 
-pub fn getProtocBin(step: *std.Build.Step) !?[]const u8 {
-    if (try getProtocDependency(step.owner)) |dep| {
+pub fn getProtocBin(protoc_owner: *std.Build, step: *std.Build.Step) !?[]const u8 {
+    if (try getProtocDependency(protoc_owner)) |dep| {
         if (builtin.os.tag == .windows)
-            return dep.path("bin/protoc.exe").getPath2(step.owner, step);
+            return dep.path("bin/protoc.exe").getPath2(protoc_owner, step);
 
-        return dep.path("bin/protoc").getPath2(step.owner, step);
+        return dep.path("bin/protoc").getPath2(protoc_owner, step);
     }
     return null;
 }
@@ -85,6 +86,7 @@ pub const RunProtocStep = struct {
     include_directories: []std.Build.LazyPath,
     destination_directory: std.Build.LazyPath,
     generator: *std.Build.Step.Compile,
+    protoc_owner: *std.Build,
     /// Optional external protoc binary. When set, skips the built-in download
     /// mechanism and uses this artifact's emitted binary instead. Useful for
     /// consumers (e.g. conformance tests) that already have protoc from another
@@ -98,6 +100,10 @@ pub const RunProtocStep = struct {
         source_files: []const std.Build.LazyPath,
         include_directories: []const std.Build.LazyPath = &.{},
         destination_directory: std.Build.LazyPath,
+        /// Optional pre-built protoc-gen-zig artifact. When provided, the
+        /// protoc step can be owned by a consumer builder while the generator
+        /// stays owned by the zig-protobuf dependency builder.
+        generator: ?*std.Build.Step.Compile = null,
         /// Optional pre-built protoc artifact. When provided, overrides the
         /// built-in protoc download mechanism.
         protoc: ?*std.Build.Step.Compile = null,
@@ -113,6 +119,7 @@ pub const RunProtocStep = struct {
         options: Options,
     ) *RunProtocStep {
         var self: *RunProtocStep = owner.allocator.create(RunProtocStep) catch @panic("OOM");
+        const generator = options.generator orelse buildGenerator(owner, .{ .target = target });
         self.* = .{
             .step = std.Build.Step.init(.{
                 .id = .check_file,
@@ -123,7 +130,8 @@ pub const RunProtocStep = struct {
             .source_files = dupeLazyPaths(owner, options.source_files),
             .include_directories = dupeLazyPaths(owner, options.include_directories),
             .destination_directory = options.destination_directory.dupe(owner),
-            .generator = buildGenerator(owner, .{ .target = target }),
+            .generator = generator,
+            .protoc_owner = generator.step.owner,
             .protoc_override = options.protoc,
         };
 
@@ -137,24 +145,13 @@ pub const RunProtocStep = struct {
         generator: *std.Build.Step.Compile,
         options: Options,
     ) *RunProtocStep {
-        var self: *RunProtocStep = owner.allocator.create(RunProtocStep) catch @panic("OOM");
-        self.* = .{
-            .step = std.Build.Step.init(.{
-                .id = .check_file,
-                .name = "run protoc",
-                .owner = owner,
-                .makeFn = make,
-            }),
-            .source_files = dupeLazyPaths(owner, options.source_files),
-            .include_directories = dupeLazyPaths(owner, options.include_directories),
-            .destination_directory = options.destination_directory.dupe(owner),
+        return create(owner, generator.root_module.resolved_target.?, .{
+            .source_files = options.source_files,
+            .include_directories = options.include_directories,
+            .destination_directory = options.destination_directory,
             .generator = generator,
-            .protoc_override = options.protoc,
-        };
-
-        self.step.dependOn(&self.generator.step);
-        if (options.protoc) |p| self.step.dependOn(&p.step);
-        return self;
+            .protoc = options.protoc,
+        });
     }
 
     pub fn setName(self: *RunProtocStep, name: []const u8) void {
@@ -173,7 +170,7 @@ pub const RunProtocStep = struct {
             const maybe_protoc_path: ?[]const u8 = if (self.protoc_override) |p|
                 p.getEmittedBin().getPath2(b, step)
             else
-                try ensureProtocBinaryDownloaded(step);
+                try ensureProtocBinaryDownloaded(self.protoc_owner, step);
 
             if (maybe_protoc_path) |protoc_path| {
                 try argv.append(b.allocator, protoc_path);

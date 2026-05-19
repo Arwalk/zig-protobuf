@@ -7,7 +7,6 @@ pub fn build(b: *std.Build) void {
 
     const zig_protobuf_dep = b.dependency("zig_protobuf", .{ .target = target, .optimize = optimize });
     const protobuf_module = zig_protobuf_dep.module("protobuf");
-    const protoc_gen_zig = zig_protobuf_dep.artifact("protoc-gen-zig");
 
     const protobuf_pkg_dep = b.dependency("protobuf_pkg", .{ .target = target, .optimize = optimize });
     const upstream = protobuf_pkg_dep.builder.dependency("protobuf", .{});
@@ -16,7 +15,7 @@ pub fn build(b: *std.Build) void {
 
     // Regenerate Zig bindings using source-built protoc.
     // Run with: zig build generate
-    const gen_zig = zig_protobuf.RunProtocStep.createWithGenerator(b, protoc_gen_zig, .{
+    const gen_zig = zig_protobuf.RunProtocStep.create(b, target, .{
         .source_files = &.{
             b.path("protos/conformance.proto"),
             b.path("protos/test_messages_proto3.proto"),

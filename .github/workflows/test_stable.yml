@@ -48,6 +48,18 @@ jobs:
         working-directory: conformance
       - run: git diff --exit-code conformance/out/failing_tests.txt
 
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: goto-bus-stop/setup-zig@v1
+        with:
+          version: "0.16.0"
+      - run: zig build benchmark
+        working-directory: benchmark
+      - run: zig build generate-dataset
+        working-directory: benchmark
+      
   lint:
     runs-on: ubuntu-latest
     steps:
