@@ -1791,6 +1791,7 @@ pub const TestAllTypesProto3 = struct {
 
 pub const ForeignMessage = struct {
     c: i32 = 0,
+    _unknown_fields: []const u8 = &.{},
 
     pub const _desc_table = .{
         .c = fd(1, .{ .scalar = .int32 }),
@@ -1856,6 +1857,8 @@ pub const ForeignMessage = struct {
 };
 
 pub const NullHypothesisProto3 = struct {
+    _unknown_fields: []const u8 = &.{},
+
     pub const _desc_table = .{};
 
     /// Encodes the message to the writer
@@ -1918,6 +1921,8 @@ pub const NullHypothesisProto3 = struct {
 };
 
 pub const EnumOnlyProto3 = struct {
+    _unknown_fields: []const u8 = &.{},
+
     pub const _desc_table = .{};
 
     pub const Bool = enum(i32) {

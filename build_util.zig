@@ -92,6 +92,7 @@ pub const RunProtocStep = struct {
     /// consumers (e.g. conformance tests) that already have protoc from another
     /// dependency.
     protoc_override: ?*std.Build.Step.Compile = null,
+    preserve_unknown_fields: bool = false,
     verbose: bool = false,
 
     pub const base_id = .protoc;
@@ -107,6 +108,9 @@ pub const RunProtocStep = struct {
         /// Optional pre-built protoc artifact. When provided, overrides the
         /// built-in protoc download mechanism.
         protoc: ?*std.Build.Step.Compile = null,
+        /// When true, every generated message preserves unknown fields during
+        /// binary decode/encode round trips. Defaults to false.
+        preserve_unknown_fields: bool = false,
     };
 
     pub const StepErr = error{
@@ -133,6 +137,7 @@ pub const RunProtocStep = struct {
             .generator = generator,
             .protoc_owner = generator.step.owner,
             .protoc_override = options.protoc,
+            .preserve_unknown_fields = options.preserve_unknown_fields,
         };
 
         self.step.dependOn(&self.generator.step);
@@ -151,6 +156,7 @@ pub const RunProtocStep = struct {
             .destination_directory = options.destination_directory,
             .generator = generator,
             .protoc = options.protoc,
+            .preserve_unknown_fields = options.preserve_unknown_fields,
         });
     }
 
@@ -180,7 +186,12 @@ pub const RunProtocStep = struct {
                     self.generator.getEmittedBin().getPath2(b, step),
                 }));
 
-                try argv.appendSlice(b.allocator, &.{ "--zig_out", absolute_dest_dir });
+                const zig_out = if (self.preserve_unknown_fields)
+                    try std.mem.concat(b.allocator, u8, &.{ "--zig_out=preserve_unknown_fields=true:", absolute_dest_dir })
+                else
+                    try std.mem.concat(b.allocator, u8, &.{ "--zig_out=", absolute_dest_dir });
+
+                try argv.append(b.allocator, zig_out);
                 if (!dirExists(b.graph.io, absolute_dest_dir)) {
                     try Io.Dir.createDirAbsolute(b.graph.io, absolute_dest_dir, .default_dir);
                 }

@@ -28,6 +28,7 @@ pub const TestStatus = struct {
     name: []const u8 = &.{},
     failure_message: []const u8 = &.{},
     matched_name: []const u8 = &.{},
+    _unknown_fields: []const u8 = &.{},
 
     pub const _desc_table = .{
         .name = fd(1, .{ .scalar = .string }),
@@ -96,6 +97,7 @@ pub const TestStatus = struct {
 
 pub const FailureSet = struct {
     @"test": std.ArrayList(TestStatus) = .empty,
+    _unknown_fields: []const u8 = &.{},
 
     pub const _desc_table = .{
         .@"test" = fd(2, .{ .repeated = .submessage }),
@@ -162,6 +164,7 @@ pub const FailureSet = struct {
 
 pub const JspbEncodingConfig = struct {
     use_jspb_array_any_format: bool = false,
+    _unknown_fields: []const u8 = &.{},
 
     pub const _desc_table = .{
         .use_jspb_array_any_format = fd(1, .{ .scalar = .bool }),
@@ -233,6 +236,7 @@ pub const ConformanceRequest = struct {
     jspb_encoding_options: ?JspbEncodingConfig = null,
     print_unknown_fields: bool = false,
     payload: ?payload_union = null,
+    _unknown_fields: []const u8 = &.{},
 
     pub const _payload_case = enum {
         protobuf_payload,
@@ -323,6 +327,7 @@ pub const ConformanceRequest = struct {
 
 pub const ConformanceResponse = struct {
     result: ?result_union = null,
+    _unknown_fields: []const u8 = &.{},
 
     pub const _result_case = enum {
         parse_error,

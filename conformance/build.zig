@@ -25,6 +25,7 @@ pub fn build(b: *std.Build) void {
         .destination_directory = b.path("generated"),
         .generator = protoc_gen_zig,
         .protoc = protoc,
+        .preserve_unknown_fields = true,
     });
     b.step("generate", "Regenerate Zig bindings for conformance protos").dependOn(&gen_zig.step);
 

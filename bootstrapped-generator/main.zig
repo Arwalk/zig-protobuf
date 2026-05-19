@@ -42,6 +42,7 @@ const GenerationContext = struct {
 
     /// map of message names to their dependencies
     message_deps: std.StringHashMap(std.ArrayList([]const u8)),
+    preserve_unknown_fields: bool,
 
     /// Helper struct for working with SourceCodeInfo
     const SourceCodeInfo = struct {
@@ -100,16 +101,50 @@ const GenerationContext = struct {
     };
 
     pub fn init(allocator: std.mem.Allocator, request: plugin.CodeGeneratorRequest) !GenerationContext {
-        return .{
+        var ctx: GenerationContext = .{
             .req = request,
             .res = .{},
             .known_packages = .init(allocator),
             .fqn_lines = .init(allocator),
             .message_deps = .init(allocator),
+            .preserve_unknown_fields = false,
         };
+
+        try ctx.parseParameter(allocator);
+        return ctx;
+    }
+
+    fn parseParameter(self: *GenerationContext, allocator: std.mem.Allocator) !void {
+        const parameter = self.req.parameter orelse return;
+
+        var params = std.mem.splitScalar(u8, parameter, ',');
+        while (params.next()) |param| {
+            if (param.len == 0) continue;
+
+            if (std.mem.eql(u8, param, "preserve_unknown_fields") or
+                std.mem.eql(u8, param, "preserve_unknown_fields=true"))
+            {
+                self.preserve_unknown_fields = true;
+                continue;
+            }
+
+            if (std.mem.eql(u8, param, "preserve_unknown_fields=false")) {
+                self.preserve_unknown_fields = false;
+                continue;
+            }
+
+            self.res.@"error" = try std.fmt.allocPrint(
+                allocator,
+                "unsupported protoc-gen-zig parameter: {s}",
+                .{param},
+            );
+            return;
+        }
     }
 
     pub fn processRequest(self: *GenerationContext, io: std.Io, allocator: std.mem.Allocator) !void {
+        if (self.res.@"error" != null) return;
+
         defer {
             // Clean up message dependencies
             var it = self.message_deps.iterator();
@@ -809,7 +844,7 @@ const GenerationContext = struct {
                     ));
                 }
             }
-            if (messagePreservesUnknownFields(m, messageFqn)) {
+            if (self.shouldPreserveUnknownFields(m)) {
                 try lines.append(allocator, "    _unknown_fields: []const u8 = &.{},\n");
             }
 
@@ -1262,6 +1297,14 @@ const GenerationContext = struct {
         // If not found in any known package, return the full name
         return fullTypeName.buf;
     }
+
+    fn shouldPreserveUnknownFields(self: *GenerationContext, message: descriptor.DescriptorProto) bool {
+        if (message.options) |options| {
+            if (options.map_entry orelse false) return false;
+        }
+
+        return self.preserve_unknown_fields;
+    }
 };
 
 fn packageToFileName(package: []const u8, output: []u8) []const u8 {
@@ -1293,24 +1336,6 @@ fn isAncestorFqn(ancestor: []const u8, descendant: []const u8) bool {
     return descendant.len > ancestor.len and
         std.mem.startsWith(u8, descendant, ancestor) and
         descendant[ancestor.len] == '.';
-}
-
-fn messagePreservesUnknownFields(message: descriptor.DescriptorProto, fqn: FullName) bool {
-    if (message.reserved_range.items.len > 0 or message.reserved_name.items.len > 0) {
-        return true;
-    }
-
-    for (message.field.items) |field| {
-        if ((field.type orelse continue) != .TYPE_MESSAGE) continue;
-        const type_name = field.type_name orelse continue;
-        if (type_name.len == 0 or type_name[0] != '.') continue;
-        const dep_name = type_name[1..];
-        if (std.mem.eql(u8, dep_name, fqn.buf) or isAncestorFqn(dep_name, fqn.buf)) {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 fn isScalarNumeric(t: descriptor.FieldDescriptorProto.Type) bool {
