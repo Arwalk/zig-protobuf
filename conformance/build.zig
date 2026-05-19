@@ -7,7 +7,6 @@ pub fn build(b: *std.Build) void {
 
     const zig_protobuf_dep = b.dependency("zig_protobuf", .{ .target = target, .optimize = optimize });
     const protobuf_module = zig_protobuf_dep.module("protobuf");
-    const protoc_gen_zig = zig_protobuf_dep.artifact("protoc-gen-zig");
 
     const protobuf_pkg_dep = b.dependency("protobuf_pkg", .{ .target = target, .optimize = optimize });
     const upstream = protobuf_pkg_dep.builder.dependency("protobuf", .{});
@@ -20,16 +19,9 @@ pub fn build(b: *std.Build) void {
         .source_files = &.{
             b.path("protos/conformance.proto"),
             b.path("protos/test_messages_proto3.proto"),
-            upstream.path("src/google/protobuf/any.proto"),
-            upstream.path("src/google/protobuf/duration.proto"),
-            upstream.path("src/google/protobuf/field_mask.proto"),
-            upstream.path("src/google/protobuf/struct.proto"),
-            upstream.path("src/google/protobuf/timestamp.proto"),
-            upstream.path("src/google/protobuf/wrappers.proto"),
         },
         .include_directories = &.{ b.path("protos"), upstream.path("src") },
         .destination_directory = b.path("generated"),
-        .generator = protoc_gen_zig,
         .protoc = protoc,
     });
     b.step("generate", "Regenerate Zig bindings for conformance protos").dependOn(&gen_zig.step);

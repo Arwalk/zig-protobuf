@@ -264,6 +264,51 @@ const GenerationContext = struct {
         try self.generateServices(allocator, lines, fqn, file, file.service, file_root_path, 6);
     }
 
+    // WKT FQNs that are re-exported from protobuf.wkt instead of being generated inline.
+    const wkt_message_fqns = [_][]const u8{
+        "google.protobuf.Any",
+        "google.protobuf.Duration",
+        "google.protobuf.Empty",
+        "google.protobuf.FieldMask",
+        "google.protobuf.Struct",
+        "google.protobuf.Value",
+        "google.protobuf.ListValue",
+        "google.protobuf.Timestamp",
+        "google.protobuf.DoubleValue",
+        "google.protobuf.FloatValue",
+        "google.protobuf.Int64Value",
+        "google.protobuf.UInt64Value",
+        "google.protobuf.Int32Value",
+        "google.protobuf.UInt32Value",
+        "google.protobuf.BoolValue",
+        "google.protobuf.StringValue",
+        "google.protobuf.BytesValue",
+    };
+    const wkt_enum_fqns = [_][]const u8{
+        "google.protobuf.NullValue",
+    };
+
+    fn isWktMessage(fqn: FullName) bool {
+        for (wkt_message_fqns) |wkt_fqn| {
+            if (std.mem.eql(u8, fqn.buf, wkt_fqn)) return true;
+            // Also skip nested types inside WKT messages (e.g. Struct.FieldsEntry)
+            if (std.mem.startsWith(u8, fqn.buf, wkt_fqn) and
+                fqn.buf.len > wkt_fqn.len and
+                fqn.buf[wkt_fqn.len] == '.')
+                return true;
+        }
+        return false;
+    }
+
+    fn isWktEnum(fqn: FullName, name: []const u8) bool {
+        const full = std.mem.concat(std.heap.page_allocator, u8, &.{ fqn.buf, ".", name }) catch return false;
+        defer std.heap.page_allocator.free(full);
+        for (wkt_enum_fqns) |wkt_fqn| {
+            if (std.mem.eql(u8, full, wkt_fqn)) return true;
+        }
+        return false;
+    }
+
     fn generateEnums(
         ctx: *GenerationContext,
         allocator: std.mem.Allocator,
@@ -275,12 +320,20 @@ const GenerationContext = struct {
         enum_field_number: i32,
     ) !void {
         _ = ctx;
-        _ = fqn;
 
         for (enums.items, 0..) |theEnum, enum_i| {
             const e: descriptor.EnumDescriptorProto = theEnum;
 
             try lines.append(allocator, "\n");
+
+            // WKT enums are re-exported from protobuf.wkt
+            if (isWktEnum(fqn, e.name.?)) {
+                try lines.append(
+                    allocator,
+                    try std.fmt.allocPrint(allocator, "pub const {s} = protobuf.wkt.{s};\n", .{ e.name.?, e.name.? }),
+                );
+                continue;
+            }
 
             // Add leading comment if available
             if (SourceCodeInfo.getRepeatedFieldLocation(
@@ -655,6 +708,26 @@ const GenerationContext = struct {
         for (messages.items, 0..) |message, message_i| {
             const m: descriptor.DescriptorProto = message;
             const messageFqn = try fqn.append(allocator, m.name.?);
+
+            // WKT messages are re-exported from protobuf.wkt instead of being inlined.
+            if (isWktMessage(messageFqn)) {
+                // Only emit a top-level re-export (not for nested types, which live inside the WKT).
+                var is_top_level_wkt = false;
+                for (wkt_message_fqns) |wkt_fqn| {
+                    if (std.mem.eql(u8, messageFqn.buf, wkt_fqn)) {
+                        is_top_level_wkt = true;
+                        break;
+                    }
+                }
+                if (is_top_level_wkt) {
+                    try lines.append(allocator, "\n");
+                    try lines.append(
+                        allocator,
+                        try std.fmt.allocPrint(allocator, "pub const {s} = protobuf.wkt.{s};\n", .{ m.name.?, m.name.? }),
+                    );
+                }
+                continue;
+            }
 
             // Build the path for this message: root_path + [message_field_number, message_i]
             var message_path: std.ArrayList(i32) = .empty;
@@ -1196,6 +1269,7 @@ fn isScalarNumeric(t: descriptor.FieldDescriptorProto.Type) bool {
         .TYPE_SFIXED32,
         .TYPE_SFIXED64,
         .TYPE_BOOL,
+        .TYPE_ENUM,
         => true,
         else => false,
     };

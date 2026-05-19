@@ -83,15 +83,15 @@ test "unpacked int32_list" {
 }
 
 test "Required.Proto3.ProtobufInput.ValidDataRepeated.BOOL.PackedInput.ProtobufOutput" {
-    const err_bytes = "\xda\x02\x28\x00\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01\xce\xc2\xf1\x05\x80\x80\x80\x80\x20\xff\xff\xff\xff\xff\xff\xff\xff\x7f\x80\x80\x80\x80\x80\x80\x80\x80\x80\x01";
-
-    var err_reader: std.Io.Reader = .fixed(err_bytes);
-
-    // Bools MUST be encoded as either `0x00` or `0x01` bytes.
-    // https://protobuf.dev/programming-guides/encoding/#bools-and-enums
-    try std.testing.expectError(
-        error.InvalidInput,
-        proto3.TestAllTypesProto3.decode(&err_reader, testing.allocator),
+    // Multi-byte varint booleans: any non-zero value is true per proto3 spec.
+    const multi_bytes = "\xda\x02\x28\x00\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01\xce\xc2\xf1\x05\x80\x80\x80\x80\x20\xff\xff\xff\xff\xff\xff\xff\xff\x7f\x80\x80\x80\x80\x80\x80\x80\x80\x80\x01";
+    var multi_reader: std.Io.Reader = .fixed(multi_bytes);
+    var multi_m = try proto3.TestAllTypesProto3.decode(&multi_reader, testing.allocator);
+    defer multi_m.deinit(std.testing.allocator);
+    try testing.expectEqualSlices(
+        bool,
+        &.{ false, true, true, true, true, true, true },
+        multi_m.repeated_bool.items,
     );
 
     const bytes = "\xda\x02\x07\x00\x00\x00\x00\x01\x00\x00";

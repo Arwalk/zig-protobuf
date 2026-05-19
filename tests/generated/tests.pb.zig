@@ -262,7 +262,7 @@ pub const RepeatedEnum = struct {
     value: std.ArrayList(TopLevelEnum) = .empty,
 
     pub const _desc_table = .{
-        .value = fd(1, .{ .repeated = .@"enum" }),
+        .value = fd(1, .{ .packed_repeated = .@"enum" }),
     };
 
     /// Encodes the message to the writer

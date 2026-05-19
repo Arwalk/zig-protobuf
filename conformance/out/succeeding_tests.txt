@@ -1,0 +1,662 @@
+Recommended.Proto3.FieldMaskNumbersDontRoundTrip.JsonOutput # Should have failed to serialize, but didn't.
+Recommended.Proto3.FieldMaskPathsDontRoundTrip.JsonOutput # Should have failed to serialize, but didn't.
+Recommended.Proto3.FieldMaskTooManyUnderscore.JsonOutput # Should have failed to serialize, but didn't.
+Recommended.Proto3.JsonInput.BytesFieldBase64Url.JsonOutput # Failed to parse input or produce output.
+Recommended.Proto3.JsonInput.BytesFieldBase64Url.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.JsonInput.DurationHas3FractionalDigits.Validator # Expected JSON payload but got type 1
+Recommended.Proto3.JsonInput.DurationHas6FractionalDigits.Validator # Expected JSON payload but got type 1
+Recommended.Proto3.JsonInput.DurationHas9FractionalDigits.Validator # Expected JSON payload but got type 1
+Recommended.Proto3.JsonInput.DurationHasZeroFractionalDigit.Validator # Expected JSON payload but got type 1
+Recommended.Proto3.JsonInput.FieldNameWithDoubleUnderscores.JsonOutput # Failed to parse input or produce output.
+Recommended.Proto3.JsonInput.FieldNameWithDoubleUnderscores.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.JsonInput.FieldNameWithDoubleUnderscores.Validator # Expected JSON payload but got type 1
+Recommended.Proto3.JsonInput.IgnoreUnknownEnumStringValueInMapPart.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.JsonInput.IgnoreUnknownEnumStringValueInMapValue.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.JsonInput.IgnoreUnknownEnumStringValueInOptionalField.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.JsonInput.IgnoreUnknownEnumStringValueInRepeatedField.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.JsonInput.IgnoreUnknownEnumStringValueInRepeatedPart.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.JsonInput.Int64FieldBeString.Validator # JSON payload validation failed.
+Recommended.Proto3.JsonInput.MultilineNoSpaces.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.JsonInput.MultilineWithSpaces.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.JsonInput.NullValueInNormalMessage.Validator # Expected JSON payload but got type 1
+Recommended.Proto3.JsonInput.NullValueInOtherOneofNewFormat.Validator # Expected JSON payload but got type 1
+Recommended.Proto3.JsonInput.NullValueInOtherOneofOldFormat.Validator # JSON payload validation failed.
+Recommended.Proto3.JsonInput.OneLineNoSpaces.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.JsonInput.OneLineWithSpaces.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.JsonInput.OneofZeroBool.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.JsonInput.OneofZeroBytes.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.JsonInput.OneofZeroDouble.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.JsonInput.OneofZeroEnum.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.JsonInput.OneofZeroFloat.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.JsonInput.OneofZeroMessage.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.JsonInput.OneofZeroString.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.JsonInput.OneofZeroUint32.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.JsonInput.OneofZeroUint64.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.JsonInput.TimestampHas3FractionalDigits.Validator # Expected JSON payload but got type 1
+Recommended.Proto3.JsonInput.TimestampHas6FractionalDigits.Validator # Expected JSON payload but got type 1
+Recommended.Proto3.JsonInput.TimestampHas9FractionalDigits.Validator # Expected JSON payload but got type 1
+Recommended.Proto3.JsonInput.TimestampHasZeroFractionalDigit.Validator # Expected JSON payload but got type 1
+Recommended.Proto3.JsonInput.TimestampZeroNormalized.Validator # Expected JSON payload but got type 1
+Recommended.Proto3.JsonInput.Uint64FieldBeString.Validator # JSON payload validation failed.
+Recommended.Proto3.ProtobufInput.OneofZeroBool.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.ProtobufInput.OneofZeroBytes.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.ProtobufInput.OneofZeroDouble.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.ProtobufInput.OneofZeroEnum.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.ProtobufInput.OneofZeroFloat.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.ProtobufInput.OneofZeroMessage.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.ProtobufInput.OneofZeroMessageSetTwice.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.ProtobufInput.OneofZeroString.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.ProtobufInput.OneofZeroUint32.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.ProtobufInput.OneofZeroUint64.JsonOutput # JSON output we received from test was unparseable.
+Recommended.Proto3.ProtobufInput.ValidDataOneofBinary.MESSAGE.Merge.ProtobufOutput # Output was not equivalent to reference message: Expect: \202\007\014\022\012\010\001\020\001\310\005\001\310\005\001, but got: \
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.BOOL.PackedInput.DefaultOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.BOOL.PackedInput.PackedOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.BOOL.PackedInput.UnpackedOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.BOOL.UnpackedInput.DefaultOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.BOOL.UnpackedInput.PackedOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.BOOL.UnpackedInput.UnpackedOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.ENUM.PackedInput.DefaultOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.ENUM.PackedInput.PackedOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.ENUM.PackedInput.UnpackedOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.ENUM.UnpackedInput.DefaultOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.ENUM.UnpackedInput.PackedOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.ENUM.UnpackedInput.UnpackedOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.INT32.PackedInput.DefaultOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.INT32.PackedInput.PackedOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.INT32.PackedInput.UnpackedOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.INT32.UnpackedInput.DefaultOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.INT32.UnpackedInput.PackedOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.INT32.UnpackedInput.UnpackedOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.UINT32.PackedInput.DefaultOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.UINT32.PackedInput.PackedOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.UINT32.PackedInput.UnpackedOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.UINT32.UnpackedInput.DefaultOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.UINT32.UnpackedInput.PackedOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataRepeated.UINT32.UnpackedInput.UnpackedOutput.ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataScalarBinary.BOOL[2].ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataScalarBinary.BOOL[3].ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataScalarBinary.BOOL[4].ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataScalarBinary.BOOL[5].ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataScalarBinary.BOOL[6].ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataScalarBinary.ENUM[4].ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataScalarBinary.ENUM[5].ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataScalarBinary.INT32[6].ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataScalarBinary.INT32[7].ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataScalarBinary.INT32[8].ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataScalarBinary.INT32[9].ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataScalarBinary.UINT32[3].ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataScalarBinary.UINT32[8].ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ProtobufInput.ValidDataScalarBinary.UINT32[9].ProtobufOutput # Failed to parse input or produce output.
+Recommended.Proto3.ValueRejectInfNumberValue.JsonOutput # Should have failed to serialize, but didn't.
+Recommended.Proto3.ValueRejectNanNumberValue.JsonOutput # Should have failed to serialize, but didn't.
+Required.Proto3.DurationProtoInputTooLarge.JsonOutput # Should have failed to serialize, but didn't.
+Required.Proto3.DurationProtoInputTooSmall.JsonOutput # Should have failed to serialize, but didn't.
+Required.Proto3.DurationProtoNanosTooLarge.JsonOutput # Should have failed to serialize, but didn't.
+Required.Proto3.DurationProtoNanosTooSmall.JsonOutput # Should have failed to serialize, but didn't.
+Required.Proto3.DurationProtoNanosWrongSign.JsonOutput # Should have failed to serialize, but didn't.
+Required.Proto3.DurationProtoNanosWrongSignNegativeSecs.JsonOutput # Should have failed to serialize, but didn't.
+Required.Proto3.JsonInput.AllFieldAcceptNull.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.AllFieldAcceptNull.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.Any.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.Any.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.AnyNested.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.AnyNested.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.AnyNull.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.AnyUnorderedTypeTag.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.AnyUnorderedTypeTag.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.AnyWithDuration.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.AnyWithDuration.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.AnyWithFieldMask.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.AnyWithFieldMask.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.AnyWithInt32ValueWrapper.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.AnyWithInt32ValueWrapper.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.AnyWithNoType.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.AnyWithStruct.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.AnyWithStruct.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.AnyWithTimestamp.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.AnyWithTimestamp.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.AnyWithValueForInteger.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.AnyWithValueForInteger.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.AnyWithValueForJsonObject.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.AnyWithValueForJsonObject.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.BoolFieldFalse.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.BoolFieldTrue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.BoolMapEscapedKey.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.BoolMapEscapedKey.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.BoolMapField.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.BoolMapField.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.BytesField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.BytesRepeatedField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.DoubleFieldInfinity.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.DoubleFieldMaxNegativeValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.DoubleFieldMaxPositiveValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.DoubleFieldMinNegativeValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.DoubleFieldMinPositiveValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.DoubleFieldNan.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.DoubleFieldNegativeInfinity.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.DoubleFieldQuotedExponentialValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.DoubleFieldQuotedValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.DoubleFieldTooLarge # Should have failed to parse, but didn't.
+Required.Proto3.JsonInput.DoubleFieldTooSmall # Should have failed to parse, but didn't.
+Required.Proto3.JsonInput.DurationMaxValue.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.DurationMaxValue.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.DurationMinValue.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.DurationMinValue.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.DurationNegativeNanos.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.DurationNegativeNanos.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.DurationNegativeSeconds.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.DurationNegativeSeconds.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.DurationNull.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.DurationRepeatedValue.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.DurationRepeatedValue.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.EmptyFieldMask.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.EmptyFieldMask.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.EnumField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.EnumFieldNumericValueNonZero.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.EnumFieldNumericValueZero.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.EnumFieldWithAlias.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.EnumFieldWithAlias.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.EnumFieldWithAliasDifferentCase.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.EnumFieldWithAliasDifferentCase.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.EnumFieldWithAliasLowerCase.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.EnumFieldWithAliasLowerCase.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.EnumFieldWithAliasUseAlias.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.EnumRepeatedField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.FieldMask.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.FieldMask.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.FieldNameEscaped.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.FieldNameInLowerCamelCase.Validator # Expected JSON payload but got type 1
+Required.Proto3.JsonInput.FieldNameInSnakeCase.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.FieldNameInSnakeCase.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.FieldNameWithMixedCases.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.FieldNameWithMixedCases.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.FieldNameWithMixedCases.Validator # Expected JSON payload but got type 1
+Required.Proto3.JsonInput.FieldNameWithNumbers.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.FloatFieldInfinity.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.FloatFieldMaxNegativeValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.FloatFieldMaxPositiveValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.FloatFieldMinNegativeValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.FloatFieldMinPositiveValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.FloatFieldNan.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.FloatFieldNegativeInfinity.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.FloatFieldQuotedExponentialValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.FloatFieldQuotedValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.FloatFieldTooLarge # Should have failed to parse, but didn't.
+Required.Proto3.JsonInput.FloatFieldTooSmall # Should have failed to parse, but didn't.
+Required.Proto3.JsonInput.HelloWorld.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Int32FieldExponentialFormat.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Int32FieldFloatTrailingZero.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Int32FieldMaxFloatValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Int32FieldMaxValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Int32FieldMinFloatValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Int32FieldMinValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Int32FieldQuotedExponentialValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Int32FieldStringValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Int32FieldStringValueEscaped.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Int32FieldStringValueZero.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Int32MapEscapedKey.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.Int32MapEscapedKey.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.Int32MapField.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.Int32MapField.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.Int64FieldMaxValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Int64FieldMaxValueNotQuoted.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Int64FieldMinValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Int64FieldMinValueNotQuoted.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Int64MapEscapedKey.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.Int64MapEscapedKey.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.Int64MapField.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.Int64MapField.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.MessageField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.MessageMapField.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.MessageMapField.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.MessageRepeatedField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.OneofFieldDuplicate # Should have failed to parse, but didn't.
+Required.Proto3.JsonInput.OneofFieldNullFirst.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OneofFieldNullFirst.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OneofFieldNullSecond.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OneofFieldNullSecond.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalBoolWrapper.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalBoolWrapper.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalBytesWrapper.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalBytesWrapper.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalDoubleWrapper.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalDoubleWrapper.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalFloatWrapper.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalFloatWrapper.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalInt32Wrapper.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalInt32Wrapper.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalInt64Wrapper.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalInt64Wrapper.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalStringWrapper.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalStringWrapper.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalUint32Wrapper.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalUint32Wrapper.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalUint64Wrapper.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalUint64Wrapper.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalWrapperTypesWithNonDefaultValue.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OptionalWrapperTypesWithNonDefaultValue.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.OriginalProtoFieldName.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.PrimitiveRepeatedField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.RepeatedBoolWrapper.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedBoolWrapper.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedBytesWrapper.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedBytesWrapper.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedDoubleWrapper.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedDoubleWrapper.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedFloatWrapper.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedFloatWrapper.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedInt32Wrapper.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedInt32Wrapper.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedInt64Wrapper.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedInt64Wrapper.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedListValue.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedListValue.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedStringWrapper.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedStringWrapper.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedUint32Wrapper.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedUint32Wrapper.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedUint64Wrapper.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedUint64Wrapper.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedValue.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.RepeatedValue.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.SkipsDefaultPrimitive.Validator # Expected JSON payload but got type 1
+Required.Proto3.JsonInput.StringField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.StringFieldEmbeddedNull.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.StringFieldEscape.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.StringFieldSurrogatePair.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.StringFieldUnicode.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.StringFieldUnicodeEscape.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.StringFieldUnicodeEscapeWithLowercaseHexLetters.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.StringRepeatedField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Struct.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.Struct.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.StructWithEmptyListValue.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.StructWithEmptyListValue.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampEpochValue.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampEpochValue.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampLeap.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampLeap.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampLittleAfterEpochlValue.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampLittleAfterEpochlValue.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampLittleBeforeEpochValue.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampLittleBeforeEpochValue.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampMaxValue.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampMaxValue.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampMinValue.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampMinValue.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampNanoAfterEpochlValue.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampNanoAfterEpochlValue.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampNanoBeforeEpochValue.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampNanoBeforeEpochValue.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampNull.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.TimestampRepeatedValue.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampRepeatedValue.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampTenAndHalfSecondsAfterEpochValue.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampTenAndHalfSecondsAfterEpochValue.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampTenAndHalfSecondsBeforeEpochValue.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampTenAndHalfSecondsBeforeEpochValue.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampWithNegativeOffset.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampWithNegativeOffset.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampWithPositiveOffset.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.TimestampWithPositiveOffset.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.Uint32FieldMaxFloatValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Uint32FieldMaxValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Uint32MapField.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.Uint32MapField.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.Uint64FieldMaxValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Uint64FieldMaxValueNotQuoted.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.Uint64MapField.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.Uint64MapField.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.ValueAcceptBool.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.ValueAcceptBool.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.ValueAcceptFloat.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.ValueAcceptFloat.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.ValueAcceptInteger.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.ValueAcceptInteger.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.ValueAcceptList.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.ValueAcceptList.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.ValueAcceptNull.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.JsonInput.ValueAcceptNull.ProtobufOutput # Output was not equivalent to reference message: deleted: optional_value: { null_value: NULL_VALUE }
+Required.Proto3.JsonInput.ValueAcceptObject.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.ValueAcceptObject.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.ValueAcceptString.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.ValueAcceptString.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.WrapperTypesWithNullValue.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.JsonInput.WrapperTypesWithNullValue.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.DoubleFieldNormalizeQuietNan.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.DoubleFieldNormalizeSignalingNan.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.FloatFieldNormalizeQuietNan.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.FloatFieldNormalizeSignalingNan.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.IllegalZeroFieldNum_Case_0 # Should have failed to parse, but didn't.
+Required.Proto3.ProtobufInput.IllegalZeroFieldNum_Case_1 # Should have failed to parse, but didn't.
+Required.Proto3.ProtobufInput.IllegalZeroFieldNum_Case_2 # Should have failed to parse, but didn't.
+Required.Proto3.ProtobufInput.IllegalZeroFieldNum_Case_3 # Should have failed to parse, but didn't.
+Required.Proto3.ProtobufInput.RepeatedScalarMessageMerge.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.RepeatedScalarMessageMerge.ProtobufOutput # Output was not equivalent to reference message: deleted: optional_nested_message.corecursive: { optional_int32: 4321 optional_in
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.BOOL.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.BOOL.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.BYTES.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.DOUBLE.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.ENUM.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.ENUM.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.FIXED32.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.FIXED64.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.FLOAT.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.INT32.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.INT32.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.INT64.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.SFIXED32.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.SFIXED64.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.SINT32.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.SINT64.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.STRING.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.UINT32.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.UINT32.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.RepeatedScalarSelectsLast.UINT64.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.UnknownOrdering.ProtobufOutput # Unknown field mismatch
+Required.Proto3.ProtobufInput.UnknownVarint.ProtobufOutput # Output was not equivalent to reference message: Expect: \250\037\001, but got:
+Required.Proto3.ProtobufInput.UnmatchedEndGroupNestedLen # Should have failed to parse, but didn't.
+Required.Proto3.ProtobufInput.UnmatchedEndGroupUnknown # Should have failed to parse, but didn't.
+Required.Proto3.ProtobufInput.UnmatchedStartGroupNestedLen # Should have failed to parse, but didn't.
+Required.Proto3.ProtobufInput.UnmatchedStartGroupUnknown # Should have failed to parse, but didn't.
+Required.Proto3.ProtobufInput.ValidDataMap.BOOL.BOOL.Default.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.BOOL.BOOL.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.BOOL.BOOL.DuplicateKeyInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.BOOL.BOOL.DuplicateValueInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.BOOL.BOOL.MissingDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.BOOL.BOOL.NonDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.BOOL.BOOL.Unordered.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.FIXED32.FIXED32.Default.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.FIXED32.FIXED32.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.FIXED32.FIXED32.DuplicateKeyInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.FIXED32.FIXED32.DuplicateValueInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.FIXED32.FIXED32.MissingDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.FIXED32.FIXED32.NonDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.FIXED32.FIXED32.Unordered.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.FIXED64.FIXED64.Default.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.FIXED64.FIXED64.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.FIXED64.FIXED64.DuplicateKeyInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.FIXED64.FIXED64.DuplicateValueInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.FIXED64.FIXED64.MissingDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.FIXED64.FIXED64.NonDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.FIXED64.FIXED64.Unordered.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.DOUBLE.Default.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.DOUBLE.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.DOUBLE.DuplicateKeyInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.DOUBLE.DuplicateValueInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.DOUBLE.MissingDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.DOUBLE.NonDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.DOUBLE.Unordered.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.FLOAT.Default.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.FLOAT.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.FLOAT.DuplicateKeyInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.FLOAT.DuplicateValueInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.FLOAT.MissingDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.FLOAT.NonDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.FLOAT.Unordered.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.INT32.Default.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.INT32.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.INT32.DuplicateKeyInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.INT32.DuplicateValueInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.INT32.MissingDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.INT32.NonDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT32.INT32.Unordered.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT64.INT64.Default.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT64.INT64.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT64.INT64.DuplicateKeyInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT64.INT64.DuplicateValueInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT64.INT64.MissingDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT64.INT64.NonDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.INT64.INT64.Unordered.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SFIXED32.SFIXED32.Default.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SFIXED32.SFIXED32.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SFIXED32.SFIXED32.DuplicateKeyInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SFIXED32.SFIXED32.DuplicateValueInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SFIXED32.SFIXED32.MissingDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SFIXED32.SFIXED32.NonDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SFIXED32.SFIXED32.Unordered.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SFIXED64.SFIXED64.Default.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SFIXED64.SFIXED64.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SFIXED64.SFIXED64.DuplicateKeyInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SFIXED64.SFIXED64.DuplicateValueInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SFIXED64.SFIXED64.MissingDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SFIXED64.SFIXED64.NonDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SFIXED64.SFIXED64.Unordered.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SINT32.SINT32.Default.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SINT32.SINT32.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SINT32.SINT32.DuplicateKeyInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SINT32.SINT32.DuplicateValueInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SINT32.SINT32.MissingDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SINT32.SINT32.NonDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SINT32.SINT32.Unordered.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SINT64.SINT64.Default.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SINT64.SINT64.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SINT64.SINT64.DuplicateKeyInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SINT64.SINT64.DuplicateValueInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SINT64.SINT64.MissingDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SINT64.SINT64.NonDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.SINT64.SINT64.Unordered.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.BYTES.Default.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.BYTES.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.BYTES.DuplicateKeyInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.BYTES.DuplicateValueInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.BYTES.MissingDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.BYTES.NonDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.BYTES.Unordered.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.ENUM.Default.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.ENUM.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.ENUM.DuplicateKeyInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.ENUM.DuplicateValueInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.ENUM.MissingDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.ENUM.NonDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.ENUM.Unordered.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.MESSAGE.Default.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.MESSAGE.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.MESSAGE.DuplicateKeyInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.MESSAGE.DuplicateValueInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.MESSAGE.MergeValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.MESSAGE.MergeValue.ProtobufOutput # Output was not equivalent to reference message: deleted: map_string_nested_message[''].corecursive: { optional_int64: 1 repeated
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.MESSAGE.MissingDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.MESSAGE.NonDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.MESSAGE.Unordered.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.STRING.Default.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.STRING.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.STRING.DuplicateKeyInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.STRING.DuplicateValueInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.STRING.MissingDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.STRING.NonDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.STRING.Unordered.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.UINT32.UINT32.Default.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.UINT32.UINT32.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.UINT32.UINT32.DuplicateKeyInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.UINT32.UINT32.DuplicateValueInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.UINT32.UINT32.MissingDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.UINT32.UINT32.NonDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.UINT32.UINT32.Unordered.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.UINT64.UINT64.Default.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.UINT64.UINT64.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.UINT64.UINT64.DuplicateKeyInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.UINT64.UINT64.DuplicateValueInMapEntry.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.UINT64.UINT64.MissingDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.UINT64.UINT64.NonDefault.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.UINT64.UINT64.Unordered.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.BOOL.DefaultValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.BOOL.MultipleValuesForDifferentField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.BOOL.MultipleValuesForSameField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.BOOL.NonDefaultValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.BYTES.DefaultValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.BYTES.MultipleValuesForDifferentField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.BYTES.MultipleValuesForSameField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.BYTES.NonDefaultValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.DOUBLE.DefaultValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.DOUBLE.MultipleValuesForDifferentField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.DOUBLE.MultipleValuesForSameField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.DOUBLE.NonDefaultValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.ENUM.DefaultValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.ENUM.MultipleValuesForDifferentField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.ENUM.MultipleValuesForSameField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.ENUM.NonDefaultValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.FLOAT.DefaultValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.FLOAT.MultipleValuesForDifferentField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.FLOAT.MultipleValuesForSameField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.FLOAT.NonDefaultValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.MESSAGE.DefaultValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.MESSAGE.Merge.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.MESSAGE.Merge.ProtobufOutput # Output was not equivalent to reference message: deleted: oneof_nested_message.corecursive: { optional_int32: 1 optional_int64: 1
+Required.Proto3.ProtobufInput.ValidDataOneof.MESSAGE.MultipleValuesForDifferentField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.MESSAGE.MultipleValuesForSameField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.MESSAGE.NonDefaultValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.STRING.DefaultValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.STRING.MultipleValuesForDifferentField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.STRING.MultipleValuesForSameField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.STRING.NonDefaultValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.UINT32.DefaultValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.UINT32.MultipleValuesForDifferentField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.UINT32.MultipleValuesForSameField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.UINT32.NonDefaultValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.UINT64.DefaultValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.UINT64.MultipleValuesForDifferentField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.UINT64.MultipleValuesForSameField.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataOneof.UINT64.NonDefaultValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.BOOL.PackedInput.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataRepeated.BOOL.PackedInput.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataRepeated.BOOL.UnpackedInput.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataRepeated.BOOL.UnpackedInput.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataRepeated.BYTES.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.DOUBLE.PackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.DOUBLE.UnpackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.ENUM.PackedInput.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataRepeated.ENUM.PackedInput.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataRepeated.ENUM.UnpackedInput.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataRepeated.ENUM.UnpackedInput.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataRepeated.FIXED32.PackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.FIXED32.UnpackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.FIXED64.PackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.FIXED64.UnpackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.FLOAT.PackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.FLOAT.UnpackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.INT32.PackedInput.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataRepeated.INT32.PackedInput.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataRepeated.INT32.UnpackedInput.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataRepeated.INT32.UnpackedInput.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataRepeated.INT64.PackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.INT64.UnpackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.MESSAGE.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.SFIXED32.PackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.SFIXED32.UnpackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.SFIXED64.PackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.SFIXED64.UnpackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.SINT32.PackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.SINT32.UnpackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.SINT64.PackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.SINT64.UnpackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.STRING.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.UINT32.PackedInput.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataRepeated.UINT32.PackedInput.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataRepeated.UINT32.UnpackedInput.JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataRepeated.UINT32.UnpackedInput.ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataRepeated.UINT64.PackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataRepeated.UINT64.UnpackedInput.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.BOOL[0].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.BOOL[1].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.BOOL[2].JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.BOOL[2].ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.BOOL[3].JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.BOOL[3].ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.BOOL[4].JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.BOOL[4].ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.BOOL[5].JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.BOOL[5].ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.BOOL[6].JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.BOOL[6].ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.BYTES[0].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.BYTES[1].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.BYTES[2].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.BYTES[3].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.DOUBLE[0].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.DOUBLE[1].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.DOUBLE[2].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.DOUBLE[3].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.ENUM[0].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.ENUM[1].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.ENUM[2].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.ENUM[3].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.ENUM[4].JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.ENUM[4].ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.ENUM[5].JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.ENUM[5].ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.FIXED32[0].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.FIXED32[1].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.FIXED32[2].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.FIXED64[0].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.FIXED64[1].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.FIXED64[2].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.FLOAT[0].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.FLOAT[1].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.FLOAT[2].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.FLOAT[3].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.FLOAT[4].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.INT32[0].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.INT32[1].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.INT32[2].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.INT32[3].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.INT32[4].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.INT32[5].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.INT32[6].JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.INT32[6].ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.INT32[7].JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.INT32[7].ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.INT32[8].JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.INT32[8].ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.INT32[9].JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.INT32[9].ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.INT64[0].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.INT64[1].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.INT64[2].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.INT64[3].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.MESSAGE[0].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.MESSAGE[1].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.SFIXED32[0].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.SFIXED32[1].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.SFIXED32[2].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.SFIXED32[3].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.SFIXED64[0].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.SFIXED64[1].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.SFIXED64[2].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.SFIXED64[3].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.SINT32[0].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.SINT32[1].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.SINT32[2].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.SINT32[3].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.SINT32[4].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.SINT64[0].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.SINT64[1].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.SINT64[2].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.SINT64[3].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.STRING[0].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.STRING[1].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.STRING[2].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.STRING[3].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.STRING[4].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.STRING[5].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.STRING[6].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.UINT32[0].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.UINT32[1].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.UINT32[2].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.UINT32[3].JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.UINT32[3].ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.UINT32[4].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.UINT32[5].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.UINT32[6].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.UINT32[7].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.UINT32[8].JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.UINT32[8].ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.UINT32[9].JsonOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.UINT32[9].ProtobufOutput # Failed to parse input or produce output.
+Required.Proto3.ProtobufInput.ValidDataScalar.UINT64[0].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.UINT64[1].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataScalar.UINT64[2].JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.TimestampProtoInputTooLarge.JsonOutput # Should have failed to serialize, but didn't.
+Required.Proto3.TimestampProtoInputTooSmall.JsonOutput # Should have failed to serialize, but didn't.
+Required.Proto3.TimestampProtoNanoTooLarge.JsonOutput # Should have failed to serialize, but didn't.
+Required.Proto3.TimestampProtoNegativeNanos.JsonOutput # Should have failed to serialize, but didn't.
