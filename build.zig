@@ -142,13 +142,13 @@ pub fn build(b: *std.Build) !void {
         }),
     };
 
-    const convertStep = RunProtocStep.create(b, target, .{
+    const convertStep = RunProtocStep.createWithGenerator(b, exe, .{
         .destination_directory = b.path("tests/.generated"),
         .source_files = &.{b.path("tests/protos_for_test/generated_in_ci.proto")},
         .include_directories = &.{b.path("tests/protos_for_test")},
     });
 
-    const convertStep2 = RunProtocStep.create(b, target, .{
+    const convertStep2 = RunProtocStep.createWithGenerator(b, exe, .{
         .destination_directory = b.path("tests/generated"),
         .source_files = &.{
             b.path("tests/protos_for_test/all.proto"),
@@ -180,7 +180,7 @@ pub fn build(b: *std.Build) !void {
 
     const bootstrap = b.step("bootstrap", "run the generator over its own sources");
 
-    const bootstrapConversion = RunProtocStep.create(b, target, .{
+    const bootstrapConversion = RunProtocStep.createWithGenerator(b, exe, .{
         .destination_directory = b.path("bootstrapped-generator"),
         .source_files = &.{
             include.path(b, "google/protobuf/compiler/plugin.proto"),

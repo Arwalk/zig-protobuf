@@ -1,0 +1,12 @@
+.{
+    .name = .jsoncpp,
+    .version = "1.9.6",
+    .fingerprint = 0xca2caea5ed1bc7f1,
+    .dependencies = .{
+        .jsoncpp = .{
+            .url = "https://github.com/open-source-parsers/jsoncpp/archive/refs/tags/1.9.6.tar.gz",
+            .hash = "N-V-__8AAJ_MDADYBz7V8J8Igy_NuJmzJbaPe5JpywrD2Ds1",
+        },
+    },
+    .paths = .{""},
+}
