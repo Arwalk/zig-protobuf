@@ -347,20 +347,59 @@ const GenerationContext = struct {
                 }
             }
 
+            const allow_alias = if (e.options) |options| options.allow_alias orelse false else false;
+
             try lines.append(
                 allocator,
                 try std.fmt.allocPrint(allocator, "pub const {s} = enum(i32) {{\n", .{e.name.?}),
             );
 
-            for (e.value.items) |elem| {
+            for (e.value.items, 0..) |elem, elem_i| {
+                if (allow_alias and hasPreviousEnumNumber(e.value.items[0..elem_i], elem.number orelse 0)) {
+                    continue;
+                }
+
                 try lines.append(
                     allocator,
                     try std.fmt.allocPrint(allocator, "   {s} = {},\n", .{ elem.name.?, elem.number orelse 0 }),
                 );
             }
 
-            try lines.append(allocator, "    _,\n};\n\n");
+            try lines.append(allocator, "    _,\n");
+            if (allow_alias and hasEnumAliases(e)) {
+                try lines.append(allocator,
+                    \\    // allow_alias = true: these additional names also map to an emitted enum value.
+                    \\    pub const _json_aliases = &[_]struct { name: []const u8, value: i32 }{
+                );
+                for (e.value.items, 0..) |elem, elem_i| {
+                    const number = elem.number orelse 0;
+                    if (!hasPreviousEnumNumber(e.value.items[0..elem_i], number)) continue;
+                    try lines.append(
+                        allocator,
+                        try std.fmt.allocPrint(allocator, "        .{{ .name = \"{s}\", .value = {} }},\n", .{ elem.name.?, number }),
+                    );
+                }
+                try lines.append(allocator,
+                    \\    };
+                    \\
+                );
+            }
+            try lines.append(allocator, "};\n\n");
         }
+    }
+
+    fn hasPreviousEnumNumber(values: []const descriptor.EnumValueDescriptorProto, number: i32) bool {
+        for (values) |value| {
+            if ((value.number orelse 0) == number) return true;
+        }
+        return false;
+    }
+
+    fn hasEnumAliases(e: descriptor.EnumDescriptorProto) bool {
+        for (e.value.items, 0..) |elem, elem_i| {
+            if (hasPreviousEnumNumber(e.value.items[0..elem_i], elem.number orelse 0)) return true;
+        }
+        return false;
     }
 
     fn escapeName(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
@@ -446,15 +485,8 @@ const GenerationContext = struct {
                     .TYPE_MESSAGE => {
                         // Check if the field type is self-referential
                         if (field.type_name) |type_name| {
-                            const raw_type = type_name;
-                            const dep_name = raw_type[1..]; // Remove leading dot
-                            const last_dot = std.mem.lastIndexOf(u8, dep_name, ".");
-                            const simple_name = if (last_dot) |idx| dep_name[idx + 1 ..] else dep_name;
-
-                            // Get the current message name from fqn
-                            const current_msg = fqn.name().buf;
-
-                            if (std.mem.eql(u8, simple_name, current_msg)) {
+                            const dep_name = type_name[1..]; // Remove leading dot
+                            if (std.mem.eql(u8, dep_name, fqn.buf) or isAncestorFqn(dep_name, fqn.buf)) {
                                 prefix = "?*";
                             } else {
                                 prefix = "?";
@@ -776,6 +808,9 @@ const GenerationContext = struct {
                         .{ try escapeName(allocator, oneof_name), oneof_name },
                     ));
                 }
+            }
+            if (messagePreservesUnknownFields(m, messageFqn)) {
+                try lines.append(allocator, "    _unknown_fields: []const u8 = &.{},\n");
             }
 
             // then print the oneof declarations
@@ -1252,6 +1287,30 @@ fn escapeFqn(allocator: std.mem.Allocator, n: []const u8) ![]const u8 {
 
 fn isRepeated(field: descriptor.FieldDescriptorProto) bool {
     return (field.label orelse return false) == .LABEL_REPEATED;
+}
+
+fn isAncestorFqn(ancestor: []const u8, descendant: []const u8) bool {
+    return descendant.len > ancestor.len and
+        std.mem.startsWith(u8, descendant, ancestor) and
+        descendant[ancestor.len] == '.';
+}
+
+fn messagePreservesUnknownFields(message: descriptor.DescriptorProto, fqn: FullName) bool {
+    if (message.reserved_range.items.len > 0 or message.reserved_name.items.len > 0) {
+        return true;
+    }
+
+    for (message.field.items) |field| {
+        if ((field.type orelse continue) != .TYPE_MESSAGE) continue;
+        const type_name = field.type_name orelse continue;
+        if (type_name.len == 0 or type_name[0] != '.') continue;
+        const dep_name = type_name[1..];
+        if (std.mem.eql(u8, dep_name, fqn.buf) or isAncestorFqn(dep_name, fqn.buf)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 fn isScalarNumeric(t: descriptor.FieldDescriptorProto.Type) bool {

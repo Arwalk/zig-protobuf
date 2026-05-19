@@ -44,6 +44,7 @@ pub const TestAllTypesProto3 = struct {
     optional_aliased_enum: TestAllTypesProto3.AliasedEnum = @enumFromInt(0),
     optional_string_piece: []const u8 = &.{},
     optional_cord: []const u8 = &.{},
+    recursive_message: ?*TestAllTypesProto3 = null,
     repeated_int32: std.ArrayList(i32) = .empty,
     repeated_int64: std.ArrayList(i64) = .empty,
     repeated_uint32: std.ArrayList(u32) = .empty,
@@ -225,6 +226,7 @@ pub const TestAllTypesProto3 = struct {
         .optional_aliased_enum = fd(23, .@"enum"),
         .optional_string_piece = fd(24, .{ .scalar = .string }),
         .optional_cord = fd(25, .{ .scalar = .string }),
+        .recursive_message = fd(27, .submessage),
         .repeated_int32 = fd(31, .{ .packed_repeated = .{ .scalar = .int32 } }),
         .repeated_int64 = fd(32, .{ .packed_repeated = .{ .scalar = .int64 } }),
         .repeated_uint32 = fd(33, .{ .packed_repeated = .{ .scalar = .uint32 } }),
@@ -357,11 +359,11 @@ pub const TestAllTypesProto3 = struct {
     pub const AliasedEnum = enum(i32) {
         ALIAS_FOO = 0,
         ALIAS_BAR = 1,
-        MOO = 2,
+        ALIAS_BAZ = 2,
         _,
-        // allow_alias = true: these additional names also map to integer value 2
+        // allow_alias = true: these additional names also map to an emitted enum value.
         pub const _json_aliases = &[_]struct { name: []const u8, value: i32 }{
-            .{ .name = "ALIAS_BAZ", .value = 2 },
+            .{ .name = "MOO", .value = 2 },
             .{ .name = "moo", .value = 2 },
             .{ .name = "bAz", .value = 2 },
         };
