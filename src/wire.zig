@@ -515,6 +515,39 @@ test decodeRepeated {
             list.items,
         );
     }
+
+     // Pre-allocated capacity (capacity=8, items=0) + malformed packed field:Expand comment
+     // two 2-byte varints (4 bytes consumed) against options.bytes=3 triggers
+     // error.InvalidInput.
+     {
+         var list: std.ArrayList(u32) = .empty;
+         defer list.deinit(std.testing.allocator);
+         
+         try list.ensureTotalCapacity(std.testing.allocator, 8);
+         try list.append(std.testing.allocator, 0x1337);
+
+         // Two varints encoding 270 (0x8e 0x02 each); consumed=4 but options.bytes=3.
+         const input: []const u8 = &.{ 0x8e, 0x02, 0x8e, 0x02 };
+         var reader: std.Io.Reader = .fixed(input);
+
+         try std.testing.expectError(
+             error.InvalidInput,
+             decodeRepeated(
+                 &list,
+                 std.testing.allocator,
+                 .{ .scalar = .uint32 },
+                 &reader,
+                 .{ .bytes = 3 },
+             ),
+         );
+         
+         // previous elements should remain unaltered
+         try std.testing.expectEqual(1, list.items.len);
+         try std.testing.expectEqual(0x1337, list.items[0]);
+         
+         // capacity should remain >8
+         try std.testing.expect(list.capacity >= 8);
+     }
 }
 
 /// Decode a message from reader.
