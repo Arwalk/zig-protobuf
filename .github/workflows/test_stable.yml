@@ -47,7 +47,7 @@ jobs:
       - run: zig build
       - run: zig build conformance-run
         working-directory: conformance
-      - run: git diff --exit-code conformance/out/failing_tests.txt
+      - run: git diff --exit-code conformance/out
 
   benchmark:
     runs-on: ubuntu-latest
