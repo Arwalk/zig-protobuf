@@ -66,6 +66,9 @@ pub fn build(b: *std.Build) !void {
             b.path("protocol/all.proto"),
         },
         .include_directories = &.{},
+        // Preserve unknown fields during binary decode/encode round trips.
+        // Defaults to false.
+        .preserve_unknown_fields = false,
     });
 
     gen_proto.dependOn(&protoc_step.step);
