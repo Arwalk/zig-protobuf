@@ -36,6 +36,7 @@ pub fn getProtocDependency(b: *std.Build) !?*std.Build.Dependency {
     const os: ?[]const u8 = switch (builtin.os.tag) {
         .macos => "osx",
         .linux => "linux",
+        .freebsd, .openbsd, .netbsd, .dragonfly => "bsd",
         else => null,
     };
 
@@ -50,6 +51,8 @@ pub fn getProtocDependency(b: *std.Build) !?*std.Build.Dependency {
 
     const dependencyName = if (builtin.os.tag == .windows)
         try std.mem.concat(b.allocator, u8, &.{"protoc-win64"})
+    else if (os != null and std.mem.eql(u8, os.?, "bsd"))
+        return null // BSDs use system-installed protoc
     else if (os != null and arch != null)
         try std.mem.concat(b.allocator, u8, &.{ "protoc-", os.?, "-", arch.? })
     else
@@ -69,6 +72,24 @@ pub fn getProtocBin(protoc_owner: *std.Build, step: *std.Build.Step) !?[]const u
             return dep.path("bin/protoc.exe").getPath2(protoc_owner, step);
 
         return dep.path("bin/protoc").getPath2(protoc_owner, step);
+    }
+
+    // No prebuilt protoc binary for this platform.
+    // Fall back to a system-installed protoc.
+    return findSystemProtoc(step.owner.graph.io);
+}
+
+/// Search for a system-installed protoc binary in common locations.
+/// This enables building on platforms without prebuilt protoc binaries
+/// (e.g. FreeBSD, OpenBSD, NetBSD) as long as protoc is installed via
+/// the system package manager.
+fn findSystemProtoc(io: Io) ?[]const u8 {
+    const candidates = [_][]const u8{
+        "/usr/local/bin/protoc",
+        "/usr/bin/protoc",
+    };
+    for (candidates) |path| {
+        if (fileExists(io, path)) return path;
     }
     return null;
 }
