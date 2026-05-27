@@ -722,15 +722,34 @@ pub const Timestamp = struct {
         try jws.print("{s}", .{s});
     }
 
+    // Days between the civil epoch (0000-03-01) and the Unix epoch (1970-01-01),
+    // used to shift between the two reference points.
+    const days_to_unix_epoch = 719468;
+    // Years per Gregorian era.
+    const years_per_era = 400;
+    // Days in 4 years (one leap-year cycle): 365*4 + 1.
+    const days_per_4y = 365 * 4 + 1;
+    // Days in 100 years (no century-leap): drops the extra leap day vs 25 * days_per_4y.
+    const days_per_100y = days_per_4y * 25 - 1;
+    // Days in a 400-year Gregorian cycle: adds the leap day back for the era.
+    const days_per_era = days_per_100y * 4 + 1;
+    // Days in 400 years minus 1 (used to identify the last day of an era).
+    const days_per_era_minus1 = days_per_era - 1;
+    // Months are encoded in a 153-day cycle covering Mar–Jul and Aug–Dec.
+    const month_cycle_days = 153;
+    const month_cycle_years = 5;
+
+    /// Converts a Unix day count to a proleptic Gregorian calendar date.
+    /// Uses the Howard Hinnant civil-from-days algorithm (https://howardhinnant.github.io/date_algorithms.html).
     fn civil_from_days(z: i64) struct { year: i64, month: u8, day: u8 } {
-        const z2 = z + 719468;
-        const era: i64 = @divFloor(z2, 146097);
-        const doe: u32 = @intCast(z2 - era * 146097);
-        const yoe: u32 = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
-        const y: i64 = @as(i64, yoe) + era * 400;
+        const z2 = z + days_to_unix_epoch;
+        const era: i64 = @divFloor(z2, days_per_era);
+        const doe: u32 = @intCast(z2 - era * days_per_era);
+        const yoe: u32 = (doe - doe / days_per_4y + doe / days_per_100y - doe / days_per_era_minus1) / 365;
+        const y: i64 = @as(i64, yoe) + era * years_per_era;
         const doy: u32 = doe - (365 * yoe + yoe / 4 - yoe / 100);
-        const mp: u32 = (5 * doy + 2) / 153;
-        const d: u32 = doy - (153 * mp + 2) / 5 + 1;
+        const mp: u32 = (month_cycle_years * doy + 2) / month_cycle_days;
+        const d: u32 = doy - (month_cycle_days * mp + 2) / month_cycle_years + 1;
         const m: u32 = if (mp < 10) mp + 3 else mp - 9;
         return .{
             .year = y + @as(i64, if (m <= 2) 1 else 0),
@@ -739,13 +758,15 @@ pub const Timestamp = struct {
         };
     }
 
+    /// Converts a proleptic Gregorian calendar date to a Unix day count.
+    /// Uses the Howard Hinnant days-from-civil algorithm (https://howardhinnant.github.io/date_algorithms.html).
     fn days_from_civil(y: i64, m: u8, d: u8) i64 {
         const y2 = y - @as(i64, if (m <= 2) 1 else 0);
-        const era: i64 = @divFloor(y2, 400);
-        const yoe: u32 = @intCast(y2 - era * 400);
-        const doy: u32 = (153 * (@as(u32, if (m > 2) m - 3 else m + 9)) + 2) / 5 + d - 1;
+        const era: i64 = @divFloor(y2, years_per_era);
+        const yoe: u32 = @intCast(y2 - era * years_per_era);
+        const doy: u32 = (month_cycle_days * (@as(u32, if (m > 2) m - 3 else m + 9)) + 2) / month_cycle_years + d - 1;
         const doe: u32 = yoe * 365 + yoe / 4 - yoe / 100 + doy;
-        return era * 146097 + @as(i64, doe) - 719468;
+        return era * days_per_era + @as(i64, doe) - days_to_unix_epoch;
     }
 };
 
