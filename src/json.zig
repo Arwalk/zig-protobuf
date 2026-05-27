@@ -288,6 +288,100 @@ fn freeAllocated(allocator: std.mem.Allocator, token: std.json.Token) void {
     }
 }
 
+/// Parse a JSON object key into a protobuf map key type.
+/// JSON object keys are always strings, so non-string key types
+/// (integers, bools) are parsed from their string representation.
+/// Handles both optional and non-optional key types (proto2 vs proto3).
+fn parseMapKey(
+    comptime KeyType: type,
+    comptime key_desc: protobuf.FieldDescriptor,
+    allocator: std.mem.Allocator,
+    source: anytype,
+    options: std.json.ParseOptions,
+) !KeyType {
+    // Unwrap optional layer if present (proto2 map entries may have optional fields)
+    const InnerKeyType = switch (@typeInfo(KeyType)) {
+        .optional => |opt| opt.child,
+        else => KeyType,
+    };
+
+    const key_token = try source.nextAllocMax(allocator, .alloc_if_needed, options.max_value_len.?);
+    const key_str = switch (key_token) {
+        inline .string, .allocated_string => |s| s,
+        else => return error.UnexpectedToken,
+    };
+
+    switch (comptime key_desc.ftype) {
+        .scalar => |scalar| switch (scalar) {
+            .string => {
+                // For string keys: if allocated, take ownership; if slice into source, dupe
+                return switch (key_token) {
+                    .allocated_string => |s| s,
+                    .string => |s| try allocator.dupe(u8, s),
+                    else => unreachable,
+                };
+            },
+            .bool => {
+                defer freeAllocated(allocator, key_token);
+                if (std.mem.eql(u8, key_str, "true")) return true;
+                if (std.mem.eql(u8, key_str, "false")) return false;
+                return error.UnexpectedToken;
+            },
+            else => {
+                // Integer types: parse from decimal string, using the inner (non-optional) type
+                defer freeAllocated(allocator, key_token);
+                return std.fmt.parseInt(InnerKeyType, key_str, 10) catch return error.Overflow;
+            },
+        },
+        else => unreachable, // Map keys can only be scalars
+    }
+}
+
+/// Parse a JSON value into a protobuf map value type.
+fn parseMapValue(
+    comptime ValueType: type,
+    comptime value_desc: protobuf.FieldDescriptor,
+    allocator: std.mem.Allocator,
+    source: anytype,
+    options: std.json.ParseOptions,
+) !ValueType {
+    return switch (comptime value_desc.ftype) {
+        .scalar => |scalar| switch (scalar) {
+            .bytes => try parse_bytes(allocator, source, options),
+            else => try std.json.innerParse(ValueType, allocator, source, options),
+        },
+        .submessage, .@"enum" => try std.json.innerParse(ValueType, allocator, source, options),
+        else => unreachable, // map values can't be repeated/oneof
+    };
+}
+
+/// Write a protobuf map key as a JSON object field name.
+/// All JSON object keys must be strings, so non-string key types
+/// (integers, bools) are formatted as their string representation.
+/// Handles both optional and non-optional key types (proto2 vs proto3).
+fn writeMapKey(raw_key: anytype, comptime key_desc: protobuf.FieldDescriptor, jws: anytype) !bool {
+    // Unwrap optional keys (proto2 map entries may have optional fields)
+    const key = switch (@typeInfo(@TypeOf(raw_key))) {
+        .optional => raw_key orelse return false,
+        else => raw_key,
+    };
+    switch (comptime key_desc.ftype) {
+        .scalar => |scalar| switch (scalar) {
+            .string => try jws.objectField(key),
+            .bool => try jws.objectField(if (key) "true" else "false"),
+            else => {
+                // Integer types: format as decimal string for JSON object key
+                // i64 min "-9223372036854775808" and u64 max "18446744073709551615" are both exactly 20 chars
+                var buf: [20]u8 = undefined;
+                const key_str = std.fmt.bufPrint(&buf, "{d}", .{key}) catch unreachable;
+                try jws.objectField(key_str);
+            },
+        },
+        else => unreachable, // Map keys can only be scalars (no floats, bytes, enum, message)
+    }
+    return true;
+}
+
 fn stringify_struct_field_with_options(
     struct_field: anytype,
     field_descriptor: protobuf.FieldDescriptor,
@@ -319,19 +413,43 @@ fn stringify_struct_field_with_options(
         .@"enum" => try print_numeric(value, jws),
         .repeated, .packed_repeated => |repeated| {
             const slice = value.items;
-            try jws.beginArray();
-            for (slice) |el| {
-                switch (repeated) {
-                    .scalar => |scalar| switch (scalar) {
-                        .bytes => try print_bytes(el, jws),
-                        .string => try jws.write(el),
-                        else => try print_numeric(el, jws),
-                    },
-                    .@"enum" => try print_numeric(el, jws),
-                    .submessage => try stringifyOpts(@TypeOf(el), &el, jws, pb_options),
+            // Detect map entry types at comptime: submessage with _is_map_entry marker
+            const ElType = @typeInfo(@TypeOf(slice)).pointer.child;
+            const is_map = comptime blk: {
+                if (@as(std.meta.Tag(@TypeOf(repeated)), repeated) != .submessage) break :blk false;
+                break :blk @hasDecl(ElType, "_is_map_entry") and ElType._is_map_entry;
+            };
+
+            if (is_map) {
+                // Protobuf JSON spec: maps serialize as JSON objects
+                try jws.beginObject();
+                for (slice) |el| {
+                    if (try writeMapKey(el.key, @field(ElType._desc_table, "key"), jws)) {
+                        const val_null = if (comptime @typeInfo(@TypeOf(el.value)) == .optional) el.value == null else false;
+                        if (val_null) {
+                            try jws.beginObject();
+                            try jws.endObject();
+                        } else {
+                            try stringify_struct_field_with_options(el.value, @field(ElType._desc_table, "value"), jws, pb_options);
+                        }
+                    }
                 }
+                try jws.endObject();
+            } else {
+                try jws.beginArray();
+                for (slice) |el| {
+                    switch (repeated) {
+                        .scalar => |scalar| switch (scalar) {
+                            .bytes => try print_bytes(el, jws),
+                            .string => try jws.write(el),
+                            else => try print_numeric(el, jws),
+                        },
+                        .@"enum" => try print_numeric(el, jws),
+                        .submessage => try stringifyOpts(@TypeOf(el), &el, jws, pb_options),
+                    }
+                }
+                try jws.endArray();
             }
-            try jws.endArray();
         },
         .oneof => |oneof| {
             const union_info = @typeInfo(@TypeOf(value)).@"union";
@@ -410,19 +528,53 @@ fn stringify_struct_field(
         .repeated, .packed_repeated => |repeated| {
             // ArrayListUnmanaged
             const slice = value.items;
-            try jws.beginArray();
-            for (slice) |el| {
-                switch (repeated) {
-                    .scalar => |scalar| switch (scalar) {
-                        .bytes => try print_bytes(el, jws),
-                        .string => try jws.write(el),
-                        else => try print_numeric(el, jws),
-                    },
-                    .@"enum" => try print_numeric(el, jws),
-                    .submessage => try jws.write(el),
+            // Detect map entry types at comptime: submessage with _is_map_entry marker
+            const ElType = @typeInfo(@TypeOf(slice)).pointer.child;
+            const is_map = comptime blk: {
+                if (@as(std.meta.Tag(@TypeOf(repeated)), repeated) != .submessage) break :blk false;
+                break :blk @hasDecl(ElType, "_is_map_entry") and ElType._is_map_entry;
+            };
+
+            if (is_map) {
+                // Protobuf JSON spec: maps serialize as JSON objects
+                try jws.beginObject();
+                for (slice) |el| {
+                    if (try writeMapKey(el.key, @field(ElType._desc_table, "key"), jws)) {
+                        const val_null = if (comptime @typeInfo(@TypeOf(el.value)) == .optional) el.value == null else false;
+                        if (val_null) {
+                            try jws.beginObject();
+                            try jws.endObject();
+                        } else {
+                            const value_desc = @field(ElType._desc_table, "value");
+                            switch (comptime value_desc.ftype) {
+                                .scalar => |scalar| switch (scalar) {
+                                    .bytes => try print_bytes(el.value, jws),
+                                    .string => try jws.write(el.value),
+                                    else => try print_numeric(el.value, jws),
+                                },
+                                .@"enum" => try print_numeric(el.value, jws),
+                                .submessage => try jws.write(el.value),
+                                else => unreachable, // map values can't be repeated/oneof
+                            }
+                        }
+                    }
                 }
+                try jws.endObject();
+            } else {
+                try jws.beginArray();
+                for (slice) |el| {
+                    switch (repeated) {
+                        .scalar => |scalar| switch (scalar) {
+                            .bytes => try print_bytes(el, jws),
+                            .string => try jws.write(el),
+                            else => try print_numeric(el, jws),
+                        },
+                        .@"enum" => try print_numeric(el, jws),
+                        .submessage => try jws.write(el),
+                    }
+                }
+                try jws.endArray();
             }
-            try jws.endArray();
         },
         .oneof => |oneof| {
             // Tagged union type
@@ -481,42 +633,94 @@ fn parseStructField(
     ).ftype) {
         .repeated, .packed_repeated => |repeated| list: {
             // repeated T -> ArrayListUnmanaged(T)
-            switch (try source.peekNextTokenType()) {
-                .array_begin => {
-                    std.debug.assert(.array_begin == try source.next());
-                    const child_type = @typeInfo(
-                        fieldInfo.type.Slice,
-                    ).pointer.child;
-                    var array_list: std.ArrayList(child_type) = .empty;
-                    while (true) {
-                        if (.array_end == try source.peekNextTokenType()) {
-                            _ = try source.next();
-                            break;
+            const child_type = @typeInfo(
+                fieldInfo.type.Slice,
+            ).pointer.child;
+
+            // Detect map entry types at comptime
+            const is_map = comptime blk: {
+                if (@as(std.meta.Tag(@TypeOf(repeated)), repeated) != .submessage) break :blk false;
+                break :blk @hasDecl(child_type, "_is_map_entry") and child_type._is_map_entry;
+            };
+
+            if (is_map) {
+                // Protobuf JSON spec: maps are JSON objects
+                switch (try source.peekNextTokenType()) {
+                    .object_begin => {
+                        std.debug.assert(.object_begin == try source.next());
+                        var array_list: std.ArrayList(child_type) = .empty;
+                        while (true) {
+                            if (.object_end == try source.peekNextTokenType()) {
+                                _ = try source.next();
+                                break;
+                            }
+                            try array_list.ensureUnusedCapacity(allocator, 1);
+                            var entry: child_type = undefined;
+                            entry.key = try parseMapKey(
+                                @TypeOf(entry.key),
+                                @field(child_type._desc_table, "key"),
+                                allocator,
+                                source,
+                                options,
+                            );
+                            // Free string key allocation if value parsing fails
+                            const key_ftype = comptime @field(child_type._desc_table, "key").ftype;
+                            const key_is_string = comptime (key_ftype == .scalar and key_ftype.scalar == .string);
+                            errdefer if (key_is_string) {
+                                if (@typeInfo(@TypeOf(entry.key)) == .optional) {
+                                    if (entry.key) |k| allocator.free(k);
+                                } else {
+                                    allocator.free(entry.key);
+                                }
+                            };
+                            entry.value = try parseMapValue(
+                                @TypeOf(entry.value),
+                                @field(child_type._desc_table, "value"),
+                                allocator,
+                                source,
+                                options,
+                            );
+                            array_list.appendAssumeCapacity(entry);
                         }
-                        try array_list.ensureUnusedCapacity(allocator, 1);
-                        array_list.appendAssumeCapacity(switch (repeated) {
-                            .scalar => |scalar| switch (scalar) {
-                                .bytes => try parse_bytes(allocator, source, options),
-                                else => try std.json.innerParse(
-                                    child_type,
-                                    allocator,
-                                    source,
-                                    options,
-                                ),
-                            },
-                            .submessage, .@"enum" => other: {
-                                break :other try std.json.innerParse(
-                                    child_type,
-                                    allocator,
-                                    source,
-                                    options,
-                                );
-                            },
-                        });
-                    }
-                    break :list array_list;
-                },
-                else => return error.UnexpectedToken,
+                        break :list array_list;
+                    },
+                    else => return error.UnexpectedToken,
+                }
+            } else {
+                switch (try source.peekNextTokenType()) {
+                    .array_begin => {
+                        std.debug.assert(.array_begin == try source.next());
+                        var array_list: std.ArrayList(child_type) = .empty;
+                        while (true) {
+                            if (.array_end == try source.peekNextTokenType()) {
+                                _ = try source.next();
+                                break;
+                            }
+                            try array_list.ensureUnusedCapacity(allocator, 1);
+                            array_list.appendAssumeCapacity(switch (repeated) {
+                                .scalar => |scalar| switch (scalar) {
+                                    .bytes => try parse_bytes(allocator, source, options),
+                                    else => try std.json.innerParse(
+                                        child_type,
+                                        allocator,
+                                        source,
+                                        options,
+                                    ),
+                                },
+                                .submessage, .@"enum" => other: {
+                                    break :other try std.json.innerParse(
+                                        child_type,
+                                        allocator,
+                                        source,
+                                        options,
+                                    );
+                                },
+                            });
+                        }
+                        break :list array_list;
+                    },
+                    else => return error.UnexpectedToken,
+                }
             }
         },
         .oneof => |oneof| oneof: {

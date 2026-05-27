@@ -1570,6 +1570,7 @@ pub const TestMapFieldsNoBinary = struct {
             .key = fd(1, .{ .scalar = .string }),
             .value = fd(2, .{ .scalar = .string }),
         };
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1638,6 +1639,7 @@ pub const TestMapFieldsNoBinary = struct {
             .key = fd(1, .{ .scalar = .string }),
             .value = fd(2, .{ .scalar = .int32 }),
         };
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1706,6 +1708,7 @@ pub const TestMapFieldsNoBinary = struct {
             .key = fd(1, .{ .scalar = .string }),
             .value = fd(2, .{ .scalar = .int64 }),
         };
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1774,6 +1777,7 @@ pub const TestMapFieldsNoBinary = struct {
             .key = fd(1, .{ .scalar = .string }),
             .value = fd(2, .{ .scalar = .bool }),
         };
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1842,6 +1846,7 @@ pub const TestMapFieldsNoBinary = struct {
             .key = fd(1, .{ .scalar = .string }),
             .value = fd(2, .{ .scalar = .double }),
         };
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1910,6 +1915,7 @@ pub const TestMapFieldsNoBinary = struct {
             .key = fd(1, .{ .scalar = .string }),
             .value = fd(2, .@"enum"),
         };
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1978,6 +1984,7 @@ pub const TestMapFieldsNoBinary = struct {
             .key = fd(1, .{ .scalar = .string }),
             .value = fd(2, .submessage),
         };
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -2046,6 +2053,7 @@ pub const TestMapFieldsNoBinary = struct {
             .key = fd(1, .{ .scalar = .int32 }),
             .value = fd(2, .{ .scalar = .string }),
         };
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -2114,6 +2122,7 @@ pub const TestMapFieldsNoBinary = struct {
             .key = fd(1, .{ .scalar = .int64 }),
             .value = fd(2, .{ .scalar = .string }),
         };
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -2182,6 +2191,7 @@ pub const TestMapFieldsNoBinary = struct {
             .key = fd(1, .{ .scalar = .bool }),
             .value = fd(2, .{ .scalar = .string }),
         };
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -2250,6 +2260,7 @@ pub const TestMapFieldsNoBinary = struct {
             .key = fd(1, .{ .scalar = .string }),
             .value = fd(2, .submessage),
         };
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.

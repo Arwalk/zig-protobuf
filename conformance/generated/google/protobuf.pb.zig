@@ -582,6 +582,8 @@ pub const Struct = struct {
             .value = fd(2, .submessage),
         };
 
+        pub const _is_map_entry = true;
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.

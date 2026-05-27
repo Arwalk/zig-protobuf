@@ -435,6 +435,8 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .int32 }),
         };
 
+        pub const _is_map_entry = true;
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -502,6 +504,8 @@ pub const TestAllTypesProto3 = struct {
             .key = fd(1, .{ .scalar = .int64 }),
             .value = fd(2, .{ .scalar = .int64 }),
         };
+
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -571,6 +575,8 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .uint32 }),
         };
 
+        pub const _is_map_entry = true;
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -638,6 +644,8 @@ pub const TestAllTypesProto3 = struct {
             .key = fd(1, .{ .scalar = .uint64 }),
             .value = fd(2, .{ .scalar = .uint64 }),
         };
+
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -707,6 +715,8 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .sint32 }),
         };
 
+        pub const _is_map_entry = true;
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -774,6 +784,8 @@ pub const TestAllTypesProto3 = struct {
             .key = fd(1, .{ .scalar = .sint64 }),
             .value = fd(2, .{ .scalar = .sint64 }),
         };
+
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -843,6 +855,8 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .fixed32 }),
         };
 
+        pub const _is_map_entry = true;
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -910,6 +924,8 @@ pub const TestAllTypesProto3 = struct {
             .key = fd(1, .{ .scalar = .fixed64 }),
             .value = fd(2, .{ .scalar = .fixed64 }),
         };
+
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -979,6 +995,8 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .sfixed32 }),
         };
 
+        pub const _is_map_entry = true;
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1046,6 +1064,8 @@ pub const TestAllTypesProto3 = struct {
             .key = fd(1, .{ .scalar = .sfixed64 }),
             .value = fd(2, .{ .scalar = .sfixed64 }),
         };
+
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1115,6 +1135,8 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .float }),
         };
 
+        pub const _is_map_entry = true;
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1182,6 +1204,8 @@ pub const TestAllTypesProto3 = struct {
             .key = fd(1, .{ .scalar = .int32 }),
             .value = fd(2, .{ .scalar = .double }),
         };
+
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1251,6 +1275,8 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .bool }),
         };
 
+        pub const _is_map_entry = true;
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1318,6 +1344,8 @@ pub const TestAllTypesProto3 = struct {
             .key = fd(1, .{ .scalar = .string }),
             .value = fd(2, .{ .scalar = .string }),
         };
+
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1387,6 +1415,8 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .bytes }),
         };
 
+        pub const _is_map_entry = true;
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1454,6 +1484,8 @@ pub const TestAllTypesProto3 = struct {
             .key = fd(1, .{ .scalar = .string }),
             .value = fd(2, .submessage),
         };
+
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1523,6 +1555,8 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .submessage),
         };
 
+        pub const _is_map_entry = true;
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1591,6 +1625,8 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .@"enum"),
         };
 
+        pub const _is_map_entry = true;
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1658,6 +1694,8 @@ pub const TestAllTypesProto3 = struct {
             .key = fd(1, .{ .scalar = .string }),
             .value = fd(2, .@"enum"),
         };
+
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.

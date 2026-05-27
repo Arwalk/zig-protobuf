@@ -3345,6 +3345,7 @@ pub const Struct = struct {
             .key = fd(1, .{ .scalar = .string }),
             .value = fd(2, .submessage),
         };
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.

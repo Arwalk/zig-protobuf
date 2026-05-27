@@ -801,6 +801,15 @@ const GenerationContext = struct {
                 \\
             );
 
+            // If this message is a map entry (options.map_entry == true),
+            // emit a comptime marker so the JSON layer can distinguish
+            // map entries from regular repeated submessages.
+            if (m.options) |opts| {
+                if (opts.map_entry orelse false) {
+                    try lines.append(allocator, "    pub const _is_map_entry = true;\n");
+                }
+            }
+
             // For nested enums, root_path is the message's path and field number is 4 (enum_type in DescriptorProto)
             try self.generateEnums(allocator, lines, messageFqn, file, m.enum_type, message_path.items, 4);
             // For nested messages, root_path is the message's path and field number is 3 (nested_type in DescriptorProto)

@@ -266,6 +266,7 @@ pub const Index = struct {
             .key = fd(1, .{ .scalar = .string }),
             .value = fd(2, .{ .scalar = .int32 }),
         };
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -782,6 +783,7 @@ pub const Npc = struct {
             .key = fd(1, .{ .scalar = .int32 }),
             .value = fd(2, .{ .scalar = .int32 }),
         };
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -850,6 +852,7 @@ pub const Npc = struct {
             .key = fd(1, .{ .scalar = .int32 }),
             .value = fd(2, .{ .scalar = .int32 }),
         };
+        pub const _is_map_entry = true;
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
