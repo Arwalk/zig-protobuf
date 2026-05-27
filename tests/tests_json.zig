@@ -777,43 +777,25 @@ const value_camel_case4_4_json = @embedFile("./json_data/value/camelCase4_4.json
 const value_camel_case4_5_json = @embedFile("./json_data/value/camelCase4_5.json");
 const value_camel_case4_6_json = @embedFile("./json_data/value/camelCase4_6.json");
 
-test "JSON: encode Value (.number_value=NaN)" {
+test "JSON: encode Value (.number_value=NaN) rejects" {
+    // Proto3 spec: NaN is not representable in JSON for google.protobuf.Value
     const pb_instance = value_inits.get1();
-
-    const encoded = try pb_instance.jsonEncode(
-        .{ .whitespace = .indent_2 },
-        .{},
-        allocator,
-    );
-    defer allocator.free(encoded);
-
-    try expect(compare_pb_jsons(encoded, value_camel_case1_json));
+    const result = pb_instance.jsonEncode(.{ .whitespace = .indent_2 }, .{}, allocator);
+    try std.testing.expectError(error.RangeError, result);
 }
 
-test "JSON: encode Value (.number_value=-Infinity)" {
+test "JSON: encode Value (.number_value=-Infinity) rejects" {
+    // Proto3 spec: Infinity is not representable in JSON for google.protobuf.Value
     const pb_instance = value_inits.get2();
-
-    const encoded = try pb_instance.jsonEncode(
-        .{ .whitespace = .indent_2 },
-        .{},
-        allocator,
-    );
-    defer allocator.free(encoded);
-
-    try expect(compare_pb_jsons(encoded, value_camel_case2_json));
+    const result = pb_instance.jsonEncode(.{ .whitespace = .indent_2 }, .{}, allocator);
+    try std.testing.expectError(error.RangeError, result);
 }
 
-test "JSON: encode Value (.number_value=Infinity)" {
+test "JSON: encode Value (.number_value=Infinity) rejects" {
+    // Proto3 spec: Infinity is not representable in JSON for google.protobuf.Value
     const pb_instance = value_inits.get3();
-
-    const encoded = try pb_instance.jsonEncode(
-        .{ .whitespace = .indent_2 },
-        .{},
-        allocator,
-    );
-    defer allocator.free(encoded);
-
-    try expect(compare_pb_jsons(encoded, value_camel_case3_json));
+    const result = pb_instance.jsonEncode(.{ .whitespace = .indent_2 }, .{}, allocator);
+    try std.testing.expectError(error.RangeError, result);
 }
 
 test "JSON: encode Value (.number_value=1.0)" {
@@ -1261,7 +1243,8 @@ test "JSON map: encode map<int64, int64> with large keys" {
 
     const map = root.get("mapInt64Int64").?;
     try expect(map == .object);
-    try expect(map.object.get("9223372036854775807").?.integer == 42);
+    // int64 values are encoded as quoted strings per proto JSON spec
+    try expectEqualSlices(u8, "42", map.object.get("9223372036854775807").?.string);
     try expect(map.object.count() == 1);
 }
 
@@ -1731,4 +1714,565 @@ test "JSON map: roundtrip map<string, NestedMessage> with null value" {
     try expectEqualSlices(u8, "absent", decoded.value.map_string_nested_message.items[1].key);
     try expect(decoded.value.map_string_nested_message.items[1].value != null);
     try expect(decoded.value.map_string_nested_message.items[1].value.?.a == 0);
+}
+
+// =============================================================================
+// Well-Known Type JSON encoding/decoding tests
+// =============================================================================
+// Per the proto3 JSON mapping specification, well-known types have special
+// JSON representations that differ from normal message encoding.
+
+const google_protobuf = @import("./generated/google/protobuf.pb.zig");
+const Timestamp = google_protobuf.Timestamp;
+const Duration = google_protobuf.Duration;
+const Value = google_protobuf.Value;
+const Struct = google_protobuf.Struct;
+const ListValue = google_protobuf.ListValue;
+const FieldMask = google_protobuf.FieldMask;
+const DoubleValue = google_protobuf.DoubleValue;
+const FloatValue = google_protobuf.FloatValue;
+const Int64Value = google_protobuf.Int64Value;
+const UInt64Value = google_protobuf.UInt64Value;
+const Int32Value = google_protobuf.Int32Value;
+const UInt32Value = google_protobuf.UInt32Value;
+const BoolValue = google_protobuf.BoolValue;
+const StringValue = google_protobuf.StringValue;
+const BytesValue = google_protobuf.BytesValue;
+
+// --- Wrapper Types ---
+
+test "WKT: encode/decode DoubleValue" {
+    const msg = DoubleValue{ .value = 3.14 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    // Should be a bare JSON number, not wrapped in {"value": 3.14}
+    try expect(std.mem.indexOf(u8, encoded, "value") == null);
+
+    const decoded = try DoubleValue.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.value == 3.14);
+}
+
+test "WKT: encode/decode Int32Value" {
+    const msg = Int32Value{ .value = 42 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "42"));
+
+    const decoded = try Int32Value.jsonDecode("42", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.value == 42);
+}
+
+test "WKT: encode/decode Int64Value (quoted string)" {
+    const msg = Int64Value{ .value = 9223372036854775807 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    // Proto JSON spec: 64-bit integers must be quoted strings
+    try expect(compare_pb_jsons(encoded, "\"9223372036854775807\""));
+
+    // Decode from string
+    const decoded = try Int64Value.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.value == 9223372036854775807);
+
+    // Also accept bare number (for interop with non-compliant producers)
+    const decoded2 = try Int64Value.jsonDecode("9223372036854775807", .{}, allocator);
+    defer decoded2.deinit();
+    try expect(decoded2.value.value == 9223372036854775807);
+}
+
+test "WKT: encode/decode Int64Value negative (quoted string)" {
+    const msg = Int64Value{ .value = -9223372036854775808 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"-9223372036854775808\""));
+
+    const decoded = try Int64Value.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.value == -9223372036854775808);
+}
+
+test "WKT: encode/decode UInt64Value (quoted string)" {
+    const msg = UInt64Value{ .value = 18446744073709551615 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"18446744073709551615\""));
+
+    const decoded = try UInt64Value.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.value == 18446744073709551615);
+
+    // Also accept bare number
+    const decoded2 = try UInt64Value.jsonDecode("18446744073709551615", .{}, allocator);
+    defer decoded2.deinit();
+    try expect(decoded2.value.value == 18446744073709551615);
+}
+
+test "WKT: encode/decode FloatValue" {
+    const msg = FloatValue{ .value = 2.5 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try FloatValue.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.value == 2.5);
+}
+
+test "WKT: encode/decode FloatValue NaN" {
+    const msg = FloatValue{ .value = std.math.nan(f32) };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"NaN\""));
+}
+
+test "WKT: encode/decode UInt32Value" {
+    const msg = UInt32Value{ .value = 4294967295 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "4294967295"));
+
+    const decoded = try UInt32Value.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.value == 4294967295);
+}
+
+test "WKT: encode/decode BoolValue" {
+    const msg = BoolValue{ .value = true };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "true"));
+
+    const decoded = try BoolValue.jsonDecode("true", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.value == true);
+}
+
+test "WKT: encode/decode StringValue" {
+    const msg = StringValue{ .value = "hello" };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"hello\""));
+
+    const decoded = try StringValue.jsonDecode("\"hello\"", .{}, allocator);
+    defer decoded.deinit();
+    try expectEqualSlices(u8, "hello", decoded.value.value);
+}
+
+test "WKT: encode/decode BytesValue" {
+    const msg = BytesValue{ .value = "abc" };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    // base64("abc") = "YWJj"
+    try expect(compare_pb_jsons(encoded, "\"YWJj\""));
+
+    const decoded = try BytesValue.jsonDecode("\"YWJj\"", .{}, allocator);
+    defer decoded.deinit();
+    try expectEqualSlices(u8, "abc", decoded.value.value);
+}
+
+// --- Timestamp ---
+
+test "WKT: encode Timestamp epoch zero" {
+    const msg = Timestamp{ .seconds = 0, .nanos = 0 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"1970-01-01T00:00:00Z\""));
+}
+
+test "WKT: encode Timestamp with nanos (3 digits)" {
+    const msg = Timestamp{ .seconds = 0, .nanos = 100_000_000 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"1970-01-01T00:00:00.100Z\""));
+}
+
+test "WKT: encode Timestamp with nanos (6 digits)" {
+    const msg = Timestamp{ .seconds = 0, .nanos = 100_100_000 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"1970-01-01T00:00:00.100100Z\""));
+}
+
+test "WKT: encode Timestamp with nanos (9 digits)" {
+    const msg = Timestamp{ .seconds = 0, .nanos = 100_100_100 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"1970-01-01T00:00:00.100100100Z\""));
+}
+
+test "WKT: encode Timestamp normal date" {
+    // 2024-01-15T12:30:45Z
+    const msg = Timestamp{ .seconds = 1705321845, .nanos = 0 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"2024-01-15T12:30:45Z\""));
+}
+
+test "WKT: roundtrip Timestamp" {
+    const msg = Timestamp{ .seconds = 1705321845, .nanos = 123_456_789 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try Timestamp.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.seconds == 1705321845);
+    try expect(decoded.value.nanos == 123_456_789);
+}
+
+test "WKT: decode Timestamp" {
+    const decoded = try Timestamp.jsonDecode("\"2024-01-15T12:30:45.123Z\"", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.seconds == 1705321845);
+    try expect(decoded.value.nanos == 123_000_000);
+}
+
+// --- Duration ---
+
+test "WKT: encode Duration zero" {
+    const msg = Duration{ .seconds = 0, .nanos = 0 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"0s\""));
+}
+
+test "WKT: encode Duration positive" {
+    const msg = Duration{ .seconds = 123, .nanos = 0 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"123s\""));
+}
+
+test "WKT: encode Duration with nanos" {
+    const msg = Duration{ .seconds = 3, .nanos = 1_000 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"3.000001s\""));
+}
+
+test "WKT: encode Duration negative" {
+    const msg = Duration{ .seconds = -123, .nanos = -456_000_000 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"-123.456s\""));
+}
+
+test "WKT: roundtrip Duration" {
+    const msg = Duration{ .seconds = 3, .nanos = 1_000 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try Duration.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.seconds == 3);
+    try expect(decoded.value.nanos == 1_000);
+}
+
+test "WKT: decode Duration negative" {
+    const decoded = try Duration.jsonDecode("\"-5.500s\"", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.seconds == -5);
+    try expect(decoded.value.nanos == -500_000_000);
+}
+
+// --- Value / Struct / ListValue ---
+
+test "WKT: encode Value null" {
+    const msg = Value{ .kind = .{ .null_value = .NULL_VALUE } };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "null"));
+}
+
+test "WKT: encode Value number" {
+    const msg = Value{ .kind = .{ .number_value = 42.5 } };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    // Check that it parses as the correct number (format may vary)
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    try expect(parsed.value == .float);
+    try expect(parsed.value.float == 42.5);
+}
+
+test "WKT: encode Value string" {
+    const msg = Value{ .kind = .{ .string_value = "hello" } };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"hello\""));
+}
+
+test "WKT: encode Value bool" {
+    const msg = Value{ .kind = .{ .bool_value = true } };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "true"));
+}
+
+test "WKT: encode Struct" {
+    var s = Struct{};
+    try s.fields.append(allocator, .{
+        .key = "name",
+        .value = Value{ .kind = .{ .string_value = "test" } },
+    });
+    defer s.fields.deinit(allocator);
+
+    const encoded = try s.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    // Should be {"name":"test"} not {"fields":[{"key":"name","value":"test"}]}
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    try expect(parsed.value == .object);
+    const name_val = parsed.value.object.get("name").?;
+    try expect(name_val == .string);
+    try expectEqualSlices(u8, "test", name_val.string);
+}
+
+test "WKT: encode ListValue" {
+    var lv = ListValue{};
+    try lv.values.append(allocator, Value{ .kind = .{ .number_value = 1.0 } });
+    try lv.values.append(allocator, Value{ .kind = .{ .string_value = "two" } });
+    try lv.values.append(allocator, Value{ .kind = .{ .bool_value = false } });
+    defer lv.values.deinit(allocator);
+
+    const encoded = try lv.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    // Should be [1.0,"two",false] not {"values":[...]}
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    try expect(parsed.value == .array);
+    try expect(parsed.value.array.items.len == 3);
+}
+
+test "WKT: decode Value number" {
+    const decoded = try Value.jsonDecode("42.5", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.kind.?.number_value == 42.5);
+}
+
+test "WKT: decode Value string" {
+    const decoded = try Value.jsonDecode("\"hello\"", .{}, allocator);
+    defer decoded.deinit();
+    try expectEqualSlices(u8, "hello", decoded.value.kind.?.string_value);
+}
+
+test "WKT: decode Value bool" {
+    const decoded = try Value.jsonDecode("true", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.kind.?.bool_value == true);
+}
+
+test "WKT: decode Value null" {
+    const decoded = try Value.jsonDecode("null", .{}, allocator);
+    defer decoded.deinit();
+    try expect(@as(google_protobuf.NullValue, decoded.value.kind.?.null_value) == .NULL_VALUE);
+}
+
+test "WKT: decode Struct" {
+    const decoded = try Struct.jsonDecode("{\"a\":1,\"b\":\"two\"}", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.fields.items.len == 2);
+    try expectEqualSlices(u8, "a", decoded.value.fields.items[0].key);
+    try expect(decoded.value.fields.items[0].value.?.kind.?.number_value == 1.0);
+    try expectEqualSlices(u8, "b", decoded.value.fields.items[1].key);
+    try expectEqualSlices(u8, "two", decoded.value.fields.items[1].value.?.kind.?.string_value);
+}
+
+test "WKT: decode ListValue" {
+    const decoded = try ListValue.jsonDecode("[1,\"two\",true]", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.values.items.len == 3);
+    try expect(decoded.value.values.items[0].kind.?.number_value == 1.0);
+    try expectEqualSlices(u8, "two", decoded.value.values.items[1].kind.?.string_value);
+    try expect(decoded.value.values.items[2].kind.?.bool_value == true);
+}
+
+test "WKT: roundtrip nested Value/Struct/ListValue" {
+    // {"data": [1, {"nested": true}]}
+    var inner_struct = Struct{};
+    try inner_struct.fields.append(allocator, .{
+        .key = "nested",
+        .value = Value{ .kind = .{ .bool_value = true } },
+    });
+
+    var list = ListValue{};
+    try list.values.append(allocator, Value{ .kind = .{ .number_value = 1.0 } });
+    try list.values.append(allocator, Value{ .kind = .{ .struct_value = inner_struct } });
+
+    var s = Struct{};
+    try s.fields.append(allocator, .{
+        .key = "data",
+        .value = Value{ .kind = .{ .list_value = list } },
+    });
+    // Must clean up all levels: s.fields owns the list and inner_struct transitively
+    defer {
+        // Inner struct's fields ArrayList
+        inner_struct.fields.deinit(allocator);
+        // ListValue's values ArrayList
+        list.values.deinit(allocator);
+        // Outer struct's fields ArrayList
+        s.fields.deinit(allocator);
+    }
+
+    const encoded = try s.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try Struct.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+
+    try expect(decoded.value.fields.items.len == 1);
+    try expectEqualSlices(u8, "data", decoded.value.fields.items[0].key);
+    const list_val = decoded.value.fields.items[0].value.?.kind.?.list_value;
+    try expect(list_val.values.items.len == 2);
+    try expect(list_val.values.items[0].kind.?.number_value == 1.0);
+    try expect(list_val.values.items[1].kind.?.struct_value.fields.items[0].value.?.kind.?.bool_value == true);
+}
+
+// --- FieldMask ---
+
+test "WKT: encode FieldMask empty" {
+    const msg = FieldMask{};
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"\""));
+}
+
+test "WKT: encode FieldMask single path" {
+    var msg = FieldMask{};
+    try msg.paths.append(allocator, "foo_bar");
+    defer msg.paths.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"fooBar\""));
+}
+
+test "WKT: encode FieldMask multiple paths" {
+    var msg = FieldMask{};
+    try msg.paths.append(allocator, "foo_bar");
+    try msg.paths.append(allocator, "baz_qux");
+    defer msg.paths.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"fooBar,bazQux\""));
+}
+
+test "WKT: decode FieldMask" {
+    const decoded = try FieldMask.jsonDecode("\"fooBar,bazQux\"", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.paths.items.len == 2);
+    try expectEqualSlices(u8, "foo_bar", decoded.value.paths.items[0]);
+    try expectEqualSlices(u8, "baz_qux", decoded.value.paths.items[1]);
+}
+
+test "WKT: roundtrip FieldMask" {
+    var msg = FieldMask{};
+    try msg.paths.append(allocator, "foo_bar");
+    try msg.paths.append(allocator, "baz_qux_nested");
+    defer msg.paths.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try FieldMask.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.paths.items.len == 2);
+    try expectEqualSlices(u8, "foo_bar", decoded.value.paths.items[0]);
+    try expectEqualSlices(u8, "baz_qux_nested", decoded.value.paths.items[1]);
+}
+
+// --- Range Validation Tests ---
+
+test "WKT: Timestamp rejects seconds too large" {
+    const ts = Timestamp{ .seconds = 253402300800, .nanos = 0 };
+    try std.testing.expectError(error.RangeError, ts.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Timestamp rejects seconds too small" {
+    const ts = Timestamp{ .seconds = -62135596801, .nanos = 0 };
+    try std.testing.expectError(error.RangeError, ts.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Timestamp rejects negative nanos" {
+    const ts = Timestamp{ .seconds = 0, .nanos = -1 };
+    try std.testing.expectError(error.RangeError, ts.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Timestamp rejects nanos too large" {
+    const ts = Timestamp{ .seconds = 0, .nanos = 1_000_000_000 };
+    try std.testing.expectError(error.RangeError, ts.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Duration rejects seconds too large" {
+    const d = Duration{ .seconds = 315576000001, .nanos = 0 };
+    try std.testing.expectError(error.RangeError, d.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Duration rejects seconds too small" {
+    const d = Duration{ .seconds = -315576000001, .nanos = 0 };
+    try std.testing.expectError(error.RangeError, d.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Duration rejects nanos wrong sign (positive secs, negative nanos)" {
+    const d = Duration{ .seconds = 1, .nanos = -1 };
+    try std.testing.expectError(error.RangeError, d.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Duration rejects nanos wrong sign (negative secs, positive nanos)" {
+    const d = Duration{ .seconds = -1, .nanos = 1 };
+    try std.testing.expectError(error.RangeError, d.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Duration parse rejects too large" {
+    const result = Duration.jsonDecode("\"315576000001s\"", .{}, allocator);
+    try std.testing.expectError(error.UnexpectedToken, result);
+}
+
+test "WKT: Timestamp parse rejects date too small" {
+    // 0000-12-31T23:59:59Z is before 0001-01-01T00:00:00Z
+    const result = Timestamp.jsonDecode("\"0000-12-31T23:59:59Z\"", .{}, allocator);
+    try std.testing.expectError(error.UnexpectedToken, result);
+}
+
+test "WKT: Timestamp parse with positive offset" {
+    // 1970-01-01T08:00:00+08:00 is equivalent to 1970-01-01T00:00:00Z
+    const decoded = try Timestamp.jsonDecode("\"1970-01-01T08:00:00+08:00\"", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.seconds == 0);
+    try expect(decoded.value.nanos == 0);
+}
+
+test "WKT: Timestamp parse with negative offset" {
+    // 1969-12-31T19:00:00-05:00 is equivalent to 1970-01-01T00:00:00Z
+    const decoded = try Timestamp.jsonDecode("\"1969-12-31T19:00:00-05:00\"", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.seconds == 0);
+    try expect(decoded.value.nanos == 0);
+}
+
+test "WKT: FieldMask rejects paths that don't round-trip (consecutive underscores)" {
+    var msg = FieldMask{};
+    try msg.paths.append(allocator, "foo__bar");
+    defer msg.paths.deinit(allocator);
+    try std.testing.expectError(error.RangeError, msg.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: FieldMask rejects paths that don't round-trip (trailing underscore)" {
+    var msg = FieldMask{};
+    try msg.paths.append(allocator, "foo_");
+    defer msg.paths.deinit(allocator);
+    try std.testing.expectError(error.RangeError, msg.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Value rejects NaN number_value" {
+    const msg = Value{ .kind = .{ .number_value = std.math.nan(f64) } };
+    try std.testing.expectError(error.RangeError, msg.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Value rejects Infinity number_value" {
+    const msg = Value{ .kind = .{ .number_value = std.math.inf(f64) } };
+    try std.testing.expectError(error.RangeError, msg.jsonEncode(.{}, .{}, allocator));
 }

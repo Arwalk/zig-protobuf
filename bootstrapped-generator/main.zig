@@ -810,6 +810,17 @@ const GenerationContext = struct {
                 }
             }
 
+            // If this message is a well-known type, emit a comptime marker
+            // so the JSON layer can use custom serialization per the proto3
+            // JSON mapping specification.
+            if (getWellKnownTypeName(messageFqn)) |wkt| {
+                try lines.append(allocator, try std.fmt.allocPrint(
+                    allocator,
+                    "    pub const _well_known_type: protobuf.WellKnownType = .{s};\n",
+                    .{wkt},
+                ));
+            }
+
             // For nested enums, root_path is the message's path and field number is 4 (enum_type in DescriptorProto)
             try self.generateEnums(allocator, lines, messageFqn, file, m.enum_type, message_path.items, 4);
             // For nested messages, root_path is the message's path and field number is 3 (nested_type in DescriptorProto)
@@ -1230,6 +1241,33 @@ fn isOptional(file: descriptor.FileDescriptorProto, field: descriptor.FieldDescr
     }
 
     return (field.label orelse return false) == .LABEL_OPTIONAL;
+}
+
+/// Maps a fully-qualified protobuf message name to the corresponding
+/// WellKnownType enum variant name (as a string for code generation).
+/// Returns null if the FQN is not a recognized well-known type.
+fn getWellKnownTypeName(fqn: FullName) ?[]const u8 {
+    const mapping = .{
+        .{ "google.protobuf.Timestamp", "timestamp" },
+        .{ "google.protobuf.Duration", "duration" },
+        .{ "google.protobuf.Value", "value" },
+        .{ "google.protobuf.Struct", "@\"struct\"" },
+        .{ "google.protobuf.ListValue", "list_value" },
+        .{ "google.protobuf.FieldMask", "field_mask" },
+        .{ "google.protobuf.DoubleValue", "double_value" },
+        .{ "google.protobuf.FloatValue", "float_value" },
+        .{ "google.protobuf.Int64Value", "int64_value" },
+        .{ "google.protobuf.UInt64Value", "uint64_value" },
+        .{ "google.protobuf.Int32Value", "int32_value" },
+        .{ "google.protobuf.UInt32Value", "uint32_value" },
+        .{ "google.protobuf.BoolValue", "bool_value" },
+        .{ "google.protobuf.StringValue", "string_value" },
+        .{ "google.protobuf.BytesValue", "bytes_value" },
+    };
+    inline for (mapping) |entry| {
+        if (fqn.eqlString(entry[0])) return entry[1];
+    }
+    return null;
 }
 
 fn is_proto3_file(file: descriptor.FileDescriptorProto) bool {

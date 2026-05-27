@@ -28,6 +28,11 @@ pub fn parse(
     // Increase eval branch quota for types with hundreds of fields
     @setEvalBranchQuota(1000000);
 
+    // Well-known types have custom JSON representations per the proto3 spec
+    if (comptime @hasDecl(Self, "_well_known_type")) {
+        return parseWellKnownType(Self, allocator, source, options);
+    }
+
     if (.object_begin != try source.next()) {
         return error.UnexpectedToken;
     }
@@ -130,42 +135,63 @@ pub fn parse(
                                 if (matches) {
                                     freeAllocated(allocator, name_token.?);
                                     name_token = null;
-                                    @field(&result, field.name) = @unionInit(
-                                        oneof_type,
-                                        union_field.name,
-                                        switch (@field(
-                                            oneof_type._desc_table,
+
+                                    // Handle null: per proto3 spec, null for a oneof
+                                    // variant means "this variant is not set", except
+                                    // for NullValue enum fields where null maps to NULL_VALUE.
+                                    if (.null == try source.peekNextTokenType()) {
+                                        _ = try source.next();
+                                        const is_null_value = comptime blk: {
+                                            if (@typeInfo(union_field.type) != .@"enum") break :blk false;
+                                            break :blk @hasField(union_field.type, "NULL_VALUE");
+                                        };
+                                        if (is_null_value) {
+                                            @field(&result, field.name) = @unionInit(
+                                                oneof_type,
+                                                union_field.name,
+                                                @field(union_field.type, "NULL_VALUE"),
+                                            );
+                                        }
+                                        // For non-NullValue types: don't modify the oneof -
+                                        // null just means "this particular variant is absent"
+                                    } else {
+                                        @field(&result, field.name) = @unionInit(
+                                            oneof_type,
                                             union_field.name,
-                                        ).ftype) {
-                                            .scalar => |scalar| switch (scalar) {
-                                                .bytes => try parse_bytes(
-                                                    allocator,
-                                                    source,
-                                                    options,
-                                                ),
-                                                else => try std.json.innerParse(
+                                            switch (@field(
+                                                oneof_type._desc_table,
+                                                union_field.name,
+                                            ).ftype) {
+                                                .scalar => |scalar| switch (scalar) {
+                                                    .bytes => try parse_bytes(
+                                                        allocator,
+                                                        source,
+                                                        options,
+                                                    ),
+                                                    else => try std.json.innerParse(
+                                                        union_field.type,
+                                                        allocator,
+                                                        source,
+                                                        options,
+                                                    ),
+                                                },
+                                                .submessage, .@"enum" => try std.json.innerParse(
                                                     union_field.type,
                                                     allocator,
                                                     source,
                                                     options,
                                                 ),
+                                                .repeated, .packed_repeated => {
+                                                    @compileError(
+                                                        "Repeated fields are not allowed in oneof",
+                                                    );
+                                                },
+                                                .oneof => {
+                                                    @compileError("Nested oneof is not supported");
+                                                },
                                             },
-                                            .submessage, .@"enum" => try std.json.innerParse(
-                                                union_field.type,
-                                                allocator,
-                                                source,
-                                                options,
-                                            ),
-                                            .repeated, .packed_repeated => {
-                                                @compileError(
-                                                    "Repeated fields are not allowed in oneof",
-                                                );
-                                            },
-                                            .oneof => {
-                                                @compileError("Nested oneof is not supported");
-                                            },
-                                        },
-                                    );
+                                        );
+                                    }
                                     fields_seen[i] = true;
                                     matched_as_flat_oneof = true;
                                 }
@@ -205,18 +231,18 @@ pub fn encode(
     allocator: std.mem.Allocator,
 ) ![]u8 {
     const DataType = @TypeOf(data);
-    const CustomEncoder = struct {
-        inner: DataType,
-        opts: Options,
-        pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return stringifyOpts(DataType, &self.inner, jws, self.opts);
-        }
-    };
-    return std.json.Stringify.valueAlloc(
-        allocator,
-        CustomEncoder{ .inner = data, .opts = pb_options },
-        std_options,
-    );
+
+    // We can't use the standard jsonStringify interface because std.json.Stringify
+    // constrains the error set to {WriteFailed}. Our WKT serializers need to return
+    // RangeError for spec validation failures. So we drive the Stringify directly.
+    var aw: std.Io.Writer.Allocating = .init(allocator);
+    errdefer aw.deinit();
+
+    var jws: std.json.Stringify = .{ .writer = &aw.writer, .options = std_options };
+
+    try stringifyOpts(DataType, &data, &jws, pb_options);
+
+    return aw.toOwnedSlice();
 }
 
 /// Checks whether a field value equals its proto3 default.
@@ -245,9 +271,14 @@ fn isDefaultValue(value: anytype, comptime field_desc: protobuf.FieldDescriptor)
     };
 }
 
-fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std.meta.Child(@TypeOf(jws)).Error!void {
+fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) !void {
     // Increase eval branch quota for types with hundreds of fields
     @setEvalBranchQuota(1000000);
+
+    // Well-known types have custom JSON representations per the proto3 spec
+    if (comptime @hasDecl(Self, "_well_known_type")) {
+        return stringifyWellKnownType(Self, self, jws, opts);
+    }
 
     try jws.beginObject();
 
@@ -447,7 +478,16 @@ fn stringify_struct_field_with_options(
             .string => try jws.write(value),
             else => try print_numeric(value, jws),
         },
-        .@"enum" => try print_numeric(value, jws),
+        .@"enum" => {
+            // NullValue enum serializes as JSON null per proto3 spec
+            const ValueType = @TypeOf(value);
+            const is_null_value = comptime @hasField(ValueType, "NULL_VALUE");
+            if (is_null_value) {
+                try jws.write(null);
+            } else {
+                try print_numeric(value, jws);
+            }
+        },
         .repeated, .packed_repeated => |repeated| {
             const slice = value.items;
             // Detect map entry types at comptime: submessage with _is_map_entry marker
@@ -510,7 +550,15 @@ fn stringify_struct_field_with_options(
                             .string => try jws.write(@field(value, union_field.name)),
                             else => try print_numeric(@field(value, union_field.name), jws),
                         },
-                        .@"enum" => try print_numeric(@field(value, union_field.name), jws),
+                        .@"enum" => {
+                            // NullValue enum serializes as JSON null per proto3 spec
+                            const is_null_value = comptime @hasField(union_field.type, "NULL_VALUE");
+                            if (is_null_value) {
+                                try jws.write(null);
+                            } else {
+                                try print_numeric(@field(value, union_field.name), jws);
+                            }
+                        },
                         .submessage => try stringifyOpts(union_field.type, &@field(value, union_field.name), jws, pb_options),
                         .repeated, .packed_repeated => {
                             @compileError("Repeated fields are not allowed in oneof");
@@ -664,10 +712,69 @@ fn parseStructField(
     source: anytype,
     options: std.json.ParseOptions,
 ) !void {
-    @field(result.*, fieldInfo.name) = switch (@field(
-        T._desc_table,
-        fieldInfo.name,
-    ).ftype) {
+    const field_desc = @field(T._desc_table, fieldInfo.name);
+
+    // Handle JSON null for all field types per proto3 spec.
+    // - Optional fields → set to null
+    // - Scalar/enum fields → set to default value
+    // - Repeated fields → error (null not allowed for arrays)
+    // - google.protobuf.Value fields → Value{.kind = .{.null_value = .NULL_VALUE}}
+    // - google.protobuf.NullValue enum → .NULL_VALUE
+    // - Oneof fields → set to null (clear the oneof)
+    if (.null == try source.peekNextTokenType()) {
+        _ = try source.next(); // consume the null token
+
+        const is_value_wkt = comptime blk: {
+            const InnerType = switch (@typeInfo(fieldInfo.type)) {
+                .optional => |opt| opt.child,
+                else => fieldInfo.type,
+            };
+            if (@typeInfo(InnerType) != .@"struct") break :blk false;
+            break :blk @hasDecl(InnerType, "_well_known_type") and
+                InnerType._well_known_type == .value;
+        };
+
+        const is_null_value_enum = comptime blk: {
+            const InnerType = switch (@typeInfo(fieldInfo.type)) {
+                .optional => |opt| opt.child,
+                else => fieldInfo.type,
+            };
+            if (@typeInfo(InnerType) != .@"enum") break :blk false;
+            break :blk @hasField(InnerType, "NULL_VALUE");
+        };
+
+        if (is_value_wkt) {
+            // google.protobuf.Value: null maps to Value{kind = {null_value: NULL_VALUE}}
+            const InnerType = switch (@typeInfo(fieldInfo.type)) {
+                .optional => |opt| opt.child,
+                else => fieldInfo.type,
+            };
+            const KindFieldType = @TypeOf(@as(InnerType, undefined).kind);
+            const KindUnion = @typeInfo(KindFieldType).optional.child;
+            @field(result.*, fieldInfo.name) = InnerType{
+                .kind = @unionInit(KindUnion, "null_value", .NULL_VALUE),
+            };
+        } else if (is_null_value_enum) {
+            // google.protobuf.NullValue: null maps to NULL_VALUE
+            const InnerType = switch (@typeInfo(fieldInfo.type)) {
+                .optional => |opt| opt.child,
+                else => fieldInfo.type,
+            };
+            @field(result.*, fieldInfo.name) = @field(InnerType, "NULL_VALUE");
+        } else {
+            // For optional types, set to null; for non-optional, set to default
+            if (@typeInfo(fieldInfo.type) == .optional) {
+                @field(result.*, fieldInfo.name) = null;
+            } else if (fieldInfo.defaultValue()) |default| {
+                @field(result.*, fieldInfo.name) = default;
+            } else {
+                return error.UnexpectedToken;
+            }
+        }
+        return;
+    }
+
+    @field(result.*, fieldInfo.name) = switch (field_desc.ftype) {
         .repeated, .packed_repeated => |repeated| list: {
             // repeated T -> ArrayListUnmanaged(T)
             const child_type = @typeInfo(
@@ -870,10 +977,730 @@ fn parseStructField(
     };
 }
 
+// ---------------------------------------------------------------------------
+// Well-Known Type JSON encoding/decoding
+// ---------------------------------------------------------------------------
+// Per the proto3 JSON mapping spec, certain google.protobuf types have special
+// JSON representations that differ from their normal message encoding.
+// All dispatch is comptime — zero runtime cost for non-WKT types.
+
+fn stringifyWellKnownType(Self: type, self: *const Self, jws: anytype, opts: Options) !void {
+    _ = opts;
+    switch (comptime Self._well_known_type) {
+        .double_value, .float_value => try print_numeric(self.value, jws),
+        .int32_value, .uint32_value => try jws.write(self.value),
+        .int64_value, .uint64_value => {
+            // Proto JSON spec: 64-bit integers must be quoted strings
+            var buf: [20]u8 = undefined;
+            const s = std.fmt.bufPrint(&buf, "{d}", .{self.value}) catch unreachable;
+            try jws.write(s);
+        },
+        .bool_value => try jws.write(self.value),
+        .string_value => try jws.write(self.value),
+        .bytes_value => try print_bytes(self.value, jws),
+        .timestamp => try stringifyTimestamp(self, jws),
+        .duration => try stringifyDuration(self, jws),
+        .value => try stringifyGoogleValue(self.kind, jws),
+        .@"struct" => {
+            // Struct: unwrap to JSON object with Value entries
+            try jws.beginObject();
+            for (self.fields.items) |entry| {
+                try jws.objectField(entry.key);
+                if (entry.value) |val| {
+                    try stringifyGoogleValue(val.kind, jws);
+                } else {
+                    try jws.write(null);
+                }
+            }
+            try jws.endObject();
+        },
+        .list_value => {
+            // ListValue: unwrap to JSON array of Values
+            try jws.beginArray();
+            for (self.values.items) |val| {
+                try stringifyGoogleValue(val.kind, jws);
+            }
+            try jws.endArray();
+        },
+        .field_mask => try stringifyFieldMask(self, jws),
+    }
+}
+
+/// Unified Value/Struct/ListValue serializer.
+/// Takes the optional kind_union directly to avoid mutual function recursion
+/// which would create a dependency loop on inferred error sets.
+fn stringifyGoogleValue(kind_opt: anytype, jws: anytype) !void {
+    const kind = kind_opt orelse {
+        try jws.write(null);
+        return;
+    };
+
+    const KindUnion = @TypeOf(kind);
+    const tag = @as(std.meta.Tag(KindUnion), kind);
+
+    switch (tag) {
+        .null_value => try jws.write(null),
+        .number_value => {
+            // Proto3 spec: NaN and Infinity are not representable in JSON
+            // for google.protobuf.Value. Reject them.
+            if (std.math.isNan(kind.number_value) or std.math.isInf(kind.number_value))
+                return error.RangeError;
+            try print_numeric(kind.number_value, jws);
+        },
+        .string_value => try jws.write(kind.string_value),
+        .bool_value => try jws.write(kind.bool_value),
+        .struct_value => {
+            try jws.beginObject();
+            for (kind.struct_value.fields.items) |entry| {
+                try jws.objectField(entry.key);
+                if (entry.value) |val| {
+                    try stringifyGoogleValue(val.kind, jws);
+                } else {
+                    try jws.write(null);
+                }
+            }
+            try jws.endObject();
+        },
+        .list_value => {
+            try jws.beginArray();
+            for (kind.list_value.values.items) |val| {
+                try stringifyGoogleValue(val.kind, jws);
+            }
+            try jws.endArray();
+        },
+    }
+}
+
+fn parseWellKnownType(
+    Self: type,
+    allocator: std.mem.Allocator,
+    source: anytype,
+    options: std.json.ParseOptions,
+) !Self {
+    switch (comptime Self._well_known_type) {
+        .double_value, .float_value, .int32_value, .uint32_value,
+        .bool_value, .string_value,
+        => {
+            return Self{ .value = try std.json.innerParse(
+                @TypeOf(@as(Self, undefined).value),
+                allocator,
+                source,
+                options,
+            ) };
+        },
+        .int64_value, .uint64_value => {
+            const ValueType = @TypeOf(@as(Self, undefined).value);
+            const token = try source.nextAllocMax(allocator, .alloc_if_needed, options.max_value_len.?);
+            switch (token) {
+                inline .string, .allocated_string => |s| {
+                    defer freeAllocated(allocator, token);
+                    return Self{ .value = std.fmt.parseInt(ValueType, s, 10) catch return error.UnexpectedToken };
+                },
+                inline .number, .allocated_number => |n| {
+                    defer freeAllocated(allocator, token);
+                    return Self{ .value = std.fmt.parseInt(ValueType, n, 10) catch return error.UnexpectedToken };
+                },
+                else => return error.UnexpectedToken,
+            }
+        },
+        .bytes_value => {
+            return Self{ .value = try parse_bytes(allocator, source, options) };
+        },
+        .timestamp => return parseTimestamp(Self, allocator, source, options),
+        .duration => return parseDuration(Self, allocator, source, options),
+        .value => return Self{ .kind = try parseGoogleValue(Self, allocator, source, options) },
+        .@"struct" => return parseGoogleStruct(Self, allocator, source, options),
+        .list_value => return parseGoogleListValue(Self, allocator, source, options),
+        .field_mask => return parseFieldMask(Self, allocator, source, options),
+    }
+}
+
+// -- Timestamp --
+
+fn stringifyTimestamp(self: anytype, jws: anytype) !void {
+    const secs = self.seconds;
+    const nanos = self.nanos;
+
+    // Validate range per proto3 spec:
+    // seconds: [-62135596800, 253402300799] (0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z)
+    // nanos: [0, 999999999] (always non-negative for timestamps)
+    if (secs < -62135596800 or secs > 253402300799) return error.RangeError;
+    if (nanos < 0 or nanos > 999999999) return error.RangeError;
+
+    // Convert Unix epoch seconds to civil date/time components
+    // Valid range: 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z
+    const epoch = epochToDateTime(secs);
+
+    try jsonValueStartAssumeTypeOk(jws);
+    try jws.writer.writeByte('"');
+
+    // YYYY-MM-DDThh:mm:ss
+    var buf: [32]u8 = undefined;
+    const date_len = (std.fmt.bufPrint(&buf, "{d:0>4}-{d:0>2}-{d:0>2}T{d:0>2}:{d:0>2}:{d:0>2}", .{
+        epoch.year, epoch.month, epoch.day, epoch.hour, epoch.minute, epoch.second,
+    }) catch unreachable).len;
+    try jws.writer.writeAll(buf[0..date_len]);
+
+    // Fractional seconds: use 0, 3, 6, or 9 digits, trimming trailing zeros
+    if (nanos != 0) {
+        const abs_nanos: u32 = if (nanos < 0) @intCast(-@as(i32, nanos)) else @intCast(nanos);
+        if (abs_nanos % 1_000_000 == 0) {
+            // 3 digits
+            const frac_buf = std.fmt.bufPrint(&buf, ".{d:0>3}", .{abs_nanos / 1_000_000}) catch unreachable;
+            try jws.writer.writeAll(frac_buf);
+        } else if (abs_nanos % 1_000 == 0) {
+            // 6 digits
+            const frac_buf = std.fmt.bufPrint(&buf, ".{d:0>6}", .{abs_nanos / 1_000}) catch unreachable;
+            try jws.writer.writeAll(frac_buf);
+        } else {
+            // 9 digits
+            const frac_buf = std.fmt.bufPrint(&buf, ".{d:0>9}", .{abs_nanos}) catch unreachable;
+            try jws.writer.writeAll(frac_buf);
+        }
+    }
+
+    try jws.writer.writeByte('Z');
+    try jws.writer.writeByte('"');
+    jws.next_punctuation = .comma;
+}
+
+const DateTime = struct {
+    year: u32,
+    month: u32,
+    day: u32,
+    hour: u32,
+    minute: u32,
+    second: u32,
+};
+
+fn epochToDateTime(epoch_seconds: i64) DateTime {
+    // Algorithm: convert Unix epoch seconds to civil date.
+    // Days since Unix epoch (floor division for negative values)
+    const secs_per_day: i64 = 86400;
+    var day_offset: i64 = @divFloor(epoch_seconds, secs_per_day);
+    const time_of_day: i64 = @mod(epoch_seconds, secs_per_day);
+
+    // Shift epoch from 1970-01-01 to 0000-03-01 for easier leap year handling
+    // 719468 days from 0000-03-01 to 1970-01-01
+    day_offset += 719468;
+
+    // Civil date from day count (Rata Die algorithm variant)
+    const era: i64 = @divFloor(if (day_offset >= 0) day_offset else day_offset - 146096, 146097);
+    const doe: u32 = @intCast(day_offset - era * 146097); // day of era [0, 146096]
+    const yoe: u32 = @intCast((@as(u64, doe) -| doe / 1460 + doe / 36524 -| doe / 146096) / 365); // year of era [0, 399]
+    const y: i64 = @as(i64, yoe) + era * 400;
+    const doy: u32 = doe - (365 * yoe + yoe / 4 -| yoe / 100); // day of year [0, 365]
+    const mp: u32 = (5 * doy + 2) / 153; // month from March [0, 11]
+    const d: u32 = doy - (153 * mp + 2) / 5 + 1; // day [1, 31]
+    const m: u32 = if (mp < 10) mp + 3 else mp - 9; // month [1, 12]
+    const adjusted_y: u32 = @intCast(y + @as(i64, if (m <= 2) @as(i64, 1) else @as(i64, 0)));
+
+    // Time of day from remainder
+    const sod: u32 = @intCast(time_of_day);
+    return .{
+        .year = adjusted_y,
+        .month = m,
+        .day = d,
+        .hour = sod / 3600,
+        .minute = (sod % 3600) / 60,
+        .second = sod % 60,
+    };
+}
+
+fn parseTimestamp(
+    Self: type,
+    allocator: std.mem.Allocator,
+    source: anytype,
+    options: std.json.ParseOptions,
+) !Self {
+    const token = try source.nextAllocMax(allocator, .alloc_if_needed, options.max_value_len.?);
+    const str = switch (token) {
+        inline .string, .allocated_string => |s| s,
+        else => return error.UnexpectedToken,
+    };
+    defer freeAllocated(allocator, token);
+
+    // Parse RFC 3339: YYYY-MM-DDThh:mm:ss[.fractional](Z|+HH:MM|-HH:MM)
+    if (str.len < 20) return error.UnexpectedToken; // minimum: "YYYY-MM-DDThh:mm:ssZ"
+    if (str[4] != '-' or str[7] != '-' or str[10] != 'T' or str[13] != ':' or str[16] != ':')
+        return error.UnexpectedToken;
+
+    const year = std.fmt.parseInt(u32, str[0..4], 10) catch return error.UnexpectedToken;
+    const month = std.fmt.parseInt(u32, str[5..7], 10) catch return error.UnexpectedToken;
+    const day = std.fmt.parseInt(u32, str[8..10], 10) catch return error.UnexpectedToken;
+    const hour = std.fmt.parseInt(u32, str[11..13], 10) catch return error.UnexpectedToken;
+    const minute = std.fmt.parseInt(u32, str[14..16], 10) catch return error.UnexpectedToken;
+    const second = std.fmt.parseInt(u32, str[17..19], 10) catch return error.UnexpectedToken;
+
+    // Find where the timezone designator starts (after seconds and optional fractional part)
+    // Possible formats after seconds: Z, +HH:MM, -HH:MM
+    // Fractional seconds come before the timezone designator
+    var tz_start: usize = 19;
+    var nanos: i32 = 0;
+
+    if (tz_start < str.len and str[tz_start] == '.') {
+        // Find end of fractional part (next 'Z', '+', or '-')
+        var frac_end: usize = tz_start + 1;
+        while (frac_end < str.len) : (frac_end += 1) {
+            if (str[frac_end] == 'Z' or str[frac_end] == '+' or str[frac_end] == '-') break;
+        }
+        if (frac_end >= str.len) return error.UnexpectedToken;
+
+        const frac_str = str[tz_start + 1 .. frac_end];
+        if (frac_str.len == 0 or frac_str.len > 9) return error.UnexpectedToken;
+        var frac_val = std.fmt.parseInt(u32, frac_str, 10) catch return error.UnexpectedToken;
+        // Pad to 9 digits
+        var digits: u32 = @intCast(frac_str.len);
+        while (digits < 9) : (digits += 1) {
+            frac_val *= 10;
+        }
+        nanos = @intCast(frac_val);
+        tz_start = frac_end;
+    }
+
+    // Parse timezone offset
+    var offset_seconds: i64 = 0;
+    if (tz_start >= str.len) return error.UnexpectedToken;
+
+    if (str[tz_start] == 'Z') {
+        // UTC, no offset
+        if (tz_start + 1 != str.len) return error.UnexpectedToken;
+    } else if (str[tz_start] == '+' or str[tz_start] == '-') {
+        // Parse +HH:MM or -HH:MM
+        const tz_str = str[tz_start..];
+        if (tz_str.len != 6 or tz_str[3] != ':') return error.UnexpectedToken;
+        const tz_hours = std.fmt.parseInt(u32, tz_str[1..3], 10) catch return error.UnexpectedToken;
+        const tz_minutes = std.fmt.parseInt(u32, tz_str[4..6], 10) catch return error.UnexpectedToken;
+        offset_seconds = @as(i64, tz_hours) * 3600 + @as(i64, tz_minutes) * 60;
+        if (str[tz_start] == '+') {
+            offset_seconds = -offset_seconds; // positive offset means ahead of UTC, subtract to get UTC
+        }
+    } else {
+        return error.UnexpectedToken;
+    }
+
+    // Convert civil date to Unix epoch seconds, then apply timezone offset
+    const epoch_seconds = dateTimeToEpoch(year, month, day, hour, minute, second) + offset_seconds;
+
+    // Validate range per proto3 spec
+    if (epoch_seconds < -62135596800 or epoch_seconds > 253402300799) return error.UnexpectedToken;
+
+    return Self{ .seconds = epoch_seconds, .nanos = nanos };
+}
+
+fn dateTimeToEpoch(year: u32, month: u32, day: u32, hour: u32, minute: u32, second: u32) i64 {
+    // Inverse of epochToDateTime: civil date to Unix epoch seconds
+    const y: i64 = @as(i64, @intCast(year)) - @as(i64, if (month <= 2) 1 else 0);
+    const era: i64 = @divFloor(if (y >= 0) y else y - 399, 400);
+    const yoe: u32 = @intCast(y - era * 400); // year of era [0, 399]
+    const m_adjusted: u32 = if (month > 2) month - 3 else month + 9; // month from March [0, 11]
+    const doy: u32 = (153 * m_adjusted + 2) / 5 + day - 1; // day of year [0, 365]
+    const doe: u32 = yoe * 365 + yoe / 4 -| yoe / 100 + doy; // day of era [0, 146096]
+    const day_offset: i64 = era * 146097 + @as(i64, doe) - 719468; // days since Unix epoch
+
+    return day_offset * 86400 + @as(i64, hour) * 3600 + @as(i64, minute) * 60 + @as(i64, second);
+}
+
+// -- Duration --
+
+fn stringifyDuration(self: anytype, jws: anytype) !void {
+    const secs = self.seconds;
+    const nanos = self.nanos;
+
+    // Validate range per proto3 spec:
+    // seconds: [-315576000000, 315576000000] (±10000 years)
+    // nanos: [-999999999, 999999999]
+    // seconds and nanos must have the same sign (or nanos must be 0)
+    if (secs < -315576000000 or secs > 315576000000) return error.RangeError;
+    if (nanos < -999999999 or nanos > 999999999) return error.RangeError;
+    if (secs > 0 and nanos < 0) return error.RangeError;
+    if (secs < 0 and nanos > 0) return error.RangeError;
+
+    try jsonValueStartAssumeTypeOk(jws);
+    try jws.writer.writeByte('"');
+
+    // Handle sign: seconds and nanos should have the same sign
+    const negative = secs < 0 or nanos < 0;
+    if (negative) try jws.writer.writeByte('-');
+
+    const abs_secs: u64 = if (secs < 0) @intCast(-secs) else @intCast(secs);
+    const abs_nanos: u32 = if (nanos < 0) @intCast(-@as(i32, nanos)) else @intCast(nanos);
+
+    var buf: [32]u8 = undefined;
+    const secs_str = std.fmt.bufPrint(&buf, "{d}", .{abs_secs}) catch unreachable;
+    try jws.writer.writeAll(secs_str);
+
+    if (abs_nanos != 0) {
+        if (abs_nanos % 1_000_000 == 0) {
+            const frac_buf = std.fmt.bufPrint(&buf, ".{d:0>3}", .{abs_nanos / 1_000_000}) catch unreachable;
+            try jws.writer.writeAll(frac_buf);
+        } else if (abs_nanos % 1_000 == 0) {
+            const frac_buf = std.fmt.bufPrint(&buf, ".{d:0>6}", .{abs_nanos / 1_000}) catch unreachable;
+            try jws.writer.writeAll(frac_buf);
+        } else {
+            const frac_buf = std.fmt.bufPrint(&buf, ".{d:0>9}", .{abs_nanos}) catch unreachable;
+            try jws.writer.writeAll(frac_buf);
+        }
+    }
+
+    try jws.writer.writeByte('s');
+    try jws.writer.writeByte('"');
+    jws.next_punctuation = .comma;
+}
+
+fn parseDuration(
+    Self: type,
+    allocator: std.mem.Allocator,
+    source: anytype,
+    options: std.json.ParseOptions,
+) !Self {
+    const token = try source.nextAllocMax(allocator, .alloc_if_needed, options.max_value_len.?);
+    const str = switch (token) {
+        inline .string, .allocated_string => |s| s,
+        else => return error.UnexpectedToken,
+    };
+    defer freeAllocated(allocator, token);
+
+    if (str.len < 2) return error.UnexpectedToken; // minimum: "0s"
+    if (str[str.len - 1] != 's') return error.UnexpectedToken;
+
+    const body = str[0 .. str.len - 1]; // strip trailing 's'
+    const negative = body.len > 0 and body[0] == '-';
+    const unsigned_body = if (negative) body[1..] else body;
+
+    // Split on '.'
+    var seconds: i64 = 0;
+    var nanos: i32 = 0;
+
+    if (std.mem.indexOfScalar(u8, unsigned_body, '.')) |dot_idx| {
+        seconds = std.fmt.parseInt(i64, unsigned_body[0..dot_idx], 10) catch return error.UnexpectedToken;
+        const frac_str = unsigned_body[dot_idx + 1 ..];
+        if (frac_str.len == 0 or frac_str.len > 9) return error.UnexpectedToken;
+        var frac_val = std.fmt.parseInt(u32, frac_str, 10) catch return error.UnexpectedToken;
+        var digits: u32 = @intCast(frac_str.len);
+        while (digits < 9) : (digits += 1) {
+            frac_val *= 10;
+        }
+        nanos = @intCast(frac_val);
+    } else {
+        seconds = std.fmt.parseInt(i64, unsigned_body, 10) catch return error.UnexpectedToken;
+    }
+
+    if (negative) {
+        seconds = -seconds;
+        nanos = -nanos;
+    }
+
+    // Validate range per proto3 spec
+    if (seconds < -315576000000 or seconds > 315576000000) return error.UnexpectedToken;
+
+    return Self{ .seconds = seconds, .nanos = nanos };
+}
+
+// -- Value / Struct / ListValue --
+// These three types are mutually recursive. To avoid dependency loops on
+// inferred error sets in Zig's comptime, all parse logic is unified into
+// a single recursive function (parseGoogleValue) that handles struct objects
+// and list arrays inline. Top-level parsers (for Struct and ListValue) are
+// thin wrappers that consume the opening token and delegate.
+
+/// Parse a google.protobuf.Value kind from the JSON token stream.
+/// This is the single recursive function for the Value/Struct/ListValue triad.
+/// It peeks at the next token type and dispatches accordingly. For object_begin
+/// and array_begin, it parses the contents inline to avoid cross-function
+/// error-set dependency loops.
+fn parseGoogleValue(
+    ValueSelf: type,
+    allocator: std.mem.Allocator,
+    source: anytype,
+    options: std.json.ParseOptions,
+) !@TypeOf(@as(ValueSelf, undefined).kind) {
+    const KindFieldType = @TypeOf(@as(ValueSelf, undefined).kind);
+    const KindUnion = @typeInfo(KindFieldType).optional.child;
+
+    const peeked = try source.peekNextTokenType();
+    switch (peeked) {
+        .null => {
+            _ = try source.next();
+            return @unionInit(KindUnion, "null_value", .NULL_VALUE);
+        },
+        .true, .false => {
+            const tok = try source.next();
+            return @unionInit(KindUnion, "bool_value", tok == .true);
+        },
+        .number => {
+            const num = try std.json.innerParse(f64, allocator, source, options);
+            return @unionInit(KindUnion, "number_value", num);
+        },
+        .string => {
+            const s = try std.json.innerParse([]const u8, allocator, source, options);
+            // Per proto3 JSON spec, NaN/Infinity are encoded as strings
+            if (std.mem.eql(u8, s, "NaN")) {
+                return @unionInit(KindUnion, "number_value", std.math.nan(f64));
+            } else if (std.mem.eql(u8, s, "Infinity")) {
+                return @unionInit(KindUnion, "number_value", std.math.inf(f64));
+            } else if (std.mem.eql(u8, s, "-Infinity")) {
+                return @unionInit(KindUnion, "number_value", -std.math.inf(f64));
+            }
+            return @unionInit(KindUnion, "string_value", s);
+        },
+        .object_begin => {
+            // Inline struct parsing to avoid cross-function error set loop
+            _ = try source.next(); // consume object_begin
+            const StructType = @TypeOf(@as(KindUnion, undefined).struct_value);
+            const EntryType = @typeInfo(@TypeOf(@as(StructType, undefined).fields.items)).pointer.child;
+            const InnerValueType = blk: {
+                const VT = @TypeOf(@as(EntryType, undefined).value);
+                break :blk switch (@typeInfo(VT)) {
+                    .optional => |opt| opt.child,
+                    else => VT,
+                };
+            };
+            var entries: std.ArrayList(EntryType) = .empty;
+            while (true) {
+                if (.object_end == try source.peekNextTokenType()) {
+                    _ = try source.next();
+                    break;
+                }
+                const key_token = try source.nextAllocMax(allocator, .alloc_if_needed, options.max_value_len.?);
+                const key = switch (key_token) {
+                    .allocated_string => |s| s,
+                    .string => |s| try allocator.dupe(u8, s),
+                    else => return error.UnexpectedToken,
+                };
+                errdefer allocator.free(key);
+                const kind = try parseGoogleValue(InnerValueType, allocator, source, options);
+                try entries.append(allocator, .{
+                    .key = key,
+                    .value = InnerValueType{ .kind = kind },
+                });
+            }
+            return @unionInit(KindUnion, "struct_value", StructType{ .fields = entries });
+        },
+        .array_begin => {
+            // Inline list parsing to avoid cross-function error set loop
+            _ = try source.next(); // consume array_begin
+            const ListType = @TypeOf(@as(KindUnion, undefined).list_value);
+            const ElemType = @typeInfo(@TypeOf(@as(ListType, undefined).values.items)).pointer.child;
+            var values: std.ArrayList(ElemType) = .empty;
+            while (true) {
+                if (.array_end == try source.peekNextTokenType()) {
+                    _ = try source.next();
+                    break;
+                }
+                const kind = try parseGoogleValue(ElemType, allocator, source, options);
+                try values.append(allocator, ElemType{ .kind = kind });
+            }
+            return @unionInit(KindUnion, "list_value", ListType{ .values = values });
+        },
+        else => return error.UnexpectedToken,
+    }
+}
+
+/// Parse a top-level google.protobuf.Struct from a JSON object.
+fn parseGoogleStruct(
+    Self: type,
+    allocator: std.mem.Allocator,
+    source: anytype,
+    options: std.json.ParseOptions,
+) !Self {
+    if (.object_begin != try source.next()) return error.UnexpectedToken;
+
+    const EntryType = @typeInfo(@TypeOf(@as(Self, undefined).fields.items)).pointer.child;
+    const InnerValueType = blk: {
+        const VT = @TypeOf(@as(EntryType, undefined).value);
+        break :blk switch (@typeInfo(VT)) {
+            .optional => |opt| opt.child,
+            else => VT,
+        };
+    };
+
+    var entries: std.ArrayList(EntryType) = .empty;
+
+    while (true) {
+        if (.object_end == try source.peekNextTokenType()) {
+            _ = try source.next();
+            break;
+        }
+        const key_token = try source.nextAllocMax(allocator, .alloc_if_needed, options.max_value_len.?);
+        const key = switch (key_token) {
+            .allocated_string => |s| s,
+            .string => |s| try allocator.dupe(u8, s),
+            else => return error.UnexpectedToken,
+        };
+        errdefer allocator.free(key);
+
+        const kind = try parseGoogleValue(InnerValueType, allocator, source, options);
+        try entries.append(allocator, .{
+            .key = key,
+            .value = InnerValueType{ .kind = kind },
+        });
+    }
+
+    return Self{ .fields = entries };
+}
+
+/// Parse a top-level google.protobuf.ListValue from a JSON array.
+fn parseGoogleListValue(
+    Self: type,
+    allocator: std.mem.Allocator,
+    source: anytype,
+    options: std.json.ParseOptions,
+) !Self {
+    if (.array_begin != try source.next()) return error.UnexpectedToken;
+
+    const ValueType = @typeInfo(@TypeOf(@as(Self, undefined).values.items)).pointer.child;
+    var values: std.ArrayList(ValueType) = .empty;
+
+    while (true) {
+        if (.array_end == try source.peekNextTokenType()) {
+            _ = try source.next();
+            break;
+        }
+        const kind = try parseGoogleValue(ValueType, allocator, source, options);
+        try values.append(allocator, ValueType{ .kind = kind });
+    }
+
+    return Self{ .values = values };
+}
+
+// -- FieldMask --
+
+fn stringifyFieldMask(self: anytype, jws: anytype) !void {
+    // FieldMask JSON: paths joined with commas, each segment snake_case → camelCase
+    // Per proto3 spec: paths that don't round-trip through snake_case↔camelCase
+    // conversion must fail to serialize.
+    //
+    // Validate round-trip before writing anything:
+    for (self.paths.items) |path| {
+        if (!fieldMaskPathRoundTrips(path)) return error.RangeError;
+    }
+
+    try jsonValueStartAssumeTypeOk(jws);
+    try jws.writer.writeByte('"');
+
+    for (self.paths.items, 0..) |path, i| {
+        if (i > 0) try jws.writer.writeByte(',');
+        // Convert each path segment to camelCase at runtime
+        try writeSnakeToCamel(jws.writer, path);
+    }
+
+    try jws.writer.writeByte('"');
+    jws.next_punctuation = .comma;
+}
+
+/// Check if a snake_case path round-trips through snake→camel→snake conversion.
+/// Returns false if the path contains patterns that break the round-trip:
+/// - Multiple consecutive underscores (e.g., "foo__bar")
+/// - Trailing underscore
+/// - Uppercase letters (not valid snake_case)
+/// - Numeric characters after underscores (e.g., "foo_3_bar")
+fn fieldMaskPathRoundTrips(path: []const u8) bool {
+    if (path.len == 0) return true;
+
+    // Check for invalid patterns in the original snake_case path
+    var prev_underscore = false;
+    for (path, 0..) |c, i| {
+        if (c == '_') {
+            if (prev_underscore) return false; // consecutive underscores
+            if (i == path.len - 1) return false; // trailing underscore
+            prev_underscore = true;
+        } else {
+            if (std.ascii.isUpper(c)) return false; // uppercase not valid snake_case
+            if (prev_underscore and std.ascii.isDigit(c)) return false; // digit after underscore
+            prev_underscore = false;
+        }
+    }
+    return true;
+}
+
+fn writeSnakeToCamel(writer: anytype, snake: []const u8) !void {
+    var capitalize_next = false;
+    for (snake) |c| {
+        if (c == '_') {
+            capitalize_next = true;
+        } else if (capitalize_next) {
+            try writer.writeByte(std.ascii.toUpper(c));
+            capitalize_next = false;
+        } else {
+            try writer.writeByte(c);
+        }
+    }
+}
+
+fn parseFieldMask(
+    Self: type,
+    allocator: std.mem.Allocator,
+    source: anytype,
+    options: std.json.ParseOptions,
+) !Self {
+    const token = try source.nextAllocMax(allocator, .alloc_if_needed, options.max_value_len.?);
+    const str = switch (token) {
+        inline .string, .allocated_string => |s| s,
+        else => return error.UnexpectedToken,
+    };
+    defer freeAllocated(allocator, token);
+
+    var paths: std.ArrayList([]const u8) = .empty;
+
+    if (str.len == 0) {
+        return Self{ .paths = paths };
+    }
+
+    // Split on commas, convert each segment from camelCase to snake_case
+    var start: usize = 0;
+    for (str, 0..) |c, i| {
+        if (c == ',') {
+            const snake = try camelToSnake(allocator, str[start..i]);
+            try paths.append(allocator, snake);
+            start = i + 1;
+        }
+    }
+    // Last segment
+    const snake = try camelToSnake(allocator, str[start..]);
+    try paths.append(allocator, snake);
+
+    return Self{ .paths = paths };
+}
+
+fn camelToSnake(allocator: std.mem.Allocator, camel: []const u8) ![]const u8 {
+    // Count how many underscores we need to insert
+    var extra: usize = 0;
+    for (camel) |c| {
+        if (std.ascii.isUpper(c)) extra += 1;
+    }
+
+    const result = try allocator.alloc(u8, camel.len + extra);
+    var j: usize = 0;
+    for (camel) |c| {
+        if (std.ascii.isUpper(c)) {
+            result[j] = '_';
+            j += 1;
+            result[j] = std.ascii.toLower(c);
+            j += 1;
+        } else {
+            result[j] = c;
+            j += 1;
+        }
+    }
+    return result[0..j];
+}
+
 fn print_numeric(value: anytype, jws: anytype) !void {
     switch (@typeInfo(@TypeOf(value))) {
         .float, .comptime_float => {},
-        .int, .comptime_int, .@"enum", .bool => {
+        .int, .comptime_int => {
+            // Proto JSON spec: 64-bit integers must be quoted strings
+            if (@typeInfo(@TypeOf(value)) == .int and @bitSizeOf(@TypeOf(value)) == 64) {
+                var buf: [20]u8 = undefined;
+                const s = std.fmt.bufPrint(&buf, "{d}", .{value}) catch unreachable;
+                try jws.write(s);
+            } else {
+                try jws.write(value);
+            }
+            return;
+        },
+        .@"enum", .bool => {
             try jws.write(value);
             return;
         },

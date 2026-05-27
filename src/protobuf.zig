@@ -172,6 +172,28 @@ pub const FieldType = union(enum) {
     };
 };
 
+/// Identifies protobuf well-known types that have special JSON representations
+/// per the proto3 JSON mapping specification. Used as a comptime marker on
+/// generated message structs to enable custom JSON serialization/deserialization.
+pub const WellKnownType = enum {
+    timestamp,
+    duration,
+    value,
+    @"struct",
+    list_value,
+    field_mask,
+    // any — skipped, requires type registry
+    double_value,
+    float_value,
+    int64_value,
+    uint64_value,
+    int32_value,
+    uint32_value,
+    bool_value,
+    string_value,
+    bytes_value,
+};
+
 /// Structure describing a field. Most of the relevant informations are
 /// In the FieldType data. Tag is optional as oneof fields are "virtual" fields.
 pub const FieldDescriptor = struct { field_number: ?u32, ftype: FieldType };

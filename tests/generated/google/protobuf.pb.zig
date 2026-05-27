@@ -2988,6 +2988,7 @@ pub const Duration = struct {
         .seconds = fd(1, .{ .scalar = .int64 }),
         .nanos = fd(2, .{ .scalar = .int32 }),
     };
+    pub const _well_known_type: protobuf.WellKnownType = .duration;
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -3253,6 +3254,7 @@ pub const FieldMask = struct {
     pub const _desc_table = .{
         .paths = fd(1, .{ .repeated = .{ .scalar = .string } }),
     };
+    pub const _well_known_type: protobuf.WellKnownType = .field_mask;
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -3336,6 +3338,7 @@ pub const Struct = struct {
     pub const _desc_table = .{
         .fields = fd(1, .{ .repeated = .submessage }),
     };
+    pub const _well_known_type: protobuf.WellKnownType = .@"struct";
 
     pub const FieldsEntry = struct {
         key: []const u8 = &.{},
@@ -3502,6 +3505,7 @@ pub const Value = struct {
     pub const _desc_table = .{
         .kind = fd(null, .{ .oneof = kind_union }),
     };
+    pub const _well_known_type: protobuf.WellKnownType = .value;
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -3571,6 +3575,7 @@ pub const ListValue = struct {
     pub const _desc_table = .{
         .values = fd(1, .{ .repeated = .submessage }),
     };
+    pub const _well_known_type: protobuf.WellKnownType = .list_value;
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -3728,6 +3733,7 @@ pub const Timestamp = struct {
         .seconds = fd(1, .{ .scalar = .int64 }),
         .nanos = fd(2, .{ .scalar = .int32 }),
     };
+    pub const _well_known_type: protobuf.WellKnownType = .timestamp;
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -3800,6 +3806,7 @@ pub const DoubleValue = struct {
     pub const _desc_table = .{
         .value = fd(1, .{ .scalar = .double }),
     };
+    pub const _well_known_type: protobuf.WellKnownType = .double_value;
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -3872,6 +3879,7 @@ pub const FloatValue = struct {
     pub const _desc_table = .{
         .value = fd(1, .{ .scalar = .float }),
     };
+    pub const _well_known_type: protobuf.WellKnownType = .float_value;
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -3944,6 +3952,7 @@ pub const Int64Value = struct {
     pub const _desc_table = .{
         .value = fd(1, .{ .scalar = .int64 }),
     };
+    pub const _well_known_type: protobuf.WellKnownType = .int64_value;
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -4016,6 +4025,7 @@ pub const UInt64Value = struct {
     pub const _desc_table = .{
         .value = fd(1, .{ .scalar = .uint64 }),
     };
+    pub const _well_known_type: protobuf.WellKnownType = .uint64_value;
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -4088,6 +4098,7 @@ pub const Int32Value = struct {
     pub const _desc_table = .{
         .value = fd(1, .{ .scalar = .int32 }),
     };
+    pub const _well_known_type: protobuf.WellKnownType = .int32_value;
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -4160,6 +4171,7 @@ pub const UInt32Value = struct {
     pub const _desc_table = .{
         .value = fd(1, .{ .scalar = .uint32 }),
     };
+    pub const _well_known_type: protobuf.WellKnownType = .uint32_value;
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -4232,6 +4244,7 @@ pub const BoolValue = struct {
     pub const _desc_table = .{
         .value = fd(1, .{ .scalar = .bool }),
     };
+    pub const _well_known_type: protobuf.WellKnownType = .bool_value;
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -4304,6 +4317,7 @@ pub const StringValue = struct {
     pub const _desc_table = .{
         .value = fd(1, .{ .scalar = .string }),
     };
+    pub const _well_known_type: protobuf.WellKnownType = .string_value;
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -4376,6 +4390,7 @@ pub const BytesValue = struct {
     pub const _desc_table = .{
         .value = fd(1, .{ .scalar = .bytes }),
     };
+    pub const _well_known_type: protobuf.WellKnownType = .bytes_value;
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
