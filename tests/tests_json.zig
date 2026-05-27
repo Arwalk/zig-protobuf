@@ -1050,8 +1050,9 @@ test "JSON: encode oneof flat format (emit_oneof_field_name=false)" {
     };
     const encoded = try msg.jsonEncode(.{}, .{ .emit_oneof_field_name = false }, allocator);
     defer allocator.free(encoded);
+    // enumField is UNSPECIFIED (default enum value) so it is omitted
     try std.testing.expectEqualStrings(
-        \\{"regularField":"hello","enumField":"UNSPECIFIED","stringInOneof":"world"}
+        \\{"regularField":"hello","stringInOneof":"world"}
     , encoded);
 }
 
@@ -1059,10 +1060,11 @@ test "JSON: encode oneof legacy wrapped format (emit_oneof_field_name=true)" {
     var pb_instance = try string_in_oneof_init(allocator);
     defer pb_instance.deinit(allocator);
     // Default jsonEncode uses wrapped format (backward compat)
+    // enumField is UNSPECIFIED (default enum value) so it is omitted
     const encoded = try pb_instance.jsonEncode(.{}, .{}, allocator);
     defer allocator.free(encoded);
     try std.testing.expectEqualStrings(
-        \\{"regularField":"this field is always the same","enumField":"UNSPECIFIED","someOneof":{"stringInOneof":"testing oneof field being the string"}}
+        \\{"regularField":"this field is always the same","someOneof":{"stringInOneof":"testing oneof field being the string"}}
     , encoded);
 }
 
@@ -1121,8 +1123,9 @@ test "JSON: roundtrip oneof flat format" {
     const encoded = try original.jsonEncode(.{}, .{ .emit_oneof_field_name = false }, allocator);
     defer allocator.free(encoded);
 
+    // enumField is UNSPECIFIED (default enum value) so it is omitted
     try std.testing.expectEqualStrings(
-        \\{"regularField":"roundtrip","enumField":"UNSPECIFIED","stringInOneof":"value"}
+        \\{"regularField":"roundtrip","stringInOneof":"value"}
     , encoded);
 
     // Decode flat format
@@ -1305,20 +1308,65 @@ test "JSON map: encode map<string, NestedMessage> (submessage values)" {
     try expect(bar.object.get("a").?.integer == 99);
 }
 
-test "JSON map: empty map produces empty JSON object" {
+test "JSON map: empty map omitted by default, emits {} when emit_default_values is true" {
+    const msg = TestAllTypesProto3{};
+
+    // Default: empty map field is omitted entirely (proto3 default suppression)
+    const encoded_default = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded_default);
+    const parsed_default = try std.json.parseFromSlice(std.json.Value, allocator, encoded_default, .{});
+    defer parsed_default.deinit();
+    try expect(parsed_default.value.object.get("mapInt32Int32") == null);
+
+    // With emit_default_values: empty map emits as empty object {}
+    const encoded_explicit = try msg.jsonEncode(.{}, .{ .emit_default_values = true }, allocator);
+    defer allocator.free(encoded_explicit);
+    const parsed_explicit = try std.json.parseFromSlice(std.json.Value, allocator, encoded_explicit, .{});
+    defer parsed_explicit.deinit();
+    const map_field = parsed_explicit.value.object.get("mapInt32Int32").?;
+    try expect(map_field == .object);
+    try expect(map_field.object.count() == 0);
+}
+
+test "JSON: emit_default_values=true preserves all fields including defaults" {
+    const msg = TestAllTypesProto3{};
+
+    const encoded = try msg.jsonEncode(.{}, .{ .emit_default_values = true }, allocator);
+    defer allocator.free(encoded);
+
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const root = parsed.value.object;
+
+    // Scalar defaults present
+    try expect(root.get("optionalInt32").?.integer == 0);
+    try expect(root.get("optionalBool").?.bool == false);
+    try expectEqualSlices(u8, "", root.get("optionalString").?.string);
+    // Enum default present (ordinal 0 = FOO)
+    try expectEqualSlices(u8, "FOO", root.get("optionalNestedEnum").?.string);
+    // Empty repeated field present as empty array
+    try expect(root.get("repeatedInt32").?.array.items.len == 0);
+    // Empty map present as empty object
+    try expect(root.get("mapStringString").?.object.count() == 0);
+}
+
+test "JSON: default values omitted with default options" {
     const msg = TestAllTypesProto3{};
 
     const encoded = try msg.jsonEncode(.{}, .{}, allocator);
     defer allocator.free(encoded);
 
-    // Parse and validate JSON structure
     const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
     defer parsed.deinit();
     const root = parsed.value.object;
 
-    const map = root.get("mapInt32Int32").?;
-    try expect(map == .object);
-    try expect(map.object.count() == 0);
+    // All default-valued fields should be absent
+    try expect(root.get("optionalInt32") == null);
+    try expect(root.get("optionalBool") == null);
+    try expect(root.get("optionalString") == null);
+    try expect(root.get("optionalNestedEnum") == null);
+    try expect(root.get("repeatedInt32") == null);
+    try expect(root.get("mapStringString") == null);
 }
 
 // --- Decoding tests ---

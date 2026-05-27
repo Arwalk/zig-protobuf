@@ -11,6 +11,12 @@ pub const Options = struct {
     /// - `false`: emits oneof variants as flat fields in the parent object.
     ///   Example: `{"stringInOneof":"x"}` — this matches the protobuf JSON spec.
     emit_oneof_field_name: bool = true,
+    /// Controls whether fields with default values are included in JSON output.
+    /// - `false` (default, spec-conformant): omits fields that equal their proto3
+    ///   default value (0 for numerics, false for bools, "" for strings, empty
+    ///   for repeated/map). This matches the protobuf JSON specification.
+    /// - `true`: emits all fields regardless of value (backward compatible).
+    emit_default_values: bool = false,
 };
 
 pub fn parse(
@@ -213,6 +219,32 @@ pub fn encode(
     );
 }
 
+/// Checks whether a field value equals its proto3 default.
+/// Used to suppress default-valued fields in JSON output per the protobuf spec.
+/// This is comptime-dispatched based on the field descriptor type, so there is
+/// zero runtime overhead for the type dispatch itself.
+fn isDefaultValue(value: anytype, comptime field_desc: protobuf.FieldDescriptor) bool {
+    return switch (field_desc.ftype) {
+        .scalar => |scalar| switch (scalar) {
+            .string, .bytes => value.len == 0,
+            .bool => value == false,
+            .float => @as(u32, @bitCast(value)) == 0,
+            .double => @as(u64, @bitCast(value)) == 0,
+            else => value == 0,
+        },
+        .@"enum" => @intFromEnum(value) == 0,
+        .repeated, .packed_repeated => value.items.len == 0,
+        // Non-optional submessages are always emitted. In proto3, submessages
+        // are generated as optional (?T) and handled by the null check in
+        // stringifyOpts, so this case is only reached for non-optional value
+        // types which should always be present.
+        .submessage => false,
+        // Oneofs are always generated as optional (?union) and handled by the
+        // null check in stringifyOpts. This case is unreachable in normal use.
+        .oneof => false,
+    };
+}
+
 fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std.meta.Child(@TypeOf(jws)).Error!void {
     // Increase eval branch quota for types with hundreds of fields
     @setEvalBranchQuota(1000000);
@@ -226,7 +258,12 @@ fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std
 
         const field_present = switch (@typeInfo(fieldInfo.type)) {
             .optional => @field(self, fieldInfo.name) != null,
-            else => true,
+            else => if (opts.emit_default_values) true else blk: {
+                break :blk !isDefaultValue(
+                    @field(self, fieldInfo.name),
+                    descriptor,
+                );
+            },
         };
 
         if (field_present) {
