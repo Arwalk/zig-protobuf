@@ -804,7 +804,15 @@ pub const DoubleValue = struct {
     }
 
     pub fn jsonStringify(self: @This(), jws: anytype) @TypeOf(jws.*).Error!void {
-        try jws.write(self.value);
+        if (std.math.isNan(self.value)) {
+            try jws.write("NaN");
+        } else if (std.math.isPositiveInf(self.value)) {
+            try jws.write("Infinity");
+        } else if (std.math.isNegativeInf(self.value)) {
+            try jws.write("-Infinity");
+        } else {
+            try jws.write(self.value);
+        }
     }
 };
 
@@ -842,7 +850,15 @@ pub const FloatValue = struct {
     }
 
     pub fn jsonStringify(self: @This(), jws: anytype) @TypeOf(jws.*).Error!void {
-        try jws.write(self.value);
+        if (std.math.isNan(self.value)) {
+            try jws.write("NaN");
+        } else if (std.math.isPositiveInf(self.value)) {
+            try jws.write("Infinity");
+        } else if (std.math.isNegativeInf(self.value)) {
+            try jws.write("-Infinity");
+        } else {
+            try jws.write(self.value);
+        }
     }
 };
 
