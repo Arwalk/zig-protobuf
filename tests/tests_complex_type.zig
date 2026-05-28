@@ -170,10 +170,9 @@ test "JSON: encode ComplexType with many fields" {
     );
     defer allocator.free(encoded);
 
-    // Verify that APIVersion and Kind are correctly encoded
-    // (with lowercase first letter in JSON: "aPIVersion", "kind")
-    // Note: The to_camel_case function converts snake_case to camelCase
-    // APIVersion becomes aPIVersion (first letter lowercased)
-    try expect(std.mem.indexOf(u8, encoded, "\"aPIVersion\"") != null);
-    try expect(std.mem.indexOf(u8, encoded, "\"kind\"") != null);
+    // Verify that APIVersion and Kind are correctly encoded.
+    // Per protoc's json_name algorithm, to_camel_case preserves original casing
+    // when there are no underscores — no first-character lowering.
+    try expect(std.mem.indexOf(u8, encoded, "\"APIVersion\"") != null);
+    try expect(std.mem.indexOf(u8, encoded, "\"Kind\"") != null);
 }

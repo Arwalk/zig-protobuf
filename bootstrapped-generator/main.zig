@@ -299,14 +299,46 @@ const GenerationContext = struct {
                 try std.fmt.allocPrint(allocator, "pub const {s} = enum(i32) {{\n", .{e.name.?}),
             );
 
+            // Track seen numeric values to handle allow_alias (duplicate values).
+            // Zig enums cannot have duplicate integer values, so we emit only the
+            // first name for each value and collect aliases into _enum_aliases.
+            var seen_values = std.AutoHashMap(i32, void).init(allocator);
+            defer seen_values.deinit();
+            var aliases: std.ArrayList(struct { name: []const u8, number: i32 }) = .empty;
+            defer aliases.deinit(allocator);
+
             for (e.value.items) |elem| {
-                try lines.append(
-                    allocator,
-                    try std.fmt.allocPrint(allocator, "   {s} = {},\n", .{ elem.name.?, elem.number orelse 0 }),
-                );
+                const num = elem.number orelse 0;
+                if (seen_values.contains(num)) {
+                    // Alias: same numeric value already emitted — collect for _enum_aliases
+                    try aliases.append(allocator, .{ .name = elem.name.?, .number = num });
+                } else {
+                    try seen_values.put(num, {});
+                    try lines.append(
+                        allocator,
+                        try std.fmt.allocPrint(allocator, "   {s} = {},\n", .{ elem.name.?, num }),
+                    );
+                }
             }
 
-            try lines.append(allocator, "    _,\n};\n\n");
+            try lines.append(allocator, "    _,\n");
+
+            // Emit alias lookup table if any aliases were found
+            if (aliases.items.len > 0) {
+                try lines.append(
+                    allocator,
+                    try std.fmt.allocPrint(allocator, "\n    pub const _enum_aliases = .{{\n", .{}),
+                );
+                for (aliases.items) |alias| {
+                    try lines.append(
+                        allocator,
+                        try std.fmt.allocPrint(allocator, "        .{{ \"{s}\", {} }},\n", .{ alias.name, alias.number }),
+                    );
+                }
+                try lines.append(allocator, "    };\n");
+            }
+
+            try lines.append(allocator, "};\n\n");
         }
     }
 

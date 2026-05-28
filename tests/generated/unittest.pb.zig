@@ -22,9 +22,12 @@ pub const TestEnumWithDupValue = enum(i32) {
     FOO1 = 1,
     BAR1 = 2,
     BAZ = 3,
-    FOO2 = 1,
-    BAR2 = 2,
     _,
+
+    pub const _enum_aliases = .{
+        .{ "FOO2", 1 },
+        .{ "BAR2", 2 },
+    };
 };
 
 /// Test an enum with large, unordered values.

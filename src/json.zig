@@ -175,12 +175,21 @@ pub fn parse(
                                                         options,
                                                     ),
                                                 },
-                                                .submessage, .@"enum" => try std.json.innerParse(
+                                                .submessage => try std.json.innerParse(
                                                     union_field.type,
                                                     allocator,
                                                     source,
                                                     options,
                                                 ),
+                                                .@"enum" => parseEnum(
+                                                    union_field.type,
+                                                    allocator,
+                                                    source,
+                                                    options,
+                                                ) catch |err| switch (err) {
+                                                    error.InvalidEnumTag => @enumFromInt(0),
+                                                    else => return err,
+                                                },
                                                 .repeated, .packed_repeated => {
                                                     @compileError(
                                                         "Repeated fields are not allowed in oneof",
@@ -318,29 +327,25 @@ fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) !vo
 }
 
 fn to_camel_case(not_camel_cased_string: []const u8) []const u8 {
+    // Matches protoc's json_name algorithm:
+    // 1. For each '_', set capitalize_next = true and skip the underscore
+    // 2. If capitalize_next, emit toUpper(char), clear capitalize_next
+    // 3. Otherwise emit char as-is
+    // 4. No first-character lowering (preserves original casing)
     comptime var capitalize_next_letter = false;
     comptime var camel_cased_string: []const u8 = "";
-    comptime var i: usize = 0;
 
     inline for (not_camel_cased_string) |char| {
         if (char == '_') {
-            capitalize_next_letter = i > 0;
+            capitalize_next_letter = true;
         } else if (capitalize_next_letter) {
             camel_cased_string = camel_cased_string ++ .{
                 comptime std.ascii.toUpper(char),
             };
             capitalize_next_letter = false;
-            i += 1;
         } else {
             camel_cased_string = camel_cased_string ++ .{char};
-            i += 1;
         }
-    }
-
-    // Build a new string with lowercase first letter instead of mutating const
-    if (comptime std.ascii.isUpper(camel_cased_string[0])) {
-        const lower_first = .{std.ascii.toLower(camel_cased_string[0])};
-        camel_cased_string = lower_first ++ camel_cased_string[1..];
     }
 
     return camel_cased_string;
@@ -418,7 +423,8 @@ fn parseMapValue(
             .bytes => try parse_bytes(allocator, source, options),
             else => try std.json.innerParse(ValueType, allocator, source, options),
         },
-        .submessage, .@"enum" => try std.json.innerParse(ValueType, allocator, source, options),
+        .submessage => try std.json.innerParse(ValueType, allocator, source, options),
+        .@"enum" => try parseEnum(ValueType, allocator, source, options),
         else => unreachable, // map values can't be repeated/oneof
     };
 }
@@ -727,7 +733,6 @@ fn parseStructField(
                                 _ = try source.next();
                                 break;
                             }
-                            try array_list.ensureUnusedCapacity(allocator, 1);
                             var entry: child_type = undefined;
                             entry.key = try parseMapKey(
                                 @TypeOf(entry.key),
@@ -739,21 +744,33 @@ fn parseStructField(
                             // Free string key allocation if value parsing fails
                             const key_ftype = comptime @field(child_type._desc_table, "key").ftype;
                             const key_is_string = comptime (key_ftype == .scalar and key_ftype.scalar == .string);
-                            errdefer if (key_is_string) {
-                                if (@typeInfo(@TypeOf(entry.key)) == .optional) {
-                                    if (entry.key) |k| allocator.free(k);
-                                } else {
-                                    allocator.free(entry.key);
-                                }
-                            };
-                            entry.value = try parseMapValue(
+
+                            if (parseMapValue(
                                 @TypeOf(entry.value),
                                 @field(child_type._desc_table, "value"),
                                 allocator,
                                 source,
                                 options,
-                            );
-                            array_list.appendAssumeCapacity(entry);
+                            )) |value| {
+                                entry.value = value;
+                                try array_list.ensureUnusedCapacity(allocator, 1);
+                                array_list.appendAssumeCapacity(entry);
+                            } else |err| {
+                                // Free the already-parsed key on any error
+                                if (key_is_string) {
+                                    if (@typeInfo(@TypeOf(entry.key)) == .optional) {
+                                        if (entry.key) |k| allocator.free(k);
+                                    } else {
+                                        allocator.free(entry.key);
+                                    }
+                                }
+                                switch (err) {
+                                    // Unknown enum string with ignore_unknown_fields:
+                                    // skip this map entry per proto3 spec.
+                                    error.InvalidEnumTag => {},
+                                    else => return err,
+                                }
+                            }
                         }
                         break :list array_list;
                     },
@@ -769,8 +786,7 @@ fn parseStructField(
                                 _ = try source.next();
                                 break;
                             }
-                            try array_list.ensureUnusedCapacity(allocator, 1);
-                            array_list.appendAssumeCapacity(switch (repeated) {
+                            const elem: ?child_type = switch (repeated) {
                                 .scalar => |scalar| switch (scalar) {
                                     .bytes => try parse_bytes(allocator, source, options),
                                     else => try std.json.innerParse(
@@ -780,7 +796,7 @@ fn parseStructField(
                                         options,
                                     ),
                                 },
-                                .submessage, .@"enum" => other: {
+                                .submessage => other: {
                                     break :other try std.json.innerParse(
                                         child_type,
                                         allocator,
@@ -788,7 +804,22 @@ fn parseStructField(
                                         options,
                                     );
                                 },
-                            });
+                                .@"enum" => parseEnum(
+                                    child_type,
+                                    allocator,
+                                    source,
+                                    options,
+                                ) catch |err| switch (err) {
+                                    // Unknown enum string with ignore_unknown_fields:
+                                    // skip this element per proto3 spec.
+                                    error.InvalidEnumTag => null,
+                                    else => return err,
+                                },
+                            };
+                            if (elem) |e| {
+                                try array_list.ensureUnusedCapacity(allocator, 1);
+                                array_list.appendAssumeCapacity(e);
+                            }
                         }
                         break :list array_list;
                     },
@@ -855,13 +886,22 @@ fn parseStructField(
                                     options,
                                 ),
                             },
-                            .submessage, .@"enum" => other: {
+                            .submessage => other: {
                                 break :other try std.json.innerParse(
                                     union_field.type,
                                     allocator,
                                     source,
                                     options,
                                 );
+                            },
+                            .@"enum" => parseEnum(
+                                union_field.type,
+                                allocator,
+                                source,
+                                options,
+                            ) catch |err| switch (err) {
+                                error.InvalidEnumTag => @enumFromInt(0),
+                                else => return err,
                             },
                             .repeated, .packed_repeated => {
                                 @compileError("Repeated fields are not allowed in oneof");
@@ -879,12 +919,29 @@ fn parseStructField(
             } else return error.UnknownField;
         },
         // `.submessage`s (generated structs) have their own jsonParse implementation
-        .@"enum", .submessage => try std.json.innerParse(
+        .submessage => try std.json.innerParse(
             fieldInfo.type,
             allocator,
             source,
             options,
         ),
+        .@"enum" => parseEnum(
+            fieldInfo.type,
+            allocator,
+            source,
+            options,
+        ) catch |err| switch (err) {
+            // Unknown enum string with ignore_unknown_fields:
+            // use default value (0) for singular/optional fields.
+            error.InvalidEnumTag => blk: {
+                const Inner = switch (@typeInfo(fieldInfo.type)) {
+                    .optional => |opt| opt.child,
+                    else => fieldInfo.type,
+                };
+                break :blk @as(fieldInfo.type, @enumFromInt(@as(@typeInfo(Inner).@"enum".tag_type, 0)));
+            },
+            else => return err,
+        },
         .scalar => |scalar| switch (scalar) {
             .bytes => try parse_bytes(allocator, source, options),
             // `.string`s have their own jsonParse implementation
@@ -1704,13 +1761,70 @@ fn jsonValueStartAssumeTypeOk(jws: anytype) !void {
     }
 }
 
-fn base64ErrorToJsonParseError(err: std.base64.Error) std.json.ParseFromValueError {
-    return switch (err) {
-        std.base64.Error.NoSpaceLeft => std.json.ParseFromValueError.Overflow,
-        std.base64.Error.InvalidPadding,
-        std.base64.Error.InvalidCharacter,
-        => std.json.ParseFromValueError.UnexpectedToken,
+/// Parse a protobuf enum from JSON. Per proto3 spec:
+/// - Named values are matched against Zig enum field names
+/// - Numeric values are parsed as the enum's integer tag type
+/// - Unknown string values: rejected by default (error.UnexpectedToken),
+///   or return error.InvalidEnumTag when ignore_unknown_fields is set
+///   so callers can skip repeated elements / map entries as appropriate.
+/// - Enum aliases (names mapped to the same numeric value via _enum_aliases) are checked
+/// - For optional enum fields (proto2), JSON `null` returns `null`
+///
+/// T may be `SomeEnum` or `?SomeEnum`; the function unwraps the optional
+/// internally so callers don't need to special-case it.
+fn parseEnum(
+    comptime T: type,
+    allocator: std.mem.Allocator,
+    source: anytype,
+    options: std.json.ParseOptions,
+) !T {
+    // Unwrap optional so we can operate on the concrete enum type.
+    const Inner = switch (@typeInfo(T)) {
+        .optional => |opt| opt.child,
+        else => T,
     };
+
+    const token = try source.nextAllocMax(allocator, .alloc_if_needed, options.max_value_len.?);
+    defer freeAllocated(allocator, token);
+
+    // For optional enum types, JSON null yields Zig null.
+    if (token == .null) {
+        if (@typeInfo(T) == .optional) return null;
+        return error.UnexpectedToken;
+    }
+
+    const slice = switch (token) {
+        inline .number, .allocated_number, .string, .allocated_string => |s| s,
+        else => return error.UnexpectedToken,
+    };
+
+    // Try standard enum name match first
+    if (std.meta.stringToEnum(Inner, slice)) |value| return value;
+
+    // Check for enum aliases if the generated type provides them.
+    // The code generator emits _enum_aliases as a comptime tuple of
+    // .{ name, value } pairs for enums with allow_alias = true.
+    if (comptime @hasDecl(Inner, "_enum_aliases")) {
+        inline for (Inner._enum_aliases) |alias| {
+            if (std.mem.eql(u8, slice, alias[0])) {
+                return @enumFromInt(alias[1]);
+            }
+        }
+    }
+
+    // Try numeric value (e.g., "2" or 2 in JSON)
+    const tag_type = @typeInfo(Inner).@"enum".tag_type;
+    if (std.fmt.parseInt(tag_type, slice, 10)) |n| {
+        return @enumFromInt(n);
+    } else |_| {}
+
+    // Unknown string value: per proto3 JSON spec, unknown enum string names
+    // must be rejected. When ignore_unknown_fields is set, return a
+    // distinguishable error so callers can skip repeated/map elements.
+    if (options.ignore_unknown_fields) {
+        return error.InvalidEnumTag;
+    }
+    return error.UnexpectedToken;
 }
 
 fn parse_bytes(
@@ -1719,15 +1833,67 @@ fn parse_bytes(
     options: std.json.ParseOptions,
 ) ![]const u8 {
     const temp_raw = try std.json.innerParse([]u8, allocator, source, options);
-    const size = std.base64.standard.Decoder.calcSizeForSlice(temp_raw) catch |err| {
-        return base64ErrorToJsonParseError(err);
-    };
-    const tempstring = try allocator.alloc(u8, size);
-    errdefer allocator.free(tempstring);
-    std.base64.standard.Decoder.decode(tempstring, temp_raw) catch |err| {
-        return base64ErrorToJsonParseError(err);
-    };
-    return tempstring;
+    defer allocator.free(temp_raw);
+
+    // Proto3 JSON spec: bytes fields accept both standard base64 (RFC 4648 §4)
+    // and URL-safe base64 (RFC 4648 §5). URL-safe uses '-' and '_' instead of
+    // '+' and '/'. Normalize to standard alphabet before decoding.
+    for (temp_raw) |*c| {
+        switch (c.*) {
+            '-' => c.* = '+',
+            '_' => c.* = '/',
+            else => {},
+        }
+    }
+
+    // Use a lenient base64 decode: strip padding, then decode manually.
+    // Zig's standard base64 decoder rejects non-zero trailing bits
+    // (non-canonical encodings), but protobuf conformance tests require
+    // accepting them (e.g. URL-safe "-_" decodes to 0xfb despite non-zero
+    // trailing bits in the last sextet).
+    return lenientBase64Decode(allocator, temp_raw);
+}
+
+/// Lenient base64 decode: accepts both padded and unpadded input with either
+/// standard (+/) or URL-safe (-_) alphabet (caller should normalize to +/
+/// first). Tolerates non-zero trailing bits in the last sextet, which strict
+/// RFC 4648 decoders reject but protobuf conformance tests require.
+fn lenientBase64Decode(allocator: std.mem.Allocator, input: []const u8) ![]const u8 {
+    // Strip any trailing '=' padding
+    var data_len = input.len;
+    while (data_len > 0 and input[data_len - 1] == '=') {
+        data_len -= 1;
+    }
+    const data = input[0..data_len];
+
+    // Each base64 character encodes 6 bits; output length is total bits / 8
+    const output_len = (data.len * 6) / 8;
+    const result = try allocator.alloc(u8, output_len);
+    errdefer allocator.free(result);
+
+    var acc: u32 = 0;
+    var acc_len: u5 = 0;
+    var dest_idx: usize = 0;
+
+    for (data) |c| {
+        const val: u32 = switch (c) {
+            'A'...'Z' => c - 'A',
+            'a'...'z' => c - 'a' + 26,
+            '0'...'9' => c - '0' + 52,
+            '+' => 62,
+            '/' => 63,
+            else => return error.UnexpectedToken,
+        };
+        acc = (acc << 6) | val;
+        acc_len += 6;
+        if (acc_len >= 8) {
+            acc_len -= 8;
+            result[dest_idx] = @truncate(acc >> acc_len);
+            dest_idx += 1;
+        }
+    }
+    // Remaining non-zero trailing bits are silently ignored (lenient decode).
+    return result;
 }
 
 fn fillDefaultStructValues(

@@ -76,14 +76,14 @@ message TestAllTypesProto3 {
   }
 
   enum AliasedEnum {
-    // option allow_alias = true;
+    option allow_alias = true;
 
     ALIAS_FOO = 0;
     ALIAS_BAR = 1;
-    // ALIAS_BAZ = 2;
+    ALIAS_BAZ = 2;
     MOO = 2;
-    //moo = 2;
-    //bAz = 2;
+    moo = 2;
+    bAz = 2;
   }
 
   // Singular

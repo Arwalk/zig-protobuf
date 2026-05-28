@@ -356,8 +356,14 @@ pub const TestAllTypesProto3 = struct {
     pub const AliasedEnum = enum(i32) {
         ALIAS_FOO = 0,
         ALIAS_BAR = 1,
-        MOO = 2,
+        ALIAS_BAZ = 2,
         _,
+
+        pub const _enum_aliases = .{
+            .{ "MOO", 2 },
+            .{ "moo", 2 },
+            .{ "bAz", 2 },
+        };
     };
 
     pub const NestedMessage = struct {
