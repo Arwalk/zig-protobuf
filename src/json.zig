@@ -423,6 +423,45 @@ fn parseMapValue(
     };
 }
 
+/// O(n²) dedup: true when no later entry in `slice` shares the same key.
+/// No allocator available in encode path, so hash-set dedup is not an option.
+fn isLastOccurrenceOfKey(comptime ElType: type, comptime key_desc: protobuf.FieldDescriptor, slice: []const ElType, idx: usize) bool {
+    const raw_key_a = slice[idx].key;
+    // Unwrap optional keys
+    const key_a = switch (@typeInfo(@TypeOf(raw_key_a))) {
+        .optional => raw_key_a orelse return true, // null key: treat as unique (will be skipped by writeMapKey)
+        else => raw_key_a,
+    };
+    for (slice[idx + 1 ..]) |later| {
+        const raw_key_b = later.key;
+        const key_b = switch (@typeInfo(@TypeOf(raw_key_b))) {
+            .optional => raw_key_b orelse continue, // null later key: not a match
+            else => raw_key_b,
+        };
+        const match = switch (comptime key_desc.ftype) {
+            .scalar => |scalar| switch (scalar) {
+                .string => std.mem.eql(u8, key_a, key_b),
+                .bool,
+                .int32,
+                .int64,
+                .uint32,
+                .uint64,
+                .sint32,
+                .sint64,
+                .fixed32,
+                .fixed64,
+                .sfixed32,
+                .sfixed64,
+                => key_a == key_b,
+                .float, .double, .bytes => @compileError("Invalid map key type: " ++ @tagName(scalar)),
+            },
+            else => unreachable, // Map keys can only be scalars
+        };
+        if (match) return false;
+    }
+    return true;
+}
+
 /// Write a protobuf map key as a JSON object field name.
 /// All JSON object keys must be strings, so non-string key types
 /// (integers, bools) are formatted as their string representation.
@@ -437,13 +476,24 @@ fn writeMapKey(raw_key: anytype, comptime key_desc: protobuf.FieldDescriptor, jw
         .scalar => |scalar| switch (scalar) {
             .string => try jws.objectField(key),
             .bool => try jws.objectField(if (key) "true" else "false"),
-            else => {
+            .int32,
+            .int64,
+            .uint32,
+            .uint64,
+            .sint32,
+            .sint64,
+            .fixed32,
+            .fixed64,
+            .sfixed32,
+            .sfixed64,
+            => {
                 // Integer types: format as decimal string for JSON object key
                 // i64 min "-9223372036854775808" and u64 max "18446744073709551615" are both exactly 20 chars
                 var buf: [20]u8 = undefined;
                 const key_str = std.fmt.bufPrint(&buf, "{d}", .{key}) catch unreachable;
                 try jws.objectField(key_str);
             },
+            .float, .double, .bytes => @compileError("Invalid map key type: " ++ @tagName(scalar)),
         },
         else => unreachable, // Map keys can only be scalars (no floats, bytes, enum, message)
     }
@@ -498,10 +548,12 @@ fn stringify_struct_field_with_options(
             };
 
             if (is_map) {
-                // Protobuf JSON spec: maps serialize as JSON objects
+                // Duplicate keys use last-value-wins (dedup relies on wire-order ArrayList).
+                const key_desc = comptime @field(ElType._desc_table, "key");
                 try jws.beginObject();
-                for (slice) |el| {
-                    if (try writeMapKey(el.key, @field(ElType._desc_table, "key"), jws)) {
+                for (slice, 0..) |el, i| {
+                    if (!isLastOccurrenceOfKey(ElType, key_desc, slice, i)) continue;
+                    if (try writeMapKey(el.key, key_desc, jws)) {
                         const val_null = if (comptime @typeInfo(@TypeOf(el.value)) == .optional) el.value == null else false;
                         if (val_null) {
                             try jws.beginObject();
@@ -577,129 +629,6 @@ fn stringify_struct_field_with_options(
         },
         .submessage => {
             try stringifyOpts(@TypeOf(value), &value, jws, pb_options);
-        },
-    }
-}
-
-fn stringify_struct_field(
-    struct_field: anytype,
-    field_descriptor: protobuf.FieldDescriptor,
-    jws: anytype,
-) !void {
-    var value: switch (@typeInfo(@TypeOf(struct_field))) {
-        .optional => |optional| optional.child,
-        else => @TypeOf(struct_field),
-    } = undefined;
-
-    switch (@typeInfo(@TypeOf(struct_field))) {
-        .optional => {
-            if (struct_field) |v| {
-                value = v;
-            } else return;
-        },
-        else => {
-            value = struct_field;
-        },
-    }
-
-    switch (field_descriptor.ftype) {
-        .scalar => |scalar| switch (scalar) {
-            .bytes => try print_bytes(value, jws),
-            // `.string`s have their own jsonStringify implementation
-            .string => try jws.write(value),
-            else => try print_numeric(value, jws),
-        },
-        .@"enum" => try print_numeric(value, jws),
-        .repeated, .packed_repeated => |repeated| {
-            // ArrayListUnmanaged
-            const slice = value.items;
-            // Detect map entry types at comptime: submessage with _is_map_entry marker
-            const ElType = @typeInfo(@TypeOf(slice)).pointer.child;
-            const is_map = comptime blk: {
-                if (@as(std.meta.Tag(@TypeOf(repeated)), repeated) != .submessage) break :blk false;
-                break :blk @hasDecl(ElType, "_is_map_entry") and ElType._is_map_entry;
-            };
-
-            if (is_map) {
-                // Protobuf JSON spec: maps serialize as JSON objects
-                try jws.beginObject();
-                for (slice) |el| {
-                    if (try writeMapKey(el.key, @field(ElType._desc_table, "key"), jws)) {
-                        const val_null = if (comptime @typeInfo(@TypeOf(el.value)) == .optional) el.value == null else false;
-                        if (val_null) {
-                            try jws.beginObject();
-                            try jws.endObject();
-                        } else {
-                            const value_desc = @field(ElType._desc_table, "value");
-                            switch (comptime value_desc.ftype) {
-                                .scalar => |scalar| switch (scalar) {
-                                    .bytes => try print_bytes(el.value, jws),
-                                    .string => try jws.write(el.value),
-                                    else => try print_numeric(el.value, jws),
-                                },
-                                .@"enum" => try print_numeric(el.value, jws),
-                                .submessage => try jws.write(el.value),
-                                else => unreachable, // map values can't be repeated/oneof
-                            }
-                        }
-                    }
-                }
-                try jws.endObject();
-            } else {
-                try jws.beginArray();
-                for (slice) |el| {
-                    switch (repeated) {
-                        .scalar => |scalar| switch (scalar) {
-                            .bytes => try print_bytes(el, jws),
-                            .string => try jws.write(el),
-                            else => try print_numeric(el, jws),
-                        },
-                        .@"enum" => try print_numeric(el, jws),
-                        .submessage => try jws.write(el),
-                    }
-                }
-                try jws.endArray();
-            }
-        },
-        .oneof => |oneof| {
-            // Tagged union type
-            const union_info = @typeInfo(@TypeOf(value)).@"union";
-            if (union_info.tag_type == null) {
-                @compileError("Untagged unions are not supported here");
-            }
-
-            try jws.beginObject();
-            inline for (union_info.fields) |union_field| {
-                if (value == @field(
-                    union_info.tag_type.?,
-                    union_field.name,
-                )) {
-                    const union_camel_case_name = comptime to_camel_case(union_field.name);
-                    try jws.objectField(union_camel_case_name);
-                    switch (@field(oneof._desc_table, union_field.name).ftype) {
-                        .scalar => |scalar| switch (scalar) {
-                            .bytes => try print_bytes(@field(value, union_field.name), jws),
-                            .string => try jws.write(@field(value, union_field.name)),
-                            else => try print_numeric(@field(value, union_field.name), jws),
-                        },
-                        .@"enum" => try print_numeric(@field(value, union_field.name), jws),
-                        .submessage => try jws.write(@field(value, union_field.name)),
-                        .repeated, .packed_repeated => {
-                            @compileError("Repeated fields are not allowed in oneof");
-                        },
-                        .oneof => {
-                            @compileError("one oneof inside another? really?");
-                        },
-                    }
-                    break;
-                }
-            } else unreachable;
-
-            try jws.endObject();
-        },
-        .submessage => {
-            // `.submessage`s (generated structs) have their own jsonStringify implementation
-            try jws.write(value);
         },
     }
 }

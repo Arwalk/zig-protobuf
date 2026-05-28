@@ -2276,3 +2276,98 @@ test "WKT: Value rejects Infinity number_value" {
     const msg = Value{ .kind = .{ .number_value = std.math.inf(f64) } };
     try std.testing.expectError(error.RangeError, msg.jsonEncode(.{}, .{}, allocator));
 }
+
+// ------------------------------------------------
+// Map duplicate key dedup
+// ------------------------------------------------
+
+test "JSON: map dedup string key last value wins" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_string_string.append(allocator, .{ .key = "dup", .value = "first" });
+    try msg.map_string_string.append(allocator, .{ .key = "dup", .value = "second" });
+    defer msg.map_string_string.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const map = parsed.value.object.get("mapStringString").?;
+    try expect(map == .object);
+    try expect(map.object.count() == 1);
+    try expectEqualSlices(u8, "second", map.object.get("dup").?.string);
+}
+
+test "JSON: map dedup int32 negative key last value wins" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_int32_int32.append(allocator, .{ .key = -1, .value = 100 });
+    try msg.map_int32_int32.append(allocator, .{ .key = -1, .value = 200 });
+    defer msg.map_int32_int32.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const map = parsed.value.object.get("mapInt32Int32").?;
+    try expect(map == .object);
+    try expect(map.object.count() == 1);
+    try expect(map.object.get("-1").?.integer == 200);
+}
+
+test "JSON: map dedup bool key last value wins" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_bool_bool.append(allocator, .{ .key = true, .value = false });
+    try msg.map_bool_bool.append(allocator, .{ .key = true, .value = true });
+    defer msg.map_bool_bool.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const map = parsed.value.object.get("mapBoolBool").?;
+    try expect(map == .object);
+    try expect(map.object.count() == 1);
+    try expect(map.object.get("true").?.bool == true);
+}
+
+test "JSON: map dedup all same key emits one entry" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_string_string.append(allocator, .{ .key = "x", .value = "a" });
+    try msg.map_string_string.append(allocator, .{ .key = "x", .value = "b" });
+    try msg.map_string_string.append(allocator, .{ .key = "x", .value = "c" });
+    try msg.map_string_string.append(allocator, .{ .key = "x", .value = "d" });
+    try msg.map_string_string.append(allocator, .{ .key = "x", .value = "final" });
+    defer msg.map_string_string.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const map = parsed.value.object.get("mapStringString").?;
+    try expect(map == .object);
+    try expect(map.object.count() == 1);
+    try expectEqualSlices(u8, "final", map.object.get("x").?.string);
+}
+
+test "JSON: map dedup no duplicates preserves all entries" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_int32_int32.append(allocator, .{ .key = 1, .value = 10 });
+    try msg.map_int32_int32.append(allocator, .{ .key = 2, .value = 20 });
+    try msg.map_int32_int32.append(allocator, .{ .key = 3, .value = 30 });
+    defer msg.map_int32_int32.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const map = parsed.value.object.get("mapInt32Int32").?;
+    try expect(map == .object);
+    try expect(map.object.count() == 3);
+    try expect(map.object.get("1").?.integer == 10);
+    try expect(map.object.get("2").?.integer == 20);
+    try expect(map.object.get("3").?.integer == 30);
+}

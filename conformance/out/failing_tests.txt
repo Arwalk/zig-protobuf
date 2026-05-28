@@ -106,25 +106,8 @@ Required.Proto3.ProtobufInput.UnmatchedEndGroupNestedLen # Should have failed to
 Required.Proto3.ProtobufInput.UnmatchedEndGroupUnknown # Should have failed to parse, but didn't.
 Required.Proto3.ProtobufInput.UnmatchedStartGroupNestedLen # Should have failed to parse, but didn't.
 Required.Proto3.ProtobufInput.UnmatchedStartGroupUnknown # Should have failed to parse, but didn't.
-Required.Proto3.ProtobufInput.ValidDataMap.BOOL.BOOL.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
-Required.Proto3.ProtobufInput.ValidDataMap.FIXED32.FIXED32.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
-Required.Proto3.ProtobufInput.ValidDataMap.FIXED64.FIXED64.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
-Required.Proto3.ProtobufInput.ValidDataMap.INT32.DOUBLE.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
-Required.Proto3.ProtobufInput.ValidDataMap.INT32.FLOAT.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
-Required.Proto3.ProtobufInput.ValidDataMap.INT32.INT32.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
-Required.Proto3.ProtobufInput.ValidDataMap.INT64.INT64.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
-Required.Proto3.ProtobufInput.ValidDataMap.SFIXED32.SFIXED32.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
-Required.Proto3.ProtobufInput.ValidDataMap.SFIXED64.SFIXED64.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
-Required.Proto3.ProtobufInput.ValidDataMap.SINT32.SINT32.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
-Required.Proto3.ProtobufInput.ValidDataMap.SINT64.SINT64.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
-Required.Proto3.ProtobufInput.ValidDataMap.STRING.BYTES.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
-Required.Proto3.ProtobufInput.ValidDataMap.STRING.ENUM.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
-Required.Proto3.ProtobufInput.ValidDataMap.STRING.MESSAGE.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
-Required.Proto3.ProtobufInput.ValidDataMap.STRING.MESSAGE.MergeValue.JsonOutput # JSON output we received from test was unparseable.
+Required.Proto3.ProtobufInput.ValidDataMap.STRING.MESSAGE.MergeValue.JsonOutput # Output was not equivalent to reference message: deleted: map_string_nested_message[''].corecursive: { optional_int64: 1 repeated
 Required.Proto3.ProtobufInput.ValidDataMap.STRING.MESSAGE.MergeValue.ProtobufOutput # Output was not equivalent to reference message: deleted: map_string_nested_message[''].corecursive: { optional_int64: 1 repeated
-Required.Proto3.ProtobufInput.ValidDataMap.STRING.STRING.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
-Required.Proto3.ProtobufInput.ValidDataMap.UINT32.UINT32.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
-Required.Proto3.ProtobufInput.ValidDataMap.UINT64.UINT64.DuplicateKey.JsonOutput # JSON output we received from test was unparseable.
 Required.Proto3.ProtobufInput.ValidDataOneof.MESSAGE.Merge.JsonOutput # Output was not equivalent to reference message: deleted: oneof_nested_message.corecursive: { optional_int32: 1 optional_int64: 1
 Required.Proto3.ProtobufInput.ValidDataOneof.MESSAGE.Merge.ProtobufOutput # Output was not equivalent to reference message: deleted: oneof_nested_message.corecursive: { optional_int32: 1 optional_int64: 1
 Required.Proto3.ProtobufInput.ValidDataRepeated.BOOL.PackedInput.JsonOutput # Failed to parse input or produce output.
