@@ -2244,7 +2244,7 @@ pub const TestMapFieldsNoBinary = struct {
 
     pub const MapStringTestmapfieldsEntry = struct {
         key: ?[]const u8 = null,
-        value: ?TestMapFieldsNoBinary = null,
+        value: ?*TestMapFieldsNoBinary = null,
 
         pub const _desc_table = .{
             .key = fd(1, .{ .scalar = .string }),

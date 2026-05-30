@@ -44,6 +44,7 @@ pub const TestAllTypesProto3 = struct {
     optional_aliased_enum: TestAllTypesProto3.AliasedEnum = @enumFromInt(0),
     optional_string_piece: []const u8 = &.{},
     optional_cord: []const u8 = &.{},
+    recursive_message: ?*TestAllTypesProto3 = null,
     repeated_int32: std.ArrayList(i32) = .empty,
     repeated_int64: std.ArrayList(i64) = .empty,
     repeated_uint32: std.ArrayList(u32) = .empty,
@@ -163,6 +164,7 @@ pub const TestAllTypesProto3 = struct {
     field_name17__: i32 = 0,
     Field_name18__: i32 = 0,
     oneof_field: ?oneof_field_union = null,
+    _unknown_fields: []const u8 = &.{},
 
     pub const _oneof_field_case = enum {
         oneof_uint32,
@@ -224,6 +226,7 @@ pub const TestAllTypesProto3 = struct {
         .optional_aliased_enum = fd(23, .@"enum"),
         .optional_string_piece = fd(24, .{ .scalar = .string }),
         .optional_cord = fd(25, .{ .scalar = .string }),
+        .recursive_message = fd(27, .submessage),
         .repeated_int32 = fd(31, .{ .packed_repeated = .{ .scalar = .int32 } }),
         .repeated_int64 = fd(32, .{ .packed_repeated = .{ .scalar = .int64 } }),
         .repeated_uint32 = fd(33, .{ .packed_repeated = .{ .scalar = .uint32 } }),
@@ -241,8 +244,8 @@ pub const TestAllTypesProto3 = struct {
         .repeated_bytes = fd(45, .{ .repeated = .{ .scalar = .bytes } }),
         .repeated_nested_message = fd(48, .{ .repeated = .submessage }),
         .repeated_foreign_message = fd(49, .{ .repeated = .submessage }),
-        .repeated_nested_enum = fd(51, .{ .repeated = .@"enum" }),
-        .repeated_foreign_enum = fd(52, .{ .repeated = .@"enum" }),
+        .repeated_nested_enum = fd(51, .{ .packed_repeated = .@"enum" }),
+        .repeated_foreign_enum = fd(52, .{ .packed_repeated = .@"enum" }),
         .repeated_string_piece = fd(54, .{ .repeated = .{ .scalar = .string } }),
         .repeated_cord = fd(55, .{ .repeated = .{ .scalar = .string } }),
         .packed_int32 = fd(75, .{ .packed_repeated = .{ .scalar = .int32 } }),
@@ -356,15 +359,24 @@ pub const TestAllTypesProto3 = struct {
     pub const AliasedEnum = enum(i32) {
         ALIAS_FOO = 0,
         ALIAS_BAR = 1,
-        MOO = 2,
+        ALIAS_BAZ = 2,
         _,
+        // allow_alias = true: these additional names also map to an emitted enum value.
+        pub const _json_aliases = &[_]struct { name: []const u8, value: i32 }{
+            .{ .name = "MOO", .value = 2 },
+            .{ .name = "moo", .value = 2 },
+            .{ .name = "bAz", .value = 2 },
+        };
     };
 
     pub const NestedMessage = struct {
         a: i32 = 0,
+        corecursive: ?*TestAllTypesProto3 = null,
+        _unknown_fields: []const u8 = &.{},
 
         pub const _desc_table = .{
             .a = fd(1, .{ .scalar = .int32 }),
+            .corecursive = fd(2, .submessage),
         };
 
         /// Encodes the message to the writer
@@ -1779,6 +1791,7 @@ pub const TestAllTypesProto3 = struct {
 
 pub const ForeignMessage = struct {
     c: i32 = 0,
+    _unknown_fields: []const u8 = &.{},
 
     pub const _desc_table = .{
         .c = fd(1, .{ .scalar = .int32 }),
@@ -1844,6 +1857,8 @@ pub const ForeignMessage = struct {
 };
 
 pub const NullHypothesisProto3 = struct {
+    _unknown_fields: []const u8 = &.{},
+
     pub const _desc_table = .{};
 
     /// Encodes the message to the writer
@@ -1906,6 +1921,8 @@ pub const NullHypothesisProto3 = struct {
 };
 
 pub const EnumOnlyProto3 = struct {
+    _unknown_fields: []const u8 = &.{},
+
     pub const _desc_table = .{};
 
     pub const Bool = enum(i32) {

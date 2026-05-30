@@ -20,17 +20,12 @@ pub fn build(b: *std.Build) void {
         .source_files = &.{
             b.path("protos/conformance.proto"),
             b.path("protos/test_messages_proto3.proto"),
-            upstream.path("src/google/protobuf/any.proto"),
-            upstream.path("src/google/protobuf/duration.proto"),
-            upstream.path("src/google/protobuf/field_mask.proto"),
-            upstream.path("src/google/protobuf/struct.proto"),
-            upstream.path("src/google/protobuf/timestamp.proto"),
-            upstream.path("src/google/protobuf/wrappers.proto"),
         },
         .include_directories = &.{ b.path("protos"), upstream.path("src") },
         .destination_directory = b.path("generated"),
         .generator = protoc_gen_zig,
         .protoc = protoc,
+        .preserve_unknown_fields = true,
     });
     b.step("generate", "Regenerate Zig bindings for conformance protos").dependOn(&gen_zig.step);
 

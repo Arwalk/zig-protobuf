@@ -22,9 +22,12 @@ pub const TestEnumWithDupValue = enum(i32) {
     FOO1 = 1,
     BAR1 = 2,
     BAZ = 3,
-    FOO2 = 1,
-    BAR2 = 2,
     _,
+    // allow_alias = true: these additional names also map to an emitted enum value.
+    pub const _json_aliases = &[_]struct { name: []const u8, value: i32 }{
+        .{ .name = "FOO2", .value = 1 },
+        .{ .name = "BAR2", .value = 2 },
+    };
 };
 
 /// Test an enum with large, unordered values.

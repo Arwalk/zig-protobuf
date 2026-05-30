@@ -779,41 +779,26 @@ const value_camel_case4_6_json = @embedFile("./json_data/value/camelCase4_6.json
 
 test "JSON: encode Value (.number_value=NaN)" {
     const pb_instance = value_inits.get1();
-
-    const encoded = try pb_instance.jsonEncode(
-        .{ .whitespace = .indent_2 },
-        .{},
-        allocator,
-    );
-    defer allocator.free(encoded);
-
-    try expect(compare_pb_jsons(encoded, value_camel_case1_json));
+    if (pb_instance.jsonEncode(.{ .whitespace = .indent_2 }, .{}, allocator)) |slice| {
+        defer allocator.free(slice);
+        return error.ExpectedEncodingFailure;
+    } else |_| {}
 }
 
 test "JSON: encode Value (.number_value=-Infinity)" {
     const pb_instance = value_inits.get2();
-
-    const encoded = try pb_instance.jsonEncode(
-        .{ .whitespace = .indent_2 },
-        .{},
-        allocator,
-    );
-    defer allocator.free(encoded);
-
-    try expect(compare_pb_jsons(encoded, value_camel_case2_json));
+    if (pb_instance.jsonEncode(.{ .whitespace = .indent_2 }, .{}, allocator)) |slice| {
+        defer allocator.free(slice);
+        return error.ExpectedEncodingFailure;
+    } else |_| {}
 }
 
 test "JSON: encode Value (.number_value=Infinity)" {
     const pb_instance = value_inits.get3();
-
-    const encoded = try pb_instance.jsonEncode(
-        .{ .whitespace = .indent_2 },
-        .{},
-        allocator,
-    );
-    defer allocator.free(encoded);
-
-    try expect(compare_pb_jsons(encoded, value_camel_case3_json));
+    if (pb_instance.jsonEncode(.{ .whitespace = .indent_2 }, .{}, allocator)) |slice| {
+        defer allocator.free(slice);
+        return error.ExpectedEncodingFailure;
+    } else |_| {}
 }
 
 test "JSON: encode Value (.number_value=1.0)" {
@@ -1051,7 +1036,7 @@ test "JSON: encode oneof flat format (emit_oneof_field_name=false)" {
     const encoded = try msg.jsonEncode(.{}, .{ .emit_oneof_field_name = false }, allocator);
     defer allocator.free(encoded);
     try std.testing.expectEqualStrings(
-        \\{"regularField":"hello","enumField":"UNSPECIFIED","stringInOneof":"world"}
+        \\{"regularField":"hello","stringInOneof":"world"}
     , encoded);
 }
 
@@ -1062,7 +1047,7 @@ test "JSON: encode oneof legacy wrapped format (emit_oneof_field_name=true)" {
     const encoded = try pb_instance.jsonEncode(.{}, .{}, allocator);
     defer allocator.free(encoded);
     try std.testing.expectEqualStrings(
-        \\{"regularField":"this field is always the same","enumField":"UNSPECIFIED","someOneof":{"stringInOneof":"testing oneof field being the string"}}
+        \\{"regularField":"this field is always the same","someOneof":{"stringInOneof":"testing oneof field being the string"}}
     , encoded);
 }
 
@@ -1122,7 +1107,7 @@ test "JSON: roundtrip oneof flat format" {
     defer allocator.free(encoded);
 
     try std.testing.expectEqualStrings(
-        \\{"regularField":"roundtrip","enumField":"UNSPECIFIED","stringInOneof":"value"}
+        \\{"regularField":"roundtrip","stringInOneof":"value"}
     , encoded);
 
     // Decode flat format
@@ -1139,4 +1124,1224 @@ test "JSON: roundtrip oneof flat format" {
         original.some_oneof.?.string_in_oneof,
         result.value.some_oneof.?.string_in_oneof,
     );
+}
+
+// =============================================================================
+// Map JSON encoding/decoding tests (Issue #59)
+//
+// Protobuf JSON spec requires map fields to serialize as JSON objects
+// rather than arrays of entry objects.
+// =============================================================================
+
+const graphics = @import("./generated/graphics.pb.zig");
+const proto3 = @import("./generated/protobuf_test_messages/proto3.pb.zig");
+const Index = graphics.Index;
+const Npc = graphics.Npc;
+const TestAllTypesProto3 = proto3.TestAllTypesProto3;
+
+// --- Encoding tests ---
+
+test "JSON map: encode map<string, int32> as JSON object" {
+    var idx = Index{};
+    try idx.animations.append(allocator, .{ .key = "walk", .value = 1 });
+    try idx.animations.append(allocator, .{ .key = "run", .value = 2 });
+    defer idx.animations.deinit(allocator);
+
+    const encoded = try idx.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    // Parse and validate JSON structure
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const root = parsed.value.object;
+
+    // Should contain an "animations" field that is a JSON object, not an array
+    const animations = root.get("animations").?;
+    try expect(animations == .object);
+    // Should have walk=1 and run=2
+    try expect(animations.object.get("walk").?.integer == 1);
+    try expect(animations.object.get("run").?.integer == 2);
+    try expect(animations.object.count() == 2);
+    // Should NOT contain the old array-of-entries format (no "key" field at root level)
+    try expect(root.get("key") == null);
+}
+
+test "JSON map: encode map<int32, int32> with stringified keys" {
+    var npc = Npc{};
+    try npc.skills.append(allocator, .{ .key = 42, .value = 100 });
+    try npc.skills.append(allocator, .{ .key = 7, .value = 50 });
+    defer npc.skills.deinit(allocator);
+
+    const encoded = try npc.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    // Parse and validate JSON structure
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const root = parsed.value.object;
+
+    // Integer keys must be stringified in JSON
+    const skills = root.get("skills").?;
+    try expect(skills == .object);
+    try expect(skills.object.get("42").?.integer == 100);
+    try expect(skills.object.get("7").?.integer == 50);
+    try expect(skills.object.count() == 2);
+}
+
+test "JSON map: encode map<bool, bool> with stringified keys" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_bool_bool.append(allocator, .{ .key = true, .value = false });
+    try msg.map_bool_bool.append(allocator, .{ .key = false, .value = true });
+    defer msg.map_bool_bool.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    // Parse and validate JSON structure
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const root = parsed.value.object;
+
+    const map = root.get("mapBoolBool").?;
+    try expect(map == .object);
+    try expect(map.object.get("true").?.bool == false);
+    try expect(map.object.get("false").?.bool == true);
+    try expect(map.object.count() == 2);
+}
+
+test "JSON map: encode map<string, string>" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_string_string.append(allocator, .{ .key = "hello", .value = "world" });
+    defer msg.map_string_string.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    // Parse and validate JSON structure
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const root = parsed.value.object;
+
+    const map = root.get("mapStringString").?;
+    try expect(map == .object);
+    try expectEqualSlices(u8, "world", map.object.get("hello").?.string);
+    try expect(map.object.count() == 1);
+}
+
+test "JSON map: encode map<int64, int64> with large keys" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_int64_int64.append(allocator, .{ .key = 9223372036854775807, .value = 42 });
+    defer msg.map_int64_int64.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    // Parse and validate JSON structure
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const root = parsed.value.object;
+
+    const map = root.get("mapInt64Int64").?;
+    try expect(map == .object);
+    // int64 values are encoded as quoted strings per proto JSON spec
+    try expectEqualSlices(u8, "42", map.object.get("9223372036854775807").?.string);
+    try expect(map.object.count() == 1);
+}
+
+test "JSON map: encode map<string, NestedEnum> (enum values)" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_string_nested_enum.append(allocator, .{ .key = "foo", .value = .BAR });
+    defer msg.map_string_nested_enum.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    // Parse and validate JSON structure
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const root = parsed.value.object;
+
+    const map = root.get("mapStringNestedEnum").?;
+    try expect(map == .object);
+    // Enums are encoded as string names in protobuf JSON
+    try expectEqualSlices(u8, "BAR", map.object.get("foo").?.string);
+    try expect(map.object.count() == 1);
+}
+
+test "JSON map: encode map<string, NestedMessage> (submessage values)" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_string_nested_message.append(allocator, .{
+        .key = "bar",
+        .value = .{ .a = 99 },
+    });
+    defer msg.map_string_nested_message.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    // Parse and validate JSON structure
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const root = parsed.value.object;
+
+    const map = root.get("mapStringNestedMessage").?;
+    try expect(map == .object);
+    const bar = map.object.get("bar").?;
+    try expect(bar == .object);
+    try expect(bar.object.get("a").?.integer == 99);
+}
+
+test "JSON map: empty map omitted by default" {
+    const msg = TestAllTypesProto3{};
+
+    // Default: empty map field is omitted entirely (proto3 default suppression)
+    const encoded_default = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded_default);
+    const parsed_default = try std.json.parseFromSlice(std.json.Value, allocator, encoded_default, .{});
+    defer parsed_default.deinit();
+    try expect(parsed_default.value.object.get("mapInt32Int32") == null);
+}
+
+test "JSON: default values omitted with default options" {
+    const msg = TestAllTypesProto3{};
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const root = parsed.value.object;
+
+    // All default-valued fields should be absent
+    try expect(root.get("optionalInt32") == null);
+    try expect(root.get("optionalBool") == null);
+    try expect(root.get("optionalString") == null);
+    try expect(root.get("optionalNestedEnum") == null);
+    try expect(root.get("repeatedInt32") == null);
+    try expect(root.get("mapStringString") == null);
+}
+
+// --- Decoding tests ---
+
+test "JSON map: decode map<string, int32> from JSON object" {
+    const json_str =
+        \\{"animations":{"walk":1,"run":2}}
+    ;
+    const result = try Index.jsonDecode(json_str, .{}, allocator);
+    defer result.deinit();
+
+    try expect(result.value.animations.items.len == 2);
+
+    // Check entries (order may vary, but since we're parsing in order it should be walk, run)
+    const e0 = result.value.animations.items[0];
+    const e1 = result.value.animations.items[1];
+    try expectEqualSlices(u8, "walk", e0.key);
+    try expect(e0.value == 1);
+    try expectEqualSlices(u8, "run", e1.key);
+    try expect(e1.value == 2);
+}
+
+test "JSON map: decode map<int32, int32> with stringified keys" {
+    const json_str =
+        \\{"skills":{"42":100,"7":50}}
+    ;
+    const result = try Npc.jsonDecode(json_str, .{}, allocator);
+    defer result.deinit();
+
+    try expect(result.value.skills.items.len == 2);
+    const e0 = result.value.skills.items[0];
+    const e1 = result.value.skills.items[1];
+    try expect(e0.key == 42);
+    try expect(e0.value == 100);
+    try expect(e1.key == 7);
+    try expect(e1.value == 50);
+}
+
+test "JSON map: decode map<bool, bool>" {
+    const json_str =
+        \\{"mapBoolBool":{"true":false,"false":true}}
+    ;
+    const result = try TestAllTypesProto3.jsonDecode(json_str, .{}, allocator);
+    defer result.deinit();
+
+    try expect(result.value.map_bool_bool.items.len == 2);
+    const e0 = result.value.map_bool_bool.items[0];
+    const e1 = result.value.map_bool_bool.items[1];
+    try expect(e0.key == true);
+    try expect(e0.value == false);
+    try expect(e1.key == false);
+    try expect(e1.value == true);
+}
+
+test "JSON map: decode map<string, string>" {
+    const json_str =
+        \\{"mapStringString":{"hello":"world","foo":"bar"}}
+    ;
+    const result = try TestAllTypesProto3.jsonDecode(json_str, .{}, allocator);
+    defer result.deinit();
+
+    try expect(result.value.map_string_string.items.len == 2);
+    try expectEqualSlices(u8, "hello", result.value.map_string_string.items[0].key);
+    try expectEqualSlices(u8, "world", result.value.map_string_string.items[0].value);
+}
+
+test "JSON map: decode empty JSON object as empty map" {
+    const json_str =
+        \\{"mapInt32Int32":{}}
+    ;
+    const result = try TestAllTypesProto3.jsonDecode(json_str, .{}, allocator);
+    defer result.deinit();
+
+    try expect(result.value.map_int32_int32.items.len == 0);
+}
+
+test "JSON map: decode map<string, NestedMessage>" {
+    const json_str =
+        \\{"mapStringNestedMessage":{"bar":{"a":99}}}
+    ;
+    const result = try TestAllTypesProto3.jsonDecode(json_str, .{}, allocator);
+    defer result.deinit();
+
+    try expect(result.value.map_string_nested_message.items.len == 1);
+    const entry = result.value.map_string_nested_message.items[0];
+    try expectEqualSlices(u8, "bar", entry.key);
+    try expect(entry.value != null);
+    try expect(entry.value.?.a == 99);
+}
+
+test "JSON map: decode map<string, NestedEnum>" {
+    const json_str =
+        \\{"mapStringNestedEnum":{"foo":1}}
+    ;
+    const result = try TestAllTypesProto3.jsonDecode(json_str, .{}, allocator);
+    defer result.deinit();
+
+    try expect(result.value.map_string_nested_enum.items.len == 1);
+    try expectEqualSlices(u8, "foo", result.value.map_string_nested_enum.items[0].key);
+    try expect(result.value.map_string_nested_enum.items[0].value == .BAR);
+}
+
+// --- Roundtrip tests ---
+
+test "JSON map: roundtrip map<string, int32>" {
+    var idx = Index{};
+    try idx.animations.append(allocator, .{ .key = "walk", .value = 1 });
+    try idx.animations.append(allocator, .{ .key = "run", .value = 2 });
+    defer idx.animations.deinit(allocator);
+
+    const encoded = try idx.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try Index.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+
+    try expect(decoded.value.animations.items.len == 2);
+    try expectEqualSlices(u8, "walk", decoded.value.animations.items[0].key);
+    try expect(decoded.value.animations.items[0].value == 1);
+    try expectEqualSlices(u8, "run", decoded.value.animations.items[1].key);
+    try expect(decoded.value.animations.items[1].value == 2);
+}
+
+test "JSON map: roundtrip map<int32, int32>" {
+    var npc = Npc{};
+    try npc.skills.append(allocator, .{ .key = 42, .value = 100 });
+    defer npc.skills.deinit(allocator);
+
+    const encoded = try npc.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try Npc.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+
+    try expect(decoded.value.skills.items.len == 1);
+    try expect(decoded.value.skills.items[0].key == 42);
+    try expect(decoded.value.skills.items[0].value == 100);
+}
+
+test "JSON map: roundtrip map<string, NestedMessage>" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_string_nested_message.append(allocator, .{
+        .key = "first",
+        .value = .{ .a = 10 },
+    });
+    try msg.map_string_nested_message.append(allocator, .{
+        .key = "second",
+        .value = .{ .a = 20 },
+    });
+    defer msg.map_string_nested_message.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try TestAllTypesProto3.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+
+    try expect(decoded.value.map_string_nested_message.items.len == 2);
+    try expectEqualSlices(u8, "first", decoded.value.map_string_nested_message.items[0].key);
+    try expect(decoded.value.map_string_nested_message.items[0].value.?.a == 10);
+    try expectEqualSlices(u8, "second", decoded.value.map_string_nested_message.items[1].key);
+    try expect(decoded.value.map_string_nested_message.items[1].value.?.a == 20);
+}
+
+test "JSON map: roundtrip map<bool, bool>" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_bool_bool.append(allocator, .{ .key = true, .value = false });
+    defer msg.map_bool_bool.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try TestAllTypesProto3.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+
+    try expect(decoded.value.map_bool_bool.items.len == 1);
+    try expect(decoded.value.map_bool_bool.items[0].key == true);
+    try expect(decoded.value.map_bool_bool.items[0].value == false);
+}
+
+test "JSON map: roundtrip map<uint64, uint64>" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_uint64_uint64.append(allocator, .{ .key = 18446744073709551615, .value = 1 });
+    defer msg.map_uint64_uint64.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try TestAllTypesProto3.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+
+    try expect(decoded.value.map_uint64_uint64.items.len == 1);
+    try expect(decoded.value.map_uint64_uint64.items[0].key == 18446744073709551615);
+    try expect(decoded.value.map_uint64_uint64.items[0].value == 1);
+}
+
+test "JSON map: roundtrip map<string, NestedEnum>" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_string_nested_enum.append(allocator, .{ .key = "baz", .value = .BAZ });
+    defer msg.map_string_nested_enum.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try TestAllTypesProto3.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+
+    try expect(decoded.value.map_string_nested_enum.items.len == 1);
+    try expectEqualSlices(u8, "baz", decoded.value.map_string_nested_enum.items[0].key);
+    try expect(decoded.value.map_string_nested_enum.items[0].value == .BAZ);
+}
+
+// --- Additional key type coverage tests (sint, fixed, sfixed) ---
+
+test "JSON map: roundtrip map<sint32, sint32> with positive and negative values" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_sint32_sint32.append(allocator, .{ .key = -42, .value = 100 });
+    try msg.map_sint32_sint32.append(allocator, .{ .key = 7, .value = -50 });
+    defer msg.map_sint32_sint32.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try TestAllTypesProto3.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+
+    try expect(decoded.value.map_sint32_sint32.items.len == 2);
+    try expect(decoded.value.map_sint32_sint32.items[0].key == -42);
+    try expect(decoded.value.map_sint32_sint32.items[0].value == 100);
+    try expect(decoded.value.map_sint32_sint32.items[1].key == 7);
+    try expect(decoded.value.map_sint32_sint32.items[1].value == -50);
+}
+
+test "JSON map: roundtrip map<fixed32, fixed32> with large value" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_fixed32_fixed32.append(allocator, .{ .key = 4294967295, .value = 1 });
+    defer msg.map_fixed32_fixed32.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try TestAllTypesProto3.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+
+    try expect(decoded.value.map_fixed32_fixed32.items.len == 1);
+    try expect(decoded.value.map_fixed32_fixed32.items[0].key == 4294967295);
+    try expect(decoded.value.map_fixed32_fixed32.items[0].value == 1);
+}
+
+test "JSON map: roundtrip map<sfixed64, sfixed64> with negative value" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_sfixed64_sfixed64.append(allocator, .{ .key = -9223372036854775808, .value = 42 });
+    defer msg.map_sfixed64_sfixed64.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try TestAllTypesProto3.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+
+    try expect(decoded.value.map_sfixed64_sfixed64.items.len == 1);
+    try expect(decoded.value.map_sfixed64_sfixed64.items[0].key == -9223372036854775808);
+    try expect(decoded.value.map_sfixed64_sfixed64.items[0].value == 42);
+}
+
+// --- Decode test for enum map values with string name ---
+
+test "JSON map: decode map<string, NestedEnum> with string enum name" {
+    const json_str =
+        \\{"mapStringNestedEnum":{"foo":"BAR"}}
+    ;
+    const result = try TestAllTypesProto3.jsonDecode(json_str, .{}, allocator);
+    defer result.deinit();
+
+    try expect(result.value.map_string_nested_enum.items.len == 1);
+    try expectEqualSlices(u8, "foo", result.value.map_string_nested_enum.items[0].key);
+    try expect(result.value.map_string_nested_enum.items[0].value == .BAR);
+}
+
+// --- Negative integer key tests ---
+
+test "JSON map: roundtrip map<int32, int32> with negative key" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_int32_int32.append(allocator, .{ .key = -2147483648, .value = 1 });
+    try msg.map_int32_int32.append(allocator, .{ .key = -1, .value = 2 });
+    defer msg.map_int32_int32.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    // Verify negative keys are stringified correctly via JSON parsing
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const root = parsed.value.object;
+    const map = root.get("mapInt32Int32").?;
+    try expect(map == .object);
+    try expect(map.object.get("-2147483648").?.integer == 1);
+    try expect(map.object.get("-1").?.integer == 2);
+    try expect(map.object.count() == 2);
+
+    const decoded = try TestAllTypesProto3.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+
+    try expect(decoded.value.map_int32_int32.items.len == 2);
+    try expect(decoded.value.map_int32_int32.items[0].key == -2147483648);
+    try expect(decoded.value.map_int32_int32.items[0].value == 1);
+    try expect(decoded.value.map_int32_int32.items[1].key == -1);
+    try expect(decoded.value.map_int32_int32.items[1].value == 2);
+}
+
+test "JSON map: encode map<string, NestedMessage> with null value writes empty object" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_string_nested_message.append(allocator, .{ .key = "empty", .value = null });
+    defer msg.map_string_nested_message.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    // Parse and validate JSON structure
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const root = parsed.value.object;
+
+    const map = root.get("mapStringNestedMessage").?;
+    try expect(map == .object);
+    const empty_val = map.object.get("empty").?;
+    try expect(empty_val == .object);
+    try expect(empty_val.object.count() == 0);
+}
+
+test "JSON map: roundtrip map<string, NestedMessage> with null value" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_string_nested_message.append(allocator, .{ .key = "present", .value = .{ .a = 42 } });
+    try msg.map_string_nested_message.append(allocator, .{ .key = "absent", .value = null });
+    defer msg.map_string_nested_message.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    // Validate encoded JSON structure
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const root = parsed.value.object;
+
+    const map = root.get("mapStringNestedMessage").?;
+    try expect(map == .object);
+    // "present" should be an object with a=42
+    const present = map.object.get("present").?;
+    try expect(present == .object);
+    try expect(present.object.get("a").?.integer == 42);
+    // "absent" should be an empty object
+    const absent = map.object.get("absent").?;
+    try expect(absent == .object);
+    try expect(absent.object.count() == 0);
+
+    const decoded = try TestAllTypesProto3.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+
+    try expect(decoded.value.map_string_nested_message.items.len == 2);
+    try expectEqualSlices(u8, "present", decoded.value.map_string_nested_message.items[0].key);
+    try expect(decoded.value.map_string_nested_message.items[0].value.?.a == 42);
+    try expectEqualSlices(u8, "absent", decoded.value.map_string_nested_message.items[1].key);
+    try expect(decoded.value.map_string_nested_message.items[1].value != null);
+    try expect(decoded.value.map_string_nested_message.items[1].value.?.a == 0);
+}
+
+// =============================================================================
+// Well-Known Type JSON encoding/decoding tests
+// =============================================================================
+// Per the proto3 JSON mapping specification, well-known types have special
+// JSON representations that differ from normal message encoding.
+
+const google_protobuf = @import("./generated/google/protobuf.pb.zig");
+const Timestamp = google_protobuf.Timestamp;
+const Duration = google_protobuf.Duration;
+const Value = google_protobuf.Value;
+const Struct = google_protobuf.Struct;
+const ListValue = google_protobuf.ListValue;
+const FieldMask = google_protobuf.FieldMask;
+const DoubleValue = google_protobuf.DoubleValue;
+const FloatValue = google_protobuf.FloatValue;
+const Int64Value = google_protobuf.Int64Value;
+const UInt64Value = google_protobuf.UInt64Value;
+const Int32Value = google_protobuf.Int32Value;
+const UInt32Value = google_protobuf.UInt32Value;
+const BoolValue = google_protobuf.BoolValue;
+const StringValue = google_protobuf.StringValue;
+const BytesValue = google_protobuf.BytesValue;
+
+// --- Wrapper Types ---
+
+test "WKT: encode/decode DoubleValue" {
+    const msg = DoubleValue{ .value = 3.14 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    // Should be a bare JSON number, not wrapped in {"value": 3.14}
+    try expect(std.mem.indexOf(u8, encoded, "value") == null);
+
+    const decoded = try DoubleValue.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.value == 3.14);
+}
+
+test "WKT: encode/decode Int32Value" {
+    const msg = Int32Value{ .value = 42 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "42"));
+
+    const decoded = try Int32Value.jsonDecode("42", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.value == 42);
+}
+
+test "WKT: encode/decode Int64Value (quoted string)" {
+    const msg = Int64Value{ .value = 9223372036854775807 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    // Proto JSON spec: 64-bit integers must be quoted strings
+    try expect(compare_pb_jsons(encoded, "\"9223372036854775807\""));
+
+    // Decode from string
+    const decoded = try Int64Value.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.value == 9223372036854775807);
+
+    // Also accept bare number (for interop with non-compliant producers)
+    const decoded2 = try Int64Value.jsonDecode("9223372036854775807", .{}, allocator);
+    defer decoded2.deinit();
+    try expect(decoded2.value.value == 9223372036854775807);
+}
+
+test "WKT: encode/decode Int64Value negative (quoted string)" {
+    const msg = Int64Value{ .value = -9223372036854775808 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"-9223372036854775808\""));
+
+    const decoded = try Int64Value.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.value == -9223372036854775808);
+}
+
+test "WKT: encode/decode UInt64Value (quoted string)" {
+    const msg = UInt64Value{ .value = 18446744073709551615 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"18446744073709551615\""));
+
+    const decoded = try UInt64Value.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.value == 18446744073709551615);
+
+    // Also accept bare number
+    const decoded2 = try UInt64Value.jsonDecode("18446744073709551615", .{}, allocator);
+    defer decoded2.deinit();
+    try expect(decoded2.value.value == 18446744073709551615);
+}
+
+test "WKT: encode/decode FloatValue" {
+    const msg = FloatValue{ .value = 2.5 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try FloatValue.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.value == 2.5);
+}
+
+test "WKT: encode/decode FloatValue NaN" {
+    const msg = FloatValue{ .value = std.math.nan(f32) };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"NaN\""));
+}
+
+test "WKT: encode/decode UInt32Value" {
+    const msg = UInt32Value{ .value = 4294967295 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "4294967295"));
+
+    const decoded = try UInt32Value.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.value == 4294967295);
+}
+
+test "WKT: encode/decode BoolValue" {
+    const msg = BoolValue{ .value = true };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "true"));
+
+    const decoded = try BoolValue.jsonDecode("true", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.value == true);
+}
+
+test "WKT: encode/decode StringValue" {
+    const msg = StringValue{ .value = "hello" };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"hello\""));
+
+    const decoded = try StringValue.jsonDecode("\"hello\"", .{}, allocator);
+    defer decoded.deinit();
+    try expectEqualSlices(u8, "hello", decoded.value.value);
+}
+
+test "WKT: encode/decode BytesValue" {
+    const msg = BytesValue{ .value = "abc" };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    // base64("abc") = "YWJj"
+    try expect(compare_pb_jsons(encoded, "\"YWJj\""));
+
+    const decoded = try BytesValue.jsonDecode("\"YWJj\"", .{}, allocator);
+    defer decoded.deinit();
+    try expectEqualSlices(u8, "abc", decoded.value.value);
+}
+
+// --- Timestamp ---
+
+test "WKT: encode Timestamp epoch zero" {
+    const msg = Timestamp{ .seconds = 0, .nanos = 0 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"1970-01-01T00:00:00Z\""));
+}
+
+test "WKT: encode Timestamp with nanos (3 digits)" {
+    const msg = Timestamp{ .seconds = 0, .nanos = 100_000_000 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"1970-01-01T00:00:00.100Z\""));
+}
+
+test "WKT: encode Timestamp with nanos (6 digits)" {
+    const msg = Timestamp{ .seconds = 0, .nanos = 100_100_000 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"1970-01-01T00:00:00.100100Z\""));
+}
+
+test "WKT: encode Timestamp with nanos (9 digits)" {
+    const msg = Timestamp{ .seconds = 0, .nanos = 100_100_100 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"1970-01-01T00:00:00.100100100Z\""));
+}
+
+test "WKT: encode Timestamp normal date" {
+    // 2024-01-15T12:30:45Z
+    const msg = Timestamp{ .seconds = 1705321845, .nanos = 0 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"2024-01-15T12:30:45Z\""));
+}
+
+test "WKT: roundtrip Timestamp" {
+    const msg = Timestamp{ .seconds = 1705321845, .nanos = 123_456_789 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try Timestamp.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.seconds == 1705321845);
+    try expect(decoded.value.nanos == 123_456_789);
+}
+
+test "WKT: decode Timestamp" {
+    const decoded = try Timestamp.jsonDecode("\"2024-01-15T12:30:45.123Z\"", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.seconds == 1705321845);
+    try expect(decoded.value.nanos == 123_000_000);
+}
+
+// --- Duration ---
+
+test "WKT: encode Duration zero" {
+    const msg = Duration{ .seconds = 0, .nanos = 0 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"0s\""));
+}
+
+test "WKT: encode Duration positive" {
+    const msg = Duration{ .seconds = 123, .nanos = 0 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"123s\""));
+}
+
+test "WKT: encode Duration with nanos" {
+    const msg = Duration{ .seconds = 3, .nanos = 1_000 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"3.000001s\""));
+}
+
+test "WKT: encode Duration negative" {
+    const msg = Duration{ .seconds = -123, .nanos = -456_000_000 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"-123.456s\""));
+}
+
+test "WKT: roundtrip Duration" {
+    const msg = Duration{ .seconds = 3, .nanos = 1_000 };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try Duration.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.seconds == 3);
+    try expect(decoded.value.nanos == 1_000);
+}
+
+test "WKT: decode Duration negative" {
+    const decoded = try Duration.jsonDecode("\"-5.500s\"", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.seconds == -5);
+    try expect(decoded.value.nanos == -500_000_000);
+}
+
+// --- Value / Struct / ListValue ---
+
+test "WKT: encode Value null" {
+    const msg = Value{ .kind = .{ .null_value = .NULL_VALUE } };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "null"));
+}
+
+test "WKT: encode Value number" {
+    const msg = Value{ .kind = .{ .number_value = 42.5 } };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    // Check that it parses as the correct number (format may vary)
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    try expect(parsed.value == .float);
+    try expect(parsed.value.float == 42.5);
+}
+
+test "WKT: encode Value string" {
+    const msg = Value{ .kind = .{ .string_value = "hello" } };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"hello\""));
+}
+
+test "WKT: encode Value bool" {
+    const msg = Value{ .kind = .{ .bool_value = true } };
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "true"));
+}
+
+test "WKT: encode Struct" {
+    var s = Struct{};
+    try s.fields.append(allocator, .{
+        .key = "name",
+        .value = Value{ .kind = .{ .string_value = "test" } },
+    });
+    defer s.fields.deinit(allocator);
+
+    const encoded = try s.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    // Should be {"name":"test"} not {"fields":[{"key":"name","value":"test"}]}
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    try expect(parsed.value == .object);
+    const name_val = parsed.value.object.get("name").?;
+    try expect(name_val == .string);
+    try expectEqualSlices(u8, "test", name_val.string);
+}
+
+test "WKT: encode ListValue" {
+    var lv = ListValue{};
+    try lv.values.append(allocator, Value{ .kind = .{ .number_value = 1.0 } });
+    try lv.values.append(allocator, Value{ .kind = .{ .string_value = "two" } });
+    try lv.values.append(allocator, Value{ .kind = .{ .bool_value = false } });
+    defer lv.values.deinit(allocator);
+
+    const encoded = try lv.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    // Should be [1.0,"two",false] not {"values":[...]}
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    try expect(parsed.value == .array);
+    try expect(parsed.value.array.items.len == 3);
+}
+
+test "WKT: decode Value number" {
+    const decoded = try Value.jsonDecode("42.5", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.kind.?.number_value == 42.5);
+}
+
+test "WKT: decode Value string" {
+    const decoded = try Value.jsonDecode("\"hello\"", .{}, allocator);
+    defer decoded.deinit();
+    try expectEqualSlices(u8, "hello", decoded.value.kind.?.string_value);
+}
+
+test "WKT: decode Value bool" {
+    const decoded = try Value.jsonDecode("true", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.kind.?.bool_value == true);
+}
+
+test "WKT: decode Value null" {
+    const decoded = try Value.jsonDecode("null", .{}, allocator);
+    defer decoded.deinit();
+    try expect(@as(google_protobuf.NullValue, decoded.value.kind.?.null_value) == .NULL_VALUE);
+}
+
+test "WKT: decode Struct" {
+    const decoded = try Struct.jsonDecode("{\"a\":1,\"b\":\"two\"}", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.fields.items.len == 2);
+    try expectEqualSlices(u8, "a", decoded.value.fields.items[0].key);
+    try expect(decoded.value.fields.items[0].value.?.kind.?.number_value == 1.0);
+    try expectEqualSlices(u8, "b", decoded.value.fields.items[1].key);
+    try expectEqualSlices(u8, "two", decoded.value.fields.items[1].value.?.kind.?.string_value);
+}
+
+test "WKT: decode ListValue" {
+    const decoded = try ListValue.jsonDecode("[1,\"two\",true]", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.values.items.len == 3);
+    try expect(decoded.value.values.items[0].kind.?.number_value == 1.0);
+    try expectEqualSlices(u8, "two", decoded.value.values.items[1].kind.?.string_value);
+    try expect(decoded.value.values.items[2].kind.?.bool_value == true);
+}
+
+test "WKT: roundtrip nested Value/Struct/ListValue" {
+    // {"data": [1, {"nested": true}]}
+    var inner_struct = Struct{};
+    try inner_struct.fields.append(allocator, .{
+        .key = "nested",
+        .value = Value{ .kind = .{ .bool_value = true } },
+    });
+
+    var list = ListValue{};
+    try list.values.append(allocator, Value{ .kind = .{ .number_value = 1.0 } });
+    try list.values.append(allocator, Value{ .kind = .{ .struct_value = inner_struct } });
+
+    var s = Struct{};
+    try s.fields.append(allocator, .{
+        .key = "data",
+        .value = Value{ .kind = .{ .list_value = list } },
+    });
+    // Must clean up all levels: s.fields owns the list and inner_struct transitively
+    defer {
+        // Inner struct's fields ArrayList
+        inner_struct.fields.deinit(allocator);
+        // ListValue's values ArrayList
+        list.values.deinit(allocator);
+        // Outer struct's fields ArrayList
+        s.fields.deinit(allocator);
+    }
+
+    const encoded = try s.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try Struct.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+
+    try expect(decoded.value.fields.items.len == 1);
+    try expectEqualSlices(u8, "data", decoded.value.fields.items[0].key);
+    const list_val = decoded.value.fields.items[0].value.?.kind.?.list_value;
+    try expect(list_val.values.items.len == 2);
+    try expect(list_val.values.items[0].kind.?.number_value == 1.0);
+    try expect(list_val.values.items[1].kind.?.struct_value.fields.items[0].value.?.kind.?.bool_value == true);
+}
+
+// --- FieldMask ---
+
+test "WKT: encode FieldMask empty" {
+    const msg = FieldMask{};
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"\""));
+}
+
+test "WKT: encode FieldMask single path" {
+    var msg = FieldMask{};
+    try msg.paths.append(allocator, "foo_bar");
+    defer msg.paths.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"fooBar\""));
+}
+
+test "WKT: encode FieldMask multiple paths" {
+    var msg = FieldMask{};
+    try msg.paths.append(allocator, "foo_bar");
+    try msg.paths.append(allocator, "baz_qux");
+    defer msg.paths.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expect(compare_pb_jsons(encoded, "\"fooBar,bazQux\""));
+}
+
+test "WKT: decode FieldMask" {
+    const decoded = try FieldMask.jsonDecode("\"fooBar,bazQux\"", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.paths.items.len == 2);
+    try expectEqualSlices(u8, "foo_bar", decoded.value.paths.items[0]);
+    try expectEqualSlices(u8, "baz_qux", decoded.value.paths.items[1]);
+}
+
+test "WKT: roundtrip FieldMask" {
+    var msg = FieldMask{};
+    try msg.paths.append(allocator, "foo_bar");
+    try msg.paths.append(allocator, "baz_qux_nested");
+    defer msg.paths.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const decoded = try FieldMask.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.paths.items.len == 2);
+    try expectEqualSlices(u8, "foo_bar", decoded.value.paths.items[0]);
+    try expectEqualSlices(u8, "baz_qux_nested", decoded.value.paths.items[1]);
+}
+
+// --- Range Validation Tests ---
+//
+// Range failures in the WKT encoders surface to the caller as
+// `error.OutOfMemory`: the encoders raise `error.WriteFailed`, and
+// `std.json.Stringify.valueAlloc` converts any writer error to
+// `error.OutOfMemory` before returning to user code.
+
+test "WKT: Timestamp rejects seconds too large" {
+    const ts = Timestamp{ .seconds = 253402300800, .nanos = 0 };
+    try std.testing.expectError(error.OutOfMemory, ts.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Timestamp rejects seconds too small" {
+    const ts = Timestamp{ .seconds = -62135596801, .nanos = 0 };
+    try std.testing.expectError(error.OutOfMemory, ts.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Timestamp rejects negative nanos" {
+    const ts = Timestamp{ .seconds = 0, .nanos = -1 };
+    try std.testing.expectError(error.OutOfMemory, ts.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Timestamp rejects nanos too large" {
+    const ts = Timestamp{ .seconds = 0, .nanos = 1_000_000_000 };
+    try std.testing.expectError(error.OutOfMemory, ts.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Duration rejects seconds too large" {
+    const d = Duration{ .seconds = 315576000001, .nanos = 0 };
+    try std.testing.expectError(error.OutOfMemory, d.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Duration rejects seconds too small" {
+    const d = Duration{ .seconds = -315576000001, .nanos = 0 };
+    try std.testing.expectError(error.OutOfMemory, d.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Duration rejects nanos wrong sign (positive secs, negative nanos)" {
+    const d = Duration{ .seconds = 1, .nanos = -1 };
+    try std.testing.expectError(error.OutOfMemory, d.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Duration rejects nanos wrong sign (negative secs, positive nanos)" {
+    const d = Duration{ .seconds = -1, .nanos = 1 };
+    try std.testing.expectError(error.OutOfMemory, d.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Duration parse rejects too large" {
+    const result = Duration.jsonDecode("\"315576000001s\"", .{}, allocator);
+    try std.testing.expectError(error.UnexpectedToken, result);
+}
+
+test "WKT: Timestamp parse rejects date too small" {
+    // 0000-12-31T23:59:59Z is before 0001-01-01T00:00:00Z
+    const result = Timestamp.jsonDecode("\"0000-12-31T23:59:59Z\"", .{}, allocator);
+    try std.testing.expectError(error.UnexpectedToken, result);
+}
+
+test "WKT: Timestamp parse with positive offset" {
+    // 1970-01-01T08:00:00+08:00 is equivalent to 1970-01-01T00:00:00Z
+    const decoded = try Timestamp.jsonDecode("\"1970-01-01T08:00:00+08:00\"", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.seconds == 0);
+    try expect(decoded.value.nanos == 0);
+}
+
+test "WKT: Timestamp parse with negative offset" {
+    // 1969-12-31T19:00:00-05:00 is equivalent to 1970-01-01T00:00:00Z
+    const decoded = try Timestamp.jsonDecode("\"1969-12-31T19:00:00-05:00\"", .{}, allocator);
+    defer decoded.deinit();
+    try expect(decoded.value.seconds == 0);
+    try expect(decoded.value.nanos == 0);
+}
+
+test "WKT: FieldMask rejects paths that don't round-trip (consecutive underscores)" {
+    var msg = FieldMask{};
+    try msg.paths.append(allocator, "foo__bar");
+    defer msg.paths.deinit(allocator);
+    try std.testing.expectError(error.OutOfMemory, msg.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: FieldMask rejects paths that don't round-trip (trailing underscore)" {
+    var msg = FieldMask{};
+    try msg.paths.append(allocator, "foo_");
+    defer msg.paths.deinit(allocator);
+    try std.testing.expectError(error.OutOfMemory, msg.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Value rejects NaN number_value" {
+    const msg = Value{ .kind = .{ .number_value = std.math.nan(f64) } };
+    try std.testing.expectError(error.OutOfMemory, msg.jsonEncode(.{}, .{}, allocator));
+}
+
+test "WKT: Value rejects Infinity number_value" {
+    const msg = Value{ .kind = .{ .number_value = std.math.inf(f64) } };
+    try std.testing.expectError(error.OutOfMemory, msg.jsonEncode(.{}, .{}, allocator));
+}
+
+// ------------------------------------------------
+// Map duplicate key dedup
+// ------------------------------------------------
+
+test "JSON: map dedup string key last value wins" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_string_string.append(allocator, .{ .key = "dup", .value = "first" });
+    try msg.map_string_string.append(allocator, .{ .key = "dup", .value = "second" });
+    defer msg.map_string_string.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const map = parsed.value.object.get("mapStringString").?;
+    try expect(map == .object);
+    try expect(map.object.count() == 1);
+    try expectEqualSlices(u8, "second", map.object.get("dup").?.string);
+}
+
+test "JSON: map dedup int32 negative key last value wins" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_int32_int32.append(allocator, .{ .key = -1, .value = 100 });
+    try msg.map_int32_int32.append(allocator, .{ .key = -1, .value = 200 });
+    defer msg.map_int32_int32.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const map = parsed.value.object.get("mapInt32Int32").?;
+    try expect(map == .object);
+    try expect(map.object.count() == 1);
+    try expect(map.object.get("-1").?.integer == 200);
+}
+
+test "JSON: map dedup bool key last value wins" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_bool_bool.append(allocator, .{ .key = true, .value = false });
+    try msg.map_bool_bool.append(allocator, .{ .key = true, .value = true });
+    defer msg.map_bool_bool.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const map = parsed.value.object.get("mapBoolBool").?;
+    try expect(map == .object);
+    try expect(map.object.count() == 1);
+    try expect(map.object.get("true").?.bool == true);
+}
+
+test "JSON: map dedup all same key emits one entry" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_string_string.append(allocator, .{ .key = "x", .value = "a" });
+    try msg.map_string_string.append(allocator, .{ .key = "x", .value = "b" });
+    try msg.map_string_string.append(allocator, .{ .key = "x", .value = "c" });
+    try msg.map_string_string.append(allocator, .{ .key = "x", .value = "d" });
+    try msg.map_string_string.append(allocator, .{ .key = "x", .value = "final" });
+    defer msg.map_string_string.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const map = parsed.value.object.get("mapStringString").?;
+    try expect(map == .object);
+    try expect(map.object.count() == 1);
+    try expectEqualSlices(u8, "final", map.object.get("x").?.string);
+}
+
+test "JSON: map dedup no duplicates preserves all entries" {
+    var msg = TestAllTypesProto3{};
+    try msg.map_int32_int32.append(allocator, .{ .key = 1, .value = 10 });
+    try msg.map_int32_int32.append(allocator, .{ .key = 2, .value = 20 });
+    try msg.map_int32_int32.append(allocator, .{ .key = 3, .value = 30 });
+    defer msg.map_int32_int32.deinit(allocator);
+
+    const encoded = try msg.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, encoded, .{});
+    defer parsed.deinit();
+    const map = parsed.value.object.get("mapInt32Int32").?;
+    try expect(map == .object);
+    try expect(map.object.count() == 3);
+    try expect(map.object.get("1").?.integer == 10);
+    try expect(map.object.get("2").?.integer == 20);
+    try expect(map.object.get("3").?.integer == 30);
 }

@@ -42,6 +42,7 @@ const GenerationContext = struct {
 
     /// map of message names to their dependencies
     message_deps: std.StringHashMap(std.ArrayList([]const u8)),
+    preserve_unknown_fields: bool,
 
     /// Helper struct for working with SourceCodeInfo
     const SourceCodeInfo = struct {
@@ -100,16 +101,50 @@ const GenerationContext = struct {
     };
 
     pub fn init(allocator: std.mem.Allocator, request: plugin.CodeGeneratorRequest) !GenerationContext {
-        return .{
+        var ctx: GenerationContext = .{
             .req = request,
             .res = .{},
             .known_packages = .init(allocator),
             .fqn_lines = .init(allocator),
             .message_deps = .init(allocator),
+            .preserve_unknown_fields = false,
         };
+
+        try ctx.parseParameter(allocator);
+        return ctx;
+    }
+
+    fn parseParameter(self: *GenerationContext, allocator: std.mem.Allocator) !void {
+        const parameter = self.req.parameter orelse return;
+
+        var params = std.mem.splitScalar(u8, parameter, ',');
+        while (params.next()) |param| {
+            if (param.len == 0) continue;
+
+            if (std.mem.eql(u8, param, "preserve_unknown_fields") or
+                std.mem.eql(u8, param, "preserve_unknown_fields=true"))
+            {
+                self.preserve_unknown_fields = true;
+                continue;
+            }
+
+            if (std.mem.eql(u8, param, "preserve_unknown_fields=false")) {
+                self.preserve_unknown_fields = false;
+                continue;
+            }
+
+            self.res.@"error" = try std.fmt.allocPrint(
+                allocator,
+                "unsupported protoc-gen-zig parameter: {s}",
+                .{param},
+            );
+            return;
+        }
     }
 
     pub fn processRequest(self: *GenerationContext, io: std.Io, allocator: std.mem.Allocator) !void {
+        if (self.res.@"error" != null) return;
+
         defer {
             // Clean up message dependencies
             var it = self.message_deps.iterator();
@@ -264,6 +299,51 @@ const GenerationContext = struct {
         try self.generateServices(allocator, lines, fqn, file, file.service, file_root_path, 6);
     }
 
+    // WKT FQNs that are re-exported from protobuf.wkt instead of being generated inline.
+    const wkt_message_fqns = [_][]const u8{
+        "google.protobuf.Any",
+        "google.protobuf.Duration",
+        "google.protobuf.Empty",
+        "google.protobuf.FieldMask",
+        "google.protobuf.Struct",
+        "google.protobuf.Value",
+        "google.protobuf.ListValue",
+        "google.protobuf.Timestamp",
+        "google.protobuf.DoubleValue",
+        "google.protobuf.FloatValue",
+        "google.protobuf.Int64Value",
+        "google.protobuf.UInt64Value",
+        "google.protobuf.Int32Value",
+        "google.protobuf.UInt32Value",
+        "google.protobuf.BoolValue",
+        "google.protobuf.StringValue",
+        "google.protobuf.BytesValue",
+    };
+    const wkt_enum_fqns = [_][]const u8{
+        "google.protobuf.NullValue",
+    };
+
+    fn isWktMessage(fqn: FullName) bool {
+        for (wkt_message_fqns) |wkt_fqn| {
+            if (std.mem.eql(u8, fqn.buf, wkt_fqn)) return true;
+            // Also skip nested types inside WKT messages (e.g. Struct.FieldsEntry)
+            if (std.mem.startsWith(u8, fqn.buf, wkt_fqn) and
+                fqn.buf.len > wkt_fqn.len and
+                fqn.buf[wkt_fqn.len] == '.')
+                return true;
+        }
+        return false;
+    }
+
+    fn isWktEnum(fqn: FullName, name: []const u8) bool {
+        const full = std.mem.concat(std.heap.page_allocator, u8, &.{ fqn.buf, ".", name }) catch return false;
+        defer std.heap.page_allocator.free(full);
+        for (wkt_enum_fqns) |wkt_fqn| {
+            if (std.mem.eql(u8, full, wkt_fqn)) return true;
+        }
+        return false;
+    }
+
     fn generateEnums(
         ctx: *GenerationContext,
         allocator: std.mem.Allocator,
@@ -275,12 +355,20 @@ const GenerationContext = struct {
         enum_field_number: i32,
     ) !void {
         _ = ctx;
-        _ = fqn;
 
         for (enums.items, 0..) |theEnum, enum_i| {
             const e: descriptor.EnumDescriptorProto = theEnum;
 
             try lines.append(allocator, "\n");
+
+            // WKT enums are re-exported from protobuf.wkt
+            if (isWktEnum(fqn, e.name.?)) {
+                try lines.append(
+                    allocator,
+                    try std.fmt.allocPrint(allocator, "pub const {s} = protobuf.wkt.{s};\n", .{ e.name.?, e.name.? }),
+                );
+                continue;
+            }
 
             // Add leading comment if available
             if (SourceCodeInfo.getRepeatedFieldLocation(
@@ -294,20 +382,59 @@ const GenerationContext = struct {
                 }
             }
 
+            const allow_alias = if (e.options) |options| options.allow_alias orelse false else false;
+
             try lines.append(
                 allocator,
                 try std.fmt.allocPrint(allocator, "pub const {s} = enum(i32) {{\n", .{e.name.?}),
             );
 
-            for (e.value.items) |elem| {
+            for (e.value.items, 0..) |elem, elem_i| {
+                if (allow_alias and hasPreviousEnumNumber(e.value.items[0..elem_i], elem.number orelse 0)) {
+                    continue;
+                }
+
                 try lines.append(
                     allocator,
                     try std.fmt.allocPrint(allocator, "   {s} = {},\n", .{ elem.name.?, elem.number orelse 0 }),
                 );
             }
 
-            try lines.append(allocator, "    _,\n};\n\n");
+            try lines.append(allocator, "    _,\n");
+            if (allow_alias and hasEnumAliases(e)) {
+                try lines.append(allocator,
+                    \\    // allow_alias = true: these additional names also map to an emitted enum value.
+                    \\    pub const _json_aliases = &[_]struct { name: []const u8, value: i32 }{
+                );
+                for (e.value.items, 0..) |elem, elem_i| {
+                    const number = elem.number orelse 0;
+                    if (!hasPreviousEnumNumber(e.value.items[0..elem_i], number)) continue;
+                    try lines.append(
+                        allocator,
+                        try std.fmt.allocPrint(allocator, "        .{{ .name = \"{s}\", .value = {} }},\n", .{ elem.name.?, number }),
+                    );
+                }
+                try lines.append(allocator,
+                    \\    };
+                    \\
+                );
+            }
+            try lines.append(allocator, "};\n\n");
         }
+    }
+
+    fn hasPreviousEnumNumber(values: []const descriptor.EnumValueDescriptorProto, number: i32) bool {
+        for (values) |value| {
+            if ((value.number orelse 0) == number) return true;
+        }
+        return false;
+    }
+
+    fn hasEnumAliases(e: descriptor.EnumDescriptorProto) bool {
+        for (e.value.items, 0..) |elem, elem_i| {
+            if (hasPreviousEnumNumber(e.value.items[0..elem_i], elem.number orelse 0)) return true;
+        }
+        return false;
     }
 
     fn escapeName(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
@@ -393,15 +520,8 @@ const GenerationContext = struct {
                     .TYPE_MESSAGE => {
                         // Check if the field type is self-referential
                         if (field.type_name) |type_name| {
-                            const raw_type = type_name;
-                            const dep_name = raw_type[1..]; // Remove leading dot
-                            const last_dot = std.mem.lastIndexOf(u8, dep_name, ".");
-                            const simple_name = if (last_dot) |idx| dep_name[idx + 1 ..] else dep_name;
-
-                            // Get the current message name from fqn
-                            const current_msg = fqn.name().buf;
-
-                            if (std.mem.eql(u8, simple_name, current_msg)) {
+                            const dep_name = type_name[1..]; // Remove leading dot
+                            if (std.mem.eql(u8, dep_name, fqn.buf) or isAncestorFqn(dep_name, fqn.buf)) {
                                 prefix = "?*";
                             } else {
                                 prefix = "?";
@@ -656,6 +776,26 @@ const GenerationContext = struct {
             const m: descriptor.DescriptorProto = message;
             const messageFqn = try fqn.append(allocator, m.name.?);
 
+            // WKT messages are re-exported from protobuf.wkt instead of being inlined.
+            if (isWktMessage(messageFqn)) {
+                // Only emit a top-level re-export (not for nested types, which live inside the WKT).
+                var is_top_level_wkt = false;
+                for (wkt_message_fqns) |wkt_fqn| {
+                    if (std.mem.eql(u8, messageFqn.buf, wkt_fqn)) {
+                        is_top_level_wkt = true;
+                        break;
+                    }
+                }
+                if (is_top_level_wkt) {
+                    try lines.append(allocator, "\n");
+                    try lines.append(
+                        allocator,
+                        try std.fmt.allocPrint(allocator, "pub const {s} = protobuf.wkt.{s};\n", .{ m.name.?, m.name.? }),
+                    );
+                }
+                continue;
+            }
+
             // Build the path for this message: root_path + [message_field_number, message_i]
             var message_path: std.ArrayList(i32) = .empty;
             defer message_path.deinit(allocator);
@@ -703,6 +843,9 @@ const GenerationContext = struct {
                         .{ try escapeName(allocator, oneof_name), oneof_name },
                     ));
                 }
+            }
+            if (self.shouldPreserveUnknownFields(m)) {
+                try lines.append(allocator, "    _unknown_fields: []const u8 = &.{},\n");
             }
 
             // then print the oneof declarations
@@ -1154,6 +1297,14 @@ const GenerationContext = struct {
         // If not found in any known package, return the full name
         return fullTypeName.buf;
     }
+
+    fn shouldPreserveUnknownFields(self: *GenerationContext, message: descriptor.DescriptorProto) bool {
+        if (message.options) |options| {
+            if (options.map_entry orelse false) return false;
+        }
+
+        return self.preserve_unknown_fields;
+    }
 };
 
 fn packageToFileName(package: []const u8, output: []u8) []const u8 {
@@ -1181,6 +1332,12 @@ fn isRepeated(field: descriptor.FieldDescriptorProto) bool {
     return (field.label orelse return false) == .LABEL_REPEATED;
 }
 
+fn isAncestorFqn(ancestor: []const u8, descendant: []const u8) bool {
+    return descendant.len > ancestor.len and
+        std.mem.startsWith(u8, descendant, ancestor) and
+        descendant[ancestor.len] == '.';
+}
+
 fn isScalarNumeric(t: descriptor.FieldDescriptorProto.Type) bool {
     return switch (t) {
         .TYPE_DOUBLE,
@@ -1196,6 +1353,7 @@ fn isScalarNumeric(t: descriptor.FieldDescriptorProto.Type) bool {
         .TYPE_SFIXED32,
         .TYPE_SFIXED64,
         .TYPE_BOOL,
+        .TYPE_ENUM,
         => true,
         else => false,
     };
