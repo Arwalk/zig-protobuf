@@ -729,6 +729,44 @@ test "JSON: decode Bytes (from snake_case)" {
 }
 
 // --------------
+// bytes_as_hex test (OpenTelemetry-style hex bytes)
+// --------------
+const WithBytes = @import("./generated/tests.pb.zig").WithBytes;
+
+test "JSON: encode/decode bytes as hex round-trips" {
+    // Decode reads the thread-local; encode sets it from pb_options.bytes_as_hex.
+    protobuf.json.tl_bytes_as_hex = true;
+    defer protobuf.json.tl_bytes_as_hex = false;
+
+    // In hex mode the bytes field holds the hex string verbatim.
+    var pb_instance = WithBytes{
+        .byte_field = try allocator.dupe(u8, "cafecafe"),
+    };
+    defer pb_instance.deinit(allocator);
+
+    // Encode emits the hex string, not base64.
+    const encoded = try pb_instance.jsonEncode(.{}, .{ .bytes_as_hex = true }, allocator);
+    defer allocator.free(encoded);
+    try expectEqualSlices(u8, "{\"byteField\":\"cafecafe\"}", encoded);
+
+    // Decode keeps the hex string verbatim (no base64 decode).
+    const decoded = try WithBytes.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expectEqualSlices(u8, "cafecafe", decoded.value.byte_field);
+}
+
+test "JSON: decode rejects invalid hex when bytes_as_hex" {
+    protobuf.json.tl_bytes_as_hex = true;
+    defer protobuf.json.tl_bytes_as_hex = false;
+
+    try std.testing.expectError(error.UnexpectedToken, WithBytes.jsonDecode(
+        "{\"byteField\":\"zz\"}",
+        .{},
+        allocator,
+    ));
+}
+
+// --------------
 // MoreBytes test
 // --------------
 const more_bytes_init = @import("./json_data/more_bytes/instance.zig").get;
