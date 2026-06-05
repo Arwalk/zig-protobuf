@@ -29,3 +29,4 @@ devenv.lock
 .devenv
 **/zig-pkg/**/*
 .claude
+.tool-versions

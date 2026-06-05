@@ -271,11 +271,8 @@ pub fn decodeScalar(
         else
             u64;
 
-        var val: Unsigned = 0;
-        for (0..@sizeOf(Unsigned)) |i| {
-            const b = try reader.takeByte();
-            val |= @as(Unsigned, b) << @intCast(8 * i);
-        }
+        const bytes = try reader.takeArray(@sizeOf(Unsigned));
+        const val = std.mem.readInt(Unsigned, bytes, .little);
         return .{ @bitCast(val), @sizeOf(Unsigned) };
     }
 
@@ -415,10 +412,28 @@ pub fn decodeRepeated(
             }
             // Packed repeated scalar.
             else if (options.bytes) |bytes| {
+                // Pre-allocate capacity to avoid repeated reallocations.
+                if (comptime scalar.isFixed()) {
+                    // Fixed-size scalars: exact element count is known.
+                    const elem_size = @sizeOf(scalar.toType());
+                    // A packed fixed field must contain a whole number of
+                    // elements. Reject otherwise: the loop below appends while
+                    // `consumed < bytes`, so a non-multiple would append one
+                    // element past the reserved (floor-divided) capacity.
+                    if (bytes % elem_size != 0) {
+                        @branchHint(.cold);
+                        return error.InvalidInput;
+                    }
+                    try result.ensureTotalCapacity(allocator, result.items.len + bytes / elem_size);
+                } else {
+                    // Varints are at least 1 byte each, so byte count bounds the element count.
+                    try result.ensureTotalCapacity(allocator, result.items.len + bytes);
+                }
+
                 var consumed: usize = 0;
                 while (consumed < bytes) {
                     const decoded, const c = try decodeScalar(scalar, reader);
-                    try result.append(allocator, decoded);
+                    result.appendAssumeCapacity(decoded);
                     consumed += c;
                 }
                 if (consumed != bytes) {
@@ -438,6 +453,9 @@ pub fn decodeRepeated(
         .@"enum" => {
             // Packed repeated enum.
             if (options.bytes) |bytes| {
+                // Enums are varints (at least 1 byte each), so byte count bounds the count.
+                try result.ensureTotalCapacity(allocator, result.items.len + bytes);
+
                 var consumed: usize = 0;
                 while (consumed < bytes) {
                     const raw, const c = try decodeScalar(.int32, reader);
@@ -445,7 +463,7 @@ pub fn decodeRepeated(
                         @branchHint(.cold);
                         return error.InvalidInput;
                     };
-                    try result.append(allocator, decoded);
+                    result.appendAssumeCapacity(decoded);
                     consumed += c;
                 }
                 if (consumed > bytes) {
@@ -469,10 +487,15 @@ pub fn decodeRepeated(
             // Submessages are length-delimited, and cannot be packed.
             std.debug.assert(options.bytes != null);
 
-            try result.append(
-                allocator,
-                try protobuf.init(Result, allocator),
-            );
+            // Ensure capacity before append to reduce reallocations. When at
+            // capacity, grow by at least 8 (or double) to amortize allocation
+            // cost across repeated submessage occurrences.
+            if (result.items.len >= result.capacity) {
+                const grow_by = @max(8, result.capacity);
+                try result.ensureTotalCapacity(allocator, result.capacity + grow_by);
+            }
+
+            result.appendAssumeCapacity(try protobuf.init(Result, allocator));
             errdefer result.items[result.items.len - 1].deinit(allocator);
             const msg = &result.items[result.items.len - 1];
             const consumed = try decodeMessage(
@@ -548,6 +571,89 @@ test decodeRepeated {
         // capacity should remain >8
         try std.testing.expect(list.capacity >= 8);
     }
+
+    // Packed fixed field whose byte length is not a multiple of the element
+    // size must be rejected *before* decoding. Capacity is reserved as
+    // bytes / elem_size (floored), so without the up-front check the loop would
+    // append one element past the reserved capacity -> OOB heap write.
+    {
+        var list: std.ArrayList(u32) = .empty;
+        defer list.deinit(std.testing.allocator);
+
+        // fixed32 elem_size = 4. options.bytes = 6 is not a multiple of 4:
+        // one full element (4 bytes) plus 2 trailing bytes.
+        const input: []const u8 = &.{ 0x01, 0x00, 0x00, 0x00, 0xff, 0xff };
+        var reader: std.Io.Reader = .fixed(input);
+
+        try std.testing.expectError(
+            error.InvalidInput,
+            decodeRepeated(
+                &list,
+                std.testing.allocator,
+                .{ .scalar = .fixed32 },
+                &reader,
+                .{ .bytes = 6 },
+            ),
+        );
+
+        // nothing should have been appended
+        try std.testing.expectEqual(0, list.items.len);
+    }
+
+    // A well-formed packed fixed field (exact multiple) still decodes.
+    {
+        var list: std.ArrayList(u32) = .empty;
+        defer list.deinit(std.testing.allocator);
+
+        // Two little-endian fixed32 values: 1 and 0x04030201.
+        const input: []const u8 = &.{ 0x01, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04 };
+        var reader: std.Io.Reader = .fixed(input);
+
+        const consumed = try decodeRepeated(
+            &list,
+            std.testing.allocator,
+            .{ .scalar = .fixed32 },
+            &reader,
+            .{ .bytes = input.len },
+        );
+        try std.testing.expectEqual(input.len, consumed);
+        try std.testing.expectEqualSlices(u32, &.{ 1, 0x04030201 }, list.items);
+    }
+}
+
+test "captureField rejects over-long length varint" {
+    // The .len branch reads the length as a varint into a fixed [10]u8 buffer.
+    // An over-long varint (>10 bytes, every byte with the continuation bit set)
+    // must be rejected before it overflows the buffer / the u6 shift.
+    var buf: std.ArrayList(u8) = .empty;
+    defer buf.deinit(std.testing.allocator);
+
+    // 11 bytes all with the high (continuation) bit set: never terminates
+    // within the 10-byte varint limit.
+    const input: []const u8 = &(.{0x80} ** 11);
+    var reader: std.Io.Reader = .fixed(input);
+
+    const tag: Tag = .{ .wire_type = .len, .field = 1 };
+    try std.testing.expectError(
+        error.InvalidInput,
+        captureField(std.testing.allocator, &reader, tag, &buf),
+    );
+}
+
+test "captureField accepts a maximal 10-byte length varint shape" {
+    // A 10-byte varint is the maximum legal length; it must not be rejected by
+    // the over-long guard. Use 9 continuation bytes followed by a terminator.
+    var buf: std.ArrayList(u8) = .empty;
+    defer buf.deinit(std.testing.allocator);
+
+    // 10-byte length varint encoding 0, then no payload (length 0).
+    const len_varint: []const u8 = &(.{0x80} ** 9 ++ .{0x00});
+    var reader: std.Io.Reader = .fixed(len_varint);
+
+    const tag: Tag = .{ .wire_type = .len, .field = 1 };
+    const consumed = try captureField(std.testing.allocator, &reader, tag, &buf);
+    // 10 length bytes consumed, zero-length payload.
+    try std.testing.expectEqual(10, consumed);
 }
 
 /// Decode a message from reader.
@@ -1231,8 +1337,14 @@ fn captureField(
                 len_buf[len_i] = b;
                 len_i += 1;
                 len_val |= @as(u64, b & 0x7F) << shift;
-                shift += 7;
                 if (b & 0x80 == 0) break;
+                // A varint is at most 10 bytes. Reject longer encodings before
+                // they overflow `len_buf` (OOB stack write) or `shift` (u6).
+                if (len_i >= 10) {
+                    @branchHint(.cold);
+                    return error.InvalidInput;
+                }
+                shift += 7;
             }
             try buf.appendSlice(allocator, len_buf[0..len_i]);
             data_consumed += len_i;
