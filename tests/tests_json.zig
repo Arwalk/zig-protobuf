@@ -1025,6 +1025,7 @@ const test_packed_types_init = @import(
 const test_packed_types_camel_case_json = @embedFile(
     "./json_data/test_packed_types/camelCase.json",
 );
+const unittest = @import("./generated/unittest.pb.zig");
 
 test "JSON: encode TestPackedTypes (repeated NaNs/infs)" {
     var pb_instance = try test_packed_types_init(allocator);
@@ -1052,6 +1053,19 @@ test "JSON: decode TestPackedTypes (repeated NaNs/infs)" {
     defer decoded.deinit();
 
     try expect(compare_pb_structs(pb_instance, decoded.value));
+}
+
+test "JSON: decode TestAllTypes optional floats" {
+    const decoded = try unittest.TestAllTypes.jsonDecode(
+        \\{"optionalFloat":1.5,"optionalDouble":2.5}
+    ,
+        .{},
+        allocator,
+    );
+    defer decoded.deinit();
+
+    try std.testing.expectEqual(@as(f32, 1.5), decoded.value.optional_float.?);
+    try std.testing.expectEqual(@as(f64, 2.5), decoded.value.optional_double.?);
 }
 
 test "JSON: decode selfref structs" {

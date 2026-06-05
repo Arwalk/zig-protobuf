@@ -893,7 +893,7 @@ fn parseStructField(
                 // the string tokens "Infinity", "-Infinity", and "NaN" are valid per spec.
                 const next_type = try source.peekNextTokenType();
                 const v = try std.json.innerParse(fieldInfo.type, allocator, source, options);
-                if (next_type == .number and std.math.isInf(v)) return error.InvalidCharacter;
+                if (next_type == .number and floatIsInf(v)) return error.InvalidCharacter;
                 break :blk v;
             },
             // `.string`s have their own jsonParse implementation
@@ -915,8 +915,35 @@ fn parseStructField(
     };
 }
 
+fn floatIsInf(value: anytype) bool {
+    switch (comptime @typeInfo(@TypeOf(value))) {
+        .optional => {
+            if (value) |v| return floatIsInf(v);
+            return false;
+        },
+        .float, .comptime_float => return std.math.isInf(value),
+        else => @compileError("Float expected but " ++ @typeName(@TypeOf(value)) ++ " given"),
+    }
+}
+
+fn floatIsNan(value: anytype) bool {
+    switch (comptime @typeInfo(@TypeOf(value))) {
+        .optional => {
+            if (value) |v| return floatIsNan(v);
+            return false;
+        },
+        .float, .comptime_float => return std.math.isNan(value),
+        else => @compileError("Float expected but " ++ @typeName(@TypeOf(value)) ++ " given"),
+    }
+}
+
 fn print_numeric(value: anytype, jws: anytype) !void {
     switch (@typeInfo(@TypeOf(value))) {
+        .optional => {
+            if (value) |v| return print_numeric(v, jws);
+            try jws.write(null);
+            return;
+        },
         .float, .comptime_float => {},
         .int => |info| {
             // Proto3 JSON: 64-bit integers must be encoded as strings.
@@ -943,7 +970,7 @@ fn print_numeric(value: anytype, jws: anytype) !void {
         else => @compileError("Float/integer expected but " ++ @typeName(@TypeOf(value)) ++ " given"),
     }
 
-    if (std.math.isNan(value)) {
+    if (floatIsNan(value)) {
         try jws.write("NaN");
     } else if (std.math.isPositiveInf(value)) {
         try jws.write("Infinity");
