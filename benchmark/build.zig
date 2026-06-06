@@ -49,12 +49,12 @@ pub fn build(b: *std.Build) void {
         .include_directories = &.{b.path("../tests/protos_for_test")},
     });
 
-    benchmark_exe.step.dependOn(&convertForBenchmarkStep.step);
+    benchmark_exe.step.dependOn(convertForBenchmarkStep.step);
 
     // Generate dataset step
     const generate_dataset_step = b.step("generate-dataset", "Generate benchmark dataset");
 
-    var convertForDatasetStep = RunProtocStep.create(protobuf_dep.builder, target, .{
+    const convertForDatasetStep = RunProtocStep.create(protobuf_dep.builder, target, .{
         .destination_directory = b.path("src/generated"),
         .source_files = &.{
             b.path("../tests/protos_for_test/benchmark_data.proto"),
@@ -74,14 +74,12 @@ pub fn build(b: *std.Build) void {
     });
 
     generate_dataset_exe.root_module.addImport("protobuf", protobuf_module);
-    generate_dataset_exe.step.dependOn(&convertForDatasetStep.step);
-    benchmark_exe.step.dependOn(&convertForDatasetStep.step);
+    generate_dataset_exe.step.dependOn(convertForDatasetStep.step);
+    benchmark_exe.step.dependOn(convertForDatasetStep.step);
 
     const run_generate = b.addRunArtifact(generate_dataset_exe);
 
-    if (b.args) |args| {
-        run_generate.addArgs(args);
-    }
+    run_generate.addPassthruArgs();
 
     generate_dataset_step.dependOn(&run_generate.step);
 }

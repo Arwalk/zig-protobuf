@@ -537,11 +537,12 @@ pub fn decodeMessage(
         consumed += tag_c;
 
         @setEvalBranchQuota(50_000);
-        inline for (@typeInfo(@TypeOf(desc_table)).@"struct".fields) |field| {
+        const desc_info = @typeInfo(@TypeOf(desc_table)).@"struct";
+        inline for (desc_info.field_names) |field_name| {
             const field_desc: protobuf.FieldDescriptor =
-                comptime @field(desc_table, field.name);
-            const field_info: std.builtin.Type.StructField =
-                std.meta.fieldInfo(Result, @field(ResultField, field.name));
+                comptime @field(desc_table, field_name);
+            const field_info =
+                std.meta.fieldInfo(Result, @field(ResultField, field_name));
 
             if (comptime field_desc.ftype != .oneof) {
                 if (comptime field_desc.field_number == null)
@@ -570,7 +571,7 @@ pub fn decodeMessage(
                 }
             }
 
-            const Field = comptime @FieldType(Result, field.name);
+            const Field = comptime @FieldType(Result, field_name);
             const field_ti = comptime @typeInfo(Field);
 
             switch (comptime field_desc.ftype) {
@@ -604,8 +605,8 @@ pub fn decodeMessage(
                         // replacing field.
                         if (comptime Field == []const u8) {
                             const existing: []const u8 =
-                                @field(result, field.name);
-                            if (comptime field_info.defaultValue()) |default| {
+                                @field(result, field_name);
+                            if (comptime field_info.attrs.defaultValue(Field)) |default| {
                                 if (default.ptr != existing.ptr and
                                     existing.len > 0)
                                 {
@@ -615,9 +616,9 @@ pub fn decodeMessage(
                                 allocator.free(existing);
                             }
                         } else if (comptime Field == ?[]const u8) {
-                            if (@field(result, field.name)) |existing| {
+                            if (@field(result, field_name)) |existing| {
                                 if (existing.len > 0) {
-                                    if (comptime field_info.defaultValue()) |opt| {
+                                    if (comptime field_info.attrs.defaultValue(Field)) |opt| {
                                         if (comptime opt != null) {
                                             if (opt.?.ptr != existing.ptr) {
                                                 allocator.free(existing);
@@ -630,11 +631,11 @@ pub fn decodeMessage(
                             }
                         } else unreachable;
 
-                        @field(result, field.name) = new;
+                        @field(result, field_name) = new;
                     } else {
                         const val, const c = try decodeScalar(scalar, reader);
                         consumed += c;
-                        @field(result, field.name) = val;
+                        @field(result, field_name) = val;
                     }
                 },
                 .@"enum" => {
@@ -653,19 +654,19 @@ pub fn decodeMessage(
                         @branchHint(.cold);
                         return error.InvalidInput;
                     };
-                    @field(result, field.name) = decoded;
+                    @field(result, field_name) = decoded;
                 },
                 .packed_repeated => |repeated| {
                     const is_null = if (comptime field_ti == .optional) b: {
-                        if (@field(result, field.name) == null) {
-                            @field(result, field.name) = .empty;
+                        if (@field(result, field_name) == null) {
+                            @field(result, field_name) = .empty;
                             break :b true;
                         }
                         break :b false;
                     } else false;
                     errdefer if (comptime field_ti == .optional) {
                         if (is_null) {
-                            @field(result, field.name) = null;
+                            @field(result, field_name) = null;
                         }
                     };
 
@@ -676,9 +677,9 @@ pub fn decodeMessage(
 
                         consumed += try decodeRepeated(
                             if (comptime field_ti == .optional)
-                                &@field(result, field.name).?
+                                &@field(result, field_name).?
                             else
-                                &@field(result, field.name),
+                                &@field(result, field_name),
                             allocator,
                             repeated,
                             reader,
@@ -689,9 +690,9 @@ pub fn decodeMessage(
                     else {
                         consumed += try decodeRepeated(
                             if (comptime field_ti == .optional)
-                                &@field(result, field.name).?
+                                &@field(result, field_name).?
                             else
-                                &@field(result, field.name),
+                                &@field(result, field_name),
                             allocator,
                             repeated,
                             reader,
@@ -701,15 +702,15 @@ pub fn decodeMessage(
                 },
                 .repeated => |repeated| {
                     const is_null = if (comptime field_ti == .optional) b: {
-                        if (@field(result, field.name) == null) {
-                            @field(result, field.name) = .empty;
+                        if (@field(result, field_name) == null) {
+                            @field(result, field_name) = .empty;
                             break :b true;
                         }
                         break :b false;
                     } else false;
                     errdefer if (comptime field_ti == .optional) {
                         if (is_null) {
-                            @field(result, field.name) = null;
+                            @field(result, field_name) = null;
                         }
                     };
                     const len: ?usize = if (tag.wire_type == .len) b: {
@@ -718,7 +719,7 @@ pub fn decodeMessage(
                         break :b @intCast(len);
                     } else null;
                     consumed += try decodeRepeated(
-                        &@field(result, field.name),
+                        &@field(result, field_name),
                         allocator,
                         repeated,
                         reader,
@@ -746,28 +747,28 @@ pub fn decodeMessage(
                     if (comptime inner_ti == .pointer) {
                         const SubMessage = inner_ti.pointer.child;
                         const is_null = b: {
-                            if (@field(result, field.name) == null) {
-                                @field(result, field.name) =
+                            if (@field(result, field_name) == null) {
+                                @field(result, field_name) =
                                     try allocator.create(SubMessage);
                                 errdefer allocator.destroy(
-                                    @field(result, field.name).?,
+                                    @field(result, field_name).?,
                                 );
 
-                                @field(result, field.name).?.* =
+                                @field(result, field_name).?.* =
                                     try protobuf.init(SubMessage, allocator);
                                 break :b true;
                             }
                             break :b false;
                         };
                         errdefer if (is_null) {
-                            @field(result, field.name).?.deinit(allocator);
-                            allocator.destroy(@field(result, field.name).?);
-                            @field(result, field.name) = null;
+                            @field(result, field_name).?.deinit(allocator);
+                            allocator.destroy(@field(result, field_name).?);
+                            @field(result, field_name) = null;
                         };
 
                         if (len > 0) {
                             const message_consumed = try decodeMessage(
-                                @field(result, field.name).?,
+                                @field(result, field_name).?,
                                 allocator,
                                 reader,
                                 .{ .bytes = @intCast(len) },
@@ -781,21 +782,21 @@ pub fn decodeMessage(
                     } else {
                         const SubMessage = field_ti.optional.child;
                         const is_null = b: {
-                            if (@field(result, field.name) == null) {
-                                @field(result, field.name) =
+                            if (@field(result, field_name) == null) {
+                                @field(result, field_name) =
                                     try protobuf.init(SubMessage, allocator);
                                 break :b true;
                             }
                             break :b false;
                         };
                         errdefer if (is_null) {
-                            @field(result, field.name).?.deinit(allocator);
-                            @field(result, field.name) = null;
+                            @field(result, field_name).?.deinit(allocator);
+                            @field(result, field_name) = null;
                         };
 
                         if (len > 0) {
                             const message_consumed = try decodeMessage(
-                                &@field(result, field.name).?,
+                                &@field(result, field_name).?,
                                 allocator,
                                 reader,
                                 .{ .bytes = @intCast(len) },
@@ -818,9 +819,9 @@ pub fn decodeMessage(
                     const oneof_ti = comptime @typeInfo(OneOf).@"union";
 
                     const inner_desc_table = comptime OneOf._desc_table;
-                    oo_fields: inline for (oneof_ti.fields) |oo_field| {
+                    oo_fields: inline for (oneof_ti.field_names, oneof_ti.field_types) |oo_field_name, OoField| {
                         const inner_desc: protobuf.FieldDescriptor =
-                            comptime @field(inner_desc_table, oo_field.name);
+                            comptime @field(inner_desc_table, oo_field_name);
 
                         if (comptime inner_desc.field_number == null)
                             comptime continue :oo_fields;
@@ -833,7 +834,7 @@ pub fn decodeMessage(
                             return error.InvalidInput;
                         }
 
-                        const oo_field_ti = @typeInfo(oo_field.type);
+                        const oo_field_ti = @typeInfo(OoField);
                         switch (comptime inner_desc.ftype) {
                             .scalar => |scalar| {
                                 if (comptime scalar.isSlice()) {
@@ -842,7 +843,7 @@ pub fn decodeMessage(
                                     // `oneof` fields are always non-optional
                                     // as `oneof` has explicit presence.
                                     std.debug.assert(
-                                        oo_field.type == []const u8,
+                                        OoField == []const u8,
                                     );
 
                                     std.debug.assert(tag.wire_type == .len);
@@ -869,22 +870,22 @@ pub fn decodeMessage(
                                     // Free potentially existing union field
                                     // just before replacing.
                                     protobuf.deinitOneof(
-                                        &@field(result, field.name),
+                                        &@field(result, field_name),
                                         allocator,
                                     );
 
-                                    @field(result, field.name) = @unionInit(
+                                    @field(result, field_name) = @unionInit(
                                         OneOf,
-                                        oo_field.name,
+                                        oo_field_name,
                                         new,
                                     );
                                 } else {
                                     const val, const c =
                                         try decodeScalar(scalar, reader);
                                     consumed += c;
-                                    @field(result, field.name) = @unionInit(
+                                    @field(result, field_name) = @unionInit(
                                         OneOf,
-                                        oo_field.name,
+                                        oo_field_name,
                                         val,
                                     );
                                 }
@@ -894,7 +895,7 @@ pub fn decodeMessage(
                                     try decodeScalar(.int32, reader);
                                 consumed += c;
                                 const decoded = std.enums.fromInt(
-                                    oo_field.type,
+                                    OoField,
                                     raw,
                                 ) orelse {
                                     @branchHint(.cold);
@@ -904,13 +905,13 @@ pub fn decodeMessage(
                                 // Free potentially existing union field just
                                 // before replacing.
                                 protobuf.deinitOneof(
-                                    &@field(result, field.name),
+                                    &@field(result, field_name),
                                     allocator,
                                 );
 
-                                @field(result, field.name) = @unionInit(
+                                @field(result, field_name) = @unionInit(
                                     OneOf,
-                                    oo_field.name,
+                                    oo_field_name,
                                     decoded,
                                 );
                             },
@@ -937,61 +938,61 @@ pub fn decodeMessage(
                                     if (comptime oo_field_ti == .pointer)
                                         oo_field_ti.pointer.child
                                     else
-                                        oo_field.type;
+                                        OoField;
 
-                                if (@field(result, field.name) != null) {
+                                if (@field(result, field_name) != null) {
                                     // If a matching submessage field already
                                     // exists, the incoming submessage is
                                     // merged. Otherwise, the existing field
                                     // is freed and set to null.
                                     const incoming_tag = comptime @field(
                                         std.meta.Tag(OneOf),
-                                        oo_field.name,
+                                        oo_field_name,
                                     );
                                     if (std.meta.activeTag(
-                                        @field(result, field.name).?,
+                                        @field(result, field_name).?,
                                     ) != incoming_tag) {
                                         protobuf.deinitOneof(
-                                            &@field(result, field.name),
+                                            &@field(result, field_name),
                                             allocator,
                                         );
 
                                         std.debug.assert(@field(
                                             result,
-                                            field.name,
+                                            field_name,
                                         ) == null);
                                     }
                                 }
                                 const is_null =
-                                    @field(result, field.name) == null;
+                                    @field(result, field_name) == null;
                                 if (comptime oo_field_ti == .pointer) {
                                     if (is_null) {
-                                        @field(result, field.name) = @unionInit(
+                                        @field(result, field_name) = @unionInit(
                                             OneOf,
-                                            oo_field.name,
+                                            oo_field_name,
                                             try allocator.create(SubMessage),
                                         );
                                         @field(
-                                            @field(result, field.name).?,
-                                            oo_field.name,
+                                            @field(result, field_name).?,
+                                            oo_field_name,
                                         ) = try .init(allocator);
                                     }
                                     errdefer if (is_null) {
                                         @field(@field(
                                             result,
-                                            field.name,
-                                        ).?, oo_field.name).deinit(allocator);
+                                            field_name,
+                                        ).?, oo_field_name).deinit(allocator);
                                         allocator.destroy(
-                                            @field(result, field.name).?,
+                                            @field(result, field_name).?,
                                         );
-                                        @field(result, field.name) = null;
+                                        @field(result, field_name) = null;
                                     };
 
                                     if (len > 0) {
                                         const m_consumed = try decodeMessage(
                                             @field(
-                                                @field(result, field.name).?,
-                                                oo_field.name,
+                                                @field(result, field_name).?,
+                                                oo_field_name,
                                             ),
                                             allocator,
                                             reader,
@@ -1005,10 +1006,10 @@ pub fn decodeMessage(
                                     }
                                 } else {
                                     if (is_null) {
-                                        @field(result, field.name) =
+                                        @field(result, field_name) =
                                             @unionInit(
                                                 OneOf,
-                                                oo_field.name,
+                                                oo_field_name,
                                                 try protobuf.init(
                                                     SubMessage,
                                                     allocator,
@@ -1017,17 +1018,17 @@ pub fn decodeMessage(
                                     }
                                     errdefer if (is_null) {
                                         @field(
-                                            @field(result, field.name).?,
-                                            oo_field.name,
+                                            @field(result, field_name).?,
+                                            oo_field_name,
                                         ).deinit(allocator);
-                                        @field(result, field.name) = null;
+                                        @field(result, field_name) = null;
                                     };
 
                                     if (len > 0) {
                                         const m_consumed = try decodeMessage(
                                             &@field(
-                                                @field(result, field.name).?,
-                                                oo_field.name,
+                                                @field(result, field_name).?,
+                                                oo_field_name,
                                             ),
                                             allocator,
                                             reader,

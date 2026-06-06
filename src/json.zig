@@ -29,7 +29,7 @@ pub fn parse(
     // Mainly taken from 0.13.0's source code
     var result: Self = undefined;
     const structInfo = @typeInfo(Self).@"struct";
-    var fields_seen: [structInfo.fields.len]bool = @splat(false);
+    var fields_seen: [structInfo.field_names.len]bool = @splat(false);
 
     while (true) {
         var name_token: ?std.json.Token = try source.nextAllocMax(
@@ -47,15 +47,15 @@ pub fn parse(
             },
         };
 
-        inline for (structInfo.fields, 0..) |field, i| {
-            if (field.is_comptime) {
-                @compileError("comptime fields are not supported: " ++ @typeName(Self) ++ "." ++ field.name);
+        inline for (structInfo.field_names, structInfo.field_types, structInfo.field_attrs, 0..) |struct_field_name, Field, field_attrs, i| {
+            if (field_attrs.@"comptime") {
+                @compileError("comptime fields are not supported: " ++ @typeName(Self) ++ "." ++ struct_field_name);
             }
 
-            const yes1 = std.mem.eql(u8, field.name, field_name);
-            const camel_case_name = comptime to_camel_case(field.name);
+            const yes1 = std.mem.eql(u8, struct_field_name, field_name);
+            const camel_case_name = comptime to_camel_case(struct_field_name);
             var yes2: bool = undefined;
-            if (comptime std.mem.eql(u8, field.name, camel_case_name)) {
+            if (comptime std.mem.eql(u8, struct_field_name, camel_case_name)) {
                 yes2 = false;
             } else {
                 yes2 = std.mem.eql(u8, camel_case_name, field_name);
@@ -79,7 +79,8 @@ pub fn parse(
                             try parseStructField(
                                 Self,
                                 &result,
-                                field,
+                                struct_field_name,
+                                Field,
                                 allocator,
                                 source,
                                 options,
@@ -93,7 +94,8 @@ pub fn parse(
                 try parseStructField(
                     Self,
                     &result,
-                    field,
+                    struct_field_name,
+                    Field,
                     allocator,
                     source,
                     options,
@@ -106,30 +108,30 @@ pub fn parse(
             // Try flat-oneof format: check if field_name matches any union
             // variant in any oneof field of this struct.
             var matched_as_flat_oneof = false;
-            inline for (structInfo.fields, 0..) |field, i| {
+            inline for (structInfo.field_names, 0..) |struct_field_name, i| {
                 if (!matched_as_flat_oneof) {
-                    const field_descriptor = @field(Self._desc_table, field.name);
+                    const field_descriptor = @field(Self._desc_table, struct_field_name);
                     if (@as(
                         std.meta.Tag(@TypeOf(field_descriptor.ftype)),
                         field_descriptor.ftype,
                     ) == .oneof) {
                         const oneof_type = field_descriptor.ftype.oneof;
                         const union_info = @typeInfo(oneof_type).@"union";
-                        inline for (union_info.fields) |union_field| {
+                        inline for (union_info.field_names, union_info.field_types) |union_field_name, UnionField| {
                             if (!matched_as_flat_oneof) {
-                                const camel = comptime to_camel_case(union_field.name);
+                                const camel = comptime to_camel_case(union_field_name);
                                 const matches =
-                                    std.mem.eql(u8, union_field.name, field_name) or
+                                    std.mem.eql(u8, union_field_name, field_name) or
                                     std.mem.eql(u8, camel, field_name);
                                 if (matches) {
                                     freeAllocated(allocator, name_token.?);
                                     name_token = null;
-                                    @field(&result, field.name) = @unionInit(
+                                    @field(&result, struct_field_name) = @unionInit(
                                         oneof_type,
-                                        union_field.name,
+                                        union_field_name,
                                         switch (@field(
                                             oneof_type._desc_table,
-                                            union_field.name,
+                                            union_field_name,
                                         ).ftype) {
                                             .scalar => |scalar| switch (scalar) {
                                                 .bytes => try parse_bytes(
@@ -138,14 +140,14 @@ pub fn parse(
                                                     options,
                                                 ),
                                                 else => try std.json.innerParse(
-                                                    union_field.type,
+                                                    UnionField,
                                                     allocator,
                                                     source,
                                                     options,
                                                 ),
                                             },
                                             .submessage, .@"enum" => try std.json.innerParse(
-                                                union_field.type,
+                                                UnionField,
                                                 allocator,
                                                 source,
                                                 options,
@@ -219,13 +221,14 @@ fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std
 
     try jws.beginObject();
 
-    inline for (@typeInfo(Self).@"struct".fields) |fieldInfo| {
-        const camel_case_name = comptime to_camel_case(fieldInfo.name);
-        const descriptor = @field(Self._desc_table, fieldInfo.name);
+    const struct_info = @typeInfo(Self).@"struct";
+    inline for (struct_info.field_names, struct_info.field_types) |field_name, Field| {
+        const camel_case_name = comptime to_camel_case(field_name);
+        const descriptor = @field(Self._desc_table, field_name);
         const is_oneof = @as(std.meta.Tag(@TypeOf(descriptor.ftype)), descriptor.ftype) == .oneof;
 
-        const field_present = switch (@typeInfo(fieldInfo.type)) {
-            .optional => @field(self, fieldInfo.name) != null,
+        const field_present = switch (@typeInfo(Field)) {
+            .optional => @field(self, field_name) != null,
             else => true,
         };
 
@@ -237,7 +240,7 @@ fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std
                 try jws.objectField(camel_case_name);
             }
             try stringify_struct_field_with_options(
-                @field(self, fieldInfo.name),
+                @field(self, field_name),
                 descriptor,
                 jws,
                 opts,
@@ -342,21 +345,21 @@ fn stringify_struct_field_with_options(
             if (pb_options.emit_oneof_field_name) {
                 try jws.beginObject();
             }
-            inline for (union_info.fields) |union_field| {
+            inline for (union_info.field_names, union_info.field_types) |union_field_name, UnionField| {
                 if (value == @field(
                     union_info.tag_type.?,
-                    union_field.name,
+                    union_field_name,
                 )) {
-                    const union_camel_case_name = comptime to_camel_case(union_field.name);
+                    const union_camel_case_name = comptime to_camel_case(union_field_name);
                     try jws.objectField(union_camel_case_name);
-                    switch (@field(oneof._desc_table, union_field.name).ftype) {
+                    switch (@field(oneof._desc_table, union_field_name).ftype) {
                         .scalar => |scalar| switch (scalar) {
-                            .bytes => try print_bytes(@field(value, union_field.name), jws),
-                            .string => try jws.write(@field(value, union_field.name)),
-                            else => try print_numeric(@field(value, union_field.name), jws),
+                            .bytes => try print_bytes(@field(value, union_field_name), jws),
+                            .string => try jws.write(@field(value, union_field_name)),
+                            else => try print_numeric(@field(value, union_field_name), jws),
                         },
-                        .@"enum" => try print_numeric(@field(value, union_field.name), jws),
-                        .submessage => try stringifyOpts(union_field.type, &@field(value, union_field.name), jws, pb_options),
+                        .@"enum" => try print_numeric(@field(value, union_field_name), jws),
+                        .submessage => try stringifyOpts(UnionField, &@field(value, union_field_name), jws, pb_options),
                         .repeated, .packed_repeated => {
                             @compileError("Repeated fields are not allowed in oneof");
                         },
@@ -432,21 +435,21 @@ fn stringify_struct_field(
             }
 
             try jws.beginObject();
-            inline for (union_info.fields) |union_field| {
+            inline for (union_info.field_names) |union_field_name| {
                 if (value == @field(
                     union_info.tag_type.?,
-                    union_field.name,
+                    union_field_name,
                 )) {
-                    const union_camel_case_name = comptime to_camel_case(union_field.name);
+                    const union_camel_case_name = comptime to_camel_case(union_field_name);
                     try jws.objectField(union_camel_case_name);
-                    switch (@field(oneof._desc_table, union_field.name).ftype) {
+                    switch (@field(oneof._desc_table, union_field_name).ftype) {
                         .scalar => |scalar| switch (scalar) {
-                            .bytes => try print_bytes(@field(value, union_field.name), jws),
-                            .string => try jws.write(@field(value, union_field.name)),
-                            else => try print_numeric(@field(value, union_field.name), jws),
+                            .bytes => try print_bytes(@field(value, union_field_name), jws),
+                            .string => try jws.write(@field(value, union_field_name)),
+                            else => try print_numeric(@field(value, union_field_name), jws),
                         },
-                        .@"enum" => try print_numeric(@field(value, union_field.name), jws),
-                        .submessage => try jws.write(@field(value, union_field.name)),
+                        .@"enum" => try print_numeric(@field(value, union_field_name), jws),
+                        .submessage => try jws.write(@field(value, union_field_name)),
                         .repeated, .packed_repeated => {
                             @compileError("Repeated fields are not allowed in oneof");
                         },
@@ -470,14 +473,15 @@ fn stringify_struct_field(
 fn parseStructField(
     comptime T: type,
     result: *T,
-    comptime fieldInfo: std.builtin.Type.StructField,
+    comptime field_name: []const u8,
+    comptime Field: type,
     allocator: std.mem.Allocator,
     source: anytype,
     options: std.json.ParseOptions,
 ) !void {
-    @field(result.*, fieldInfo.name) = switch (@field(
+    @field(result.*, field_name) = switch (@field(
         T._desc_table,
-        fieldInfo.name,
+        field_name,
     ).ftype) {
         .repeated, .packed_repeated => |repeated| list: {
             // repeated T -> ArrayListUnmanaged(T)
@@ -485,7 +489,7 @@ fn parseStructField(
                 .array_begin => {
                     std.debug.assert(.array_begin == try source.next());
                     const child_type = @typeInfo(
-                        fieldInfo.type.Slice,
+                        Field.Slice,
                     ).pointer.child;
                     var array_list: std.ArrayList(child_type) = .empty;
                     while (true) {
@@ -522,9 +526,9 @@ fn parseStructField(
         .oneof => |oneof| oneof: {
             // oneof -> union
             var union_value: switch (@typeInfo(
-                @TypeOf(@field(result.*, fieldInfo.name)),
+                @TypeOf(@field(result.*, field_name)),
             )) {
-                .@"union" => @TypeOf(@field(result.*, fieldInfo.name)),
+                .@"union" => @TypeOf(@field(result.*, field_name)),
                 .optional => |optional| optional.child,
                 else => unreachable,
             } = undefined;
@@ -544,19 +548,19 @@ fn parseStructField(
                 .alloc_if_needed,
                 options.max_value_len.?,
             );
-            const field_name = switch (name_token.?) {
+            const json_field_name = switch (name_token.?) {
                 inline .string, .allocated_string => |slice| slice,
                 else => {
                     return error.UnexpectedToken;
                 },
             };
 
-            inline for (union_info.fields) |union_field| {
+            inline for (union_info.field_names, union_info.field_types) |union_field_name, UnionField| {
                 // snake_case comparison
-                var this_field = std.mem.eql(u8, union_field.name, field_name);
+                var this_field = std.mem.eql(u8, union_field_name, json_field_name);
                 if (!this_field) {
-                    const union_camel_case_name = comptime to_camel_case(union_field.name);
-                    this_field = std.mem.eql(u8, union_camel_case_name, field_name);
+                    const union_camel_case_name = comptime to_camel_case(union_field_name);
+                    this_field = std.mem.eql(u8, union_camel_case_name, json_field_name);
                 }
 
                 if (this_field) {
@@ -564,15 +568,15 @@ fn parseStructField(
                     name_token = null;
                     union_value = @unionInit(
                         union_type,
-                        union_field.name,
+                        union_field_name,
                         switch (@field(
                             oneof._desc_table,
-                            union_field.name,
+                            union_field_name,
                         ).ftype) {
                             .scalar => |scalar| switch (scalar) {
                                 .bytes => try parse_bytes(allocator, source, options),
                                 else => try std.json.innerParse(
-                                    union_field.type,
+                                    UnionField,
                                     allocator,
                                     source,
                                     options,
@@ -580,7 +584,7 @@ fn parseStructField(
                             },
                             .submessage, .@"enum" => other: {
                                 break :other try std.json.innerParse(
-                                    union_field.type,
+                                    UnionField,
                                     allocator,
                                     source,
                                     options,
@@ -603,7 +607,7 @@ fn parseStructField(
         },
         // `.submessage`s (generated structs) have their own jsonParse implementation
         .@"enum", .submessage => try std.json.innerParse(
-            fieldInfo.type,
+            Field,
             allocator,
             source,
             options,
@@ -613,7 +617,7 @@ fn parseStructField(
             // `.string`s have their own jsonParse implementation
             // Numeric types will be handled using default std.json parser
             else => try std.json.innerParse(
-                fieldInfo.type,
+                Field,
                 allocator,
                 source,
                 options,
@@ -736,13 +740,14 @@ fn parse_bytes(
 fn fillDefaultStructValues(
     comptime T: type,
     r: *T,
-    fields_seen: *[@typeInfo(T).@"struct".fields.len]bool,
+    fields_seen: *[@typeInfo(T).@"struct".field_names.len]bool,
 ) error{MissingField}!void {
     // Took from std.json source code since it was non-public one
-    inline for (@typeInfo(T).@"struct".fields, 0..) |field, i| {
+    const struct_info = @typeInfo(T).@"struct";
+    inline for (struct_info.field_names, struct_info.field_types, struct_info.field_attrs, 0..) |field_name, Field, field_attrs, i| {
         if (!fields_seen[i]) {
-            if (field.defaultValue()) |default| {
-                @field(r, field.name) = default;
+            if (field_attrs.defaultValue(Field)) |default| {
+                @field(r, field_name) = default;
             } else {
                 return error.MissingField;
             }
