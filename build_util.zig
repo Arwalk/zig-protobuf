@@ -113,11 +113,17 @@ pub const RunProtocStep = struct {
     }
 
     fn makeDestinationDirectory(owner: *std.Build, destination_directory: std.Build.LazyPath) *std.Build.Step.Run {
-        const run = if (builtin.os.tag == .windows)
-            owner.addSystemCommand(&.{ "cmd", "/C", "mkdir" })
-        else
-            owner.addSystemCommand(&.{ "mkdir", "-p" });
-        run.addDirectoryArg(destination_directory);
+        const run = if (builtin.os.tag == .windows) run: {
+            const run = owner.addSystemCommand(&.{ "cmd", "/C", "if", "not", "exist" });
+            run.addDirectoryArg(destination_directory);
+            run.addArg("mkdir");
+            run.addDirectoryArg(destination_directory);
+            break :run run;
+        } else run: {
+            const run = owner.addSystemCommand(&.{ "mkdir", "-p" });
+            run.addDirectoryArg(destination_directory);
+            break :run run;
+        };
         return run;
     }
 
