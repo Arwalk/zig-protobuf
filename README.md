@@ -94,7 +94,7 @@ contiguous memory.
 
 Call `next()` to get the next field as an `Event`. Scalars come back by value; the leaf
 cases of a `oneof` are flattened into their own variants. Length-delimited fields
-(submessages, `string`, `bytes`) are surfaced as a `*std.Io.Reader` bounded to that
+(submessages, `string`, `bytes`) are surfaced as a `*std.Io.Reader` bound to that
 field's bytes — you can recurse into it with another `StreamDecoder`, copy the bytes out,
 or simply ignore it (the decoder drains it for you on the next call). `next()` returns
 `null` at the end of the stream.
