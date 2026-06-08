@@ -140,6 +140,14 @@ pub fn build(b: *std.Build) !void {
                 .optimize = optimize,
             }),
         }),
+        b.addTest(.{
+            .name = "stream",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/stream.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        }),
     };
 
     const convertStep = RunProtocStep.createWithGenerator(b, exe, .{

@@ -85,6 +85,10 @@ pub const MetricsData = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -156,6 +160,10 @@ pub const ResourceMetrics = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -226,6 +234,10 @@ pub const ScopeMetrics = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -407,6 +419,10 @@ pub const Metric = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -482,6 +498,10 @@ pub const Gauge = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -554,6 +574,10 @@ pub const Sum = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -624,6 +648,10 @@ pub const Histogram = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -693,6 +721,10 @@ pub const ExponentialHistogram = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -765,6 +797,10 @@ pub const Summary = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -856,6 +892,10 @@ pub const NumberDataPoint = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -952,6 +992,10 @@ pub const HistogramDataPoint = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1060,6 +1104,10 @@ pub const ExponentialHistogramDataPoint = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
@@ -1118,6 +1166,10 @@ pub const ExponentialHistogramDataPoint = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1216,6 +1268,10 @@ pub const SummaryDataPoint = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
@@ -1274,6 +1330,10 @@ pub const SummaryDataPoint = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1365,6 +1425,10 @@ pub const Exemplar = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
