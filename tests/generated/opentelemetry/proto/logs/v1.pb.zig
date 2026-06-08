@@ -88,6 +88,10 @@ pub const LogsData = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -159,6 +163,10 @@ pub const ResourceLogs = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -229,6 +237,10 @@ pub const ScopeLogs = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -315,6 +327,10 @@ pub const LogRecord = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
