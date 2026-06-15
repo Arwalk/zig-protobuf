@@ -79,10 +79,7 @@ pub const RunProtocStep = struct {
     include_directories: []std.Build.LazyPath,
     destination_directory: std.Build.LazyPath,
     generator: *std.Build.Step.Compile,
-    /// Optional external protoc binary. When set, skips the built-in download
-    /// mechanism and uses this artifact's emitted binary instead. Useful for
-    /// consumers (e.g. conformance tests) that already have protoc from another
-    /// dependency.
+    generator_bin: std.Build.LazyPath,
     protoc_override_bin: ?std.Build.LazyPath = null,
     preserve_unknown_fields: bool = false,
     verbose: bool = false,
@@ -127,6 +124,7 @@ pub const RunProtocStep = struct {
             .include_directories = dupeLazyPaths(owner, options.include_directories),
             .destination_directory = options.destination_directory.dupe(owner),
             .generator = generator,
+            .generator_bin = generator.getEmittedBin(),
             .protoc_override_bin = options.protoc,
             .preserve_unknown_fields = options.preserve_unknown_fields,
         };
@@ -174,7 +172,7 @@ pub const RunProtocStep = struct {
 
                 try argv.append(b.allocator, try std.mem.concat(b.allocator, u8, &.{
                     "--plugin=protoc-gen-zig=",
-                    self.generator.getEmittedBin().getPath2(b, step),
+                    self.generator_bin.getPath2(b, step),
                 }));
 
                 const zig_out = if (self.preserve_unknown_fields)
