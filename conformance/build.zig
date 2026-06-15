@@ -24,9 +24,13 @@ pub fn build(b: *std.Build) void {
         .include_directories = &.{ b.path("protos"), upstream.path("src") },
         .destination_directory = b.path("generated"),
         .generator = protoc_gen_zig,
-        .protoc = protoc,
+        .protoc = protoc.getEmittedBin(),
         .preserve_unknown_fields = true,
     });
+
+    // Instruct zig build system to first build protoc before trying to generate the .pb.zig!
+    gen_zig.step.dependOn(&protoc.step);
+
     b.step("generate", "Regenerate Zig bindings for conformance protos").dependOn(&gen_zig.step);
 
     // Testee binary — uses pre-generated bindings from conformance/generated/.
