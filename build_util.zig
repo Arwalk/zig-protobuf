@@ -79,12 +79,8 @@ pub const RunProtocStep = struct {
     include_directories: []std.Build.LazyPath,
     destination_directory: std.Build.LazyPath,
     generator: *std.Build.Step.Compile,
-    protoc_owner: *std.Build,
-    /// Optional external protoc binary. When set, skips the built-in download
-    /// mechanism and uses this artifact's emitted binary instead. Useful for
-    /// consumers (e.g. conformance tests) that already have protoc from another
-    /// dependency.
-    protoc_override: ?*std.Build.Step.Compile = null,
+    generator_bin: std.Build.LazyPath,
+    protoc_override_bin: ?std.Build.LazyPath = null,
     preserve_unknown_fields: bool = false,
     verbose: bool = false,
 
@@ -98,9 +94,9 @@ pub const RunProtocStep = struct {
         /// protoc step can be owned by a consumer builder while the generator
         /// stays owned by the zig-protobuf dependency builder.
         generator: ?*std.Build.Step.Compile = null,
-        /// Optional pre-built protoc artifact. When provided, overrides the
+        /// Optional pre-built protoc binary. When provided, overrides the
         /// built-in protoc download mechanism.
-        protoc: ?*std.Build.Step.Compile = null,
+        protoc: ?std.Build.LazyPath = null,
         /// When true, every generated message preserves unknown fields during
         /// binary decode/encode round trips. Defaults to false.
         preserve_unknown_fields: bool = false,
@@ -128,13 +124,13 @@ pub const RunProtocStep = struct {
             .include_directories = dupeLazyPaths(owner, options.include_directories),
             .destination_directory = options.destination_directory.dupe(owner),
             .generator = generator,
-            .protoc_owner = generator.step.owner,
-            .protoc_override = options.protoc,
+            .generator_bin = generator.getEmittedBin(),
+            .protoc_override_bin = options.protoc,
             .preserve_unknown_fields = options.preserve_unknown_fields,
         };
 
         self.step.dependOn(&self.generator.step);
-        if (options.protoc) |p| self.step.dependOn(&p.step);
+
         return self;
     }
 
@@ -166,17 +162,17 @@ pub const RunProtocStep = struct {
         { // run protoc
             var argv: std.ArrayList([]const u8) = .empty;
 
-            const maybe_protoc_path: ?[]const u8 = if (self.protoc_override) |p|
-                p.getEmittedBin().getPath2(b, step)
+            const maybe_protoc_path: ?[]const u8 = if (self.protoc_override_bin) |bin|
+                bin.getPath2(b, step)
             else
-                try ensureProtocBinaryDownloaded(self.protoc_owner, step);
+                try ensureProtocBinaryDownloaded(self.generator.step.owner, step);
 
             if (maybe_protoc_path) |protoc_path| {
                 try argv.append(b.allocator, protoc_path);
 
                 try argv.append(b.allocator, try std.mem.concat(b.allocator, u8, &.{
                     "--plugin=protoc-gen-zig=",
-                    self.generator.getEmittedBin().getPath2(b, step),
+                    self.generator_bin.getPath2(b, step),
                 }));
 
                 const zig_out = if (self.preserve_unknown_fields)
