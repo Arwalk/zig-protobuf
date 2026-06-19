@@ -185,7 +185,7 @@ pub fn StreamDecoder(comptime T: type) type {
                     return @unionInit(Event, name, val);
                 },
                 .@"enum" => {
-                    const E = comptime unwrapOptional(Declared);
+                    const E = comptime UnwrapOptional(Declared);
                     const raw, _ = try wire.decodeScalar(.int32, self.internals.source);
                     const decoded = enumFromRaw(E, raw) orelse return error.InvalidInput;
                     return @unionInit(Event, name, decoded);
@@ -214,7 +214,7 @@ pub fn StreamDecoder(comptime T: type) type {
                 },
                 .@"enum" => {
                     if (tag.wire_type == .len) return try self.beginPacked(tag);
-                    const E = comptime elementType(Declared);
+                    const E = comptime ElementType(Declared);
                     const raw, _ = try wire.decodeScalar(.int32, self.internals.source);
                     const decoded = enumFromRaw(E, raw) orelse return error.InvalidInput;
                     return @unionInit(Event, name, decoded);
@@ -278,7 +278,7 @@ pub fn StreamDecoder(comptime T: type) type {
                     return @unionInit(Event, name, val);
                 },
                 .@"enum" => {
-                    const E = comptime elementType(Declared);
+                    const E = comptime ElementType(Declared);
                     const raw, const c = try wire.decodeScalar(.int32, self.internals.source);
                     const decoded = enumFromRaw(E, raw) orelse return error.InvalidInput;
                     try self.consumePacked(c);
@@ -310,11 +310,11 @@ fn EventUnion(comptime T: type) type {
             for (@typeInfo(@TypeOf(inner)).@"struct".fields) |oo| {
                 const idesc: protobuf.FieldDescriptor = @field(inner, oo.name);
                 names = names ++ [_][]const u8{oo.name};
-                types = types ++ [_]type{payloadType(idesc.ftype, @FieldType(OneOf, oo.name))};
+                types = types ++ [_]type{PayloadType(idesc.ftype, @FieldType(OneOf, oo.name))};
             }
         } else if (field_desc.field_number != null) {
             names = names ++ [_][]const u8{sf.name};
-            types = types ++ [_]type{payloadType(field_desc.ftype, @FieldType(T, sf.name))};
+            types = types ++ [_]type{PayloadType(field_desc.ftype, @FieldType(T, sf.name))};
         }
     }
     const count = names.len;
@@ -327,14 +327,14 @@ fn EventUnion(comptime T: type) type {
 }
 
 /// Payload type for one leaf field's event variant.
-fn payloadType(comptime ftype: FieldType, comptime Declared: type) type {
+fn PayloadType(comptime ftype: FieldType, comptime Declared: type) type {
     return switch (ftype) {
         .scalar => |s| if (s.isSlice()) *std.Io.Reader else s.toType(),
-        .@"enum" => unwrapOptional(Declared),
+        .@"enum" => UnwrapOptional(Declared),
         .submessage => *std.Io.Reader,
         .repeated, .packed_repeated => |rep| switch (rep) {
             .scalar => |s| if (s.isSlice()) *std.Io.Reader else s.toType(),
-            .@"enum" => elementType(Declared),
+            .@"enum" => ElementType(Declared),
             .submessage => *std.Io.Reader,
         },
         .oneof => unreachable,
@@ -342,7 +342,7 @@ fn payloadType(comptime ftype: FieldType, comptime Declared: type) type {
 }
 
 /// `?U` -> `U`, otherwise `T` unchanged.
-fn unwrapOptional(comptime T: type) type {
+fn UnwrapOptional(comptime T: type) type {
     return switch (@typeInfo(T)) {
         .optional => |o| o.child,
         else => T,
@@ -350,8 +350,8 @@ fn unwrapOptional(comptime T: type) type {
 }
 
 /// Element type of a (possibly optional) `std.ArrayList(E)` field.
-fn elementType(comptime Declared: type) type {
-    const List = unwrapOptional(Declared);
+fn ElementType(comptime Declared: type) type {
+    const List = UnwrapOptional(Declared);
     return @typeInfo(@FieldType(List, "items")).pointer.child;
 }
 
