@@ -90,7 +90,7 @@ every dynamic field), every generated message also exposes a `StreamDecoder`: a
 zero-allocation **pull parser** that walks a `std.Io.Reader` one wire field at a time.
 This is useful for incremental / low-memory decoding — large or deeply nested messages,
 embedded systems, or multiplexed IO — where you don't want to buffer a whole message in
-contiguous memory.
+contiguous memory. It implies some caveats and limitations though, see `src/stream.zig`
 
 Call `next()` to get the next field as an `Event`. Scalars come back by value; the leaf
 cases of a `oneof` are flattened into their own variants. Length-delimited fields

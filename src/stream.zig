@@ -33,6 +33,14 @@
 //!
 //! Caveat: the decoder must not be copied after `init` — the `*std.Io.Reader`
 //! handed out for length-delimited fields points into the decoder itself.
+//! The content of a `*std.Io.Reader` must also be used before another call to `next`
+//! as the decoder forwards into the initial `*std.Io.Reader`, discarding the leftovers
+//! of the inner reader.
+//!
+//! Caveat2: Because the decoder parses lazily, we have no mean to know if the entire message
+//! was properly encoded in the first place. If any encoding error happens in the middle of the process
+//! it is the user's responsibility to manage the consequences. This implies that the stream decoder
+//! should only used with trusted sources of protobuf messages.
 
 const std = @import("std");
 const protobuf = @import("protobuf.zig");
@@ -81,6 +89,7 @@ pub fn StreamDecoder(comptime T: type) type {
 
         /// Decode the next wire field. Returns `null` at end of stream (top
         /// level) or at the end of a limited sub-reader (nested decoding).
+        /// Invalidates any previous `*std.Io.Reader` item that was returned by this method
         pub fn next(self: *Self) Error!?Event {
             // Skip over any bytes the caller didn't consume from the previous
             // length-delimited field, so we're positioned on the next tag.
