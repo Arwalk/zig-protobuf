@@ -461,6 +461,30 @@ test "stream: ignored limited reader is drained automatically" {
     try testing.expectEqual(@as(u32, 2), (try sd.next()).?.after);
 }
 
+test "stream: partially read limited reader drains the leftover for the following field" {
+    const src: WithString = .{ .before = 11, .name = "hello world", .after = 22 };
+    const bytes = try encodeToOwned(src, testing.allocator);
+    defer testing.allocator.free(bytes);
+
+    var reader: std.Io.Reader = .fixed(bytes);
+    var sd = StreamDecoder(WithString).init(&reader);
+
+    try testing.expectEqual(@as(u32, 11), (try sd.next()).?.before);
+
+    // Read only the first few bytes of the 11-byte string, leaving the rest
+    // buffered/unread in the limited sub-reader.
+    {
+        const limited = (try sd.next()).?.name;
+        var buf: [4]u8 = undefined;
+        try limited.readSliceAll(&buf);
+        try testing.expectEqualStrings("hell", &buf);
+    }
+
+    // The unread "o world" tail must be drained so the next field decodes.
+    try testing.expectEqual(@as(u32, 22), (try sd.next()).?.after);
+    try testing.expectEqual(@as(?StreamDecoder(WithString).Event, null), try sd.next());
+}
+
 const Packed = struct {
     values: std.ArrayList(u32) = .empty,
 
@@ -483,6 +507,39 @@ test "stream: packed repeated emits one event per element" {
 
     var reader: std.Io.Reader = .fixed(bytes);
     var sd = StreamDecoder(Packed).init(&reader);
+
+    var collected: std.ArrayList(u32) = .empty;
+    defer collected.deinit(testing.allocator);
+    while (try sd.next()) |item| switch (item) {
+        .values => |v| try collected.append(testing.allocator, v),
+    };
+    try testing.expectEqualSlices(u32, &.{ 1, 2, 300, 40000, 5 }, collected.items);
+}
+
+const Unpacked = struct {
+    values: std.ArrayList(u32) = .empty,
+
+    // `.repeated` (not `.packed_repeated`) encodes one individually-tagged
+    // element per value, which the decoder emits via the non-packed path.
+    pub const _desc_table = .{
+        .values = fd(1, .{ .repeated = .{ .scalar = .uint32 } }),
+    };
+
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+        return protobuf.deinit(allocator, self);
+    }
+};
+
+test "stream: unpacked repeated emits one event per individually-tagged element" {
+    var src: Unpacked = .{};
+    defer src.deinit(testing.allocator);
+    try src.values.appendSlice(testing.allocator, &.{ 1, 2, 300, 40000, 5 });
+
+    const bytes = try encodeToOwned(src, testing.allocator);
+    defer testing.allocator.free(bytes);
+
+    var reader: std.Io.Reader = .fixed(bytes);
+    var sd = StreamDecoder(Unpacked).init(&reader);
 
     var collected: std.ArrayList(u32) = .empty;
     defer collected.deinit(testing.allocator);
