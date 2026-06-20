@@ -153,7 +153,6 @@ pub fn build(b: *std.Build) !void {
         .source_files = &.{
             b.path("tests/protos_for_test/all.proto"),
             b.path("tests/protos_for_test/complex_type.proto"),
-            b.path("tests/protos_for_test/issue-143-self-ref-union.proto"),
             b.path("tests/protos_for_test/onnx.proto"),
             b.path("tests/protos_for_test/test_service.proto"),
             b.path("tests/protos_for_test/whitespace-in-name.proto"),
