@@ -15,6 +15,8 @@ pub const DecodingError = error{ NotEnoughData, InvalidInput };
 /// Example:
 ///     requireDecls(ServerContext, &.{"UnaryCallError", "StreamError"});
 pub fn requireDecls(comptime T: type, comptime required_decls: []const []const u8) void {
+    @setEvalBranchQuota(comptime evalBranchQuotaFor(T));
+
     inline for (required_decls) |decl_name| {
         if (!@hasDecl(T, decl_name)) {
             @compileError("Type '" ++ @typeName(T) ++ "' must have a '" ++ decl_name ++ "' declaration");
@@ -32,7 +34,6 @@ pub const FieldType = union(enum) {
     oneof: type,
 
     pub fn toWire(comptime ftype: FieldType) wire.Type {
-        @setEvalBranchQuota(1000000);
         return switch (comptime ftype) {
             .scalar => |s| s.toWire(),
             .submessage, .packed_repeated => .len,
@@ -180,6 +181,83 @@ pub const FieldDescriptor = struct { field_number: ?u32, ftype: FieldType };
 /// Helper function to build a FieldDescriptor. Makes code clearer, mostly.
 pub fn fd(comptime field_number: ?u32, comptime ftype: FieldType) FieldDescriptor {
     return FieldDescriptor{ .field_number = field_number, .ftype = ftype };
+}
+
+// Eval branch quota tuning. The encode/decode/init/dupe/json routines all expand
+// `inline for` loops over a message's fields and run comptime switches per field,
+// which consumes the compiler's backwards-branch budget. Rather than hard-coding a
+// magic `@setEvalBranchQuota`, we derive a sufficient value from the message
+// structure (see `evalBranchQuotaFor`). These two constants are the only knobs.
+const base_eval_quota: usize = 10_000;
+const per_field_eval_quota: usize = 10_000;
+
+/// Computes an eval branch quota sufficient to process `T` at comptime, derived
+/// from the total number of fields reachable from `T` (its own fields plus those
+/// of every distinct submessage and oneof union it can reach). Self-referential
+/// messages are handled by the `seen` cycle guard. `@setEvalBranchQuota` only ever
+/// raises the limit, so calling this at the top of each comptime-heavy entry point
+/// is always safe — the outermost (largest) value wins.
+pub fn evalBranchQuotaFor(comptime T: type) usize {
+    @setEvalBranchQuota(base_eval_quota); // need a base value high enough to calculate the initial need.
+
+    comptime {
+        return base_eval_quota + countReachableFields(T, &.{}) * per_field_eval_quota;
+    }
+}
+
+/// Recursively counts the fields of `T` and of every distinct message/oneof type
+/// reachable from it. `seen` guards against cycles (e.g. self-referential messages).
+fn countReachableFields(comptime T: type, comptime seen: []const type) usize {
+    comptime {
+        switch (@typeInfo(T)) {
+            .@"struct", .@"union" => {},
+            // Not a message container (scalar, slice, well-known type, …).
+            else => return 0,
+        }
+        if (!@hasDecl(T, "_desc_table")) return 0;
+        for (seen) |s| {
+            if (s == T) return 0;
+        }
+        const seen2 = seen ++ &[_]type{T};
+
+        var total: usize = 0;
+        for (@typeInfo(@TypeOf(T._desc_table)).@"struct".fields) |f| {
+            total += 1;
+            const desc: FieldDescriptor = @field(T._desc_table, f.name);
+            switch (desc.ftype) {
+                .submessage => total += countReachableFields(
+                    submessageChild(@FieldType(T, f.name)),
+                    seen2,
+                ),
+                .repeated, .packed_repeated => |inner| switch (inner) {
+                    .submessage => total += countReachableFields(
+                        arrayListChild(@FieldType(T, f.name)),
+                        seen2,
+                    ),
+                    else => {},
+                },
+                .oneof => |OneOf| total += countReachableFields(OneOf, seen2),
+                else => {},
+            }
+        }
+        return total;
+    }
+}
+
+/// Unwraps the message type behind a `.submessage` field, whose declared type is
+/// `?Child`, `*Child` (self-referential), or `Child`.
+fn submessageChild(comptime FieldT: type) type {
+    return switch (@typeInfo(FieldT)) {
+        .optional => |o| submessageChild(o.child),
+        .pointer => |p| submessageChild(p.child),
+        else => FieldT,
+    };
+}
+
+/// Unwraps the element type of a repeated submessage field, whose declared type is
+/// `std.ArrayList(Child)`.
+fn arrayListChild(comptime FieldT: type) type {
+    return @typeInfo(@FieldType(FieldT, "items")).pointer.child;
 }
 
 // encoding
@@ -540,6 +618,8 @@ pub fn encode(
         .pointer => |p| p.child,
         else => @TypeOf(data),
     };
+    @setEvalBranchQuota(comptime evalBranchQuotaFor(Data));
+
     inline for (@typeInfo(Data).@"struct".fields) |field| {
         // Skip fields not present in _desc_table (e.g. _unknown_fields).
         if (comptime !@hasField(@TypeOf(Data._desc_table), field.name)) continue;
@@ -581,6 +661,7 @@ pub inline fn internal_init(comptime T: type, value: *T) void {
             .{@typeName(T)},
         ));
     }
+    @setEvalBranchQuota(comptime evalBranchQuotaFor(T));
     inline for (@typeInfo(T).@"struct".fields) |field| {
         if (comptime !@hasField(@TypeOf(T._desc_table), field.name)) {
             if (field.defaultValue()) |val| {
@@ -614,6 +695,7 @@ pub inline fn internal_init(comptime T: type, value: *T) void {
 /// their protobuf field type default values. Prefer standard struct
 /// initialization `... = .{}` whenever possible.
 pub fn init(comptime T: type, allocator: std.mem.Allocator) std.mem.Allocator.Error!T {
+    @setEvalBranchQuota(comptime evalBranchQuotaFor(T));
     switch (comptime @typeInfo(@TypeOf(T))) {
         .pointer => |p| {
             const value = try allocator.create(p.child);
@@ -631,6 +713,8 @@ pub fn init(comptime T: type, allocator: std.mem.Allocator) std.mem.Allocator.Er
 /// Generic function to deeply duplicate a message using a new allocator.
 /// The original parameter is constant
 pub fn dupe(comptime T: type, original: T, allocator: std.mem.Allocator) std.mem.Allocator.Error!T {
+    @setEvalBranchQuota(comptime evalBranchQuotaFor(T));
+
     var result: T = undefined;
 
     inline for (@typeInfo(T).@"struct".fields) |field| {
@@ -823,6 +907,8 @@ fn dupeField(
 
 /// Generic deinit function. Properly cleans any field required. Meant to be embedded in generated structs.
 pub fn deinit(allocator: std.mem.Allocator, data: anytype) void {
+    @setEvalBranchQuota(comptime evalBranchQuotaFor(@TypeOf(data)));
+
     const T = @typeInfo(@TypeOf(data)).pointer.child;
 
     inline for (@typeInfo(T).@"struct".fields) |field| {
@@ -1118,6 +1204,8 @@ pub fn decode(
     reader: *std.Io.Reader,
     allocator: std.mem.Allocator,
 ) (DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!T {
+    @setEvalBranchQuota(comptime evalBranchQuotaFor(T));
+
     var result: T = undefined;
     internal_init(T, &result);
     errdefer deinit(allocator, &result);

@@ -19,8 +19,7 @@ pub fn parse(
     source: anytype,
     options: std.json.ParseOptions,
 ) !Self {
-    // Increase eval branch quota for types with hundreds of fields
-    @setEvalBranchQuota(1000000);
+    @setEvalBranchQuota(comptime protobuf.evalBranchQuotaFor(Self));
 
     if (.object_begin != try source.next()) {
         return error.UnexpectedToken;
@@ -248,6 +247,8 @@ pub fn decode(
     options: std.json.ParseOptions,
     allocator: std.mem.Allocator,
 ) !std.json.Parsed(T) {
+    @setEvalBranchQuota(comptime protobuf.evalBranchQuotaFor(T));
+
     const parsed = try std.json.parseFromSlice(T, allocator, input, options);
     return parsed;
 }
@@ -259,6 +260,8 @@ pub fn encode(
     allocator: std.mem.Allocator,
 ) ![]u8 {
     const DataType = @TypeOf(data);
+    @setEvalBranchQuota(comptime protobuf.evalBranchQuotaFor(DataType));
+
     const CustomEncoder = struct {
         inner: DataType,
         opts: Options,
@@ -278,8 +281,7 @@ pub fn encode(
 }
 
 fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std.meta.Child(@TypeOf(jws)).Error!void {
-    // Increase eval branch quota for types with hundreds of fields
-    @setEvalBranchQuota(1000000);
+    @setEvalBranchQuota(comptime protobuf.evalBranchQuotaFor(Self));
 
     // Well-known types (e.g. Duration, Timestamp, wrappers) override jsonStringify
     // to emit their special JSON representation instead of a plain object.
