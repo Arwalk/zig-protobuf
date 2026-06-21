@@ -11,7 +11,28 @@ pub const Options = struct {
     /// - `false`: emits oneof variants as flat fields in the parent object.
     ///   Example: `{"stringInOneof":"x"}` — this matches the protobuf JSON spec.
     emit_oneof_field_name: bool = true,
+
+    /// When true, `bytes` fields are encoded/decoded as lowercase hex strings
+    /// instead of base64. This matches the OpenTelemetry JSON format, which
+    /// represents traceId/spanId etc. as hex. The bytes field holds the hex string
+    /// verbatim (it is not decoded to binary on parse, nor re-encoded on stringify).
+    ///
+    /// `encode` honors this field directly. The decode path can't carry `Options`
+    /// through std.json's recursion, so it reads `tl_bytes_as_hex` instead — set
+    /// that thread-local before calling `decode`/`jsonDecode` (see below).
+    bytes_as_hex: bool = false,
 };
+
+/// Thread-local toggle for hex-encoding `bytes` fields. std.json's parse/stringify
+/// machinery can't thread custom options through its recursion, so this mirrors the
+/// thread-local used for the `Any` allocator (`wkt.tl_any_alloc`).
+///
+/// `encode` sets this automatically from `Options.bytes_as_hex`. Decode callers that
+/// need hex bytes must set it directly before invoking `decode`/`jsonDecode`:
+///
+///   protobuf.json.tl_bytes_as_hex = true;
+///   defer protobuf.json.tl_bytes_as_hex = false;
+pub threadlocal var tl_bytes_as_hex: bool = false;
 
 pub fn parse(
     Self: type,
@@ -273,6 +294,10 @@ pub fn encode(
     const prev_alloc = protobuf.wkt.tl_any_alloc;
     protobuf.wkt.tl_any_alloc = allocator;
     defer protobuf.wkt.tl_any_alloc = prev_alloc;
+    // Apply bytes_as_hex for the duration of this encode (read by print_bytes).
+    const prev_hex = tl_bytes_as_hex;
+    tl_bytes_as_hex = pb_options.bytes_as_hex;
+    defer tl_bytes_as_hex = prev_hex;
     return std.json.Stringify.valueAlloc(
         allocator,
         CustomEncoder{ .inner = data, .opts = pb_options },
@@ -870,7 +895,7 @@ fn parseStructField(
                 // the string tokens "Infinity", "-Infinity", and "NaN" are valid per spec.
                 const next_type = try source.peekNextTokenType();
                 const v = try std.json.innerParse(fieldInfo.type, allocator, source, options);
-                if (next_type == .number and std.math.isInf(v)) return error.InvalidCharacter;
+                if (next_type == .number and floatIsInf(v)) return error.InvalidCharacter;
                 break :blk v;
             },
             // `.string`s have their own jsonParse implementation
@@ -892,8 +917,35 @@ fn parseStructField(
     };
 }
 
+fn floatIsInf(value: anytype) bool {
+    switch (comptime @typeInfo(@TypeOf(value))) {
+        .optional => {
+            if (value) |v| return floatIsInf(v);
+            return false;
+        },
+        .float, .comptime_float => return std.math.isInf(value),
+        else => @compileError("Float expected but " ++ @typeName(@TypeOf(value)) ++ " given"),
+    }
+}
+
+fn floatIsNan(value: anytype) bool {
+    switch (comptime @typeInfo(@TypeOf(value))) {
+        .optional => {
+            if (value) |v| return floatIsNan(v);
+            return false;
+        },
+        .float, .comptime_float => return std.math.isNan(value),
+        else => @compileError("Float expected but " ++ @typeName(@TypeOf(value)) ++ " given"),
+    }
+}
+
 fn print_numeric(value: anytype, jws: anytype) !void {
     switch (@typeInfo(@TypeOf(value))) {
+        .optional => {
+            if (value) |v| return print_numeric(v, jws);
+            try jws.write(null);
+            return;
+        },
         .float, .comptime_float => {},
         .int => |info| {
             // Proto3 JSON: 64-bit integers must be encoded as strings.
@@ -920,7 +972,7 @@ fn print_numeric(value: anytype, jws: anytype) !void {
         else => @compileError("Float/integer expected but " ++ @typeName(@TypeOf(value)) ++ " given"),
     }
 
-    if (std.math.isNan(value)) {
+    if (floatIsNan(value)) {
         try jws.write("NaN");
     } else if (std.math.isPositiveInf(value)) {
         try jws.write("Infinity");
@@ -967,7 +1019,12 @@ fn print_bytes(value: anytype, jws: anytype) !void {
     try jsonValueStartAssumeTypeOk(jws);
     try jws.writer.writeByte('"');
 
-    try std.base64.standard.Encoder.encodeWriter(jws.writer, value);
+    if (tl_bytes_as_hex) {
+        // The field already holds the hex string verbatim; write it through.
+        try jws.writer.writeAll(value);
+    } else {
+        try std.base64.standard.Encoder.encodeWriter(jws.writer, value);
+    }
 
     try jws.writer.writeByte('"');
 
@@ -1086,6 +1143,14 @@ fn parse_bytes(
 ) ![]const u8 {
     const temp_raw = try std.json.innerParse([]u8, allocator, source, options);
     defer allocator.free(temp_raw);
+    if (tl_bytes_as_hex) {
+        // OTel keeps trace_id/span_id as hex strings; validate and store verbatim
+        // (no decode to binary), so they round-trip back out via print_bytes.
+        for (temp_raw) |c| {
+            _ = std.fmt.charToDigit(c, 16) catch return error.UnexpectedToken;
+        }
+        return allocator.dupe(u8, temp_raw);
+    }
     return decodeBase64Lenient(allocator, temp_raw) catch error.UnexpectedToken;
 }
 
