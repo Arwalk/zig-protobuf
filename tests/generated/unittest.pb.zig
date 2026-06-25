@@ -358,6 +358,17 @@ pub const TestAllTypes = struct {
             return protobuf.json.decode(@This(), input, options, allocator);
         }
 
+        /// Decodes the message from the JSON string, honoring pb options
+        /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+        pub fn jsonDecodeOpts(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            pb_options: protobuf.json.Options,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+        }
+
         /// Encodes the message to a JSON string.
         pub fn jsonEncode(
             self: @This(),
@@ -415,6 +426,17 @@ pub const TestAllTypes = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -492,6 +514,17 @@ pub const NestedTestAllTypes = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -560,6 +593,17 @@ pub const TestDeprecatedFields = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -620,6 +664,17 @@ pub const TestDeprecatedMessage = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -692,6 +747,17 @@ pub const ForeignMessage = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -754,6 +820,17 @@ pub const TestReservedFields = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -814,6 +891,17 @@ pub const TestAllExtensions = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -884,6 +972,17 @@ pub const TestGroup = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -946,6 +1045,17 @@ pub const TestGroupExtension = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -1006,6 +1116,17 @@ pub const TestNestedExtension = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -1076,6 +1197,17 @@ pub const TestChildExtension = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -1166,6 +1298,17 @@ pub const TestChildExtensionData = struct {
                 return protobuf.json.decode(@This(), input, options, allocator);
             }
 
+            /// Decodes the message from the JSON string, honoring pb options
+            /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+            pub fn jsonDecodeOpts(
+                input: []const u8,
+                options: std.json.ParseOptions,
+                pb_options: protobuf.json.Options,
+                allocator: std.mem.Allocator,
+            ) !std.json.Parsed(@This()) {
+                return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+            }
+
             /// Encodes the message to a JSON string.
             pub fn jsonEncode(
                 self: @This(),
@@ -1225,6 +1368,17 @@ pub const TestChildExtensionData = struct {
             return protobuf.json.decode(@This(), input, options, allocator);
         }
 
+        /// Decodes the message from the JSON string, honoring pb options
+        /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+        pub fn jsonDecodeOpts(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            pb_options: protobuf.json.Options,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+        }
+
         /// Encodes the message to a JSON string.
         pub fn jsonEncode(
             self: @This(),
@@ -1282,6 +1436,17 @@ pub const TestChildExtensionData = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -1352,6 +1517,17 @@ pub const TestNestedChildExtension = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -1420,6 +1596,17 @@ pub const TestNestedChildExtensionData = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -1559,6 +1746,17 @@ pub const TestRequired = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -1631,6 +1829,17 @@ pub const TestRequiredForeign = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -1699,6 +1908,17 @@ pub const TestRequiredMessage = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -1771,6 +1991,17 @@ pub const TestNestedRequiredForeign = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -1838,6 +2069,17 @@ pub const TestForeignNested = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -1899,6 +2141,17 @@ pub const TestEmptyMessage = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -1963,6 +2216,17 @@ pub const TestEmptyMessageWithExtensions = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -2042,6 +2306,17 @@ pub const TestPickleNestedMessage = struct {
                 return protobuf.json.decode(@This(), input, options, allocator);
             }
 
+            /// Decodes the message from the JSON string, honoring pb options
+            /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+            pub fn jsonDecodeOpts(
+                input: []const u8,
+                options: std.json.ParseOptions,
+                pb_options: protobuf.json.Options,
+                allocator: std.mem.Allocator,
+            ) !std.json.Parsed(@This()) {
+                return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+            }
+
             /// Encodes the message to a JSON string.
             pub fn jsonEncode(
                 self: @This(),
@@ -2101,6 +2376,17 @@ pub const TestPickleNestedMessage = struct {
             return protobuf.json.decode(@This(), input, options, allocator);
         }
 
+        /// Decodes the message from the JSON string, honoring pb options
+        /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+        pub fn jsonDecodeOpts(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            pb_options: protobuf.json.Options,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+        }
+
         /// Encodes the message to a JSON string.
         pub fn jsonEncode(
             self: @This(),
@@ -2158,6 +2444,17 @@ pub const TestPickleNestedMessage = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -2220,6 +2517,17 @@ pub const TestMultipleExtensionRanges = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -2291,6 +2599,17 @@ pub const TestReallyLargeTagNumber = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -2357,6 +2676,17 @@ pub const TestRecursiveMessage = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -2437,6 +2767,17 @@ pub const TestMutualRecursionA = struct {
             return protobuf.json.decode(@This(), input, options, allocator);
         }
 
+        /// Decodes the message from the JSON string, honoring pb options
+        /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+        pub fn jsonDecodeOpts(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            pb_options: protobuf.json.Options,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+        }
+
         /// Encodes the message to a JSON string.
         pub fn jsonEncode(
             self: @This(),
@@ -2494,6 +2835,17 @@ pub const TestMutualRecursionA = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -2562,6 +2914,17 @@ pub const TestMutualRecursionB = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -2637,6 +3000,17 @@ pub const TestIsInitialized = struct {
             return protobuf.json.decode(@This(), input, options, allocator);
         }
 
+        /// Decodes the message from the JSON string, honoring pb options
+        /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+        pub fn jsonDecodeOpts(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            pb_options: protobuf.json.Options,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+        }
+
         /// Encodes the message to a JSON string.
         pub fn jsonEncode(
             self: @This(),
@@ -2694,6 +3068,17 @@ pub const TestIsInitialized = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -2766,6 +3151,17 @@ pub const TestDupFieldNumber = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -2833,6 +3229,17 @@ pub const TestEagerMessage = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -2897,6 +3304,17 @@ pub const TestLazyMessage = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -2976,6 +3394,17 @@ pub const TestEagerMaybeLazy = struct {
             return protobuf.json.decode(@This(), input, options, allocator);
         }
 
+        /// Decodes the message from the JSON string, honoring pb options
+        /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+        pub fn jsonDecodeOpts(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            pb_options: protobuf.json.Options,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+        }
+
         /// Encodes the message to a JSON string.
         pub fn jsonEncode(
             self: @This(),
@@ -3033,6 +3462,17 @@ pub const TestEagerMaybeLazy = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -3111,6 +3551,17 @@ pub const TestNestedMessageHasBits = struct {
             return protobuf.json.decode(@This(), input, options, allocator);
         }
 
+        /// Decodes the message from the JSON string, honoring pb options
+        /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+        pub fn jsonDecodeOpts(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            pb_options: protobuf.json.Options,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+        }
+
         /// Encodes the message to a JSON string.
         pub fn jsonEncode(
             self: @This(),
@@ -3168,6 +3619,17 @@ pub const TestNestedMessageHasBits = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -3260,6 +3722,17 @@ pub const TestCamelCaseFieldNames = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -3343,6 +3816,17 @@ pub const TestFieldOrderings = struct {
             return protobuf.json.decode(@This(), input, options, allocator);
         }
 
+        /// Decodes the message from the JSON string, honoring pb options
+        /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+        pub fn jsonDecodeOpts(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            pb_options: protobuf.json.Options,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+        }
+
         /// Encodes the message to a JSON string.
         pub fn jsonEncode(
             self: @This(),
@@ -3400,6 +3884,17 @@ pub const TestFieldOrderings = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -3466,6 +3961,17 @@ pub const TestExtensionOrderings1 = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -3541,6 +4047,17 @@ pub const TestExtensionOrderings2 = struct {
             return protobuf.json.decode(@This(), input, options, allocator);
         }
 
+        /// Decodes the message from the JSON string, honoring pb options
+        /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+        pub fn jsonDecodeOpts(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            pb_options: protobuf.json.Options,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+        }
+
         /// Encodes the message to a JSON string.
         pub fn jsonEncode(
             self: @This(),
@@ -3598,6 +4115,17 @@ pub const TestExtensionOrderings2 = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -3718,6 +4246,17 @@ pub const TestExtremeDefaultValues = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -3782,6 +4321,17 @@ pub const SparseEnumMessage = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -3851,6 +4401,17 @@ pub const OneString = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -3915,6 +4476,17 @@ pub const MoreString = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -3983,6 +4555,17 @@ pub const OneBytes = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -4047,6 +4630,17 @@ pub const MoreBytes = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -4177,6 +4771,17 @@ pub const ManyOptionalString = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -4242,6 +4847,17 @@ pub const Int32Message = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -4310,6 +4926,17 @@ pub const Uint32Message = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -4374,6 +5001,17 @@ pub const Int64Message = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -4442,6 +5080,17 @@ pub const Uint64Message = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -4506,6 +5155,17 @@ pub const BoolMessage = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -4597,6 +5257,17 @@ pub const TestOneof = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -4669,6 +5340,17 @@ pub const TestOneofBackwardsCompatible = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -4833,6 +5515,17 @@ pub const TestOneof2 = struct {
             return protobuf.json.decode(@This(), input, options, allocator);
         }
 
+        /// Decodes the message from the JSON string, honoring pb options
+        /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+        pub fn jsonDecodeOpts(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            pb_options: protobuf.json.Options,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+        }
+
         /// Encodes the message to a JSON string.
         pub fn jsonEncode(
             self: @This(),
@@ -4890,6 +5583,17 @@ pub const TestOneof2 = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -4981,6 +5685,17 @@ pub const TestRequiredOneof = struct {
             return protobuf.json.decode(@This(), input, options, allocator);
         }
 
+        /// Decodes the message from the JSON string, honoring pb options
+        /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+        pub fn jsonDecodeOpts(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            pb_options: protobuf.json.Options,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+        }
+
         /// Encodes the message to a JSON string.
         pub fn jsonEncode(
             self: @This(),
@@ -5038,6 +5753,17 @@ pub const TestRequiredOneof = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -5130,6 +5856,17 @@ pub const TestPackedTypes = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -5226,6 +5963,17 @@ pub const TestUnpackedTypes = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -5288,6 +6036,17 @@ pub const TestPackedExtensions = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -5348,6 +6107,17 @@ pub const TestUnpackedExtensions = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -5445,6 +6215,17 @@ pub const TestDynamicExtensions = struct {
             return protobuf.json.decode(@This(), input, options, allocator);
         }
 
+        /// Decodes the message from the JSON string, honoring pb options
+        /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+        pub fn jsonDecodeOpts(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            pb_options: protobuf.json.Options,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+        }
+
         /// Encodes the message to a JSON string.
         pub fn jsonEncode(
             self: @This(),
@@ -5502,6 +6283,17 @@ pub const TestDynamicExtensions = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -5578,6 +6370,17 @@ pub const TestRepeatedScalarDifferentTagSizes = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -5680,6 +6483,17 @@ pub const TestParsingMerge = struct {
             return protobuf.json.decode(@This(), input, options, allocator);
         }
 
+        /// Decodes the message from the JSON string, honoring pb options
+        /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+        pub fn jsonDecodeOpts(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            pb_options: protobuf.json.Options,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+        }
+
         /// Encodes the message to a JSON string.
         pub fn jsonEncode(
             self: @This(),
@@ -5737,6 +6551,17 @@ pub const TestParsingMerge = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -5807,6 +6632,17 @@ pub const TestMergeException = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -5871,6 +6707,17 @@ pub const TestCommentInjectionMessage = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -5951,6 +6798,17 @@ pub const TestMessageSize = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -6012,6 +6870,17 @@ pub const FooRequest = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -6076,6 +6945,17 @@ pub const FooResponse = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -6136,6 +7016,17 @@ pub const FooClientMessage = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -6200,6 +7091,17 @@ pub const FooServerMessage = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -6262,6 +7164,17 @@ pub const BarRequest = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -6322,6 +7235,17 @@ pub const BarResponse = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -6400,6 +7324,17 @@ pub const TestJsonName = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -6516,6 +7451,17 @@ pub const TestHugeFieldNumbers = struct {
             return protobuf.json.decode(@This(), input, options, allocator);
         }
 
+        /// Decodes the message from the JSON string, honoring pb options
+        /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+        pub fn jsonDecodeOpts(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            pb_options: protobuf.json.Options,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+        }
+
         /// Encodes the message to a JSON string.
         pub fn jsonEncode(
             self: @This(),
@@ -6573,6 +7519,17 @@ pub const TestHugeFieldNumbers = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -6657,6 +7614,17 @@ pub const TestExtensionInsideTable = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -6721,6 +7689,17 @@ pub const TestNestedGroupExtensionInnerExtension = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -6795,6 +7774,17 @@ pub const TestExtensionRangeSerialize = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -6865,6 +7855,17 @@ pub const TestVerifyInt32Simple = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -6941,6 +7942,17 @@ pub const TestVerifyInt32 = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -7023,6 +8035,17 @@ pub const TestVerifyMostlyInt32 = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -7109,6 +8132,17 @@ pub const TestVerifyMostlyInt32BigFieldNumber = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -7179,6 +8213,17 @@ pub const TestVerifyUint32Simple = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -7257,6 +8302,17 @@ pub const TestVerifyUint32 = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -7331,6 +8387,17 @@ pub const TestVerifyOneUint32 = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -7409,6 +8476,17 @@ pub const TestVerifyOneInt32BigFieldNumber = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -7491,6 +8569,17 @@ pub const TestVerifyInt32BigFieldNumber = struct {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
 
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
+
     /// Encodes the message to a JSON string.
     pub fn jsonEncode(
         self: @This(),
@@ -7569,6 +8658,17 @@ pub const TestVerifyUint32BigFieldNumber = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -7662,6 +8762,17 @@ pub const TestVerifyBigFieldNumberUint32 = struct {
             return protobuf.json.decode(@This(), input, options, allocator);
         }
 
+        /// Decodes the message from the JSON string, honoring pb options
+        /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+        pub fn jsonDecodeOpts(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            pb_options: protobuf.json.Options,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+        }
+
         /// Encodes the message to a JSON string.
         pub fn jsonEncode(
             self: @This(),
@@ -7719,6 +8830,17 @@ pub const TestVerifyBigFieldNumberUint32 = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.
@@ -7922,6 +9044,17 @@ pub const EnumParseTester = struct {
         allocator: std.mem.Allocator,
     ) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Decodes the message from the JSON string, honoring pb options
+    /// (e.g. hex_bytes_fields for OTLP trace_id/span_id).
+    pub fn jsonDecodeOpts(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
 
     /// Encodes the message to a JSON string.

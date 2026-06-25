@@ -729,39 +729,121 @@ test "JSON: decode Bytes (from snake_case)" {
 }
 
 // --------------
-// bytes_as_hex test (OpenTelemetry-style hex bytes)
+// per-field hex bytes test (Options.hex_bytes_fields)
 // --------------
 const WithBytes = @import("./generated/tests.pb.zig").WithBytes;
+const WithBytesNested = @import("./generated/tests.pb.zig").WithBytesNested;
 
-test "JSON: encode/decode bytes as hex round-trips" {
-    // Decode reads the thread-local; encode sets it from pb_options.bytes_as_hex.
-    protobuf.json.tl_bytes_as_hex = true;
-    defer protobuf.json.tl_bytes_as_hex = false;
+test "JSON: hex field and base64 field coexist in one message (with options)" {
+    // hex_field is named in hex_bytes_fields; byte_field is a normal base64 bytes
+    // field. Both must round-trip in the same message — the case that fails under a
+    // global toggle. In memory both hold raw bytes.
+    const hex_opts: protobuf.json.Options = .{ .hex_bytes_fields = &.{"hex_field"} };
 
-    // In hex mode the bytes field holds the hex string verbatim.
     var pb_instance = WithBytes{
-        .byte_field = try allocator.dupe(u8, "cafecafe"),
+        .hex_field = try allocator.dupe(u8, &.{ 0xca, 0xfe, 0xca, 0xfe }),
+        .byte_field = try allocator.dupe(u8, &.{ 1, 2, 3, 4 }),
     };
     defer pb_instance.deinit(allocator);
 
-    // Encode emits the hex string, not base64.
-    const encoded = try pb_instance.jsonEncode(.{}, .{ .bytes_as_hex = true }, allocator);
+    // hex_field -> lowercase hex; byte_field -> base64.
+    const encoded = try pb_instance.jsonEncode(.{}, hex_opts, allocator);
     defer allocator.free(encoded);
-    try expectEqualSlices(u8, "{\"byteField\":\"cafecafe\"}", encoded);
+    try expectEqualSlices(u8, "{\"byteField\":\"AQIDBA==\",\"hexField\":\"cafecafe\"}", encoded);
 
-    // Decode keeps the hex string verbatim (no base64 decode).
-    const decoded = try WithBytes.jsonDecode(encoded, .{}, allocator);
+    const decoded = try WithBytes.jsonDecodeOpts(encoded, .{}, hex_opts, allocator);
     defer decoded.deinit();
-    try expectEqualSlices(u8, "cafecafe", decoded.value.byte_field);
+    try expectEqualSlices(u8, &.{ 0xca, 0xfe, 0xca, 0xfe }, decoded.value.hex_field);
+    try expectEqualSlices(u8, &.{ 1, 2, 3, 4 }, decoded.value.byte_field);
 }
 
-test "JSON: decode rejects invalid hex when bytes_as_hex" {
-    protobuf.json.tl_bytes_as_hex = true;
-    defer protobuf.json.tl_bytes_as_hex = false;
+test "JSON: without hex options every bytes field is base64" {
+    // No hex_bytes_fields -> both fields base64, on both the plain and the *Opts paths.
+    var pb_instance = WithBytes{
+        .hex_field = try allocator.dupe(u8, &.{ 0xca, 0xfe, 0xca, 0xfe }),
+        .byte_field = try allocator.dupe(u8, &.{ 1, 2, 3, 4 }),
+    };
+    defer pb_instance.deinit(allocator);
 
-    try std.testing.expectError(error.UnexpectedToken, WithBytes.jsonDecode(
-        "{\"byteField\":\"zz\"}",
+    // jsonEncode with empty pb options: hex_field is base64, not hex.
+    const encoded = try pb_instance.jsonEncode(.{}, .{}, allocator);
+    defer allocator.free(encoded);
+    try expectEqualSlices(u8, "{\"byteField\":\"AQIDBA==\",\"hexField\":\"yv7K/g==\"}", encoded);
+
+    // Plain jsonDecode (no options) reads both as base64.
+    const decoded = try WithBytes.jsonDecode(encoded, .{}, allocator);
+    defer decoded.deinit();
+    try expectEqualSlices(u8, &.{ 0xca, 0xfe, 0xca, 0xfe }, decoded.value.hex_field);
+    try expectEqualSlices(u8, &.{ 1, 2, 3, 4 }, decoded.value.byte_field);
+
+    // jsonDecodeOpts with empty options behaves identically to jsonDecode.
+    const decoded_opts = try WithBytes.jsonDecodeOpts(encoded, .{}, .{}, allocator);
+    defer decoded_opts.deinit();
+    try expectEqualSlices(u8, &.{ 0xca, 0xfe, 0xca, 0xfe }, decoded_opts.value.hex_field);
+}
+
+test "JSON: hex options thread through nested and repeated messages" {
+    // The reason the global thread-local was removed: hex selection must reach
+    // bytes fields at any depth (e.g. OTLP trace_id on a Span deep in the tree).
+    const hex_opts: protobuf.json.Options = .{ .hex_bytes_fields = &.{"hex_field"} };
+
+    const item0 = WithBytes{ .hex_field = try allocator.dupe(u8, &.{ 0xaa, 0xbb }) };
+    const inner = WithBytes{ .hex_field = try allocator.dupe(u8, &.{ 0xca, 0xfe }) };
+    var items: std.ArrayList(WithBytes) = .empty;
+    try items.append(allocator, item0);
+    var pb_instance = WithBytesNested{ .inner = inner, .items = items };
+    defer pb_instance.deinit(allocator);
+
+    const encoded = try pb_instance.jsonEncode(.{}, hex_opts, allocator);
+    defer allocator.free(encoded);
+    try expectEqualSlices(u8, "{\"inner\":{\"hexField\":\"cafe\"},\"items\":[{\"hexField\":\"aabb\"}]}", encoded);
+
+    const decoded = try WithBytesNested.jsonDecodeOpts(encoded, .{}, hex_opts, allocator);
+    defer decoded.deinit();
+    try expectEqualSlices(u8, &.{ 0xca, 0xfe }, decoded.value.inner.?.hex_field);
+    try expectEqualSlices(u8, &.{ 0xaa, 0xbb }, decoded.value.items.items[0].hex_field);
+}
+
+test "bytes round-trip identically through protobuf binary and JSON-hex" {
+    // The canonical-representation guarantee: in memory a bytes field is always raw
+    // bytes, whether it arrived via the binary wire format or via hex JSON.
+    const hex_opts: protobuf.json.Options = .{ .hex_bytes_fields = &.{"hex_field"} };
+    const raw_hex = [_]u8{ 0xde, 0xad, 0xbe, 0xef };
+    const raw_b64 = [_]u8{ 1, 2, 3, 4 };
+
+    var original = WithBytes{
+        .hex_field = try allocator.dupe(u8, &raw_hex),
+        .byte_field = try allocator.dupe(u8, &raw_b64),
+    };
+    defer original.deinit(allocator);
+
+    // protobuf binary round-trip (hex is JSON-only, so binary is unaffected).
+    var w: std.Io.Writer.Allocating = .init(allocator);
+    defer w.deinit();
+    try original.encode(&w.writer, allocator);
+    var reader: std.Io.Reader = .fixed(w.written());
+    var from_binary = try WithBytes.decode(&reader, allocator);
+    defer from_binary.deinit(allocator);
+
+    // JSON-hex round-trip.
+    const j = try original.jsonEncode(.{}, hex_opts, allocator);
+    defer allocator.free(j);
+    const from_json = try WithBytes.jsonDecodeOpts(j, .{}, hex_opts, allocator);
+    defer from_json.deinit();
+
+    // Both formats reconstruct the exact same raw bytes as the original.
+    try expectEqualSlices(u8, &raw_hex, from_binary.hex_field);
+    try expectEqualSlices(u8, &raw_hex, from_json.value.hex_field);
+    try expectEqualSlices(u8, &raw_b64, from_binary.byte_field);
+    try expectEqualSlices(u8, &raw_b64, from_json.value.byte_field);
+}
+
+test "JSON: decode rejects invalid hex in a hex_bytes field" {
+    const hex_opts: protobuf.json.Options = .{ .hex_bytes_fields = &.{"hex_field"} };
+    try std.testing.expectError(error.UnexpectedToken, WithBytes.jsonDecodeOpts(
+        "{\"hexField\":\"zz\"}",
         .{},
+        hex_opts,
         allocator,
     ));
 }

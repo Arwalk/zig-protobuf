@@ -88,6 +88,12 @@ message WithRepeatedStrings {
 
 message WithBytes {
   bytes byte_field = 1;
+  bytes hex_field = 2;
+}
+
+message WithBytesNested {
+  WithBytes inner = 1;
+  repeated WithBytes items = 2;
 }
 
 message WithRepeatedBytes {

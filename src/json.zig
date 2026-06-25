@@ -12,34 +12,78 @@ pub const Options = struct {
     ///   Example: `{"stringInOneof":"x"}` — this matches the protobuf JSON spec.
     emit_oneof_field_name: bool = true,
 
-    /// When true, `bytes` fields are encoded/decoded as lowercase hex strings
-    /// instead of base64. This matches the OpenTelemetry JSON format, which
-    /// represents traceId/spanId etc. as hex. The bytes field holds the hex string
-    /// verbatim (it is not decoded to binary on parse, nor re-encoded on stringify).
+    /// `bytes` fields whose proto name appears in this list are encoded/decoded as
+    /// lowercase hex strings instead of base64. This is per-field, matching OTLP/JSON
+    /// which hex-encodes only identifier fields. For OTLP pass:
+    ///   &.{ "trace_id", "span_id", "parent_span_id" }
+    /// In memory the value is always raw bytes (same as the binary wire path), so a
+    /// base64 `bytes` field like AnyValue.bytes_value in the same message is unaffected.
     ///
-    /// `encode` honors this field directly. The decode path can't carry `Options`
-    /// through std.json's recursion, so it reads `tl_bytes_as_hex` instead — set
-    /// that thread-local before calling `decode`/`jsonDecode` (see below).
-    bytes_as_hex: bool = false,
+    /// `encode` reads this directly; for decode use `decodeOpts` (plain `jsonDecode`
+    /// stays base64). Both thread it explicitly — no global/thread-local state.
+    hex_bytes_fields: []const []const u8 = &.{},
 };
 
-/// Thread-local toggle for hex-encoding `bytes` fields. std.json's parse/stringify
-/// machinery can't thread custom options through its recursion, so this mirrors the
-/// thread-local used for the `Any` allocator (`wkt.tl_any_alloc`).
-///
-/// `encode` sets this automatically from `Options.bytes_as_hex`. Decode callers that
-/// need hex bytes must set it directly before invoking `decode`/`jsonDecode`:
-///
-///   protobuf.json.tl_bytes_as_hex = true;
-///   defer protobuf.json.tl_bytes_as_hex = false;
-pub threadlocal var tl_bytes_as_hex: bool = false;
+/// Whether a `bytes` field with proto name `name` should use hex JSON encoding.
+fn nameIsHex(set: []const []const u8, name: []const u8) bool {
+    for (set) |f| {
+        if (std.mem.eql(u8, f, name)) return true;
+    }
+    return false;
+}
 
+/// std.json calls this (fixed 3-arg signature) for top-level and nested messages
+/// reached via its own recursion. It can't carry pb `Options`, so it defaults to
+/// base64 bytes. Hex decoding goes through `decodeOpts`, which threads `pb_options`
+/// down `parseOpts`/`parseStructField`/`parseInner` directly, bypassing std.json's
+/// recursion for generated submessages.
 pub fn parse(
     Self: type,
     allocator: std.mem.Allocator,
     source: anytype,
     options: std.json.ParseOptions,
 ) !Self {
+    return parseOpts(Self, allocator, source, options, .{});
+}
+
+/// Recurse into a submessage field type, threading `pb_options`. Generated messages
+/// go through `parseOpts` (so hex fields work at any depth); well-known types (which
+/// have a custom `jsonStringify`) keep std.json's dispatch since they carry no hex
+/// bytes. Mirrors std.json.innerParse for the optional/pointer wrappers we emit.
+fn parseInner(
+    comptime FT: type,
+    allocator: std.mem.Allocator,
+    source: anytype,
+    options: std.json.ParseOptions,
+    pb_options: Options,
+) std.json.ParseError(@TypeOf(source.*))!FT {
+    switch (@typeInfo(FT)) {
+        .optional => |o| return @as(FT, try parseInner(o.child, allocator, source, options, pb_options)),
+        .pointer => |p| {
+            if (comptime p.size == .one) {
+                const v = try allocator.create(p.child);
+                v.* = try parseInner(p.child, allocator, source, options, pb_options);
+                return v;
+            }
+            return std.json.innerParse(FT, allocator, source, options);
+        },
+        .@"struct" => {
+            if (comptime @hasDecl(FT, "jsonStringify")) {
+                return std.json.innerParse(FT, allocator, source, options);
+            }
+            return parseOpts(FT, allocator, source, options, pb_options);
+        },
+        else => return std.json.innerParse(FT, allocator, source, options),
+    }
+}
+
+fn parseOpts(
+    Self: type,
+    allocator: std.mem.Allocator,
+    source: anytype,
+    options: std.json.ParseOptions,
+    pb_options: Options,
+) std.json.ParseError(@TypeOf(source.*))!Self {
     // Increase eval branch quota for types with hundreds of fields
     @setEvalBranchQuota(1000000);
 
@@ -120,6 +164,7 @@ pub fn parse(
                                 allocator,
                                 source,
                                 options,
+                                pb_options,
                             );
                             break;
                         },
@@ -134,6 +179,7 @@ pub fn parse(
                     allocator,
                     source,
                     options,
+                    pb_options,
                 );
                 fields_seen[i] = true;
                 break;
@@ -211,6 +257,7 @@ pub fn parse(
                                                     allocator,
                                                     source,
                                                     options,
+                                                    nameIsHex(pb_options.hex_bytes_fields, union_field.name),
                                                 ),
                                                 else => try std.json.innerParse(
                                                     union_field.type,
@@ -219,11 +266,12 @@ pub fn parse(
                                                     options,
                                                 ),
                                             },
-                                            .submessage => try std.json.innerParse(
+                                            .submessage => try parseInner(
                                                 union_field.type,
                                                 allocator,
                                                 source,
                                                 options,
+                                                pb_options,
                                             ),
                                             .@"enum" => try parseEnumField(
                                                 union_field.type,
@@ -273,6 +321,40 @@ pub fn decode(
     return parsed;
 }
 
+/// Like `decode`, but honors `pb_options` (e.g. `hex_bytes_fields`). Use this when
+/// decoding messages with hex `bytes` fields such as OTLP trace_id/span_id. Unlike
+/// `decode`, this drives the parse itself so `pb_options` reaches every nested message
+/// (std.json's recursion can't carry custom options).
+pub fn decodeOpts(
+    comptime T: type,
+    input: []const u8,
+    options: std.json.ParseOptions,
+    pb_options: Options,
+    allocator: std.mem.Allocator,
+) !std.json.Parsed(T) {
+    var parsed: std.json.Parsed(T) = .{
+        .arena = try allocator.create(std.heap.ArenaAllocator),
+        .value = undefined,
+    };
+    errdefer allocator.destroy(parsed.arena);
+    parsed.arena.* = .init(allocator);
+    errdefer parsed.arena.deinit();
+    const aalloc = parsed.arena.allocator();
+
+    var scanner = std.json.Scanner.initCompleteInput(aalloc, input);
+    defer scanner.deinit();
+
+    // Resolve the same defaults std.json.parseFromTokenSourceLeaky would; `parse`
+    // dereferences options.max_value_len.
+    var resolved = options;
+    if (resolved.max_value_len == null) resolved.max_value_len = input.len;
+    if (resolved.allocate == null) resolved.allocate = .alloc_if_needed;
+
+    parsed.value = try parseInner(T, aalloc, &scanner, resolved, pb_options);
+    if (.end_of_document != try scanner.next()) return error.UnexpectedToken;
+    return parsed;
+}
+
 pub fn encode(
     data: anytype,
     std_options: std.json.Stringify.Options,
@@ -291,10 +373,6 @@ pub fn encode(
     const prev_alloc = protobuf.wkt.tl_any_alloc;
     protobuf.wkt.tl_any_alloc = allocator;
     defer protobuf.wkt.tl_any_alloc = prev_alloc;
-    // Apply bytes_as_hex for the duration of this encode (read by print_bytes).
-    const prev_hex = tl_bytes_as_hex;
-    tl_bytes_as_hex = pb_options.bytes_as_hex;
-    defer tl_bytes_as_hex = prev_hex;
     return std.json.Stringify.valueAlloc(
         allocator,
         CustomEncoder{ .inner = data, .opts = pb_options },
@@ -348,6 +426,7 @@ fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std
             try stringify_struct_field_with_options(
                 field_value,
                 descriptor,
+                fieldInfo.name,
                 jws,
                 opts,
             );
@@ -394,6 +473,7 @@ fn freeAllocated(allocator: std.mem.Allocator, token: std.json.Token) void {
 fn stringify_struct_field_with_options(
     struct_field: anytype,
     field_descriptor: protobuf.FieldDescriptor,
+    field_name: []const u8,
     jws: anytype,
     pb_options: Options,
 ) !void {
@@ -415,7 +495,7 @@ fn stringify_struct_field_with_options(
 
     switch (field_descriptor.ftype) {
         .scalar => |scalar| switch (scalar) {
-            .bytes => try print_bytes(value, jws),
+            .bytes => try print_bytes(value, nameIsHex(pb_options.hex_bytes_fields, field_name), jws),
             .string => try jws.write(value),
             else => try print_numeric(value, jws),
         },
@@ -448,6 +528,7 @@ fn stringify_struct_field_with_options(
                     try stringify_struct_field_with_options(
                         entry.value,
                         @field(Elem._desc_table, "value"),
+                        "value",
                         jws,
                         pb_options,
                     );
@@ -458,7 +539,7 @@ fn stringify_struct_field_with_options(
                 for (slice) |el| {
                     switch (repeated) {
                         .scalar => |scalar| switch (scalar) {
-                            .bytes => try print_bytes(el, jws),
+                            .bytes => try print_bytes(el, nameIsHex(pb_options.hex_bytes_fields, field_name), jws),
                             .string => try jws.write(el),
                             else => try print_numeric(el, jws),
                         },
@@ -487,7 +568,7 @@ fn stringify_struct_field_with_options(
                     try jws.objectField(union_camel_case_name);
                     switch (@field(oneof._desc_table, union_field.name).ftype) {
                         .scalar => |scalar| switch (scalar) {
-                            .bytes => try print_bytes(@field(value, union_field.name), jws),
+                            .bytes => try print_bytes(@field(value, union_field.name), nameIsHex(pb_options.hex_bytes_fields, union_field.name), jws),
                             .string => try jws.write(@field(value, union_field.name)),
                             else => try print_numeric(@field(value, union_field.name), jws),
                         },
@@ -522,95 +603,6 @@ fn stringify_struct_field_with_options(
             } else {
                 try stringifyOpts(V, &value, jws, pb_options);
             }
-        },
-    }
-}
-
-fn stringify_struct_field(
-    struct_field: anytype,
-    field_descriptor: protobuf.FieldDescriptor,
-    jws: anytype,
-) !void {
-    var value: switch (@typeInfo(@TypeOf(struct_field))) {
-        .optional => |optional| optional.child,
-        else => @TypeOf(struct_field),
-    } = undefined;
-
-    switch (@typeInfo(@TypeOf(struct_field))) {
-        .optional => {
-            if (struct_field) |v| {
-                value = v;
-            } else return;
-        },
-        else => {
-            value = struct_field;
-        },
-    }
-
-    switch (field_descriptor.ftype) {
-        .scalar => |scalar| switch (scalar) {
-            .bytes => try print_bytes(value, jws),
-            // `.string`s have their own jsonStringify implementation
-            .string => try jws.write(value),
-            else => try print_numeric(value, jws),
-        },
-        .@"enum" => try print_numeric(value, jws),
-        .repeated, .packed_repeated => |repeated| {
-            // ArrayListUnmanaged
-            const slice = value.items;
-            try jws.beginArray();
-            for (slice) |el| {
-                switch (repeated) {
-                    .scalar => |scalar| switch (scalar) {
-                        .bytes => try print_bytes(el, jws),
-                        .string => try jws.write(el),
-                        else => try print_numeric(el, jws),
-                    },
-                    .@"enum" => try print_numeric(el, jws),
-                    .submessage => try jws.write(el),
-                }
-            }
-            try jws.endArray();
-        },
-        .oneof => |oneof| {
-            // Tagged union type
-            const union_info = @typeInfo(@TypeOf(value)).@"union";
-            if (union_info.tag_type == null) {
-                @compileError("Untagged unions are not supported here");
-            }
-
-            try jws.beginObject();
-            inline for (union_info.fields) |union_field| {
-                if (value == @field(
-                    union_info.tag_type.?,
-                    union_field.name,
-                )) {
-                    const union_camel_case_name = comptime to_camel_case(union_field.name);
-                    try jws.objectField(union_camel_case_name);
-                    switch (@field(oneof._desc_table, union_field.name).ftype) {
-                        .scalar => |scalar| switch (scalar) {
-                            .bytes => try print_bytes(@field(value, union_field.name), jws),
-                            .string => try jws.write(@field(value, union_field.name)),
-                            else => try print_numeric(@field(value, union_field.name), jws),
-                        },
-                        .@"enum" => try print_numeric(@field(value, union_field.name), jws),
-                        .submessage => try jws.write(@field(value, union_field.name)),
-                        .repeated, .packed_repeated => {
-                            @compileError("Repeated fields are not allowed in oneof");
-                        },
-                        .oneof => {
-                            @compileError("one oneof inside another? really?");
-                        },
-                    }
-                    break;
-                }
-            } else unreachable;
-
-            try jws.endObject();
-        },
-        .submessage => {
-            // `.submessage`s (generated structs) have their own jsonStringify implementation
-            try jws.write(value);
         },
     }
 }
@@ -658,7 +650,8 @@ fn parseStructField(
     allocator: std.mem.Allocator,
     source: anytype,
     options: std.json.ParseOptions,
-) !void {
+    pb_options: Options,
+) std.json.ParseError(@TypeOf(source.*))!void {
     @field(result.*, fieldInfo.name) = switch (@field(
         T._desc_table,
         fieldInfo.name,
@@ -710,7 +703,7 @@ fn parseStructField(
                             }
                             return e;
                         };
-                    } else try std.json.innerParse(ValueType, allocator, source, options);
+                    } else try parseInner(ValueType, allocator, source, options, pb_options);
                     try array_list.append(allocator, .{ .key = parsed_key, .value = parsed_value });
                 }
                 break :list array_list;
@@ -729,13 +722,13 @@ fn parseStructField(
                             .scalar => |scalar| {
                                 try array_list.ensureUnusedCapacity(allocator, 1);
                                 array_list.appendAssumeCapacity(switch (scalar) {
-                                    .bytes => try parse_bytes(allocator, source, options),
+                                    .bytes => try parse_bytes(allocator, source, options, nameIsHex(pb_options.hex_bytes_fields, fieldInfo.name)),
                                     else => try std.json.innerParse(child_type, allocator, source, options),
                                 });
                             },
                             .submessage => {
                                 try array_list.ensureUnusedCapacity(allocator, 1);
-                                array_list.appendAssumeCapacity(try std.json.innerParse(child_type, allocator, source, options));
+                                array_list.appendAssumeCapacity(try parseInner(child_type, allocator, source, options, pb_options));
                             },
                             .@"enum" => {
                                 const v = parseEnumField(child_type, allocator, source, options) catch |e| {
@@ -803,7 +796,7 @@ fn parseStructField(
                             union_field.name,
                         ).ftype) {
                             .scalar => |scalar| switch (scalar) {
-                                .bytes => try parse_bytes(allocator, source, options),
+                                .bytes => try parse_bytes(allocator, source, options, nameIsHex(pb_options.hex_bytes_fields, union_field.name)),
                                 else => try std.json.innerParse(
                                     union_field.type,
                                     allocator,
@@ -812,11 +805,12 @@ fn parseStructField(
                                 ),
                             },
                             .submessage => other: {
-                                break :other try std.json.innerParse(
+                                break :other try parseInner(
                                     union_field.type,
                                     allocator,
                                     source,
                                     options,
+                                    pb_options,
                                 );
                             },
                             .@"enum" => other: {
@@ -869,8 +863,14 @@ fn parseStructField(
             if (comptime @typeInfo(fieldInfo.type) == .optional) {
                 const InnerType = @typeInfo(fieldInfo.type).optional.child;
                 if (comptime @typeInfo(InnerType) != .pointer) {
-                    if (comptime @hasDecl(InnerType, "jsonParse")) {
-                        if (try source.peekNextTokenType() == .null) {
+                    if (try source.peekNextTokenType() == .null) {
+                        // Well-known types may map null to a value (e.g.
+                        // google.protobuf.Value -> null_value); let their custom
+                        // jsonParse decide. Generated messages treat explicit null as
+                        // absent. Routing generated messages through their jsonParse
+                        // here would form an inferred-error-set dependency loop with
+                        // parseOpts, so handle them directly.
+                        if (comptime @hasDecl(InnerType, "jsonStringify")) {
                             const inner = InnerType.jsonParse(allocator, source, options) catch {
                                 // The inner type rejected null. Some parsers peek without
                                 // consuming on error, so consume the null token if still pending.
@@ -881,13 +881,15 @@ fn parseStructField(
                             };
                             break :blk @as(fieldInfo.type, inner);
                         }
+                        _ = try source.next();
+                        break :blk @as(fieldInfo.type, null);
                     }
                 }
             }
-            break :blk try std.json.innerParse(fieldInfo.type, allocator, source, options);
+            break :blk try parseInner(fieldInfo.type, allocator, source, options, pb_options);
         },
         .scalar => |scalar| switch (scalar) {
-            .bytes => try parse_bytes(allocator, source, options),
+            .bytes => try parse_bytes(allocator, source, options, nameIsHex(pb_options.hex_bytes_fields, fieldInfo.name)),
             .float, .double => blk: {
                 // Proto3 JSON: reject JSON numbers that overflow to ±inf. However,
                 // the string tokens "Infinity", "-Infinity", and "NaN" are valid per spec.
@@ -1013,13 +1015,13 @@ fn mapKeyEq(a: anytype, b: @TypeOf(a)) bool {
     }
 }
 
-fn print_bytes(value: anytype, jws: anytype) !void {
+fn print_bytes(value: anytype, as_hex: bool, jws: anytype) !void {
     try jsonValueStartAssumeTypeOk(jws);
     try jws.writer.writeByte('"');
 
-    if (tl_bytes_as_hex) {
-        // The field already holds the hex string verbatim; write it through.
-        try jws.writer.writeAll(value);
+    if (as_hex) {
+        // Raw bytes in memory -> lowercase hex (OTLP trace_id/span_id form).
+        try jws.writer.printHex(value, .lower);
     } else {
         try std.base64.standard.Encoder.encodeWriter(jws.writer, value);
     }
@@ -1138,16 +1140,16 @@ fn parse_bytes(
     allocator: std.mem.Allocator,
     source: anytype,
     options: std.json.ParseOptions,
+    as_hex: bool,
 ) ![]const u8 {
     const temp_raw = try std.json.innerParse([]u8, allocator, source, options);
     defer allocator.free(temp_raw);
-    if (tl_bytes_as_hex) {
-        // OTel keeps trace_id/span_id as hex strings; validate and store verbatim
-        // (no decode to binary), so they round-trip back out via print_bytes.
-        for (temp_raw) |c| {
-            _ = std.fmt.charToDigit(c, 16) catch return error.UnexpectedToken;
-        }
-        return allocator.dupe(u8, temp_raw);
+    if (as_hex) {
+        // OTLP hex string -> raw bytes in memory (matches the binary wire path).
+        const out = try allocator.alloc(u8, temp_raw.len / 2);
+        errdefer allocator.free(out);
+        const decoded = std.fmt.hexToBytes(out, temp_raw) catch return error.UnexpectedToken;
+        return decoded;
     }
     return decodeBase64Lenient(allocator, temp_raw) catch error.UnexpectedToken;
 }

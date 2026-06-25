@@ -50,6 +50,9 @@ pub const Any = struct {
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
+    pub fn jsonDecodeOpts(input: []const u8, options: std.json.ParseOptions, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
     pub fn jsonEncode(self: @This(), options: std.json.Stringify.Options, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) ![]const u8 {
         return protobuf.json.encode(self, options, pb_options, allocator);
     }
@@ -133,6 +136,9 @@ pub const Duration = struct {
     }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+    pub fn jsonDecodeOpts(input: []const u8, options: std.json.ParseOptions, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
     pub fn jsonEncode(self: @This(), options: std.json.Stringify.Options, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) ![]const u8 {
         return protobuf.json.encode(self, options, pb_options, allocator);
@@ -231,6 +237,9 @@ pub const FieldMask = struct {
     }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+    pub fn jsonDecodeOpts(input: []const u8, options: std.json.ParseOptions, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
     pub fn jsonEncode(self: @This(), options: std.json.Stringify.Options, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) ![]const u8 {
         return protobuf.json.encode(self, options, pb_options, allocator);
@@ -411,6 +420,9 @@ pub const Struct = struct {
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
+    pub fn jsonDecodeOpts(input: []const u8, options: std.json.ParseOptions, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
     pub fn jsonEncode(self: @This(), options: std.json.Stringify.Options, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) ![]const u8 {
         return protobuf.json.encode(self, options, pb_options, allocator);
     }
@@ -487,6 +499,9 @@ pub const Value = struct {
     }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+    pub fn jsonDecodeOpts(input: []const u8, options: std.json.ParseOptions, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
     pub fn jsonEncode(self: @This(), options: std.json.Stringify.Options, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) ![]const u8 {
         return protobuf.json.encode(self, options, pb_options, allocator);
@@ -582,6 +597,9 @@ pub const ListValue = struct {
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
+    pub fn jsonDecodeOpts(input: []const u8, options: std.json.ParseOptions, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
     pub fn jsonEncode(self: @This(), options: std.json.Stringify.Options, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) ![]const u8 {
         return protobuf.json.encode(self, options, pb_options, allocator);
     }
@@ -636,6 +654,9 @@ pub const Timestamp = struct {
     }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+    pub fn jsonDecodeOpts(input: []const u8, options: std.json.ParseOptions, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
     pub fn jsonEncode(self: @This(), options: std.json.Stringify.Options, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) ![]const u8 {
         return protobuf.json.encode(self, options, pb_options, allocator);
@@ -794,6 +815,9 @@ pub const DoubleValue = struct {
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
+    pub fn jsonDecodeOpts(input: []const u8, options: std.json.ParseOptions, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
     pub fn jsonEncode(self: @This(), options: std.json.Stringify.Options, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) ![]const u8 {
         return protobuf.json.encode(self, options, pb_options, allocator);
     }
@@ -840,6 +864,9 @@ pub const FloatValue = struct {
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
+    pub fn jsonDecodeOpts(input: []const u8, options: std.json.ParseOptions, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
     pub fn jsonEncode(self: @This(), options: std.json.Stringify.Options, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) ![]const u8 {
         return protobuf.json.encode(self, options, pb_options, allocator);
     }
@@ -885,6 +912,9 @@ pub const Int64Value = struct {
     }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+    pub fn jsonDecodeOpts(input: []const u8, options: std.json.ParseOptions, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
     pub fn jsonEncode(self: @This(), options: std.json.Stringify.Options, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) ![]const u8 {
         return protobuf.json.encode(self, options, pb_options, allocator);
@@ -935,6 +965,9 @@ pub const UInt64Value = struct {
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
+    pub fn jsonDecodeOpts(input: []const u8, options: std.json.ParseOptions, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
     pub fn jsonEncode(self: @This(), options: std.json.Stringify.Options, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) ![]const u8 {
         return protobuf.json.encode(self, options, pb_options, allocator);
     }
@@ -984,6 +1017,9 @@ pub const Int32Value = struct {
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
+    pub fn jsonDecodeOpts(input: []const u8, options: std.json.ParseOptions, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
     pub fn jsonEncode(self: @This(), options: std.json.Stringify.Options, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) ![]const u8 {
         return protobuf.json.encode(self, options, pb_options, allocator);
     }
@@ -1021,6 +1057,9 @@ pub const UInt32Value = struct {
     }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+    pub fn jsonDecodeOpts(input: []const u8, options: std.json.ParseOptions, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
     pub fn jsonEncode(self: @This(), options: std.json.Stringify.Options, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) ![]const u8 {
         return protobuf.json.encode(self, options, pb_options, allocator);
@@ -1060,6 +1099,9 @@ pub const BoolValue = struct {
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
+    pub fn jsonDecodeOpts(input: []const u8, options: std.json.ParseOptions, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
     pub fn jsonEncode(self: @This(), options: std.json.Stringify.Options, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) ![]const u8 {
         return protobuf.json.encode(self, options, pb_options, allocator);
     }
@@ -1098,6 +1140,9 @@ pub const StringValue = struct {
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
+    pub fn jsonDecodeOpts(input: []const u8, options: std.json.ParseOptions, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
+    }
     pub fn jsonEncode(self: @This(), options: std.json.Stringify.Options, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) ![]const u8 {
         return protobuf.json.encode(self, options, pb_options, allocator);
     }
@@ -1135,6 +1180,9 @@ pub const BytesValue = struct {
     }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+    pub fn jsonDecodeOpts(input: []const u8, options: std.json.ParseOptions, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
     pub fn jsonEncode(self: @This(), options: std.json.Stringify.Options, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) ![]const u8 {
         return protobuf.json.encode(self, options, pb_options, allocator);
@@ -1175,6 +1223,9 @@ pub const Empty = struct {
     }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
+    }
+    pub fn jsonDecodeOpts(input: []const u8, options: std.json.ParseOptions, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
+        return protobuf.json.decodeOpts(@This(), input, options, pb_options, allocator);
     }
     pub fn jsonEncode(self: @This(), options: std.json.Stringify.Options, pb_options: protobuf.json.Options, allocator: std.mem.Allocator) ![]const u8 {
         return protobuf.json.encode(self, options, pb_options, allocator);
