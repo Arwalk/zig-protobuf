@@ -5,6 +5,12 @@ const log = std.log.scoped(.zig_protobuf);
 pub const json = @import("json.zig");
 pub const wire = @import("wire.zig");
 pub const wkt = @import("wkt.zig");
+pub const stream = @import("stream.zig");
+
+/// Streaming pull-decoder for the generated message type `T`.
+/// See `src/stream.zig`. Generated messages also expose this as
+/// `MyMessage.StreamDecoder`.
+pub const StreamDecoder = stream.StreamDecoder;
 
 pub const DecodingError = error{ NotEnoughData, InvalidInput };
 
@@ -1336,4 +1342,5 @@ test "incorrect data - decode" {
 test {
     _ = wire;
     _ = json;
+    _ = stream;
 }

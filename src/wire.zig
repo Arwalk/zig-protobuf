@@ -1121,7 +1121,7 @@ pub fn decodeMessage(
     return consumed;
 }
 
-fn skipField(reader: *std.Io.Reader, tag: Tag) !usize {
+pub fn skipField(reader: *std.Io.Reader, tag: Tag) !usize {
     var consumed: usize = 0;
 
     // If field number was not found, skip unknown field.
