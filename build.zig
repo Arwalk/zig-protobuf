@@ -177,7 +177,8 @@ pub fn build(b: *std.Build) !void {
         test_step.dependOn(&run_main_tests.step);
     }
 
-    const include = if (try build_util.getProtocDependency(b)) |protoc| protoc.path("include") else b.path("");
+    const protobuf_dep = b.dependency("protobuf", .{});
+    const include = protobuf_dep.artifact("libprotobuf").getEmittedIncludeTree();
 
     const bootstrap = b.step("bootstrap", "run the generator over its own sources");
 
@@ -187,7 +188,9 @@ pub fn build(b: *std.Build) !void {
             include.path(b, "google/protobuf/compiler/plugin.proto"),
             include.path(b, "google/protobuf/descriptor.proto"),
         },
-        .include_directories = &.{},
+        .include_directories = &.{
+            include,
+        },
     });
 
     bootstrap.dependOn(&bootstrapConversion.step);
