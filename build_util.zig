@@ -129,6 +129,10 @@ pub const RunProtocStep = struct {
             .preserve_unknown_fields = options.preserve_unknown_fields,
         };
 
+        const protobuf_dep = owner.dependency("protobuf", .{});
+        const protoc = protobuf_dep.artifact("protoc");
+
+        self.step.dependOn(&protoc.step);
         self.step.dependOn(&self.generator.step);
 
         return self;
@@ -159,13 +163,13 @@ pub const RunProtocStep = struct {
 
         const absolute_dest_dir = self.destination_directory.getPath2(b, step);
 
+        const protobuf_dep = b.dependency("protobuf", .{});
+        const protoc = protobuf_dep.artifact("protoc");
+
         { // run protoc
             var argv: std.ArrayList([]const u8) = .empty;
 
-            const maybe_protoc_path: ?[]const u8 = if (self.protoc_override_bin) |bin|
-                bin.getPath2(b, step)
-            else
-                try ensureProtocBinaryDownloaded(self.generator.step.owner, step);
+            const maybe_protoc_path: ?[]const u8 = protoc.getEmittedBin().getPath2(b, step);
 
             if (maybe_protoc_path) |protoc_path| {
                 try argv.append(b.allocator, protoc_path);
