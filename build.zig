@@ -77,6 +77,14 @@ pub fn build(b: *std.Build) !void {
             }),
         }),
         b.addTest(.{
+            .name = "leaks",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/leaks.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        }),
+        b.addTest(.{
             .name = "alltypes",
             .root_module = b.createModule(.{
                 .root_source_file = b.path("tests/alltypes.zig"),

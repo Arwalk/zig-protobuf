@@ -631,7 +631,10 @@ pub fn init(comptime T: type, allocator: std.mem.Allocator) std.mem.Allocator.Er
 /// Generic function to deeply duplicate a message using a new allocator.
 /// The original parameter is constant
 pub fn dupe(comptime T: type, original: T, allocator: std.mem.Allocator) std.mem.Allocator.Error!T {
+    // Default every field first so the errdefer only frees what was duplicated.
     var result: T = undefined;
+    internal_init(T, &result);
+    errdefer deinit(allocator, &result);
 
     inline for (@typeInfo(T).@"struct".fields) |field| {
         if (comptime !@hasField(@TypeOf(T._desc_table), field.name)) continue;
@@ -708,31 +711,38 @@ fn dupeField(
             else => return @field(original, field_name),
         },
         .repeated => |repeated| {
-            const capacity = @field(original, field_name).items.len;
-            var list = try @TypeOf(@field(original, field_name)).initCapacity(allocator, capacity);
+            const items = @field(original, field_name).items;
+            var list = try @TypeOf(@field(original, field_name)).initCapacity(allocator, items.len);
+            // Free the list and any items duplicated so far on failure.
+            errdefer {
+                switch (repeated) {
+                    .submessage => for (list.items) |*item| item.deinit(allocator),
+                    .scalar => |scalar| switch (scalar) {
+                        .string, .bytes => for (list.items) |item| {
+                            if (item.len > 0) allocator.free(item);
+                        },
+                        else => {},
+                    },
+                    .@"enum" => {},
+                }
+                list.deinit(allocator);
+            }
+            // Capacity is reserved, so appends cannot fail.
             switch (repeated) {
                 .submessage => {
-                    for (@field(original, field_name).items) |item| {
-                        try list.append(allocator, try item.dupe(allocator));
+                    for (items) |item| {
+                        list.appendAssumeCapacity(try item.dupe(allocator));
                     }
                 },
                 .scalar => |scalar| switch (scalar) {
                     .string, .bytes => {
-                        for (@field(original, field_name).items) |item| {
-                            try list.append(allocator, try allocator.dupe(u8, item));
+                        for (items) |item| {
+                            list.appendAssumeCapacity(try allocator.dupe(u8, item));
                         }
                     },
-                    else => {
-                        for (@field(original, field_name).items) |item| {
-                            try list.append(allocator, item);
-                        }
-                    },
+                    else => list.appendSliceAssumeCapacity(items),
                 },
-                .@"enum" => {
-                    for (@field(original, field_name).items) |item| {
-                        try list.append(allocator, item);
-                    }
-                },
+                .@"enum" => list.appendSliceAssumeCapacity(items),
             }
             return list;
         },
@@ -762,6 +772,7 @@ fn dupeField(
                             .pointer => |p| {
                                 std.debug.assert(p.size == .one);
                                 const result = try allocator.create(p.child);
+                                errdefer allocator.destroy(result);
                                 result.* = try val.dupe(allocator);
                                 return result;
                             },
@@ -784,6 +795,7 @@ fn dupeField(
                 .pointer => |p| {
                     comptime std.debug.assert(p.size == .one);
                     const result = try allocator.create(p.child);
+                    errdefer allocator.destroy(result);
                     result.* = try @field(original, field_name).dupe(allocator);
                     return result;
                 },
