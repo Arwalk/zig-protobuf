@@ -153,7 +153,7 @@ const GenerationContext = struct {
             try self.res.file.append(allocator, ret);
         }
 
-        self.res.supported_features = @intFromEnum(plugin.CodeGeneratorResponse.Feature.FEATURE_PROTO3_OPTIONAL);
+        self.res.supported_features = @backingInt(plugin.CodeGeneratorResponse.Feature.FEATURE_PROTO3_OPTIONAL);
     }
 
     fn getOutputLines(self: *GenerationContext, io: std.Io, allocator: std.mem.Allocator, name: FullName) !*std.ArrayList([]const u8) {
@@ -1231,9 +1231,24 @@ fn is_proto3_file(file: descriptor.FileDescriptorProto) bool {
     );
 }
 
+// Hex-escapes every non-printable-ASCII byte so generated output does not
+// depend on how std.zig.fmtString treats bytes >= 0x80 in a given Zig version.
 pub fn formatSliceEscapeImpl(allocator: std.mem.Allocator, str: []const u8) ![]const u8 {
     var writer: std.Io.Writer.Allocating = .init(allocator);
-    try writer.writer.print("\"{f}\"", .{std.zig.fmtString(str)});
+    const w = &writer.writer;
+    try w.writeByte('"');
+    for (str) |byte| switch (byte) {
+        '\t' => try w.writeAll("\\t"),
+        '\n' => try w.writeAll("\\n"),
+        '\r' => try w.writeAll("\\r"),
+        '\\' => try w.writeAll("\\\\"),
+        '"' => try w.writeAll("\\\""),
+        else => if (std.ascii.isPrint(byte))
+            try w.writeByte(byte)
+        else
+            try w.print("\\x{x:0>2}", .{byte}),
+    };
+    try w.writeByte('"');
 
     return try writer.toOwnedSlice();
 }

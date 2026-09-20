@@ -346,7 +346,7 @@ fn writePackedEnumList(
         defer w.deinit();
 
         for (value_list.items) |item| {
-            try writeRawVarint(&w.writer, @bitCast(@as(i64, @intFromEnum(item))));
+            try writeRawVarint(&w.writer, @bitCast(@as(i64, @backingInt(item))));
         }
 
         const size_encoded: u64 = w.written().len;
@@ -421,7 +421,7 @@ fn writeValue(
     const is_default_scalar_value = switch (@typeInfo(@TypeOf(value))) {
         .optional => value == null,
         // as per protobuf spec, the first element of the enums must be 0 and it is the default value
-        .@"enum" => @intFromEnum(value) == 0,
+        .@"enum" => @backingInt(value) == 0,
         else => switch (@TypeOf(value)) {
             bool => value == false,
             i32, u32, i64, u64, f32, f64 => value == 0,
@@ -453,7 +453,7 @@ fn writeValue(
         .@"enum" => {
             if (!is_default_scalar_value or force_append) {
                 try writeTag(writer, field);
-                try writeRawVarint(writer, @bitCast(@as(i64, @intFromEnum(value))));
+                try writeRawVarint(writer, @bitCast(@as(i64, @backingInt(value))));
             }
         },
         .submessage => {
@@ -506,7 +506,7 @@ fn writeValue(
                 .@"enum" => {
                     for (value.items) |item| {
                         try writeTag(writer, field);
-                        try writeRawVarint(writer, @bitCast(@as(i64, @intFromEnum(item))));
+                        try writeRawVarint(writer, @bitCast(@as(i64, @backingInt(item))));
                     }
                 },
             }
@@ -558,7 +558,7 @@ fn get_field_default_value(comptime for_type: anytype) for_type {
     return switch (@typeInfo(for_type)) {
         .optional => null,
         // as per protobuf spec, the first element of the enums must be 0 and it is the default value
-        .@"enum" => @as(for_type, @enumFromInt(0)),
+        .@"enum" => @as(for_type, @fromBackingInt(@intCast(0))),
         else => switch (for_type) {
             bool => false,
             i32, i64, i8, i16, u8, u32, u64, f32, f64 => 0,
@@ -964,11 +964,9 @@ pub fn deinitField(
                             allocator.free(@field(root, field_name).?);
                     } else unreachable;
                 },
-                .@"struct" => |s| {
+                .@"struct" => {
                     // If arraylist, also free items inside.
-                    if (comptime s.field_names.len == 2 and
-                        @hasField(o.child, "items") and @hasField(o.child, "capacity"))
-                    {
+                    if (comptime @hasField(o.child, "items") and @hasField(o.child, "capacity")) {
                         const ListItem = @typeInfo(@FieldType(o.child, "items")).pointer.child;
                         switch (comptime @typeInfo(ListItem)) {
                             .pointer => {
@@ -999,11 +997,9 @@ pub fn deinitField(
             }
         },
         // Maps, `oneof` submessages, and `ArrayListUnmanaged`s
-        .@"struct" => |s| {
+        .@"struct" => {
             // If arraylist, also free items inside.
-            if (comptime s.field_names.len == 2 and
-                @hasField(Field, "items") and @hasField(Field, "capacity"))
-            {
+            if (comptime @hasField(Field, "items") and @hasField(Field, "capacity")) {
                 const ListItem = @typeInfo(@FieldType(Field, "items")).pointer.child;
                 switch (comptime @typeInfo(ListItem)) {
                     .pointer => {

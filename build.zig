@@ -186,7 +186,7 @@ pub fn build(b: *std.Build) !void {
             include.path(b, "google/protobuf/compiler/plugin.proto"),
             include.path(b, "google/protobuf/descriptor.proto"),
         },
-        .include_directories = &.{},
+        .include_directories = &.{include},
     });
 
     bootstrap.dependOn(bootstrapConversion.step);
