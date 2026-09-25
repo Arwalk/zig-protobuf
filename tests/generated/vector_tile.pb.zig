@@ -4,6 +4,7 @@ const std = @import("std");
 
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
+const fdf = protobuf.fdf;
 
 pub const Tile = struct {
     layers: std.ArrayList(Tile.Layer) = .empty,
@@ -17,7 +18,6 @@ pub const Tile = struct {
         POINT = 1,
         LINESTRING = 2,
         POLYGON = 3,
-        _,
     };
 
     pub const Value = struct {
@@ -103,9 +103,9 @@ pub const Tile = struct {
     };
 
     pub const Feature = struct {
-        id: ?u64 = 0,
+        id: ?u64 = null,
         tags: std.ArrayList(u32) = .empty,
-        type: ?Tile.GeomType = .UNKNOWN,
+        type: ?Tile.GeomType = null,
         geometry: std.ArrayList(u32) = .empty,
 
         pub const _desc_table = .{
@@ -113,6 +113,12 @@ pub const Tile = struct {
             .tags = fd(2, .{ .packed_repeated = .{ .scalar = .uint32 } }),
             .type = fd(3, .@"enum"),
             .geometry = fd(4, .{ .packed_repeated = .{ .scalar = .uint32 } }),
+        };
+
+        /// Default values of fields that are `null` when not set.
+        pub const defaults = struct {
+            pub const id: u64 = 0;
+            pub const @"type": Tile.GeomType = .UNKNOWN;
         };
 
         /// Encodes the message to the writer
@@ -184,15 +190,20 @@ pub const Tile = struct {
         features: std.ArrayList(Tile.Feature) = .empty,
         keys: std.ArrayList([]const u8) = .empty,
         values: std.ArrayList(Tile.Value) = .empty,
-        extent: ?u32 = 4096,
+        extent: ?u32 = null,
 
         pub const _desc_table = .{
-            .version = fd(15, .{ .scalar = .uint32 }),
-            .name = fd(1, .{ .scalar = .string }),
+            .version = fdf(15, .{ .scalar = .uint32 }, .{ .legacy_required = true }),
+            .name = fdf(1, .{ .scalar = .string }, .{ .legacy_required = true }),
             .features = fd(2, .{ .repeated = .submessage }),
             .keys = fd(3, .{ .repeated = .{ .scalar = .string } }),
             .values = fd(4, .{ .repeated = .submessage }),
             .extent = fd(5, .{ .scalar = .uint32 }),
+        };
+
+        /// Default values of fields that are `null` when not set.
+        pub const defaults = struct {
+            pub const extent: u32 = 4096;
         };
 
         /// Encodes the message to the writer

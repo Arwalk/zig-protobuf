@@ -4,6 +4,7 @@ const std = @import("std");
 
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
+const fdf = protobuf.fdf;
 /// import package opentelemetry.proto.common.v1
 const opentelemetry_proto_common_v1 = @import("../common/v1.pb.zig");
 /// import package opentelemetry.proto.resource.v1
@@ -141,7 +142,7 @@ pub const ResourceLogs = struct {
     pub const _desc_table = .{
         .resource = fd(1, .submessage),
         .scope_logs = fd(2, .{ .repeated = .submessage }),
-        .schema_url = fd(3, .{ .scalar = .string }),
+        .schema_url = fdf(3, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
     };
 
     /// Encodes the message to the writer
@@ -216,7 +217,7 @@ pub const ScopeLogs = struct {
     pub const _desc_table = .{
         .scope = fd(1, .submessage),
         .log_records = fd(2, .{ .repeated = .submessage }),
-        .schema_url = fd(3, .{ .scalar = .string }),
+        .schema_url = fdf(3, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
     };
 
     /// Encodes the message to the writer
@@ -300,7 +301,7 @@ pub const LogRecord = struct {
         .time_unix_nano = fd(1, .{ .scalar = .fixed64 }),
         .observed_time_unix_nano = fd(11, .{ .scalar = .fixed64 }),
         .severity_number = fd(2, .@"enum"),
-        .severity_text = fd(3, .{ .scalar = .string }),
+        .severity_text = fdf(3, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         .body = fd(5, .submessage),
         .attributes = fd(6, .{ .repeated = .submessage }),
         .dropped_attributes_count = fd(7, .{ .scalar = .uint32 }),

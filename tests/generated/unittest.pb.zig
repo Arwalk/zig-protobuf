@@ -4,17 +4,16 @@ const std = @import("std");
 
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
+const fdf = protobuf.fdf;
 
 pub const ForeignEnum = enum(i32) {
     FOREIGN_FOO = 4,
     FOREIGN_BAR = 5,
     FOREIGN_BAZ = 6,
-    _,
 };
 
 pub const TestReservedEnumFields = enum(i32) {
     UNKNOWN = 0,
-    _,
 };
 
 /// Test an enum that has multiple values with the same number.
@@ -22,7 +21,6 @@ pub const TestEnumWithDupValue = enum(i32) {
     FOO1 = 1,
     BAR1 = 2,
     BAZ = 3,
-    _,
     // allow_alias = true: these additional names also map to an emitted enum value.
     pub const _json_aliases = &[_]struct { name: []const u8, value: i32 }{
         .{ .name = "FOO2", .value = 1 },
@@ -39,7 +37,6 @@ pub const TestSparseEnum = enum(i32) {
     SPARSE_E = -53452,
     SPARSE_F = 0,
     SPARSE_G = 2,
-    _,
 };
 
 pub const VeryLargeEnum = enum(i32) {
@@ -144,7 +141,6 @@ pub const VeryLargeEnum = enum(i32) {
     ENUM_LABEL_98 = 98,
     ENUM_LABEL_99 = 99,
     ENUM_LABEL_100 = 100,
-    _,
 };
 
 /// This proto includes every type of field in both singular and repeated
@@ -196,25 +192,25 @@ pub const TestAllTypes = struct {
     repeated_string_piece: std.ArrayList([]const u8) = .empty,
     repeated_cord: std.ArrayList([]const u8) = .empty,
     repeated_lazy_message: std.ArrayList(TestAllTypes.NestedMessage) = .empty,
-    default_int32: ?i32 = 41,
-    default_int64: ?i64 = 42,
-    default_uint32: ?u32 = 43,
-    default_uint64: ?u64 = 44,
-    default_sint32: ?i32 = -45,
-    default_sint64: ?i64 = 46,
-    default_fixed32: ?u32 = 47,
-    default_fixed64: ?u64 = 48,
-    default_sfixed32: ?i32 = 49,
-    default_sfixed64: ?i64 = -50,
-    default_float: ?f32 = 51.5,
-    default_double: ?f64 = 52000,
-    default_bool: ?bool = true,
-    default_string: ?[]const u8 = "hello",
-    default_bytes: ?[]const u8 = "world",
-    default_nested_enum: ?TestAllTypes.NestedEnum = .BAR,
-    default_foreign_enum: ?ForeignEnum = .FOREIGN_BAR,
-    default_string_piece: ?[]const u8 = "abc",
-    default_cord: ?[]const u8 = "123",
+    default_int32: ?i32 = null,
+    default_int64: ?i64 = null,
+    default_uint32: ?u32 = null,
+    default_uint64: ?u64 = null,
+    default_sint32: ?i32 = null,
+    default_sint64: ?i64 = null,
+    default_fixed32: ?u32 = null,
+    default_fixed64: ?u64 = null,
+    default_sfixed32: ?i32 = null,
+    default_sfixed64: ?i64 = null,
+    default_float: ?f32 = null,
+    default_double: ?f64 = null,
+    default_bool: ?bool = null,
+    default_string: ?[]const u8 = null,
+    default_bytes: ?[]const u8 = null,
+    default_nested_enum: ?TestAllTypes.NestedEnum = null,
+    default_foreign_enum: ?ForeignEnum = null,
+    default_string_piece: ?[]const u8 = null,
+    default_cord: ?[]const u8 = null,
     oneof_field: ?oneof_field_union = null,
 
     pub const _oneof_field_case = enum {
@@ -305,12 +301,34 @@ pub const TestAllTypes = struct {
         .oneof_field = fd(null, .{ .oneof = oneof_field_union }),
     };
 
+    /// Default values of fields that are `null` when not set.
+    pub const defaults = struct {
+        pub const default_int32: i32 = 41;
+        pub const default_int64: i64 = 42;
+        pub const default_uint32: u32 = 43;
+        pub const default_uint64: u64 = 44;
+        pub const default_sint32: i32 = -45;
+        pub const default_sint64: i64 = 46;
+        pub const default_fixed32: u32 = 47;
+        pub const default_fixed64: u64 = 48;
+        pub const default_sfixed32: i32 = 49;
+        pub const default_sfixed64: i64 = -50;
+        pub const default_float: f32 = 51.5;
+        pub const default_double: f64 = 52000;
+        pub const default_bool: bool = true;
+        pub const default_string: []const u8 = "hello";
+        pub const default_bytes: []const u8 = "world";
+        pub const default_nested_enum: TestAllTypes.NestedEnum = .BAR;
+        pub const default_foreign_enum: ForeignEnum = .FOREIGN_BAR;
+        pub const default_string_piece: []const u8 = "abc";
+        pub const default_cord: []const u8 = "123";
+    };
+
     pub const NestedEnum = enum(i32) {
         FOO = 1,
         BAR = 2,
         BAZ = 3,
         NEG = -1,
-        _,
     };
 
     pub const NestedMessage = struct {
@@ -1553,9 +1571,9 @@ pub const TestRequired = struct {
     optional_foreign: ?ForeignMessage = null,
 
     pub const _desc_table = .{
-        .a = fd(1, .{ .scalar = .int32 }),
+        .a = fdf(1, .{ .scalar = .int32 }, .{ .legacy_required = true }),
         .dummy2 = fd(2, .{ .scalar = .int32 }),
-        .b = fd(3, .{ .scalar = .int32 }),
+        .b = fdf(3, .{ .scalar = .int32 }, .{ .legacy_required = true }),
         .dummy4 = fd(4, .{ .scalar = .int32 }),
         .dummy5 = fd(5, .{ .scalar = .int32 }),
         .dummy6 = fd(6, .{ .scalar = .int32 }),
@@ -1585,7 +1603,7 @@ pub const TestRequired = struct {
         .dummy30 = fd(30, .{ .scalar = .int32 }),
         .dummy31 = fd(31, .{ .scalar = .int32 }),
         .dummy32 = fd(32, .{ .scalar = .int32 }),
-        .c = fd(33, .{ .scalar = .int32 }),
+        .c = fdf(33, .{ .scalar = .int32 }, .{ .legacy_required = true }),
         .optional_foreign = fd(34, .submessage),
     };
 
@@ -1736,7 +1754,7 @@ pub const TestRequiredMessage = struct {
     pub const _desc_table = .{
         .optional_message = fd(1, .submessage),
         .repeated_message = fd(2, .{ .repeated = .submessage }),
-        .required_message = fd(3, .submessage),
+        .required_message = fdf(3, .submessage, .{ .legacy_required = true }),
     };
 
     /// Encodes the message to the writer
@@ -2728,7 +2746,7 @@ pub const TestIsInitialized = struct {
         i: i32,
 
         pub const _desc_table = .{
-            .i = fd(2, .{ .scalar = .int32 }),
+            .i = fdf(2, .{ .scalar = .int32 }, .{ .legacy_required = true }),
         };
 
         /// Encodes the message to the writer
@@ -3814,33 +3832,33 @@ pub const TestExtensionOrderings2 = struct {
 };
 
 pub const TestExtremeDefaultValues = struct {
-    escaped_bytes: ?[]const u8 = "\\000\\001\\007\\010\\014\\n\\r\\t\\013\\\\\\'\\\"\\376",
-    large_uint32: ?u32 = 4294967295,
-    large_uint64: ?u64 = 18446744073709551615,
-    small_int32: ?i32 = -2147483647,
-    small_int64: ?i64 = -9223372036854775807,
-    really_small_int32: ?i32 = -2147483648,
-    really_small_int64: ?i64 = -9223372036854775808,
-    utf8_string: ?[]const u8 = "\xe1\x88\xb4",
-    zero_float: ?f32 = 0,
-    one_float: ?f32 = 1,
-    small_float: ?f32 = 1.5,
-    negative_one_float: ?f32 = -1,
-    negative_float: ?f32 = -1.5,
-    large_float: ?f32 = 2e+08,
-    small_negative_float: ?f32 = -8e-28,
-    inf_double: ?f64 = std.math.inf(f64),
-    neg_inf_double: ?f64 = -std.math.inf(f64),
-    nan_double: ?f64 = std.math.nan(f64),
-    inf_float: ?f32 = std.math.inf(f32),
-    neg_inf_float: ?f32 = -std.math.inf(f32),
-    nan_float: ?f32 = std.math.nan(f32),
-    cpp_trigraph: ?[]const u8 = "? ? ?? ?? ??? ??/ ??-",
-    string_with_zero: ?[]const u8 = "hel\x00lo",
-    bytes_with_zero: ?[]const u8 = "wor\\000ld",
-    string_piece_with_zero: ?[]const u8 = "ab\x00c",
-    cord_with_zero: ?[]const u8 = "12\x003",
-    replacement_string: ?[]const u8 = "${unknown}",
+    escaped_bytes: ?[]const u8 = null,
+    large_uint32: ?u32 = null,
+    large_uint64: ?u64 = null,
+    small_int32: ?i32 = null,
+    small_int64: ?i64 = null,
+    really_small_int32: ?i32 = null,
+    really_small_int64: ?i64 = null,
+    utf8_string: ?[]const u8 = null,
+    zero_float: ?f32 = null,
+    one_float: ?f32 = null,
+    small_float: ?f32 = null,
+    negative_one_float: ?f32 = null,
+    negative_float: ?f32 = null,
+    large_float: ?f32 = null,
+    small_negative_float: ?f32 = null,
+    inf_double: ?f64 = null,
+    neg_inf_double: ?f64 = null,
+    nan_double: ?f64 = null,
+    inf_float: ?f32 = null,
+    neg_inf_float: ?f32 = null,
+    nan_float: ?f32 = null,
+    cpp_trigraph: ?[]const u8 = null,
+    string_with_zero: ?[]const u8 = null,
+    bytes_with_zero: ?[]const u8 = null,
+    string_piece_with_zero: ?[]const u8 = null,
+    cord_with_zero: ?[]const u8 = null,
+    replacement_string: ?[]const u8 = null,
 
     pub const _desc_table = .{
         .escaped_bytes = fd(1, .{ .scalar = .bytes }),
@@ -3870,6 +3888,37 @@ pub const TestExtremeDefaultValues = struct {
         .string_piece_with_zero = fd(25, .{ .scalar = .string }),
         .cord_with_zero = fd(26, .{ .scalar = .string }),
         .replacement_string = fd(27, .{ .scalar = .string }),
+    };
+
+    /// Default values of fields that are `null` when not set.
+    pub const defaults = struct {
+        pub const escaped_bytes: []const u8 = "\\000\\001\\007\\010\\014\\n\\r\\t\\013\\\\\\'\\\"\\376";
+        pub const large_uint32: u32 = 4294967295;
+        pub const large_uint64: u64 = 18446744073709551615;
+        pub const small_int32: i32 = -2147483647;
+        pub const small_int64: i64 = -9223372036854775807;
+        pub const really_small_int32: i32 = -2147483648;
+        pub const really_small_int64: i64 = -9223372036854775808;
+        pub const utf8_string: []const u8 = "\xe1\x88\xb4";
+        pub const zero_float: f32 = 0;
+        pub const one_float: f32 = 1;
+        pub const small_float: f32 = 1.5;
+        pub const negative_one_float: f32 = -1;
+        pub const negative_float: f32 = -1.5;
+        pub const large_float: f32 = 2e+08;
+        pub const small_negative_float: f32 = -8e-28;
+        pub const inf_double: f64 = std.math.inf(f64);
+        pub const neg_inf_double: f64 = -std.math.inf(f64);
+        pub const nan_double: f64 = std.math.nan(f64);
+        pub const inf_float: f32 = std.math.inf(f32);
+        pub const neg_inf_float: f32 = -std.math.inf(f32);
+        pub const nan_float: f32 = std.math.nan(f32);
+        pub const cpp_trigraph: []const u8 = "? ? ?? ?? ??? ??/ ??-";
+        pub const string_with_zero: []const u8 = "hel\x00lo";
+        pub const bytes_with_zero: []const u8 = "wor\\000ld";
+        pub const string_piece_with_zero: []const u8 = "ab\x00c";
+        pub const cord_with_zero: []const u8 = "12\x003";
+        pub const replacement_string: []const u8 = "${unknown}";
     };
 
     /// Encodes the message to the writer
@@ -4942,7 +4991,7 @@ pub const TestOneofBackwardsCompatible = struct {
 
 pub const TestOneof2 = struct {
     baz_int: ?i32 = null,
-    baz_string: ?[]const u8 = "BAZ",
+    baz_string: ?[]const u8 = null,
     foo: ?foo_union = null,
     bar: ?bar_union = null,
 
@@ -5027,11 +5076,25 @@ pub const TestOneof2 = struct {
         .bar = fd(null, .{ .oneof = bar_union }),
     };
 
+    /// Default values of fields that are `null` when not set.
+    pub const defaults = struct {
+        pub const bar_int: i32 = 5;
+        pub const bar_string: []const u8 = "STRING";
+        pub const bar_cord: []const u8 = "CORD";
+        pub const bar_string_piece: []const u8 = "SPIECE";
+        pub const bar_bytes: []const u8 = "BYTES";
+        pub const bar_enum: TestOneof2.NestedEnum = .BAR;
+        pub const bar_string_with_empty_default: []const u8 = &.{};
+        pub const bar_cord_with_empty_default: []const u8 = &.{};
+        pub const bar_string_piece_with_empty_default: []const u8 = &.{};
+        pub const bar_bytes_with_empty_default: []const u8 = &.{};
+        pub const baz_string: []const u8 = "BAZ";
+    };
+
     pub const NestedEnum = enum(i32) {
         FOO = 1,
         BAR = 2,
         BAZ = 3,
-        _,
     };
 
     pub const NestedMessage = struct {
@@ -5196,7 +5259,7 @@ pub const TestRequiredOneof = struct {
         required_double: f64,
 
         pub const _desc_table = .{
-            .required_double = fd(1, .{ .scalar = .double }),
+            .required_double = fdf(1, .{ .scalar = .double }, .{ .legacy_required = true }),
         };
 
         /// Encodes the message to the writer
@@ -5677,7 +5740,6 @@ pub const TestDynamicExtensions = struct {
         DYNAMIC_FOO = 2200,
         DYNAMIC_BAR = 2201,
         DYNAMIC_BAZ = 2202,
-        _,
     };
 
     pub const DynamicMessageType = struct {
@@ -5903,7 +5965,7 @@ pub const TestParsingMerge = struct {
     repeated_group_all_types: ?TestAllTypes = null,
 
     pub const _desc_table = .{
-        .required_all_types = fd(1, .submessage),
+        .required_all_types = fdf(1, .submessage, .{ .legacy_required = true }),
         .optional_all_types = fd(2, .submessage),
         .repeated_all_types = fd(3, .{ .repeated = .submessage }),
         .optional_group_all_types = fd(11, .submessage),
@@ -6133,10 +6195,15 @@ pub const TestMergeException = struct {
 };
 
 pub const TestCommentInjectionMessage = struct {
-    a: ?[]const u8 = "*/ <- Neither should this.",
+    a: ?[]const u8 = null,
 
     pub const _desc_table = .{
         .a = fd(1, .{ .scalar = .string }),
+    };
+
+    /// Default values of fields that are `null` when not set.
+    pub const defaults = struct {
+        pub const a: []const u8 = "*/ <- Neither should this.";
     };
 
     /// Encodes the message to the writer
@@ -6810,8 +6877,8 @@ pub const TestHugeFieldNumbers = struct {
     };
 
     pub const StringStringMapEntry = struct {
-        key: ?[]const u8 = null,
-        value: ?[]const u8 = null,
+        key: []const u8 = &.{},
+        value: []const u8 = &.{},
 
         pub const _desc_table = .{
             .key = fd(1, .{ .scalar = .string }),
@@ -8235,14 +8302,12 @@ pub const EnumParseTester = struct {
         SEQ_SMALL_0_DEFAULT = 0,
         SEQ_SMALL_0_1 = 1,
         SEQ_SMALL_0_2 = 2,
-        _,
     };
 
     pub const SeqSmall1 = enum(i32) {
         SEQ_SMALL_1_DEFAULT = 1,
         SEQ_SMALL_1_2 = 2,
         SEQ_SMALL_1_3 = 3,
-        _,
     };
 
     pub const SeqLarge = enum(i32) {
@@ -8281,7 +8346,6 @@ pub const EnumParseTester = struct {
         SEQ_LARGE_31 = 31,
         SEQ_LARGE_32 = 32,
         SEQ_LARGE_33 = 33,
-        _,
     };
 
     pub const Arbitrary = enum(i32) {
@@ -8291,7 +8355,6 @@ pub const EnumParseTester = struct {
         ARBITRARY_3 = 213213,
         ARBITRARY_MIN = -2147483648,
         ARBITRARY_MAX = 2147483647,
-        _,
     };
 
     /// Encodes the message to the writer

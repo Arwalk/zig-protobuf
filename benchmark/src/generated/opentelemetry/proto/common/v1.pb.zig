@@ -4,6 +4,7 @@ const std = @import("std");
 
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
+const fdf = protobuf.fdf;
 
 /// AnyValue is used to represent any type of attribute value. AnyValue may contain a
 /// primitive value such as a string or integer or it may contain an arbitrary nested
@@ -29,7 +30,7 @@ pub const AnyValue = struct {
         kvlist_value: KeyValueList,
         bytes_value: []const u8,
         pub const _desc_table = .{
-            .string_value = fd(1, .{ .scalar = .string }),
+            .string_value = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .bool_value = fd(2, .{ .scalar = .bool }),
             .int_value = fd(3, .{ .scalar = .int64 }),
             .double_value = fd(4, .{ .scalar = .double }),
@@ -61,6 +62,10 @@ pub const AnyValue = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -129,6 +134,10 @@ pub const ArrayValue = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -201,6 +210,10 @@ pub const KeyValueList = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -248,7 +261,7 @@ pub const KeyValue = struct {
     value: ?AnyValue = null,
 
     pub const _desc_table = .{
-        .key = fd(1, .{ .scalar = .string }),
+        .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         .value = fd(2, .submessage),
     };
 
@@ -270,6 +283,10 @@ pub const KeyValue = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -320,8 +337,8 @@ pub const InstrumentationScope = struct {
     dropped_attributes_count: u32 = 0,
 
     pub const _desc_table = .{
-        .name = fd(1, .{ .scalar = .string }),
-        .version = fd(2, .{ .scalar = .string }),
+        .name = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+        .version = fdf(2, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         .attributes = fd(3, .{ .repeated = .submessage }),
         .dropped_attributes_count = fd(4, .{ .scalar = .uint32 }),
     };
@@ -344,6 +361,10 @@ pub const InstrumentationScope = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
