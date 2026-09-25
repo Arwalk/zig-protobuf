@@ -165,6 +165,14 @@ pub fn build(b: *std.Build) !void {
             }),
         }),
         b.addTest(.{
+            .name = "upstream_options",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/tests_upstream_options.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        }),
+        b.addTest(.{
             .name = "stream",
             .root_module = b.createModule(.{
                 .root_source_file = b.path("tests/stream.zig"),
@@ -196,6 +204,19 @@ pub fn build(b: *std.Build) !void {
         .include_directories = &.{b.path("tests/protos_for_test")},
     });
 
+    // Upstream protobuf test protos for options, see tests/protos_for_test/upstream.
+    const convertUpstream = RunProtocStep.createWithGenerator(b, exe, .{
+        .destination_directory = b.path("tests/generated/upstream"),
+        .source_files = &.{
+            b.path("tests/protos_for_test/upstream/google/protobuf/unittest_custom_options.proto"),
+            b.path("tests/protos_for_test/upstream/google/protobuf/unittest_custom_options_unlinked.proto"),
+            b.path("tests/protos_for_test/upstream/google/protobuf/unittest_import_option.proto"),
+            b.path("tests/protos_for_test/upstream/google/protobuf/unittest_retention.proto"),
+            b.path("tests/protos_for_test/upstream/ported/custom_options_import.proto"),
+            b.path("tests/protos_for_test/upstream/ported/custom_options_option_import.proto"),
+        },
+        .include_directories = &.{b.path("tests/protos_for_test/upstream")},
+    });
     for (tests) |test_item| {
         if (!std.mem.eql(u8, "protobuf", test_item.name)) {
             test_item.root_module.addImport("protobuf", module);
@@ -209,6 +230,7 @@ pub fn build(b: *std.Build) !void {
 
         test_item.step.dependOn(&convertStep.step);
         test_item.step.dependOn(&convertStep2.step);
+        test_item.step.dependOn(&convertUpstream.step);
 
         test_step.dependOn(&run_main_tests.step);
     }

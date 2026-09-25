@@ -53,6 +53,8 @@ const GenerationContext = struct {
     messages: std.StringHashMap(descriptor.DescriptorProto),
     /// map of ".package.fully.qualified.Name" to every enum in the request
     enums: std.StringHashMap(descriptor.EnumDescriptorProto),
+    /// map of "<extendee fqn>#<field number>" to every extension in the request
+    extensions: std.StringHashMap(ExtensionInfo),
     preserve_unknown_fields: bool,
     /// Accept the in-development `edition = "UNSTABLE"`, whose features may
     /// change in any protobuf release. protoc also needs `--experimental_editions`.
@@ -125,6 +127,7 @@ const GenerationContext = struct {
             .package_file_options = .init(allocator),
             .messages = .init(allocator),
             .enums = .init(allocator),
+            .extensions = .init(allocator),
             .preserve_unknown_fields = false,
             .experimental_editions = false,
         };
@@ -220,6 +223,7 @@ const GenerationContext = struct {
             const prefix = try std.mem.concat(allocator, u8, &.{ ".", file.package.? });
             try self.indexMessages(allocator, prefix, file.message_type);
             try self.indexEnums(allocator, prefix, file.enum_type);
+            try self.indexExtensions(allocator, prefix, file.extension);
         }
 
         for (self.req.proto_file.items) |file| {
@@ -245,7 +249,7 @@ const GenerationContext = struct {
             if (self.package_file_options.get(entry.key_ptr.*)) |file_options| {
                 ret.content = try std.mem.concat(allocator, u8, &.{
                     ret.content.?,
-                    "\n/// Options of the files of this package that have some: encoded\n/// `google.protobuf.FileOptions`, by file name.\npub const _file_options = .{\n",
+                    "\n/// Options of the files of this package that have some\n/// (`google.protobuf.FileOptions`), by file name.\npub const _file_options = .{\n",
                     try std.mem.concat(allocator, u8, file_options.items),
                     "};\n",
                 });
@@ -284,6 +288,30 @@ const GenerationContext = struct {
             try self.messages.put(name, m);
             try self.indexMessages(allocator, name, m.nested_type);
             try self.indexEnums(allocator, name, m.enum_type);
+            try self.indexExtensions(allocator, name, m.extension);
+        }
+    }
+
+    /// An extension of the request, used to decode custom options.
+    const ExtensionInfo = struct {
+        field: descriptor.FieldDescriptorProto,
+        /// Fully qualified name, without the leading dot.
+        full_name: []const u8,
+    };
+
+    /// Records `extensions`, keyed by extendee and field number.
+    fn indexExtensions(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        prefix: []const u8,
+        extensions: std.ArrayList(descriptor.FieldDescriptorProto),
+    ) !void {
+        for (extensions.items) |ext| {
+            const key = try std.fmt.allocPrint(allocator, "{s}#{?d}", .{ ext.extendee.?, ext.number });
+            try self.extensions.put(key, .{
+                .field = ext,
+                .full_name = try std.mem.concat(allocator, u8, &.{ prefix[1..], ".", ext.name.? }),
+            });
         }
     }
 
@@ -1124,7 +1152,7 @@ const GenerationContext = struct {
             );
 
             try self.generateDefaults(allocator, lines, messageFqn, file, m, message_features);
-            try generateExtensionsInfo(allocator, lines, m);
+            try self.generateExtensionsInfo(allocator, lines, file, m);
             try self.generateMessageOptions(allocator, lines, file, m);
 
             // For nested enums, root_path is the message's path and field number is 4 (enum_type in DescriptorProto)
@@ -1213,8 +1241,10 @@ const GenerationContext = struct {
         return false;
     }
 
-    /// Encodes `options`, a `google.protobuf.*Options` message, as a Zig string
-    /// literal. Returns null when there are no options to emit.
+    /// Returns `options`, a `google.protobuf.*Options` message, as a Zig
+    /// literal: an anonymous struct of its set fields, where custom options
+    /// are keyed by their full name. Returns null when there are no options to
+    /// emit.
     fn encodeOptions(
         self: *GenerationContext,
         allocator: std.mem.Allocator,
@@ -1223,13 +1253,358 @@ const GenerationContext = struct {
     ) !?[]const u8 {
         if (!self.emitsOptions(file)) return null;
         const o = options orelse return null;
+
+        // The encoded options, for the usual decoding APIs.
+        var raw: std.Io.Writer.Allocating = .init(allocator);
+        try o.encode(&raw.writer, allocator);
+        if (raw.written().len == 0) return null;
+
         var w: std.Io.Writer.Allocating = .init(allocator);
-        try o.encode(&w.writer, allocator);
-        if (w.written().len == 0) return null;
-        return try formatSliceEscapeImpl(allocator, w.written());
+        try self.writeStructLiteral(allocator, &w.writer, o);
+        const fields = w.written()[".{".len .. w.written().len - "}".len];
+        return try std.fmt.allocPrint(allocator, ".{{ .@\"#raw\" = {s},{s}}}", .{
+            try formatSliceEscapeImpl(allocator, raw.written()),
+            fields,
+        });
     }
 
-    /// Emits `pub const <decl> = .{ .<name> = "<options>", ... };` for the
+    /// Fully qualified name (with a leading dot) of a message type of the
+    /// bootstrapped `google.protobuf` bindings.
+    fn descriptorFqn(comptime T: type) []const u8 {
+        const type_name = @typeName(T);
+        const index = comptime std.mem.lastIndexOf(u8, type_name, ".pb.").?;
+        return ".google.protobuf." ++ type_name[index + ".pb.".len ..];
+    }
+
+    /// Writes a decoded message of the bootstrapped `google.protobuf`
+    /// bindings as a literal, including its custom options (extensions).
+    fn writeStructLiteral(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        w: *std.Io.Writer,
+        message: anytype,
+    ) !void {
+        const T = @TypeOf(message);
+        try w.writeAll(".{");
+        var empty = true;
+        inline for (@typeInfo(T).@"struct".fields) |field| {
+            if (comptime !@hasField(@TypeOf(T._desc_table), field.name)) continue;
+            const value = @field(message, field.name);
+            const present = switch (@typeInfo(field.type)) {
+                .optional => value != null,
+                .@"struct" => if (comptime @hasField(field.type, "items")) value.items.len > 0 else true,
+                else => true,
+            };
+            if (present) {
+                try w.print(" .{f} = ", .{std.zig.fmtId(field.name)});
+                try self.writeValueLiteral(allocator, w, if (comptime @typeInfo(field.type) == .optional) value.? else value);
+                try w.writeByte(',');
+                empty = false;
+            }
+        }
+        if (comptime @hasField(T, "_extensions")) {
+            if (try self.writeExtensionFields(allocator, w, descriptorFqn(T), message._extensions)) empty = false;
+        }
+        try w.writeAll(if (empty) "}" else " }");
+    }
+
+    /// Writes a value of the bootstrapped `google.protobuf` bindings.
+    fn writeValueLiteral(self: *GenerationContext, allocator: std.mem.Allocator, w: *std.Io.Writer, value: anytype) !void {
+        const T = @TypeOf(value);
+        switch (@typeInfo(T)) {
+            .bool, .int => try w.print("{}", .{value}),
+            .float => try writeFloatLiteral(w, value),
+            .@"enum" => try writeEnumLiteral(w, T, @intFromEnum(value)),
+            .pointer => try w.writeAll(try formatSliceEscapeImpl(allocator, value)),
+            .@"struct" => if (comptime @hasField(T, "items")) {
+                try w.writeAll(".{");
+                for (value.items, 0..) |item, i| {
+                    try w.writeAll(if (i == 0) " " else ", ");
+                    try self.writeValueLiteral(allocator, w, item);
+                }
+                try w.writeAll(" }");
+            } else try self.writeStructLiteral(allocator, w, value),
+            else => @compileError("unsupported option type " ++ @typeName(T)),
+        }
+    }
+
+    fn writeFloatLiteral(w: *std.Io.Writer, value: anytype) !void {
+        const F = @TypeOf(value);
+        if (std.math.isNan(value)) return w.print("std.math.nan({s})", .{@typeName(F)});
+        if (std.math.isInf(value)) return w.print("{s}std.math.inf({s})", .{ if (value < 0) "-" else "", @typeName(F) });
+        // Scientific notation is always a float literal, even for integers.
+        try w.print("{e}", .{value});
+    }
+
+    fn writeEnumLiteral(w: *std.Io.Writer, comptime E: type, number: i32) !void {
+        inline for (@typeInfo(E).@"enum".fields) |field| {
+            if (field.value == number) return w.print(".{f}", .{std.zig.fmtId(field.name)});
+        }
+        try w.print("{}", .{number});
+    }
+
+    /// A field of wire data, and its value bytes (after the tag).
+    const WireField = struct { tag: pb.wire.Tag, value: []const u8 };
+
+    /// Splits wire data into its fields, stopping at an EGROUP tag.
+    fn splitWireFields(allocator: std.mem.Allocator, bytes: []const u8) !std.ArrayList(WireField) {
+        var fields: std.ArrayList(WireField) = .empty;
+        var reader: std.Io.Reader = .fixed(bytes);
+        while (reader.seek < reader.end) {
+            const tag, _ = try pb.wire.Tag.decode(&reader);
+            if (tag.wire_type == .egroup) break;
+            const start = reader.seek;
+            _ = try pb.wire.skipField(&reader, tag);
+            try fields.append(allocator, .{ .tag = tag, .value = bytes[start..reader.seek] });
+        }
+        return fields;
+    }
+
+    /// Writes the extension fields of `records` (wire data of a message of
+    /// type `extendee`) as ` .@"full.name" = value,` entries. Fields of
+    /// extensions missing from the request are kept as raw bytes, keyed by
+    /// their field number. Returns whether anything was written.
+    fn writeExtensionFields(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        w: *std.Io.Writer,
+        extendee: []const u8,
+        records: []const u8,
+    ) !bool {
+        if (records.len == 0) return false;
+        const fields = try splitWireFields(allocator, records);
+        var written = false;
+        for (fields.items, 0..) |field, i| {
+            // Each field number is written once, from all of its occurrences.
+            if (seenBefore(fields.items[0..i], field.tag.field)) continue;
+            const key = try std.fmt.allocPrint(allocator, "{s}#{d}", .{ extendee, field.tag.field });
+            if (self.extensions.get(key)) |ext| {
+                try w.print(" .{f} = ", .{std.zig.fmtId(ext.full_name)});
+                try self.writeFieldValue(allocator, w, ext.field, fields.items);
+            } else {
+                try w.print(" .@\"{d}\" = ", .{field.tag.field});
+                try w.writeAll(try formatSliceEscapeImpl(allocator, try concatFieldValues(allocator, fields.items, field.tag.field)));
+            }
+            try w.writeByte(',');
+            written = true;
+        }
+        return written;
+    }
+
+    fn seenBefore(fields: []const WireField, number: u29) bool {
+        for (fields) |f| if (f.tag.field == number) return true;
+        return false;
+    }
+
+    fn concatFieldValues(allocator: std.mem.Allocator, fields: []const WireField, number: u29) ![]const u8 {
+        var result: std.ArrayList(u8) = .empty;
+        for (fields) |f| if (f.tag.field == number) try result.appendSlice(allocator, f.value);
+        return result.items;
+    }
+
+    /// Writes the value of `field` from its occurrences in `fields`.
+    fn writeFieldValue(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        w: *std.Io.Writer,
+        field: descriptor.FieldDescriptorProto,
+        fields: []const WireField,
+    ) !void {
+        const number: u29 = @intCast(field.number.?);
+        const t = field.type.?;
+        if (t == .TYPE_MESSAGE or t == .TYPE_GROUP) {
+            if (isRepeated(field)) {
+                try w.writeAll(".{");
+                var first = true;
+                for (fields) |f| if (f.tag.field == number) {
+                    try w.writeAll(if (first) " " else ", ");
+                    try self.writeDescribedMessage(allocator, w, field.type_name.?, try messagePayload(f));
+                    first = false;
+                };
+                return w.writeAll(" }");
+            }
+            // Occurrences of a singular message are merged.
+            return self.writeDescribedMessage(allocator, w, field.type_name.?, try self.mergeMessages(allocator, fields, number, t == .TYPE_GROUP));
+        }
+
+        // Scalars: a repeated field lists every element, packed or not; a
+        // singular field keeps its last value.
+        var elements: std.ArrayList([]const u8) = .empty;
+        for (fields) |f| if (f.tag.field == number) {
+            var reader: std.Io.Reader = .fixed(f.value);
+            if (f.tag.wire_type == .len and t != .TYPE_STRING and t != .TYPE_BYTES) {
+                const len, _ = try pb.wire.decodeScalar(.int32, &reader);
+                _ = len;
+                while (reader.seek < reader.end) {
+                    try elements.append(allocator, try self.scalarLiteral(allocator, field, &reader, .varint));
+                }
+            } else {
+                try elements.append(allocator, try self.scalarLiteral(allocator, field, &reader, f.tag.wire_type));
+            }
+        };
+        if (!isRepeated(field)) return w.writeAll(elements.items[elements.items.len - 1]);
+        try w.writeAll(".{");
+        for (elements.items, 0..) |e, i| try w.print("{s}{s}", .{ if (i == 0) " " else ", ", e });
+        try w.writeAll(" }");
+    }
+
+    /// The fields of a message value: after the length prefix of a
+    /// length-delimited message; a group ends at its EGROUP tag, where
+    /// `splitWireFields` stops.
+    fn messagePayload(f: WireField) ![]const u8 {
+        if (f.tag.wire_type != .len) return f.value;
+        var reader: std.Io.Reader = .fixed(f.value);
+        _, _ = try pb.wire.decodeScalar(.int32, &reader);
+        return f.value[reader.seek..];
+    }
+
+    /// Concatenates the payloads of the occurrences of a message field, which
+    /// decodes as their merge.
+    fn mergeMessages(self: *GenerationContext, allocator: std.mem.Allocator, fields: []const WireField, number: u29, group: bool) ![]const u8 {
+        _ = self;
+        var result: std.ArrayList(u8) = .empty;
+        for (fields) |f| if (f.tag.field == number) {
+            if (group) {
+                // Drop the EGROUP tag ending each occurrence.
+                for ((try splitWireFields(allocator, f.value)).items) |inner| {
+                    var tag_buf: [10]u8 = undefined;
+                    var tag_w: std.Io.Writer = .fixed(&tag_buf);
+                    try writeRawVarint(&tag_w, @as(u32, @bitCast(inner.tag)));
+                    try result.appendSlice(allocator, tag_w.buffered());
+                    try result.appendSlice(allocator, inner.value);
+                }
+            } else {
+                var reader: std.Io.Reader = .fixed(f.value);
+                _, _ = try pb.wire.decodeScalar(.int32, &reader);
+                try result.appendSlice(allocator, f.value[reader.seek..]);
+            }
+        };
+        return result.items;
+    }
+
+    /// Returns the literal of a scalar value of `field`, read from `reader`.
+    /// For packed values, `wire_type` is the one of each element.
+    fn scalarLiteral(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        field: descriptor.FieldDescriptorProto,
+        reader: *std.Io.Reader,
+        wire_type: pb.wire.Type,
+    ) ![]const u8 {
+        _ = wire_type;
+        return switch (field.type.?) {
+            .TYPE_STRING, .TYPE_BYTES => b: {
+                const len, _ = try pb.wire.decodeScalar(.int32, reader);
+                break :b try formatSliceEscapeImpl(allocator, try reader.take(@intCast(len)));
+            },
+            .TYPE_BOOL => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.bool, reader))[0]}),
+            .TYPE_INT32 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.int32, reader))[0]}),
+            .TYPE_INT64 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.int64, reader))[0]}),
+            .TYPE_UINT32 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.uint32, reader))[0]}),
+            .TYPE_UINT64 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.uint64, reader))[0]}),
+            .TYPE_SINT32 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.sint32, reader))[0]}),
+            .TYPE_SINT64 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.sint64, reader))[0]}),
+            .TYPE_FIXED32 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.fixed32, reader))[0]}),
+            .TYPE_FIXED64 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.fixed64, reader))[0]}),
+            .TYPE_SFIXED32 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.sfixed32, reader))[0]}),
+            .TYPE_SFIXED64 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.sfixed64, reader))[0]}),
+            .TYPE_FLOAT, .TYPE_DOUBLE => b: {
+                var w: std.Io.Writer.Allocating = .init(allocator);
+                if (field.type.? == .TYPE_FLOAT) {
+                    try writeFloatLiteral(&w.writer, (try pb.wire.decodeScalar(.float, reader))[0]);
+                } else {
+                    try writeFloatLiteral(&w.writer, (try pb.wire.decodeScalar(.double, reader))[0]);
+                }
+                break :b w.written();
+            },
+            .TYPE_ENUM => b: {
+                const number = (try pb.wire.decodeScalar(.int32, reader))[0];
+                if (self.enums.get(field.type_name.?)) |e| for (e.value.items) |v| {
+                    if (v.number == number) break :b try std.fmt.allocPrint(allocator, ".{f}", .{std.zig.fmtId(v.name.?)});
+                };
+                break :b try std.fmt.allocPrint(allocator, "{}", .{number});
+            },
+            .TYPE_MESSAGE, .TYPE_GROUP => unreachable,
+        };
+    }
+
+    /// Writes wire data of the message type `type_name` of the request as a
+    /// literal, using its descriptor. Fields matching no field or extension
+    /// are kept as raw bytes, keyed by their field number.
+    fn writeDescribedMessage(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        w: *std.Io.Writer,
+        type_name: []const u8,
+        bytes: []const u8,
+    ) anyerror!void {
+        const message = self.messages.get(type_name) orelse {
+            return w.writeAll(try formatSliceEscapeImpl(allocator, bytes));
+        };
+        const fields = try splitWireFields(allocator, bytes);
+        try w.writeAll(".{");
+        var empty = true;
+        for (message.field.items) |field| {
+            if (!seenBefore(fields.items, @intCast(field.number.?))) continue;
+            try w.print(" .{f} = ", .{std.zig.fmtId(field.name.?)});
+            try self.writeFieldValue(allocator, w, field, fields.items);
+            try w.writeByte(',');
+            empty = false;
+        }
+        // Extensions of the message, and fields unknown to its descriptor.
+        const message_set = if (message.options) |o| o.message_set_wire_format orelse false else false;
+        var others: std.ArrayList(u8) = .empty;
+        for (fields.items) |f| {
+            if (hasFieldNumber(message, f.tag.field)) continue;
+            if (message_set and f.tag.field == 1 and f.tag.wire_type == .sgroup) {
+                // A MessageSet item: the extension `type_id`, holding `message`.
+                try appendMessageSetItem(allocator, &others, f.value);
+                continue;
+            }
+            var tag_buf: [10]u8 = undefined;
+            var tag_w: std.Io.Writer = .fixed(&tag_buf);
+            try writeRawVarint(&tag_w, @as(u32, @bitCast(f.tag)));
+            try others.appendSlice(allocator, tag_w.buffered());
+            try others.appendSlice(allocator, f.value);
+        }
+        if (try self.writeExtensionFields(allocator, w, type_name, others.items)) empty = false;
+        try w.writeAll(if (empty) "}" else " }");
+    }
+
+    /// Appends a MessageSet item (the fields of its group) to `records` as the
+    /// length-delimited field `type_id` holding `message`.
+    fn appendMessageSetItem(allocator: std.mem.Allocator, records: *std.ArrayList(u8), item: []const u8) !void {
+        var type_id: ?u64 = null;
+        var payload: []const u8 = &.{};
+        for ((try splitWireFields(allocator, item)).items) |f| {
+            var reader: std.Io.Reader = .fixed(f.value);
+            if (f.tag.field == 2 and f.tag.wire_type == .varint) {
+                type_id = (try pb.wire.decodeScalar(.uint64, &reader))[0];
+            } else if (f.tag.field == 3 and f.tag.wire_type == .len) {
+                payload = f.value;
+            }
+        }
+        const id = type_id orelse return;
+        var buf: [10]u8 = undefined;
+        var w: std.Io.Writer = .fixed(&buf);
+        try writeRawVarint(&w, (id << 3) | @intFromEnum(pb.wire.Type.len));
+        try records.appendSlice(allocator, w.buffered());
+        // `payload` is still length-prefixed, as a length-delimited value.
+        try records.appendSlice(allocator, if (payload.len > 0) payload else "\x00");
+    }
+
+    fn hasFieldNumber(message: descriptor.DescriptorProto, number: u29) bool {
+        for (message.field.items) |field| if (field.number == number) return true;
+        return false;
+    }
+
+    fn writeRawVarint(w: *std.Io.Writer, value: u64) !void {
+        var v = value;
+        while (v > 0x7F) : (v >>= 7) try w.writeByte(0x80 | @as(u8, @truncate(v)));
+        try w.writeByte(@intCast(v));
+    }
+
+    /// Emits `pub const <decl> = .{ .<name> = <options>, ... };` for the
     /// elements of `items` that have options.
     fn generateOptionsTable(
         self: *GenerationContext,
@@ -1267,7 +1642,7 @@ const GenerationContext = struct {
         if (try self.encodeOptions(allocator, file, message.options)) |encoded| {
             try lines.append(allocator, try std.fmt.allocPrint(
                 allocator,
-                "\n    /// Options of the message: an encoded `google.protobuf.MessageOptions`.\n    pub const _options: []const u8 = {s};\n",
+                "\n    /// Options of the message (`google.protobuf.MessageOptions`).\n    pub const _options = {s};\n",
                 .{encoded},
             ));
         }
@@ -1276,7 +1651,7 @@ const GenerationContext = struct {
             lines,
             file,
             "_field_options",
-            "Options of the fields that have some: encoded `google.protobuf.FieldOptions`.",
+            "Options of the fields that have some (`google.protobuf.FieldOptions`).",
             message.field.items,
         );
         try self.generateOptionsTable(
@@ -1284,7 +1659,7 @@ const GenerationContext = struct {
             lines,
             file,
             "_oneof_options",
-            "Options of the oneofs that have some: encoded `google.protobuf.OneofOptions`.",
+            "Options of the oneofs that have some (`google.protobuf.OneofOptions`).",
             message.oneof_decl.items,
         );
     }
@@ -1300,7 +1675,7 @@ const GenerationContext = struct {
         if (try self.encodeOptions(allocator, file, e.options)) |encoded| {
             try lines.append(allocator, try std.fmt.allocPrint(
                 allocator,
-                "\n    /// Options of the enum: an encoded `google.protobuf.EnumOptions`.\n    pub const _options: []const u8 = {s};\n",
+                "\n    /// Options of the enum (`google.protobuf.EnumOptions`).\n    pub const _options = {s};\n",
                 .{encoded},
             ));
         }
@@ -1309,7 +1684,7 @@ const GenerationContext = struct {
             lines,
             file,
             "_value_options",
-            "Options of the values that have some: encoded `google.protobuf.EnumValueOptions`.",
+            "Options of the values that have some (`google.protobuf.EnumValueOptions`).",
             e.value.items,
         );
     }
@@ -1325,7 +1700,7 @@ const GenerationContext = struct {
         if (try self.encodeOptions(allocator, file, service.options)) |encoded| {
             try lines.append(allocator, try std.fmt.allocPrint(
                 allocator,
-                "\n    /// Options of the service: an encoded `google.protobuf.ServiceOptions`.\n    pub const _options: []const u8 = {s};\n",
+                "\n    /// Options of the service (`google.protobuf.ServiceOptions`).\n    pub const _options = {s};\n",
                 .{encoded},
             ));
         }
@@ -1334,7 +1709,7 @@ const GenerationContext = struct {
             lines,
             file,
             "_method_options",
-            "Options of the methods that have some: encoded `google.protobuf.MethodOptions`.",
+            "Options of the methods that have some (`google.protobuf.MethodOptions`).",
             service.method.items,
         );
     }
@@ -1445,7 +1820,7 @@ const GenerationContext = struct {
             try lines.append(allocator, try std.fmt.allocPrint(
                 allocator,
                 "\npub const {f} = protobuf.Extension({s}, {s}, {s}, \"{s}.{s}\", {s}, {s});\n",
-                .{ std.zig.fmtId(ext.name.?), extendee, value_type, field_desc, scope_fqn.buf, ext.name.?, default, try self.encodeOptions(allocator, file, ext.options) orelse "&.{}" },
+                .{ std.zig.fmtId(ext.name.?), extendee, value_type, field_desc, scope_fqn.buf, ext.name.?, default, try self.encodeOptions(allocator, file, ext.options) orelse ".{}" },
             ));
 
             // Reference relative to the package, for the `extensions` list.
@@ -1460,34 +1835,48 @@ const GenerationContext = struct {
     }
 
     /// Emits `_extensions_info` for a message with extension ranges: the
-    /// ranges, which decide the fields kept as extensions when decoding, and
-    /// whether the extensions use the legacy MessageSet format.
+    /// ranges, which decide the fields kept as extensions when decoding,
+    /// whether the extensions use the legacy MessageSet format, and the
+    /// options of the ranges, when some have options.
     fn generateExtensionsInfo(
+        self: *GenerationContext,
         allocator: std.mem.Allocator,
         lines: *std.ArrayList([]const u8),
+        file: descriptor.FileDescriptorProto,
         message: descriptor.DescriptorProto,
     ) !void {
         if (message.extension_range.items.len == 0) return;
         try lines.append(allocator,
             \\
-            \\    /// Extension ranges `[start, end)`, and whether the extensions are
-            \\    /// encoded in the legacy MessageSet format.
             \\    pub const _extensions_info = .{
             \\        .ranges = .{
         );
+        var range_options: std.ArrayList([]const u8) = .empty;
+        var any_options = false;
         for (message.extension_range.items) |range| {
             try lines.append(allocator, try std.fmt.allocPrint(
                 allocator,
                 " .{{ {?d}, {?d} }},",
                 .{ range.start, range.end },
             ));
+            const options = try self.encodeOptions(allocator, file, range.options);
+            any_options = any_options or options != null;
+            try range_options.append(allocator, options orelse ".{}");
         }
         const message_set = if (message.options) |o| o.message_set_wire_format orelse false else false;
         try lines.append(allocator, try std.fmt.allocPrint(
             allocator,
-            " }},\n        .message_set = {},\n    }};\n",
+            " }},\n        .message_set = {},\n",
             .{message_set},
         ));
+        if (any_options) {
+            try lines.append(allocator, try std.fmt.allocPrint(
+                allocator,
+                "        .range_options = .{{ {s} }},\n",
+                .{try std.mem.join(allocator, ", ", range_options.items)},
+            ));
+        }
+        try lines.append(allocator, "    };\n");
     }
 
     /// Returns the `extensions` declaration listing the extensions of

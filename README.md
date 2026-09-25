@@ -191,8 +191,9 @@ a message, enum, extension or service with the name `extensions`.
 
 ## Options
 
-The generator keeps the [options](https://protobuf.dev/programming-guides/proto3/#options) of
-each declaration, standard and custom, as an encoded `google.protobuf.*Options` message:
+The generator decodes the [options](https://protobuf.dev/programming-guides/proto3/#options) of
+each declaration, standard and custom, into comptime constants. Each constant is an anonymous
+struct of the options that are set. Custom options are keyed by the full name of their extension.
 
 | Declaration | Generated declaration |
 | --- | --- |
@@ -202,9 +203,9 @@ each declaration, standard and custom, as an encoded `google.protobuf.*Options` 
 | enum value | `_value_options.<VALUE>` of the enum |
 | method | `_method_options.<Method>` of the service |
 | extension | `options` of the extension |
+| extension range | `_extensions_info.range_options[i]` of the message |
 
-Only the declarations that have options are listed. Custom options are extensions of the
-`google.protobuf.*Options` messages. Read them with `getFromBytes`:
+Only the declarations that have options are listed.
 
 ```proto
 extend google.protobuf.EnumValueOptions {
@@ -213,17 +214,43 @@ extend google.protobuf.EnumValueOptions {
 
 enum Data {
   DATA_UNSPECIFIED = 0;
+  DATA_SEARCH = 1 [deprecated = true];
   DATA_DISPLAY = 2 [(string_name) = "display_value"];
 }
 ```
 
 ```zig
-var name = try pb.string_name.getFromBytes(pb.Data._value_options.DATA_DISPLAY, allocator);
-defer pb.string_name.deinitValue(&name, allocator); // name.? == "display_value"
+pub const Data = enum(i32) {
+    DATA_UNSPECIFIED = 0,
+    DATA_SEARCH = 1,
+    DATA_DISPLAY = 2,
+    _,
+
+    pub const _value_options = .{
+        .DATA_SEARCH = .{ .@"#raw" = "\x08\x01", .deprecated = true },
+        .DATA_DISPLAY = .{ .@"#raw" = "\xaa\xd1\xf9\xd6\x03\rdisplay_value", .@"pkg.string_name" = "display_value" },
+    };
+};
+
+const name = pb.Data._value_options.DATA_DISPLAY.@"pkg.string_name"; // "display_value"
 ```
 
-To read standard options, such as `deprecated`, decode the bytes as the options message, for
-example `google_protobuf.FieldOptions.decode`.
+Values are Zig literals: strings for `string` and `bytes`, enum literals for enums, tuples for
+repeated values, and anonymous structs for messages (MessageSet items become extensions). An
+option whose extension is not part of the protoc request cannot be decoded; its value is kept
+as raw bytes, keyed by its field number.
+
+The option tests of protobuf (`CustomOptions` and `RetentionTest`) run on its test protos, in
+`tests/tests_upstream_options.zig`.
+
+Each set of options also has `@"#raw"`: the encoded `google.protobuf.*Options` message, for the
+usual decoding APIs. Custom options decode with `getFromBytes`, and standard options with the
+options message, for example `google_protobuf.FieldOptions.decode`:
+
+```zig
+var name = try pb.string_name.getFromBytes(pb.Data._value_options.DATA_DISPLAY.@"#raw", allocator);
+defer pb.string_name.deinitValue(&name, allocator); // name.? == "display_value"
+```
 
 protoc checks the [option targets](https://protobuf.dev/programming-guides/proto3/#option-targets)
 and removes the [source-retention](https://protobuf.dev/programming-guides/proto3/#option-retention)

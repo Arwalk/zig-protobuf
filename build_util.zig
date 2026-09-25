@@ -218,7 +218,17 @@ pub const RunProtocStep = struct {
                     std.debug.print("\n", .{});
                 }
 
-                _ = try step.captureChildProcess(step.owner.allocator, make_opt.progress_node, argv.items);
+                const result = try step.captureChildProcess(step.owner.allocator, make_opt.progress_node, argv.items);
+                if (result.term != .exited or result.term.exited != 0) {
+                    return step.fail("protoc failed", .{});
+                }
+                // protoc succeeded: its output only holds warnings, which are
+                // not errors. They are shown with `verbose`.
+                if (self.verbose) {
+                    for (step.result_error_msgs.items) |msg| std.debug.print("{s}", .{msg});
+                }
+                step.result_error_msgs.clearRetainingCapacity();
+                step.result_failed_command = null;
             }
 
             { // run zig fmt <destination>

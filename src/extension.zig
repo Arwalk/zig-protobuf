@@ -33,7 +33,7 @@ pub fn Extension(
     comptime field: protobuf.FieldDescriptor,
     comptime name: []const u8,
     comptime default_value: anytype,
-    comptime encoded_options: []const u8,
+    comptime field_options: anytype,
 ) type {
     if (!@hasField(Extendee_, "_extensions")) {
         @compileError(@typeName(Extendee_) ++ " declares no extension range for " ++ name);
@@ -51,9 +51,9 @@ pub fn Extension(
         /// Declared default value, or null. Singular extensions are `null`
         /// when not set; their value is then `default`.
         pub const default = default_value;
-        /// Options of the extension field: an encoded `google.protobuf.FieldOptions`,
-        /// empty when it has none.
-        pub const options: []const u8 = encoded_options;
+        /// Options of the extension field, as an anonymous struct of its set
+        /// options (see the `_field_options` of messages). Empty when it has none.
+        pub const options = field_options;
 
         const empty: Value_ = if (@typeInfo(Value_) == .optional) null else .empty;
 
@@ -80,9 +80,9 @@ pub fn Extension(
         }
 
         /// Returns the value of the extension from an encoded `Extendee`, such
-        /// as the options emitted by the generator (`_options`,
-        /// `_field_options`, ...), which are encoded `google.protobuf.*Options`
-        /// messages. The caller frees the value with `deinitValue`.
+        /// as the `@"#raw"` field of the options emitted by the generator,
+        /// which holds an encoded `google.protobuf.*Options` message. The
+        /// caller frees the value with `deinitValue`.
         pub fn getFromBytes(encoded: []const u8, allocator: std.mem.Allocator) DecodeError!Value_ {
             return decodeValue(encoded, allocator, null);
         }
