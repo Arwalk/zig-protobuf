@@ -157,6 +157,14 @@ pub fn build(b: *std.Build) !void {
             }),
         }),
         b.addTest(.{
+            .name = "options",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/tests_options.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        }),
+        b.addTest(.{
             .name = "stream",
             .root_module = b.createModule(.{
                 .root_source_file = b.path("tests/stream.zig"),
@@ -181,6 +189,7 @@ pub fn build(b: *std.Build) !void {
             b.path("tests/protos_for_test/editions2026.proto"),
             b.path("tests/protos_for_test/extensions.proto"),
             b.path("tests/protos_for_test/extensions_editions.proto"),
+            b.path("tests/protos_for_test/options.proto"),
             b.path("tests/protos_for_test/test_service.proto"),
             b.path("tests/protos_for_test/whitespace-in-name.proto"),
         },

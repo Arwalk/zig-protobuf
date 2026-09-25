@@ -189,6 +189,47 @@ format. The `StreamDecoder` skips extensions, like unknown fields.
 The `extensions` declaration shares the top-level scope of the file. Thus, a file must not have
 a message, enum, extension or service with the name `extensions`.
 
+## Options
+
+The generator keeps the [options](https://protobuf.dev/programming-guides/proto3/#options) of
+each declaration, standard and custom, as an encoded `google.protobuf.*Options` message:
+
+| Declaration | Generated declaration |
+| --- | --- |
+| file | `_file_options.@"file.proto"` (files of a package share its output) |
+| message, enum, service | `_options` |
+| field, oneof | `_field_options.<field>`, `_oneof_options.<oneof>` of the message |
+| enum value | `_value_options.<VALUE>` of the enum |
+| method | `_method_options.<Method>` of the service |
+| extension | `options` of the extension |
+
+Only the declarations that have options are listed. Custom options are extensions of the
+`google.protobuf.*Options` messages. Read them with `getFromBytes`:
+
+```proto
+extend google.protobuf.EnumValueOptions {
+  string string_name = 123456789;
+}
+
+enum Data {
+  DATA_UNSPECIFIED = 0;
+  DATA_DISPLAY = 2 [(string_name) = "display_value"];
+}
+```
+
+```zig
+var name = try pb.string_name.getFromBytes(pb.Data._value_options.DATA_DISPLAY, allocator);
+defer pb.string_name.deinitValue(&name, allocator); // name.? == "display_value"
+```
+
+To read standard options, such as `deprecated`, decode the bytes as the options message, for
+example `google_protobuf.FieldOptions.decode`.
+
+protoc checks the [option targets](https://protobuf.dev/programming-guides/proto3/#option-targets)
+and removes the [source-retention](https://protobuf.dev/programming-guides/proto3/#option-retention)
+options. It removes them only in the files to generate, so the generator does not keep the
+options of the files that are only imported.
+
 ## Branches
 
 There are 2 branches you can use for your development.

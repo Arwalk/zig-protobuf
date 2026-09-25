@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package tests.options;
+
+import "google/protobuf/descriptor.proto";
+
+// Option targets, as in https://protobuf.dev/programming-guides/proto3/#option-targets
+message MyOptions {
+  string file_only_option = 1 [targets = TARGET_TYPE_FILE];
+  int32 message_and_enum_option = 2 [targets = TARGET_TYPE_MESSAGE, targets = TARGET_TYPE_ENUM];
+}
+
+extend google.protobuf.FileOptions {
+  MyOptions file_options = 50000;
+  // Source-retention options are not kept in the generated code.
+  int32 source_retention_option = 50001 [retention = RETENTION_SOURCE];
+}
+
+extend google.protobuf.MessageOptions {
+  MyOptions message_options = 50000;
+}
+
+extend google.protobuf.EnumOptions {
+  MyOptions enum_options = 50000;
+}
+
+extend google.protobuf.FieldOptions {
+  string field_label = 50000;
+}
+
+extend google.protobuf.OneofOptions {
+  bool oneof_flag = 50000;
+}
+
+extend google.protobuf.EnumValueOptions {
+  string string_name = 123456789;
+}
+
+extend google.protobuf.ServiceOptions {
+  string service_label = 50000;
+}
+
+extend google.protobuf.MethodOptions {
+  int32 method_timeout = 50000;
+}
+
+option (file_options).file_only_option = "abc";
+option (source_retention_option) = 7;
+
+message MyMessage {
+  option (message_options).message_and_enum_option = 42;
+
+  int32 plain = 1;
+  int32 old_field = 2 [deprecated = true, (field_label) = "old"];
+
+  oneof choice {
+    option (oneof_flag) = true;
+    int32 a = 3;
+    string b = 4;
+  }
+}
+
+enum MyEnum {
+  option (enum_options).message_and_enum_option = 7;
+
+  MY_ENUM_UNSPECIFIED = 0;
+  MY_ENUM_OLD = 1 [deprecated = true];
+  MY_ENUM_DISPLAY = 2 [(string_name) = "display_value"];
+}
+
+service MyService {
+  option (service_label) = "svc";
+
+  rpc Call(MyMessage) returns (MyMessage) {
+    option (method_timeout) = 30;
+  }
+}

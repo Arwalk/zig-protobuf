@@ -33,6 +33,7 @@ pub fn Extension(
     comptime field: protobuf.FieldDescriptor,
     comptime name: []const u8,
     comptime default_value: anytype,
+    comptime encoded_options: []const u8,
 ) type {
     if (!@hasField(Extendee_, "_extensions")) {
         @compileError(@typeName(Extendee_) ++ " declares no extension range for " ++ name);
@@ -50,6 +51,9 @@ pub fn Extension(
         /// Declared default value, or null. Singular extensions are `null`
         /// when not set; their value is then `default`.
         pub const default = default_value;
+        /// Options of the extension field: an encoded `google.protobuf.FieldOptions`,
+        /// empty when it has none.
+        pub const options: []const u8 = encoded_options;
 
         const empty: Value_ = if (@typeInfo(Value_) == .optional) null else .empty;
 
@@ -63,9 +67,9 @@ pub fn Extension(
             pub fn jsonParse(
                 allocator: std.mem.Allocator,
                 source: anytype,
-                options: std.json.ParseOptions,
+                parse_options: std.json.ParseOptions,
             ) !@This() {
-                return json.parse(@This(), allocator, source, options);
+                return json.parse(@This(), allocator, source, parse_options);
             }
         };
 
@@ -73,6 +77,14 @@ pub fn Extension(
         /// frees it with `deinitValue`.
         pub fn get(msg: Extendee_, allocator: std.mem.Allocator) DecodeError!Value_ {
             return decodeValue(msg._extensions, allocator, null);
+        }
+
+        /// Returns the value of the extension from an encoded `Extendee`, such
+        /// as the options emitted by the generator (`_options`,
+        /// `_field_options`, ...), which are encoded `google.protobuf.*Options`
+        /// messages. The caller frees the value with `deinitValue`.
+        pub fn getFromBytes(encoded: []const u8, allocator: std.mem.Allocator) DecodeError!Value_ {
+            return decodeValue(encoded, allocator, null);
         }
 
         /// Whether the extension is set in `msg`.
@@ -119,21 +131,21 @@ pub fn Extension(
             deinitValue(&value, allocator);
         }
 
-        fn toJson(records: []const u8, allocator: std.mem.Allocator, options: json.Options) anyerror![]const u8 {
-            var holder: Holder = .{ .value = try decodeValue(records, allocator, options.extensions) };
+        fn toJson(records: []const u8, allocator: std.mem.Allocator, json_options: json.Options) anyerror![]const u8 {
+            var holder: Holder = .{ .value = try decodeValue(records, allocator, json_options.extensions) };
             defer protobuf.deinit(allocator, &holder);
             // Minified, the holder is `{"value":<extension value>}`.
-            const text = try json.encode(holder, .{}, options, allocator);
+            const text = try json.encode(holder, .{}, json_options, allocator);
             defer allocator.free(text);
             const prefix = "{\"value\":";
             if (!std.mem.startsWith(u8, text, prefix)) return error.WriteFailed;
             return allocator.dupe(u8, text[prefix.len .. text.len - 1]);
         }
 
-        fn fromJson(value_json: []const u8, allocator: std.mem.Allocator, options: std.json.ParseOptions) anyerror![]const u8 {
+        fn fromJson(value_json: []const u8, allocator: std.mem.Allocator, parse_options: std.json.ParseOptions) anyerror![]const u8 {
             const text = try std.mem.concat(allocator, u8, &.{ "{\"value\":", value_json, "}" });
             defer allocator.free(text);
-            const parsed = try std.json.parseFromSlice(Holder, allocator, text, options);
+            const parsed = try std.json.parseFromSlice(Holder, allocator, text, parse_options);
             defer parsed.deinit();
             var w: std.Io.Writer.Allocating = .init(allocator);
             errdefer w.deinit();

@@ -46,6 +46,9 @@ const GenerationContext = struct {
     /// map of package names to the references of the extensions they declare
     package_extensions: std.StringHashMap(std.ArrayList([]const u8)),
 
+    /// map of package names to the entries of their `_file_options` declaration
+    package_file_options: std.StringHashMap(std.ArrayList([]const u8)),
+
     /// map of ".package.fully.qualified.Name" to every message in the request
     messages: std.StringHashMap(descriptor.DescriptorProto),
     /// map of ".package.fully.qualified.Name" to every enum in the request
@@ -119,6 +122,7 @@ const GenerationContext = struct {
             .fqn_lines = .init(allocator),
             .message_deps = .init(allocator),
             .package_extensions = .init(allocator),
+            .package_file_options = .init(allocator),
             .messages = .init(allocator),
             .enums = .init(allocator),
             .preserve_unknown_fields = false,
@@ -235,6 +239,16 @@ const GenerationContext = struct {
             ret.content = try std.mem.concat(allocator, u8, entry.value_ptr.*.items);
             if (try self.packageExtensionsDeclaration(allocator, entry.key_ptr.*)) |declaration| {
                 ret.content = try std.mem.concat(allocator, u8, &.{ ret.content.?, declaration });
+            }
+            // Files sharing a package share its output, so their options are
+            // listed by file name.
+            if (self.package_file_options.get(entry.key_ptr.*)) |file_options| {
+                ret.content = try std.mem.concat(allocator, u8, &.{
+                    ret.content.?,
+                    "\n/// Options of the files of this package that have some: encoded\n/// `google.protobuf.FileOptions`, by file name.\npub const _file_options = .{\n",
+                    try std.mem.concat(allocator, u8, file_options.items),
+                    "};\n",
+                });
             }
             // Only files with fields using non-default features need `fdf`.
             if (std.mem.indexOf(u8, ret.content.?, "fdf(") != null) {
@@ -413,6 +427,7 @@ const GenerationContext = struct {
         // Field number 4 for message_type in FileDescriptorProto
         try self.generateMessages(allocator, lines, fqn, file, null, file.message_type, file_root_path, 4, file_features);
         try self.generateExtensions(allocator, lines, fqn, file, file.extension, file_features);
+        try self.recordFileOptions(allocator, file);
         // Field number 6 for service in FileDescriptorProto
         try self.generateServices(allocator, lines, fqn, file, file.service, file_root_path, 6);
     }
@@ -473,8 +488,6 @@ const GenerationContext = struct {
         enum_field_number: i32,
         scope_features: Features,
     ) !void {
-        _ = ctx;
-
         for (enums.items, 0..) |theEnum, enum_i| {
             const e: descriptor.EnumDescriptorProto = theEnum;
 
@@ -543,6 +556,7 @@ const GenerationContext = struct {
                     \\
                 );
             }
+            try ctx.generateEnumOptions(allocator, lines, file, e);
             try lines.append(allocator, "};\n\n");
         }
     }
@@ -1111,6 +1125,7 @@ const GenerationContext = struct {
 
             try self.generateDefaults(allocator, lines, messageFqn, file, m, message_features);
             try generateExtensionsInfo(allocator, lines, m);
+            try self.generateMessageOptions(allocator, lines, file, m);
 
             // For nested enums, root_path is the message's path and field number is 4 (enum_type in DescriptorProto)
             try self.generateEnums(allocator, lines, messageFqn, file, m.enum_type, message_path.items, 4, message_features);
@@ -1186,6 +1201,155 @@ const GenerationContext = struct {
                 \\
             , .{}));
         }
+    }
+
+    /// Whether the option values of `file` are emitted. protoc only strips the
+    /// source-retention options of the files to generate; the other files of
+    /// the request (their dependencies) keep them, so they get no options.
+    fn emitsOptions(self: *GenerationContext, file: descriptor.FileDescriptorProto) bool {
+        for (self.req.file_to_generate.items) |name| {
+            if (std.mem.eql(u8, name, file.name.?)) return true;
+        }
+        return false;
+    }
+
+    /// Encodes `options`, a `google.protobuf.*Options` message, as a Zig string
+    /// literal. Returns null when there are no options to emit.
+    fn encodeOptions(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        file: descriptor.FileDescriptorProto,
+        options: anytype,
+    ) !?[]const u8 {
+        if (!self.emitsOptions(file)) return null;
+        const o = options orelse return null;
+        var w: std.Io.Writer.Allocating = .init(allocator);
+        try o.encode(&w.writer, allocator);
+        if (w.written().len == 0) return null;
+        return try formatSliceEscapeImpl(allocator, w.written());
+    }
+
+    /// Emits `pub const <decl> = .{ .<name> = "<options>", ... };` for the
+    /// elements of `items` that have options.
+    fn generateOptionsTable(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        lines: *std.ArrayList([]const u8),
+        file: descriptor.FileDescriptorProto,
+        comptime decl: []const u8,
+        comptime doc: []const u8,
+        items: anytype,
+    ) !void {
+        var emitted = false;
+        for (items) |item| {
+            const encoded = try self.encodeOptions(allocator, file, item.options) orelse continue;
+            if (!emitted) {
+                try lines.append(allocator, "\n    /// " ++ doc ++ "\n    pub const " ++ decl ++ " = .{\n");
+                emitted = true;
+            }
+            try lines.append(allocator, try std.fmt.allocPrint(
+                allocator,
+                "        .{f} = {s},\n",
+                .{ std.zig.fmtId(item.name.?), encoded },
+            ));
+        }
+        if (emitted) try lines.append(allocator, "    };\n");
+    }
+
+    /// Emits the options of a message, of its fields and of its oneofs.
+    fn generateMessageOptions(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        lines: *std.ArrayList([]const u8),
+        file: descriptor.FileDescriptorProto,
+        message: descriptor.DescriptorProto,
+    ) !void {
+        if (try self.encodeOptions(allocator, file, message.options)) |encoded| {
+            try lines.append(allocator, try std.fmt.allocPrint(
+                allocator,
+                "\n    /// Options of the message: an encoded `google.protobuf.MessageOptions`.\n    pub const _options: []const u8 = {s};\n",
+                .{encoded},
+            ));
+        }
+        try self.generateOptionsTable(
+            allocator,
+            lines,
+            file,
+            "_field_options",
+            "Options of the fields that have some: encoded `google.protobuf.FieldOptions`.",
+            message.field.items,
+        );
+        try self.generateOptionsTable(
+            allocator,
+            lines,
+            file,
+            "_oneof_options",
+            "Options of the oneofs that have some: encoded `google.protobuf.OneofOptions`.",
+            message.oneof_decl.items,
+        );
+    }
+
+    /// Emits the options of an enum and of its values.
+    fn generateEnumOptions(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        lines: *std.ArrayList([]const u8),
+        file: descriptor.FileDescriptorProto,
+        e: descriptor.EnumDescriptorProto,
+    ) !void {
+        if (try self.encodeOptions(allocator, file, e.options)) |encoded| {
+            try lines.append(allocator, try std.fmt.allocPrint(
+                allocator,
+                "\n    /// Options of the enum: an encoded `google.protobuf.EnumOptions`.\n    pub const _options: []const u8 = {s};\n",
+                .{encoded},
+            ));
+        }
+        try self.generateOptionsTable(
+            allocator,
+            lines,
+            file,
+            "_value_options",
+            "Options of the values that have some: encoded `google.protobuf.EnumValueOptions`.",
+            e.value.items,
+        );
+    }
+
+    /// Emits the options of a service and of its methods.
+    fn generateServiceOptions(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        lines: *std.ArrayList([]const u8),
+        file: descriptor.FileDescriptorProto,
+        service: descriptor.ServiceDescriptorProto,
+    ) !void {
+        if (try self.encodeOptions(allocator, file, service.options)) |encoded| {
+            try lines.append(allocator, try std.fmt.allocPrint(
+                allocator,
+                "\n    /// Options of the service: an encoded `google.protobuf.ServiceOptions`.\n    pub const _options: []const u8 = {s};\n",
+                .{encoded},
+            ));
+        }
+        try self.generateOptionsTable(
+            allocator,
+            lines,
+            file,
+            "_method_options",
+            "Options of the methods that have some: encoded `google.protobuf.MethodOptions`.",
+            service.method.items,
+        );
+    }
+
+    /// Records the options of `file`, for the `_file_options` declaration of
+    /// its package.
+    fn recordFileOptions(self: *GenerationContext, allocator: std.mem.Allocator, file: descriptor.FileDescriptorProto) !void {
+        const encoded = try self.encodeOptions(allocator, file, file.options) orelse return;
+        const entry = try self.package_file_options.getOrPut(file.package.?);
+        if (!entry.found_existing) entry.value_ptr.* = .empty;
+        try entry.value_ptr.append(allocator, try std.fmt.allocPrint(
+            allocator,
+            "    .{f} = {s},\n",
+            .{ std.zig.fmtId(file.name.?), encoded },
+        ));
     }
 
     /// Emits `defaults`, holding the custom `[default = ...]` values of the
@@ -1280,8 +1444,8 @@ const GenerationContext = struct {
 
             try lines.append(allocator, try std.fmt.allocPrint(
                 allocator,
-                "\npub const {f} = protobuf.Extension({s}, {s}, {s}, \"{s}.{s}\", {s});\n",
-                .{ std.zig.fmtId(ext.name.?), extendee, value_type, field_desc, scope_fqn.buf, ext.name.?, default },
+                "\npub const {f} = protobuf.Extension({s}, {s}, {s}, \"{s}.{s}\", {s}, {s});\n",
+                .{ std.zig.fmtId(ext.name.?), extendee, value_type, field_desc, scope_fqn.buf, ext.name.?, default, try self.encodeOptions(allocator, file, ext.options) orelse "&.{}" },
             ));
 
             // Reference relative to the package, for the `extensions` list.
@@ -1497,6 +1661,7 @@ const GenerationContext = struct {
                     .{service_name},
                 ),
             );
+            try self.generateServiceOptions(allocator, lines, file, service);
 
             // Generate vtable fields (function pointers only)
             try self.generateVTableFields(
