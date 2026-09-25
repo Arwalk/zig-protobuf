@@ -39,9 +39,19 @@ pub const SymbolVisibility = enum(i32) {
 /// files it parses.
 pub const FileDescriptorSet = struct {
     file: std.ArrayList(FileDescriptorProto) = .empty,
+    _extensions: []const u8 = &.{},
 
     pub const _desc_table = .{
         .file = fd(1, .{ .repeated = .submessage }),
+    };
+
+    /// Extension ranges `[start, end)`, and whether the extensions are
+    /// encoded in the legacy MessageSet format.
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 536000000, 536000001 },
+        },
+        .message_set = false,
     };
 
     /// Encodes the message to the writer
@@ -449,6 +459,7 @@ pub const ExtensionRangeOptions = struct {
     declaration: std.ArrayList(ExtensionRangeOptions.Declaration) = .empty,
     features: ?FeatureSet = null,
     verification: ?ExtensionRangeOptions.VerificationState = null,
+    _extensions: []const u8 = &.{},
 
     pub const _desc_table = .{
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
@@ -460,6 +471,16 @@ pub const ExtensionRangeOptions = struct {
     /// Default values of fields that are `null` when not set.
     pub const defaults = struct {
         pub const verification: ExtensionRangeOptions.VerificationState = .UNVERIFIED;
+    };
+
+    /// Extension ranges `[start, end)`, and whether the extensions are
+    /// encoded in the legacy MessageSet format.
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 990, 999 },
+            .{ 1000, 536870912 },
+        },
+        .message_set = false,
     };
 
     /// The verification state of the extension range.
@@ -1218,6 +1239,7 @@ pub const FileOptions = struct {
     ruby_package: ?[]const u8 = null,
     features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
+    _extensions: []const u8 = &.{},
 
     pub const _desc_table = .{
         .java_package = fd(1, .{ .scalar = .string }),
@@ -1253,6 +1275,16 @@ pub const FileOptions = struct {
         pub const py_generic_services: bool = false;
         pub const deprecated: bool = false;
         pub const cc_enable_arenas: bool = true;
+    };
+
+    /// Extension ranges `[start, end)`, and whether the extensions are
+    /// encoded in the legacy MessageSet format.
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 990, 999 },
+            .{ 1000, 536870912 },
+        },
+        .message_set = false,
     };
 
     /// Generated classes can be optimized for speed or code size.
@@ -1333,6 +1365,7 @@ pub const MessageOptions = struct {
     deprecated_legacy_json_field_conflicts: ?bool = null,
     features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
+    _extensions: []const u8 = &.{},
 
     pub const _desc_table = .{
         .message_set_wire_format = fd(1, .{ .scalar = .bool }),
@@ -1349,6 +1382,16 @@ pub const MessageOptions = struct {
         pub const message_set_wire_format: bool = false;
         pub const no_standard_descriptor_accessor: bool = false;
         pub const deprecated: bool = false;
+    };
+
+    /// Extension ranges `[start, end)`, and whether the extensions are
+    /// encoded in the legacy MessageSet format.
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 990, 999 },
+            .{ 1000, 536870912 },
+        },
+        .message_set = false,
     };
 
     /// Encodes the message to the writer
@@ -1429,6 +1472,7 @@ pub const FieldOptions = struct {
     features: ?FeatureSet = null,
     feature_support: ?FieldOptions.FeatureSupport = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
+    _extensions: []const u8 = &.{},
 
     pub const _desc_table = .{
         .ctype = fd(1, .@"enum"),
@@ -1456,6 +1500,16 @@ pub const FieldOptions = struct {
         pub const deprecated: bool = false;
         pub const weak: bool = false;
         pub const debug_redact: bool = false;
+    };
+
+    /// Extension ranges `[start, end)`, and whether the extensions are
+    /// encoded in the legacy MessageSet format.
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 990, 999 },
+            .{ 1000, 536870912 },
+        },
+        .message_set = false,
     };
 
     pub const CType = enum(i32) {
@@ -1710,10 +1764,21 @@ pub const FieldOptions = struct {
 pub const OneofOptions = struct {
     features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
+    _extensions: []const u8 = &.{},
 
     pub const _desc_table = .{
         .features = fd(1, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
+    };
+
+    /// Extension ranges `[start, end)`, and whether the extensions are
+    /// encoded in the legacy MessageSet format.
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 990, 999 },
+            .{ 1000, 536870912 },
+        },
+        .message_set = false,
     };
 
     /// Encodes the message to the writer
@@ -1785,6 +1850,7 @@ pub const EnumOptions = struct {
     deprecated_legacy_json_field_conflicts: ?bool = null,
     features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
+    _extensions: []const u8 = &.{},
 
     pub const _desc_table = .{
         .allow_alias = fd(2, .{ .scalar = .bool }),
@@ -1797,6 +1863,16 @@ pub const EnumOptions = struct {
     /// Default values of fields that are `null` when not set.
     pub const defaults = struct {
         pub const deprecated: bool = false;
+    };
+
+    /// Extension ranges `[start, end)`, and whether the extensions are
+    /// encoded in the legacy MessageSet format.
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 990, 999 },
+            .{ 1000, 536870912 },
+        },
+        .message_set = false,
     };
 
     /// Encodes the message to the writer
@@ -1868,6 +1944,7 @@ pub const EnumValueOptions = struct {
     debug_redact: ?bool = null,
     feature_support: ?FieldOptions.FeatureSupport = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
+    _extensions: []const u8 = &.{},
 
     pub const _desc_table = .{
         .deprecated = fd(1, .{ .scalar = .bool }),
@@ -1881,6 +1958,16 @@ pub const EnumValueOptions = struct {
     pub const defaults = struct {
         pub const deprecated: bool = false;
         pub const debug_redact: bool = false;
+    };
+
+    /// Extension ranges `[start, end)`, and whether the extensions are
+    /// encoded in the legacy MessageSet format.
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 990, 999 },
+            .{ 1000, 536870912 },
+        },
+        .message_set = false,
     };
 
     /// Encodes the message to the writer
@@ -1950,6 +2037,7 @@ pub const ServiceOptions = struct {
     features: ?FeatureSet = null,
     deprecated: ?bool = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
+    _extensions: []const u8 = &.{},
 
     pub const _desc_table = .{
         .features = fd(34, .submessage),
@@ -1960,6 +2048,16 @@ pub const ServiceOptions = struct {
     /// Default values of fields that are `null` when not set.
     pub const defaults = struct {
         pub const deprecated: bool = false;
+    };
+
+    /// Extension ranges `[start, end)`, and whether the extensions are
+    /// encoded in the legacy MessageSet format.
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 990, 999 },
+            .{ 1000, 536870912 },
+        },
+        .message_set = false,
     };
 
     /// Encodes the message to the writer
@@ -2030,6 +2128,7 @@ pub const MethodOptions = struct {
     idempotency_level: ?MethodOptions.IdempotencyLevel = null,
     features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
+    _extensions: []const u8 = &.{},
 
     pub const _desc_table = .{
         .deprecated = fd(33, .{ .scalar = .bool }),
@@ -2042,6 +2141,16 @@ pub const MethodOptions = struct {
     pub const defaults = struct {
         pub const deprecated: bool = false;
         pub const idempotency_level: MethodOptions.IdempotencyLevel = .IDEMPOTENCY_UNKNOWN;
+    };
+
+    /// Extension ranges `[start, end)`, and whether the extensions are
+    /// encoded in the legacy MessageSet format.
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 990, 999 },
+            .{ 1000, 536870912 },
+        },
+        .message_set = false,
     };
 
     /// Is this method side-effect-free (or safe in HTTP parlance), or idempotent,
@@ -2297,6 +2406,7 @@ pub const FeatureSet = struct {
     enforce_naming_style: ?FeatureSet.EnforceNamingStyle = null,
     default_symbol_visibility: ?FeatureSet.VisibilityFeature.DefaultSymbolVisibility = null,
     enforce_proto_limits: ?FeatureSet.ProtoLimitsFeature.EnforceProtoLimits = null,
+    _extensions: []const u8 = &.{},
 
     pub const _desc_table = .{
         .field_presence = fd(1, .@"enum"),
@@ -2308,6 +2418,17 @@ pub const FeatureSet = struct {
         .enforce_naming_style = fd(7, .@"enum"),
         .default_symbol_visibility = fd(8, .@"enum"),
         .enforce_proto_limits = fd(9, .@"enum"),
+    };
+
+    /// Extension ranges `[start, end)`, and whether the extensions are
+    /// encoded in the legacy MessageSet format.
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 1000, 9995 },
+            .{ 9995, 10000 },
+            .{ 10000, 10001 },
+        },
+        .message_set = false,
     };
 
     pub const FieldPresence = enum(i32) {
@@ -2723,9 +2844,19 @@ pub const FeatureSetDefaults = struct {
 /// FileDescriptorProto was generated.
 pub const SourceCodeInfo = struct {
     location: std.ArrayList(SourceCodeInfo.Location) = .empty,
+    _extensions: []const u8 = &.{},
 
     pub const _desc_table = .{
         .location = fd(1, .{ .repeated = .submessage }),
+    };
+
+    /// Extension ranges `[start, end)`, and whether the extensions are
+    /// encoded in the legacy MessageSet format.
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 536000000, 536000001 },
+        },
+        .message_set = false,
     };
 
     pub const Location = struct {

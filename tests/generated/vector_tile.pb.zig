@@ -8,9 +8,19 @@ const fdf = protobuf.fdf;
 
 pub const Tile = struct {
     layers: std.ArrayList(Tile.Layer) = .empty,
+    _extensions: []const u8 = &.{},
 
     pub const _desc_table = .{
         .layers = fd(3, .{ .repeated = .submessage }),
+    };
+
+    /// Extension ranges `[start, end)`, and whether the extensions are
+    /// encoded in the legacy MessageSet format.
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 16, 8192 },
+        },
+        .message_set = false,
     };
 
     pub const GeomType = enum(i32) {
@@ -28,6 +38,7 @@ pub const Tile = struct {
         uint_value: ?u64 = null,
         sint_value: ?i64 = null,
         bool_value: ?bool = null,
+        _extensions: []const u8 = &.{},
 
         pub const _desc_table = .{
             .string_value = fd(1, .{ .scalar = .string }),
@@ -37,6 +48,15 @@ pub const Tile = struct {
             .uint_value = fd(5, .{ .scalar = .uint64 }),
             .sint_value = fd(6, .{ .scalar = .sint64 }),
             .bool_value = fd(7, .{ .scalar = .bool }),
+        };
+
+        /// Extension ranges `[start, end)`, and whether the extensions are
+        /// encoded in the legacy MessageSet format.
+        pub const _extensions_info = .{
+            .ranges = .{
+                .{ 8, 536870912 },
+            },
+            .message_set = false,
         };
 
         /// Encodes the message to the writer
@@ -191,6 +211,7 @@ pub const Tile = struct {
         keys: std.ArrayList([]const u8) = .empty,
         values: std.ArrayList(Tile.Value) = .empty,
         extent: ?u32 = null,
+        _extensions: []const u8 = &.{},
 
         pub const _desc_table = .{
             .version = fdf(15, .{ .scalar = .uint32 }, .{ .legacy_required = true }),
@@ -204,6 +225,15 @@ pub const Tile = struct {
         /// Default values of fields that are `null` when not set.
         pub const defaults = struct {
             pub const extent: u32 = 4096;
+        };
+
+        /// Extension ranges `[start, end)`, and whether the extensions are
+        /// encoded in the legacy MessageSet format.
+        pub const _extensions_info = .{
+            .ranges = .{
+                .{ 16, 536870912 },
+            },
+            .message_set = false,
         };
 
         /// Encodes the message to the writer

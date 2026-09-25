@@ -149,6 +149,7 @@ pub const TestAllTypesProto2 = struct {
     Field_name18__: ?i32 = null,
     message_set_correct: ?TestAllTypesProto2.MessageSetCorrect = null,
     oneof_field: ?oneof_field_union = null,
+    _extensions: []const u8 = &.{},
     _unknown_fields: []const u8 = &.{},
 
     pub const _oneof_field_case = enum {
@@ -334,6 +335,15 @@ pub const TestAllTypesProto2 = struct {
         pub const default_bool: bool = true;
         pub const default_string: []const u8 = "Rosebud";
         pub const default_bytes: []const u8 = "joshua";
+    };
+
+    /// Extension ranges `[start, end)`, and whether the extensions are
+    /// encoded in the legacy MessageSet format.
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 120, 201 },
+        },
+        .message_set = false,
     };
 
     pub const NestedEnum = enum(i32) {
@@ -2077,9 +2087,19 @@ pub const TestAllTypesProto2 = struct {
 
     /// message_set test case.
     pub const MessageSetCorrect = struct {
+        _extensions: []const u8 = &.{},
         _unknown_fields: []const u8 = &.{},
 
         pub const _desc_table = .{};
+
+        /// Extension ranges `[start, end)`, and whether the extensions are
+        /// encoded in the legacy MessageSet format.
+        pub const _extensions_info = .{
+            .ranges = .{
+                .{ 4, 2147483647 },
+            },
+            .message_set = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -2151,6 +2171,8 @@ pub const TestAllTypesProto2 = struct {
         pub const _desc_table = .{
             .str = fd(25, .{ .scalar = .string }),
         };
+
+        pub const message_set_extension = protobuf.Extension(TestAllTypesProto2.MessageSetCorrect, ?TestAllTypesProto2.MessageSetCorrectExtension1, fd(1547769, .submessage), "protobuf_test_messages.proto2.TestAllTypesProto2.MessageSetCorrectExtension1.message_set_extension", null);
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -2224,6 +2246,8 @@ pub const TestAllTypesProto2 = struct {
             .i = fd(9, .{ .scalar = .int32 }),
             .sub_msg = fd(10, .submessage),
         };
+
+        pub const message_set_extension = protobuf.Extension(TestAllTypesProto2.MessageSetCorrect, ?TestAllTypesProto2.MessageSetCorrectExtension2, fd(4135312, .submessage), "protobuf_test_messages.proto2.TestAllTypesProto2.MessageSetCorrectExtension2.message_set_extension", null);
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -2308,6 +2332,8 @@ pub const TestAllTypesProto2 = struct {
         pub const _desc_table = .{
             .oneof_field = fd(null, .{ .oneof = TestAllTypesProto2.ExtensionWithOneof.oneof_field_union }),
         };
+
+        pub const extension_with_oneof = protobuf.Extension(TestAllTypesProto2.MessageSetCorrect, ?TestAllTypesProto2.ExtensionWithOneof, fd(123456789, .submessage), "protobuf_test_messages.proto2.TestAllTypesProto2.ExtensionWithOneof.extension_with_oneof", null);
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -3058,6 +3084,7 @@ pub const TestAllRequiredTypesProto2 = struct {
     default_bool: bool = true,
     default_string: []const u8 = "Rosebud",
     default_bytes: []const u8 = "joshua",
+    _extensions: []const u8 = &.{},
     _unknown_fields: []const u8 = &.{},
 
     pub const _desc_table = .{
@@ -3100,6 +3127,15 @@ pub const TestAllRequiredTypesProto2 = struct {
         .default_bool = fdf(253, .{ .scalar = .bool }, .{ .legacy_required = true }),
         .default_string = fdf(254, .{ .scalar = .string }, .{ .legacy_required = true }),
         .default_bytes = fdf(255, .{ .scalar = .bytes }, .{ .legacy_required = true }),
+    };
+
+    /// Extension ranges `[start, end)`, and whether the extensions are
+    /// encoded in the legacy MessageSet format.
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 120, 201 },
+        },
+        .message_set = false,
     };
 
     pub const NestedEnum = enum(i32) {
@@ -3260,9 +3296,19 @@ pub const TestAllRequiredTypesProto2 = struct {
 
     /// message_set test case.
     pub const MessageSetCorrect = struct {
+        _extensions: []const u8 = &.{},
         _unknown_fields: []const u8 = &.{},
 
         pub const _desc_table = .{};
+
+        /// Extension ranges `[start, end)`, and whether the extensions are
+        /// encoded in the legacy MessageSet format.
+        pub const _extensions_info = .{
+            .ranges = .{
+                .{ 4, 2147483647 },
+            },
+            .message_set = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -3335,6 +3381,8 @@ pub const TestAllRequiredTypesProto2 = struct {
             .str = fdf(25, .{ .scalar = .string }, .{ .legacy_required = true }),
         };
 
+        pub const message_set_extension = protobuf.Extension(TestAllRequiredTypesProto2.MessageSetCorrect, ?TestAllRequiredTypesProto2.MessageSetCorrectExtension1, fd(1547769, .submessage), "protobuf_test_messages.proto2.TestAllRequiredTypesProto2.MessageSetCorrectExtension1.message_set_extension", null);
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -3405,6 +3453,8 @@ pub const TestAllRequiredTypesProto2 = struct {
         pub const _desc_table = .{
             .i = fdf(9, .{ .scalar = .int32 }, .{ .legacy_required = true }),
         };
+
+        pub const message_set_extension = protobuf.Extension(TestAllRequiredTypesProto2.MessageSetCorrect, ?TestAllRequiredTypesProto2.MessageSetCorrectExtension2, fd(4135312, .submessage), "protobuf_test_messages.proto2.TestAllRequiredTypesProto2.MessageSetCorrectExtension2.message_set_extension", null);
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -3964,3 +4014,14 @@ pub const TestLargeOneof = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 };
+
+pub const extension_int32 = protobuf.Extension(TestAllTypesProto2, ?i32, fd(120, .{ .scalar = .int32 }), "protobuf_test_messages.proto2.extension_int32", null);
+
+pub const extension_string = protobuf.Extension(TestAllTypesProto2, ?[]const u8, fd(133, .{ .scalar = .string }), "protobuf_test_messages.proto2.extension_string", null);
+
+pub const extension_bytes = protobuf.Extension(TestAllTypesProto2, ?[]const u8, fd(134, .{ .scalar = .bytes }), "protobuf_test_messages.proto2.extension_bytes", null);
+
+pub const groupfield = protobuf.Extension(TestAllTypesProto2, ?GroupField, fdf(121, .submessage, .{ .message_encoding = .delimited }), "protobuf_test_messages.proto2.groupfield", null);
+
+/// Extensions declared in this package, for `protobuf.ExtensionRegistry.init`.
+pub const extensions = .{ TestAllTypesProto2.MessageSetCorrectExtension1.message_set_extension, TestAllTypesProto2.MessageSetCorrectExtension2.message_set_extension, TestAllTypesProto2.ExtensionWithOneof.extension_with_oneof, TestAllRequiredTypesProto2.MessageSetCorrectExtension1.message_set_extension, TestAllRequiredTypesProto2.MessageSetCorrectExtension2.message_set_extension, extension_int32, extension_string, extension_bytes, groupfield };

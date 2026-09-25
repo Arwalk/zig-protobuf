@@ -179,6 +179,7 @@ pub const TestAllTypesEdition2023 = struct {
     delimited_field: ?TestAllTypesEdition2023.GroupLikeType = null,
     map_recursive: std.ArrayList(TestAllTypesEdition2023.MapRecursiveEntry) = .empty,
     oneof_field: ?oneof_field_union = null,
+    _extensions: []const u8 = &.{},
     _unknown_fields: []const u8 = &.{},
 
     pub const _oneof_field_case = enum {
@@ -310,6 +311,15 @@ pub const TestAllTypesEdition2023 = struct {
         .delimited_field = fdf(202, .submessage, .{ .message_encoding = .delimited }),
         .map_recursive = fd(301, .{ .repeated = .submessage }),
         .oneof_field = fd(null, .{ .oneof = oneof_field_union }),
+    };
+
+    /// Extension ranges `[start, end)`, and whether the extensions are
+    /// encoded in the legacy MessageSet format.
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 120, 201 },
+        },
+        .message_set = false,
     };
 
     pub const NestedEnum = enum(i32) {
@@ -2111,3 +2121,16 @@ pub const GroupLikeType = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 };
+
+pub const extension_int32 = protobuf.Extension(TestAllTypesEdition2023, ?i32, fd(120, .{ .scalar = .int32 }), "protobuf_test_messages.editions.extension_int32", null);
+
+pub const extension_string = protobuf.Extension(TestAllTypesEdition2023, ?[]const u8, fdf(133, .{ .scalar = .string }, .{ .utf8_validation = .verify }), "protobuf_test_messages.editions.extension_string", null);
+
+pub const extension_bytes = protobuf.Extension(TestAllTypesEdition2023, ?[]const u8, fd(134, .{ .scalar = .bytes }), "protobuf_test_messages.editions.extension_bytes", null);
+
+pub const groupliketype = protobuf.Extension(TestAllTypesEdition2023, ?GroupLikeType, fdf(121, .submessage, .{ .message_encoding = .delimited }), "protobuf_test_messages.editions.groupliketype", null);
+
+pub const delimited_ext = protobuf.Extension(TestAllTypesEdition2023, ?GroupLikeType, fdf(122, .submessage, .{ .message_encoding = .delimited }), "protobuf_test_messages.editions.delimited_ext", null);
+
+/// Extensions declared in this package, for `protobuf.ExtensionRegistry.init`.
+pub const extensions = .{ extension_int32, extension_string, extension_bytes, groupliketype, delimited_ext };

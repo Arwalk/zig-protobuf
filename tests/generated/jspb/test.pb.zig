@@ -530,11 +530,21 @@ pub const HasExtensions = struct {
     str1: ?[]const u8 = null,
     str2: ?[]const u8 = null,
     str3: ?[]const u8 = null,
+    _extensions: []const u8 = &.{},
 
     pub const _desc_table = .{
         .str1 = fd(1, .{ .scalar = .string }),
         .str2 = fd(2, .{ .scalar = .string }),
         .str3 = fd(3, .{ .scalar = .string }),
+    };
+
+    /// Extension ranges `[start, end)`, and whether the extensions are
+    /// encoded in the legacy MessageSet format.
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 10, 536870912 },
+        },
+        .message_set = false,
     };
 
     /// Encodes the message to the writer
@@ -755,6 +765,10 @@ pub const IsExtension = struct {
         .ext1 = fd(1, .{ .scalar = .string }),
     };
 
+    pub const ext_field = protobuf.Extension(HasExtensions, ?IsExtension, fd(100, .submessage), "jspb.test.IsExtension.ext_field", null);
+
+    pub const simple_option = protobuf.Extension(google_protobuf.EnumOptions, ?[]const u8, fd(42113038, .{ .scalar = .string }), "jspb.test.IsExtension.simple_option", null);
+
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
     /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -820,6 +834,14 @@ pub const IsExtension = struct {
 
 pub const IndirectExtension = struct {
     pub const _desc_table = .{};
+
+    pub const simple = protobuf.Extension(HasExtensions, ?Simple1, fd(101, .submessage), "jspb.test.IndirectExtension.simple", null);
+
+    pub const str = protobuf.Extension(HasExtensions, ?[]const u8, fd(102, .{ .scalar = .string }), "jspb.test.IndirectExtension.str", null);
+
+    pub const repeated_str = protobuf.Extension(HasExtensions, std.ArrayList([]const u8), fd(103, .{ .repeated = .{ .scalar = .string } }), "jspb.test.IndirectExtension.repeated_str", null);
+
+    pub const repeated_simple = protobuf.Extension(HasExtensions, std.ArrayList(Simple1), fd(104, .{ .repeated = .submessage }), "jspb.test.IndirectExtension.repeated_simple", null);
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -1075,6 +1097,7 @@ pub const TestClone = struct {
     simple2: std.ArrayList(Simple1) = .empty,
     bytes_field: ?[]const u8 = null,
     unused: ?[]const u8 = null,
+    _extensions: []const u8 = &.{},
 
     pub const _desc_table = .{
         .str = fd(1, .{ .scalar = .string }),
@@ -1082,6 +1105,15 @@ pub const TestClone = struct {
         .simple2 = fd(5, .{ .repeated = .submessage }),
         .bytes_field = fd(6, .{ .scalar = .bytes }),
         .unused = fd(7, .{ .scalar = .string }),
+    };
+
+    /// Extension ranges `[start, end)`, and whether the extensions are
+    /// encoded in the legacy MessageSet format.
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 10, 536870912 },
+        },
+        .message_set = false,
     };
 
     /// Encodes the message to the writer
@@ -1153,6 +1185,8 @@ pub const CloneExtension = struct {
     pub const _desc_table = .{
         .ext = fd(2, .{ .scalar = .string }),
     };
+
+    pub const ext_field = protobuf.Extension(TestClone, ?CloneExtension, fd(100, .submessage), "jspb.test.CloneExtension.ext_field", null);
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -1293,9 +1327,19 @@ pub const TestGroup = struct {
 
 pub const TestReservedNames = struct {
     extension: ?i32 = null,
+    _extensions: []const u8 = &.{},
 
     pub const _desc_table = .{
         .extension = fd(1, .{ .scalar = .int32 }),
+    };
+
+    /// Extension ranges `[start, end)`, and whether the extensions are
+    /// encoded in the legacy MessageSet format.
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 10, 536870912 },
+        },
+        .message_set = false,
     };
 
     /// Encodes the message to the writer
@@ -1363,6 +1407,8 @@ pub const TestReservedNames = struct {
 
 pub const TestReservedNamesExtension = struct {
     pub const _desc_table = .{};
+
+    pub const foo = protobuf.Extension(TestReservedNames, ?i32, fd(10, .{ .scalar = .int32 }), "jspb.test.TestReservedNamesExtension.foo", null);
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -2792,3 +2838,8 @@ pub const Deeply = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 };
+
+pub const simple1 = protobuf.Extension(HasExtensions, ?Simple1, fd(105, .submessage), "jspb.test.simple1", null);
+
+/// Extensions declared in this package, for `protobuf.ExtensionRegistry.init`.
+pub const extensions = .{ IsExtension.ext_field, IsExtension.simple_option, IndirectExtension.simple, IndirectExtension.str, IndirectExtension.repeated_str, IndirectExtension.repeated_simple, CloneExtension.ext_field, TestReservedNamesExtension.foo, simple1 };
