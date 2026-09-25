@@ -366,18 +366,48 @@ pub const Packed = struct {
         .enum_list = fd(10, .{ .packed_repeated = .@"enum" }),
     };
 
-    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    /// Options of the fields that have some (`google.protobuf.FieldOptions`).
     pub const _field_options = .{
-        .int32_list = "\x10\x01",
-        .uint32_list = "\x10\x01",
-        .sint32_list = "\x10\x01",
-        .float_list = "\x10\x01",
-        .double_list = "\x10\x01",
-        .int64_list = "\x10\x01",
-        .sint64_list = "\x10\x01",
-        .uint64_list = "\x10\x01",
-        .bool_list = "\x10\x01",
-        .enum_list = "\x10\x01",
+        .int32_list = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .uint32_list = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .sint32_list = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .float_list = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .double_list = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .int64_list = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .sint64_list = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .uint64_list = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .bool_list = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .enum_list = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
     };
 
     /// Encodes the message to the writer
@@ -468,18 +498,48 @@ pub const UnPacked = struct {
         .enum_list = fd(10, .{ .repeated = .@"enum" }),
     };
 
-    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    /// Options of the fields that have some (`google.protobuf.FieldOptions`).
     pub const _field_options = .{
-        .int32_list = "\x10\x00",
-        .uint32_list = "\x10\x00",
-        .sint32_list = "\x10\x00",
-        .float_list = "\x10\x00",
-        .double_list = "\x10\x00",
-        .int64_list = "\x10\x00",
-        .sint64_list = "\x10\x00",
-        .uint64_list = "\x10\x00",
-        .bool_list = "\x10\x00",
-        .enum_list = "\x10\x00",
+        .int32_list = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .uint32_list = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .sint32_list = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .float_list = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .double_list = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .int64_list = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .sint64_list = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .uint64_list = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .bool_list = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .enum_list = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
     };
 
     /// Encodes the message to the writer

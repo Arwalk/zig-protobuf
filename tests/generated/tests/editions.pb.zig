@@ -10,8 +10,13 @@ pub const Closed = enum(i32) {
     CLOSED_ONE = 1,
     CLOSED_TWO = 2,
 
-    /// Options of the enum: an encoded `google.protobuf.EnumOptions`.
-    pub const _options: []const u8 = ":\x02\x10\x02";
+    /// Options of the enum (`google.protobuf.EnumOptions`).
+    pub const _options = .{
+        .@"#raw" = ":\x02\x10\x02",
+        .features = .{
+            .enum_type = .CLOSED,
+        },
+    };
 };
 
 pub const Open = enum(i32) {
@@ -120,9 +125,14 @@ pub const Delimited = struct {
         .choice = fd(null, .{ .oneof = choice_union }),
     };
 
-    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    /// Options of the fields that have some (`google.protobuf.FieldOptions`).
     pub const _field_options = .{
-        .length_prefixed = "\xaa\x01\x02(\x01",
+        .length_prefixed = .{
+            .@"#raw" = "\xaa\x01\x02(\x01",
+            .features = .{
+                .message_encoding = .LENGTH_PREFIXED,
+            },
+        },
     };
 
     pub const ByNameEntry = struct {
@@ -134,8 +144,11 @@ pub const Delimited = struct {
             .value = fd(2, .submessage),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -287,10 +300,20 @@ pub const Presence = struct {
         pub const defaulted_int: i32 = 42;
     };
 
-    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    /// Options of the fields that have some (`google.protobuf.FieldOptions`).
     pub const _field_options = .{
-        .implicit_int = "\xaa\x01\x02\x08\x02",
-        .required_int = "\xaa\x01\x02\x08\x03",
+        .implicit_int = .{
+            .@"#raw" = "\xaa\x01\x02\x08\x02",
+            .features = .{
+                .field_presence = .IMPLICIT,
+            },
+        },
+        .required_int = .{
+            .@"#raw" = "\xaa\x01\x02\x08\x03",
+            .features = .{
+                .field_presence = .LEGACY_REQUIRED,
+            },
+        },
     };
 
     /// Encodes the message to the writer
@@ -369,10 +392,20 @@ pub const Encoding = struct {
         .unverified = fd(4, .{ .scalar = .string }),
     };
 
-    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    /// Options of the fields that have some (`google.protobuf.FieldOptions`).
     pub const _field_options = .{
-        .expanded_ints = "\xaa\x01\x02\x18\x02",
-        .unverified = "\xaa\x01\x02 \x03",
+        .expanded_ints = .{
+            .@"#raw" = "\xaa\x01\x02\x18\x02",
+            .features = .{
+                .repeated_field_encoding = .EXPANDED,
+            },
+        },
+        .unverified = .{
+            .@"#raw" = "\xaa\x01\x02 \x03",
+            .features = .{
+                .utf8_validation = .NONE,
+            },
+        },
     };
 
     /// Encodes the message to the writer
@@ -438,8 +471,13 @@ pub const Encoding = struct {
     }
 };
 
-/// Options of the files of this package that have some: encoded
-/// `google.protobuf.FileOptions`, by file name.
+/// Options of the files of this package that have some
+/// (`google.protobuf.FileOptions`), by file name.
 pub const _file_options = .{
-    .@"editions.proto" = "\x92\x03\x02(\x02",
+    .@"editions.proto" = .{
+        .@"#raw" = "\x92\x03\x02(\x02",
+        .features = .{
+            .message_encoding = .DELIMITED,
+        },
+    },
 };

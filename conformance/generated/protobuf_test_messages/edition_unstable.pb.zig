@@ -121,8 +121,6 @@ pub const TestAllTypesEditionUnstable = struct {
         .map_string_bytes = fd(15, .{ .repeated = .submessage }),
     };
 
-    /// Extension ranges `[start, end)`, and whether the extensions are
-    /// encoded in the legacy MessageSet format.
     pub const _extensions_info = .{
         .ranges = .{
             .{ 120, 201 },
@@ -130,11 +128,26 @@ pub const TestAllTypesEditionUnstable = struct {
         .message_set = false,
     };
 
-    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    /// Options of the fields that have some (`google.protobuf.FieldOptions`).
     pub const _field_options = .{
-        .optional_foreign_message = "\xaa\x01\x02(\x01",
-        .recursive_message = "\xaa\x01\x02(\x01",
-        .repeated_foreign_message = "\xaa\x01\x02(\x01",
+        .optional_foreign_message = .{
+            .@"#raw" = "\xaa\x01\x02(\x01",
+            .features = .{
+                .message_encoding = .LENGTH_PREFIXED,
+            },
+        },
+        .recursive_message = .{
+            .@"#raw" = "\xaa\x01\x02(\x01",
+            .features = .{
+                .message_encoding = .LENGTH_PREFIXED,
+            },
+        },
+        .repeated_foreign_message = .{
+            .@"#raw" = "\xaa\x01\x02(\x01",
+            .features = .{
+                .message_encoding = .LENGTH_PREFIXED,
+            },
+        },
     };
 
     pub const MapInt32Int32Entry = struct {
@@ -146,8 +159,11 @@ pub const TestAllTypesEditionUnstable = struct {
             .value = fd(2, .{ .scalar = .sfixed32 }),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -221,8 +237,11 @@ pub const TestAllTypesEditionUnstable = struct {
             .value = fd(2, .{ .scalar = .bool }),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -296,8 +315,11 @@ pub const TestAllTypesEditionUnstable = struct {
             .value = fdf(2, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -371,8 +393,11 @@ pub const TestAllTypesEditionUnstable = struct {
             .value = fd(2, .submessage),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -446,8 +471,11 @@ pub const TestAllTypesEditionUnstable = struct {
             .value = fd(2, .@"enum"),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -521,8 +549,11 @@ pub const TestAllTypesEditionUnstable = struct {
             .value = fd(2, .{ .scalar = .bytes }),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -721,13 +752,20 @@ pub const ForeignMessageEditionUnstable = struct {
     }
 };
 
-pub const extension_int32 = protobuf.Extension(TestAllTypesEditionUnstable, ?i32, fd(120, .{ .scalar = .sfixed32 }), "protobuf_test_messages.edition_unstable.extension_int32", null, &.{});
+pub const extension_int32 = protobuf.Extension(TestAllTypesEditionUnstable, ?i32, fd(120, .{ .scalar = .sfixed32 }), "protobuf_test_messages.edition_unstable.extension_int32", null, .{});
 
 /// Extensions declared in this package, for `protobuf.ExtensionRegistry.init`.
 pub const extensions = .{extension_int32};
 
-/// Options of the files of this package that have some: encoded
-/// `google.protobuf.FileOptions`, by file name.
+/// Options of the files of this package that have some
+/// (`google.protobuf.FileOptions`), by file name.
 pub const _file_options = .{
-    .@"test_messages_edition_unstable.proto" = "\n2com.google.protobuf_test_messages.edition_unstable\xa2\x02\x0fEditionUnstable\x92\x03\x02(\x02",
+    .@"test_messages_edition_unstable.proto" = .{
+        .@"#raw" = "\n2com.google.protobuf_test_messages.edition_unstable\xa2\x02\x0fEditionUnstable\x92\x03\x02(\x02",
+        .java_package = "com.google.protobuf_test_messages.edition_unstable",
+        .objc_class_prefix = "EditionUnstable",
+        .features = .{
+            .message_encoding = .DELIMITED,
+        },
+    },
 };

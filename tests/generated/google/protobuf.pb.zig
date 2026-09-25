@@ -45,8 +45,6 @@ pub const FileDescriptorSet = struct {
         .file = fd(1, .{ .repeated = .submessage }),
     };
 
-    /// Extension ranges `[start, end)`, and whether the extensions are
-    /// encoded in the legacy MessageSet format.
     pub const _extensions_info = .{
         .ranges = .{
             .{ 536000000, 536000001 },
@@ -473,8 +471,6 @@ pub const ExtensionRangeOptions = struct {
         pub const verification: ExtensionRangeOptions.VerificationState = .UNVERIFIED;
     };
 
-    /// Extension ranges `[start, end)`, and whether the extensions are
-    /// encoded in the legacy MessageSet format.
     pub const _extensions_info = .{
         .ranges = .{
             .{ 990, 999 },
@@ -1277,8 +1273,6 @@ pub const FileOptions = struct {
         pub const cc_enable_arenas: bool = true;
     };
 
-    /// Extension ranges `[start, end)`, and whether the extensions are
-    /// encoded in the legacy MessageSet format.
     pub const _extensions_info = .{
         .ranges = .{
             .{ 990, 999 },
@@ -1384,8 +1378,6 @@ pub const MessageOptions = struct {
         pub const deprecated: bool = false;
     };
 
-    /// Extension ranges `[start, end)`, and whether the extensions are
-    /// encoded in the legacy MessageSet format.
     pub const _extensions_info = .{
         .ranges = .{
             .{ 990, 999 },
@@ -1502,8 +1494,6 @@ pub const FieldOptions = struct {
         pub const debug_redact: bool = false;
     };
 
-    /// Extension ranges `[start, end)`, and whether the extensions are
-    /// encoded in the legacy MessageSet format.
     pub const _extensions_info = .{
         .ranges = .{
             .{ 990, 999 },
@@ -1771,8 +1761,6 @@ pub const OneofOptions = struct {
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
-    /// Extension ranges `[start, end)`, and whether the extensions are
-    /// encoded in the legacy MessageSet format.
     pub const _extensions_info = .{
         .ranges = .{
             .{ 990, 999 },
@@ -1865,8 +1853,6 @@ pub const EnumOptions = struct {
         pub const deprecated: bool = false;
     };
 
-    /// Extension ranges `[start, end)`, and whether the extensions are
-    /// encoded in the legacy MessageSet format.
     pub const _extensions_info = .{
         .ranges = .{
             .{ 990, 999 },
@@ -1960,8 +1946,6 @@ pub const EnumValueOptions = struct {
         pub const debug_redact: bool = false;
     };
 
-    /// Extension ranges `[start, end)`, and whether the extensions are
-    /// encoded in the legacy MessageSet format.
     pub const _extensions_info = .{
         .ranges = .{
             .{ 990, 999 },
@@ -2050,8 +2034,6 @@ pub const ServiceOptions = struct {
         pub const deprecated: bool = false;
     };
 
-    /// Extension ranges `[start, end)`, and whether the extensions are
-    /// encoded in the legacy MessageSet format.
     pub const _extensions_info = .{
         .ranges = .{
             .{ 990, 999 },
@@ -2143,8 +2125,6 @@ pub const MethodOptions = struct {
         pub const idempotency_level: MethodOptions.IdempotencyLevel = .IDEMPOTENCY_UNKNOWN;
     };
 
-    /// Extension ranges `[start, end)`, and whether the extensions are
-    /// encoded in the legacy MessageSet format.
     pub const _extensions_info = .{
         .ranges = .{
             .{ 990, 999 },
@@ -2420,8 +2400,6 @@ pub const FeatureSet = struct {
         .enforce_proto_limits = fd(9, .@"enum"),
     };
 
-    /// Extension ranges `[start, end)`, and whether the extensions are
-    /// encoded in the legacy MessageSet format.
     pub const _extensions_info = .{
         .ranges = .{
             .{ 1000, 9995 },
@@ -2850,8 +2828,6 @@ pub const SourceCodeInfo = struct {
         .location = fd(1, .{ .repeated = .submessage }),
     };
 
-    /// Extension ranges `[start, end)`, and whether the extensions are
-    /// encoded in the legacy MessageSet format.
     pub const _extensions_info = .{
         .ranges = .{
             .{ 536000000, 536000001 },

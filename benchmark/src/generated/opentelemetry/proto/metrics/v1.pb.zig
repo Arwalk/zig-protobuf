@@ -1471,8 +1471,15 @@ pub const Exemplar = struct {
     }
 };
 
-/// Options of the files of this package that have some: encoded
-/// `google.protobuf.FileOptions`, by file name.
+/// Options of the files of this package that have some
+/// (`google.protobuf.FileOptions`), by file name.
 pub const _file_options = .{
-    .@"opentelemetry/proto/metrics/v1/metrics.proto" = "\n!io.opentelemetry.proto.metrics.v1B\x0cMetricsProtoP\x01Z)go.opentelemetry.io/proto/otlp/metrics/v1\xaa\x02\x1eOpenTelemetry.Proto.Metrics.V1",
+    .@"opentelemetry/proto/metrics/v1/metrics.proto" = .{
+        .@"#raw" = "\n!io.opentelemetry.proto.metrics.v1B\x0cMetricsProtoP\x01Z)go.opentelemetry.io/proto/otlp/metrics/v1\xaa\x02\x1eOpenTelemetry.Proto.Metrics.V1",
+        .java_package = "io.opentelemetry.proto.metrics.v1",
+        .java_outer_classname = "MetricsProto",
+        .java_multiple_files = true,
+        .go_package = "go.opentelemetry.io/proto/otlp/metrics/v1",
+        .csharp_namespace = "OpenTelemetry.Proto.Metrics.V1",
+    },
 };

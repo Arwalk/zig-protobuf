@@ -326,8 +326,14 @@ pub const CodeGeneratorResponse = struct {
     }
 };
 
-/// Options of the files of this package that have some: encoded
-/// `google.protobuf.FileOptions`, by file name.
+/// Options of the files of this package that have some
+/// (`google.protobuf.FileOptions`), by file name.
 pub const _file_options = .{
-    .@"google/protobuf/compiler/plugin.proto" = "\n\x1ccom.google.protobuf.compilerB\x0cPluginProtosZ)google.golang.org/protobuf/types/pluginpb\xaa\x02\x18Google.Protobuf.Compiler",
+    .@"google/protobuf/compiler/plugin.proto" = .{
+        .@"#raw" = "\n\x1ccom.google.protobuf.compilerB\x0cPluginProtosZ)google.golang.org/protobuf/types/pluginpb\xaa\x02\x18Google.Protobuf.Compiler",
+        .java_package = "com.google.protobuf.compiler",
+        .java_outer_classname = "PluginProtos",
+        .go_package = "google.golang.org/protobuf/types/pluginpb",
+        .csharp_namespace = "Google.Protobuf.Compiler",
+    },
 };

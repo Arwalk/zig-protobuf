@@ -8,9 +8,9 @@ const fdf = protobuf.fdf;
 /// import package tests.extensions
 const tests_extensions = @import("../extensions.pb.zig");
 
-pub const checked = protobuf.Extension(tests_extensions.Extendable, ?[]const u8, fdf(150, .{ .scalar = .string }, .{ .utf8_validation = .verify }), "tests.extensions.editions.checked", null, &.{});
+pub const checked = protobuf.Extension(tests_extensions.Extendable, ?[]const u8, fdf(150, .{ .scalar = .string }, .{ .utf8_validation = .verify }), "tests.extensions.editions.checked", null, .{});
 
-pub const unchecked = protobuf.Extension(tests_extensions.Extendable, ?[]const u8, fd(151, .{ .scalar = .bytes }), "tests.extensions.editions.unchecked", null, &.{});
+pub const unchecked = protobuf.Extension(tests_extensions.Extendable, ?[]const u8, fd(151, .{ .scalar = .bytes }), "tests.extensions.editions.unchecked", null, .{});
 
 /// Extensions declared in this package, for `protobuf.ExtensionRegistry.init`.
 pub const extensions = .{ checked, unchecked };

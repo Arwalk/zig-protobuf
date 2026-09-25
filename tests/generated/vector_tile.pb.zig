@@ -14,8 +14,6 @@ pub const Tile = struct {
         .layers = fd(3, .{ .repeated = .submessage }),
     };
 
-    /// Extension ranges `[start, end)`, and whether the extensions are
-    /// encoded in the legacy MessageSet format.
     pub const _extensions_info = .{
         .ranges = .{
             .{ 16, 8192 },
@@ -50,8 +48,6 @@ pub const Tile = struct {
             .bool_value = fd(7, .{ .scalar = .bool }),
         };
 
-        /// Extension ranges `[start, end)`, and whether the extensions are
-        /// encoded in the legacy MessageSet format.
         pub const _extensions_info = .{
             .ranges = .{
                 .{ 8, 536870912 },
@@ -227,8 +223,6 @@ pub const Tile = struct {
             pub const extent: u32 = 4096;
         };
 
-        /// Extension ranges `[start, end)`, and whether the extensions are
-        /// encoded in the legacy MessageSet format.
         pub const _extensions_info = .{
             .ranges = .{
                 .{ 16, 536870912 },

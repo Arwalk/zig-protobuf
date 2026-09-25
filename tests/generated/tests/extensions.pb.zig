@@ -19,8 +19,6 @@ pub const Extendable = struct {
         .regular = fd(1, .{ .scalar = .int32 }),
     };
 
-    /// Extension ranges `[start, end)`, and whether the extensions are
-    /// encoded in the legacy MessageSet format.
     pub const _extensions_info = .{
         .ranges = .{
             .{ 100, 200 },
@@ -235,7 +233,7 @@ pub const Grouped = struct {
 pub const Scope = struct {
     pub const _desc_table = .{};
 
-    pub const scoped = protobuf.Extension(Extendable, ?i64, fd(1000, .{ .scalar = .int64 }), "tests.extensions.Scope.scoped", null, &.{});
+    pub const scoped = protobuf.Extension(Extendable, ?i64, fd(1000, .{ .scalar = .int64 }), "tests.extensions.Scope.scoped", null, .{});
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -404,8 +402,6 @@ pub const MessageSet = struct {
 
     pub const _desc_table = .{};
 
-    /// Extension ranges `[start, end)`, and whether the extensions are
-    /// encoded in the legacy MessageSet format.
     pub const _extensions_info = .{
         .ranges = .{
             .{ 4, 2147483647 },
@@ -413,8 +409,11 @@ pub const MessageSet = struct {
         .message_set = true,
     };
 
-    /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-    pub const _options: []const u8 = "\x08\x01";
+    /// Options of the message (`google.protobuf.MessageOptions`).
+    pub const _options = .{
+        .@"#raw" = "\x08\x01",
+        .message_set_wire_format = true,
+    };
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -486,7 +485,7 @@ pub const SetItem = struct {
         .i = fd(1, .{ .scalar = .int32 }),
     };
 
-    pub const item = protobuf.Extension(MessageSet, ?SetItem, fd(1234, .submessage), "tests.extensions.SetItem.item", null, &.{});
+    pub const item = protobuf.Extension(MessageSet, ?SetItem, fd(1234, .submessage), "tests.extensions.SetItem.item", null, .{});
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -551,17 +550,20 @@ pub const SetItem = struct {
     }
 };
 
-pub const number = protobuf.Extension(Extendable, ?i32, fd(100, .{ .scalar = .int32 }), "tests.extensions.number", null, &.{});
+pub const number = protobuf.Extension(Extendable, ?i32, fd(100, .{ .scalar = .int32 }), "tests.extensions.number", null, .{});
 
-pub const text = protobuf.Extension(Extendable, ?[]const u8, fd(101, .{ .scalar = .string }), "tests.extensions.text", @as([]const u8, "none"), &.{});
+pub const text = protobuf.Extension(Extendable, ?[]const u8, fd(101, .{ .scalar = .string }), "tests.extensions.text", @as([]const u8, "none"), .{});
 
-pub const packed_numbers = protobuf.Extension(Extendable, std.ArrayList(i32), fd(102, .{ .packed_repeated = .{ .scalar = .int32 } }), "tests.extensions.packed_numbers", null, "\x10\x01");
+pub const packed_numbers = protobuf.Extension(Extendable, std.ArrayList(i32), fd(102, .{ .packed_repeated = .{ .scalar = .int32 } }), "tests.extensions.packed_numbers", null, .{
+    .@"#raw" = "\x10\x01",
+    .@"packed" = true,
+});
 
-pub const payload = protobuf.Extension(Extendable, ?Payload, fd(103, .submessage), "tests.extensions.payload", null, &.{});
+pub const payload = protobuf.Extension(Extendable, ?Payload, fd(103, .submessage), "tests.extensions.payload", null, .{});
 
-pub const grouped = protobuf.Extension(Extendable, ?Grouped, fdf(104, .submessage, .{ .message_encoding = .delimited }), "tests.extensions.grouped", null, &.{});
+pub const grouped = protobuf.Extension(Extendable, ?Grouped, fdf(104, .submessage, .{ .message_encoding = .delimited }), "tests.extensions.grouped", null, .{});
 
-pub const color = protobuf.Extension(Extendable, ?Color, fd(105, .@"enum"), "tests.extensions.color", null, &.{});
+pub const color = protobuf.Extension(Extendable, ?Color, fd(105, .@"enum"), "tests.extensions.color", null, .{});
 
 /// Extensions declared in this package, for `protobuf.ExtensionRegistry.init`.
 pub const extensions = .{ Scope.scoped, SetItem.item, number, text, packed_numbers, payload, grouped, color };

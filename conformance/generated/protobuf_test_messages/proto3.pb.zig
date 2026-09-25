@@ -353,40 +353,136 @@ pub const TestAllTypesProto3 = struct {
         .oneof_field = fd(null, .{ .oneof = oneof_field_union }),
     };
 
-    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    /// Options of the fields that have some (`google.protobuf.FieldOptions`).
     pub const _field_options = .{
-        .optional_string_piece = "\x08\x02",
-        .optional_cord = "\x08\x01",
-        .repeated_string_piece = "\x08\x02",
-        .repeated_cord = "\x08\x01",
-        .packed_int32 = "\x10\x01",
-        .packed_int64 = "\x10\x01",
-        .packed_uint32 = "\x10\x01",
-        .packed_uint64 = "\x10\x01",
-        .packed_sint32 = "\x10\x01",
-        .packed_sint64 = "\x10\x01",
-        .packed_fixed32 = "\x10\x01",
-        .packed_fixed64 = "\x10\x01",
-        .packed_sfixed32 = "\x10\x01",
-        .packed_sfixed64 = "\x10\x01",
-        .packed_float = "\x10\x01",
-        .packed_double = "\x10\x01",
-        .packed_bool = "\x10\x01",
-        .packed_nested_enum = "\x10\x01",
-        .unpacked_int32 = "\x10\x00",
-        .unpacked_int64 = "\x10\x00",
-        .unpacked_uint32 = "\x10\x00",
-        .unpacked_uint64 = "\x10\x00",
-        .unpacked_sint32 = "\x10\x00",
-        .unpacked_sint64 = "\x10\x00",
-        .unpacked_fixed32 = "\x10\x00",
-        .unpacked_fixed64 = "\x10\x00",
-        .unpacked_sfixed32 = "\x10\x00",
-        .unpacked_sfixed64 = "\x10\x00",
-        .unpacked_float = "\x10\x00",
-        .unpacked_double = "\x10\x00",
-        .unpacked_bool = "\x10\x00",
-        .unpacked_nested_enum = "\x10\x00",
+        .optional_string_piece = .{
+            .@"#raw" = "\x08\x02",
+            .ctype = .STRING_PIECE,
+        },
+        .optional_cord = .{
+            .@"#raw" = "\x08\x01",
+            .ctype = .CORD,
+        },
+        .repeated_string_piece = .{
+            .@"#raw" = "\x08\x02",
+            .ctype = .STRING_PIECE,
+        },
+        .repeated_cord = .{
+            .@"#raw" = "\x08\x01",
+            .ctype = .CORD,
+        },
+        .packed_int32 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_int64 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_uint32 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_uint64 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_sint32 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_sint64 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_fixed32 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_fixed64 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_sfixed32 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_sfixed64 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_float = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_double = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_bool = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_nested_enum = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .unpacked_int32 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_int64 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_uint32 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_uint64 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_sint32 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_sint64 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_fixed32 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_fixed64 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_sfixed32 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_sfixed64 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_float = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_double = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_bool = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_nested_enum = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
     };
 
     pub const NestedEnum = enum(i32) {
@@ -409,8 +505,11 @@ pub const TestAllTypesProto3 = struct {
             .{ .name = "bAz", .value = 2 },
         };
 
-        /// Options of the enum: an encoded `google.protobuf.EnumOptions`.
-        pub const _options: []const u8 = "\x10\x01";
+        /// Options of the enum (`google.protobuf.EnumOptions`).
+        pub const _options = .{
+            .@"#raw" = "\x10\x01",
+            .allow_alias = true,
+        };
     };
 
     pub const NestedMessage = struct {
@@ -495,8 +594,11 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .int32 }),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -570,8 +672,11 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .int64 }),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -645,8 +750,11 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .uint32 }),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -720,8 +828,11 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .uint64 }),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -795,8 +906,11 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .sint32 }),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -870,8 +984,11 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .sint64 }),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -945,8 +1062,11 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .fixed32 }),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1020,8 +1140,11 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .fixed64 }),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1095,8 +1218,11 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .sfixed32 }),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1170,8 +1296,11 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .sfixed64 }),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1245,8 +1374,11 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .float }),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1320,8 +1452,11 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .double }),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1395,8 +1530,11 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .bool }),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1470,8 +1608,11 @@ pub const TestAllTypesProto3 = struct {
             .value = fdf(2, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1545,8 +1686,11 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .bytes }),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1620,8 +1764,11 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .submessage),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1695,8 +1842,11 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .submessage),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1770,8 +1920,11 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .@"enum"),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1845,8 +1998,11 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .@"enum"),
         };
 
-        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
-        pub const _options: []const u8 = "8\x01";
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -2187,8 +2343,14 @@ pub const EnumOnlyProto3 = struct {
     }
 };
 
-/// Options of the files of this package that have some: encoded
-/// `google.protobuf.FileOptions`, by file name.
+/// Options of the files of this package that have some
+/// (`google.protobuf.FileOptions`), by file name.
 pub const _file_options = .{
-    .@"test_messages_proto3.proto" = "\n(com.google.protobuf_test_messages.proto3H\x01\xf8\x01\x01\xa2\x02\x06Proto3",
+    .@"test_messages_proto3.proto" = .{
+        .@"#raw" = "\n(com.google.protobuf_test_messages.proto3H\x01\xf8\x01\x01\xa2\x02\x06Proto3",
+        .java_package = "com.google.protobuf_test_messages.proto3",
+        .optimize_for = .SPEED,
+        .cc_enable_arenas = true,
+        .objc_class_prefix = "Proto3",
+    },
 };

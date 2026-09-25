@@ -406,8 +406,15 @@ pub const InstrumentationScope = struct {
     }
 };
 
-/// Options of the files of this package that have some: encoded
-/// `google.protobuf.FileOptions`, by file name.
+/// Options of the files of this package that have some
+/// (`google.protobuf.FileOptions`), by file name.
 pub const _file_options = .{
-    .@"opentelemetry/proto/common/v1/common.proto" = "\n io.opentelemetry.proto.common.v1B\x0bCommonProtoP\x01Z(go.opentelemetry.io/proto/otlp/common/v1\xaa\x02\x1dOpenTelemetry.Proto.Common.V1",
+    .@"opentelemetry/proto/common/v1/common.proto" = .{
+        .@"#raw" = "\n io.opentelemetry.proto.common.v1B\x0bCommonProtoP\x01Z(go.opentelemetry.io/proto/otlp/common/v1\xaa\x02\x1dOpenTelemetry.Proto.Common.V1",
+        .java_package = "io.opentelemetry.proto.common.v1",
+        .java_outer_classname = "CommonProto",
+        .java_multiple_files = true,
+        .go_package = "go.opentelemetry.io/proto/otlp/common/v1",
+        .csharp_namespace = "OpenTelemetry.Proto.Common.V1",
+    },
 };
