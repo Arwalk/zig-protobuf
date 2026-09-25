@@ -366,6 +366,20 @@ pub const Packed = struct {
         .enum_list = fd(10, .{ .packed_repeated = .@"enum" }),
     };
 
+    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    pub const _field_options = .{
+        .int32_list = "\x10\x01",
+        .uint32_list = "\x10\x01",
+        .sint32_list = "\x10\x01",
+        .float_list = "\x10\x01",
+        .double_list = "\x10\x01",
+        .int64_list = "\x10\x01",
+        .sint64_list = "\x10\x01",
+        .uint64_list = "\x10\x01",
+        .bool_list = "\x10\x01",
+        .enum_list = "\x10\x01",
+    };
+
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
     /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -452,6 +466,20 @@ pub const UnPacked = struct {
         .uint64_list = fd(8, .{ .repeated = .{ .scalar = .uint64 } }),
         .bool_list = fd(9, .{ .repeated = .{ .scalar = .bool } }),
         .enum_list = fd(10, .{ .repeated = .@"enum" }),
+    };
+
+    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    pub const _field_options = .{
+        .int32_list = "\x10\x00",
+        .uint32_list = "\x10\x00",
+        .sint32_list = "\x10\x00",
+        .float_list = "\x10\x00",
+        .double_list = "\x10\x00",
+        .int64_list = "\x10\x00",
+        .sint64_list = "\x10\x00",
+        .uint64_list = "\x10\x00",
+        .bool_list = "\x10\x00",
+        .enum_list = "\x10\x00",
     };
 
     /// Encodes the message to the writer

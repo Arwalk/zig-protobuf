@@ -346,6 +346,30 @@ pub const TestAllTypesProto2 = struct {
         .message_set = false,
     };
 
+    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    pub const _field_options = .{
+        .optional_string_piece = "\x08\x02",
+        .optional_cord = "\x08\x01",
+        .repeated_string_piece = "\x08\x02",
+        .repeated_cord = "\x08\x01",
+        .packed_int32 = "\xaa\x01\x02\x18\x01",
+        .packed_int64 = "\xaa\x01\x02\x18\x01",
+        .packed_uint32 = "\xaa\x01\x02\x18\x01",
+        .packed_uint64 = "\xaa\x01\x02\x18\x01",
+        .packed_sint32 = "\xaa\x01\x02\x18\x01",
+        .packed_sint64 = "\xaa\x01\x02\x18\x01",
+        .packed_fixed32 = "\xaa\x01\x02\x18\x01",
+        .packed_fixed64 = "\xaa\x01\x02\x18\x01",
+        .packed_sfixed32 = "\xaa\x01\x02\x18\x01",
+        .packed_sfixed64 = "\xaa\x01\x02\x18\x01",
+        .packed_float = "\xaa\x01\x02\x18\x01",
+        .packed_double = "\xaa\x01\x02\x18\x01",
+        .packed_bool = "\xaa\x01\x02\x18\x01",
+        .packed_nested_enum = "\xaa\x01\x02\x18\x01",
+        .data = "\xaa\x01\x02(\x02",
+        .multiwordgroupfield = "\xaa\x01\x02(\x02",
+    };
+
     pub const NestedEnum = enum(i32) {
         FOO = 0,
         BAR = 1,
@@ -435,6 +459,9 @@ pub const TestAllTypesProto2 = struct {
             .value = fd(2, .{ .scalar = .int32 }),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -506,6 +533,9 @@ pub const TestAllTypesProto2 = struct {
             .key = fd(1, .{ .scalar = .int64 }),
             .value = fd(2, .{ .scalar = .int64 }),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -579,6 +609,9 @@ pub const TestAllTypesProto2 = struct {
             .value = fd(2, .{ .scalar = .uint32 }),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -650,6 +683,9 @@ pub const TestAllTypesProto2 = struct {
             .key = fd(1, .{ .scalar = .uint64 }),
             .value = fd(2, .{ .scalar = .uint64 }),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -723,6 +759,9 @@ pub const TestAllTypesProto2 = struct {
             .value = fd(2, .{ .scalar = .sint32 }),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -794,6 +833,9 @@ pub const TestAllTypesProto2 = struct {
             .key = fd(1, .{ .scalar = .sint64 }),
             .value = fd(2, .{ .scalar = .sint64 }),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -867,6 +909,9 @@ pub const TestAllTypesProto2 = struct {
             .value = fd(2, .{ .scalar = .fixed32 }),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -938,6 +983,9 @@ pub const TestAllTypesProto2 = struct {
             .key = fd(1, .{ .scalar = .fixed64 }),
             .value = fd(2, .{ .scalar = .fixed64 }),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1011,6 +1059,9 @@ pub const TestAllTypesProto2 = struct {
             .value = fd(2, .{ .scalar = .sfixed32 }),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1082,6 +1133,9 @@ pub const TestAllTypesProto2 = struct {
             .key = fd(1, .{ .scalar = .sfixed64 }),
             .value = fd(2, .{ .scalar = .sfixed64 }),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1155,6 +1209,9 @@ pub const TestAllTypesProto2 = struct {
             .value = fd(2, .{ .scalar = .bool }),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1226,6 +1283,9 @@ pub const TestAllTypesProto2 = struct {
             .key = fd(1, .{ .scalar = .int32 }),
             .value = fd(2, .{ .scalar = .float }),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1299,6 +1359,9 @@ pub const TestAllTypesProto2 = struct {
             .value = fd(2, .{ .scalar = .double }),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1370,6 +1433,9 @@ pub const TestAllTypesProto2 = struct {
             .key = fd(1, .{ .scalar = .int32 }),
             .value = fd(2, .submessage),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1443,6 +1509,9 @@ pub const TestAllTypesProto2 = struct {
             .value = fd(2, .{ .scalar = .bool }),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1514,6 +1583,9 @@ pub const TestAllTypesProto2 = struct {
             .key = fd(1, .{ .scalar = .string }),
             .value = fd(2, .{ .scalar = .string }),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1587,6 +1659,9 @@ pub const TestAllTypesProto2 = struct {
             .value = fd(2, .{ .scalar = .bytes }),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1658,6 +1733,9 @@ pub const TestAllTypesProto2 = struct {
             .key = fd(1, .{ .scalar = .string }),
             .value = fd(2, .submessage),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1731,6 +1809,9 @@ pub const TestAllTypesProto2 = struct {
             .value = fd(2, .submessage),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1803,6 +1884,9 @@ pub const TestAllTypesProto2 = struct {
             .value = fd(2, .@"enum"),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1874,6 +1958,9 @@ pub const TestAllTypesProto2 = struct {
             .key = fd(1, .{ .scalar = .string }),
             .value = fd(2, .@"enum"),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -2101,6 +2188,9 @@ pub const TestAllTypesProto2 = struct {
             .message_set = true,
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "\x08\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -2172,7 +2262,7 @@ pub const TestAllTypesProto2 = struct {
             .str = fd(25, .{ .scalar = .string }),
         };
 
-        pub const message_set_extension = protobuf.Extension(TestAllTypesProto2.MessageSetCorrect, ?TestAllTypesProto2.MessageSetCorrectExtension1, fd(1547769, .submessage), "protobuf_test_messages.editions.proto2.TestAllTypesProto2.MessageSetCorrectExtension1.message_set_extension", null);
+        pub const message_set_extension = protobuf.Extension(TestAllTypesProto2.MessageSetCorrect, ?TestAllTypesProto2.MessageSetCorrectExtension1, fd(1547769, .submessage), "protobuf_test_messages.editions.proto2.TestAllTypesProto2.MessageSetCorrectExtension1.message_set_extension", null, &.{});
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -2247,7 +2337,7 @@ pub const TestAllTypesProto2 = struct {
             .sub_msg = fd(10, .submessage),
         };
 
-        pub const message_set_extension = protobuf.Extension(TestAllTypesProto2.MessageSetCorrect, ?TestAllTypesProto2.MessageSetCorrectExtension2, fd(4135312, .submessage), "protobuf_test_messages.editions.proto2.TestAllTypesProto2.MessageSetCorrectExtension2.message_set_extension", null);
+        pub const message_set_extension = protobuf.Extension(TestAllTypesProto2.MessageSetCorrect, ?TestAllTypesProto2.MessageSetCorrectExtension2, fd(4135312, .submessage), "protobuf_test_messages.editions.proto2.TestAllTypesProto2.MessageSetCorrectExtension2.message_set_extension", null, &.{});
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -2333,7 +2423,7 @@ pub const TestAllTypesProto2 = struct {
             .oneof_field = fd(null, .{ .oneof = TestAllTypesProto2.ExtensionWithOneof.oneof_field_union }),
         };
 
-        pub const extension_with_oneof = protobuf.Extension(TestAllTypesProto2.MessageSetCorrect, ?TestAllTypesProto2.ExtensionWithOneof, fd(123456789, .submessage), "protobuf_test_messages.editions.proto2.TestAllTypesProto2.ExtensionWithOneof.extension_with_oneof", null);
+        pub const extension_with_oneof = protobuf.Extension(TestAllTypesProto2.MessageSetCorrect, ?TestAllTypesProto2.ExtensionWithOneof, fd(123456789, .submessage), "protobuf_test_messages.editions.proto2.TestAllTypesProto2.ExtensionWithOneof.extension_with_oneof", null, &.{});
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -2621,6 +2711,11 @@ pub const UnknownToTestAllTypes = struct {
         .optionalgroup = fdf(1004, .submessage, .{ .message_encoding = .delimited }),
         .optional_bool = fd(1006, .{ .scalar = .bool }),
         .repeated_int32 = fd(1011, .{ .repeated = .{ .scalar = .int32 } }),
+    };
+
+    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    pub const _field_options = .{
+        .optionalgroup = "\xaa\x01\x02(\x02",
     };
 
     pub const OptionalGroup = struct {
@@ -3138,6 +3233,48 @@ pub const TestAllRequiredTypesProto2 = struct {
         .message_set = false,
     };
 
+    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    pub const _field_options = .{
+        .required_int32 = "\xaa\x01\x02\x08\x03",
+        .required_int64 = "\xaa\x01\x02\x08\x03",
+        .required_uint32 = "\xaa\x01\x02\x08\x03",
+        .required_uint64 = "\xaa\x01\x02\x08\x03",
+        .required_sint32 = "\xaa\x01\x02\x08\x03",
+        .required_sint64 = "\xaa\x01\x02\x08\x03",
+        .required_fixed32 = "\xaa\x01\x02\x08\x03",
+        .required_fixed64 = "\xaa\x01\x02\x08\x03",
+        .required_sfixed32 = "\xaa\x01\x02\x08\x03",
+        .required_sfixed64 = "\xaa\x01\x02\x08\x03",
+        .required_float = "\xaa\x01\x02\x08\x03",
+        .required_double = "\xaa\x01\x02\x08\x03",
+        .required_bool = "\xaa\x01\x02\x08\x03",
+        .required_string = "\xaa\x01\x02\x08\x03",
+        .required_bytes = "\xaa\x01\x02\x08\x03",
+        .required_nested_message = "\xaa\x01\x02\x08\x03",
+        .required_foreign_message = "\xaa\x01\x02\x08\x03",
+        .required_nested_enum = "\xaa\x01\x02\x08\x03",
+        .required_foreign_enum = "\xaa\x01\x02\x08\x03",
+        .required_string_piece = "\x08\x02\xaa\x01\x02\x08\x03",
+        .required_cord = "\x08\x01\xaa\x01\x02\x08\x03",
+        .recursive_message = "\xaa\x01\x02\x08\x03",
+        .data = "\xaa\x01\x04\x08\x03(\x02",
+        .default_int32 = "\xaa\x01\x02\x08\x03",
+        .default_int64 = "\xaa\x01\x02\x08\x03",
+        .default_uint32 = "\xaa\x01\x02\x08\x03",
+        .default_uint64 = "\xaa\x01\x02\x08\x03",
+        .default_sint32 = "\xaa\x01\x02\x08\x03",
+        .default_sint64 = "\xaa\x01\x02\x08\x03",
+        .default_fixed32 = "\xaa\x01\x02\x08\x03",
+        .default_fixed64 = "\xaa\x01\x02\x08\x03",
+        .default_sfixed32 = "\xaa\x01\x02\x08\x03",
+        .default_sfixed64 = "\xaa\x01\x02\x08\x03",
+        .default_float = "\xaa\x01\x02\x08\x03",
+        .default_double = "\xaa\x01\x02\x08\x03",
+        .default_bool = "\xaa\x01\x02\x08\x03",
+        .default_string = "\xaa\x01\x02\x08\x03",
+        .default_bytes = "\xaa\x01\x02\x08\x03",
+    };
+
     pub const NestedEnum = enum(i32) {
         FOO = 0,
         BAR = 1,
@@ -3155,6 +3292,12 @@ pub const TestAllRequiredTypesProto2 = struct {
             .a = fdf(1, .{ .scalar = .int32 }, .{ .legacy_required = true }),
             .corecursive = fdf(2, .submessage, .{ .legacy_required = true }),
             .optional_corecursive = fd(3, .submessage),
+        };
+
+        /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+        pub const _field_options = .{
+            .a = "\xaa\x01\x02\x08\x03",
+            .corecursive = "\xaa\x01\x02\x08\x03",
         };
 
         /// Encodes the message to the writer
@@ -3229,6 +3372,12 @@ pub const TestAllRequiredTypesProto2 = struct {
         pub const _desc_table = .{
             .group_int32 = fdf(202, .{ .scalar = .int32 }, .{ .legacy_required = true }),
             .group_uint32 = fdf(203, .{ .scalar = .uint32 }, .{ .legacy_required = true }),
+        };
+
+        /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+        pub const _field_options = .{
+            .group_int32 = "\xaa\x01\x02\x08\x03",
+            .group_uint32 = "\xaa\x01\x02\x08\x03",
         };
 
         /// Encodes the message to the writer
@@ -3310,6 +3459,9 @@ pub const TestAllRequiredTypesProto2 = struct {
             .message_set = true,
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "\x08\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -3381,7 +3533,12 @@ pub const TestAllRequiredTypesProto2 = struct {
             .str = fdf(25, .{ .scalar = .string }, .{ .legacy_required = true }),
         };
 
-        pub const message_set_extension = protobuf.Extension(TestAllRequiredTypesProto2.MessageSetCorrect, ?TestAllRequiredTypesProto2.MessageSetCorrectExtension1, fd(1547769, .submessage), "protobuf_test_messages.editions.proto2.TestAllRequiredTypesProto2.MessageSetCorrectExtension1.message_set_extension", null);
+        /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+        pub const _field_options = .{
+            .str = "\xaa\x01\x02\x08\x03",
+        };
+
+        pub const message_set_extension = protobuf.Extension(TestAllRequiredTypesProto2.MessageSetCorrect, ?TestAllRequiredTypesProto2.MessageSetCorrectExtension1, fd(1547769, .submessage), "protobuf_test_messages.editions.proto2.TestAllRequiredTypesProto2.MessageSetCorrectExtension1.message_set_extension", null, &.{});
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -3454,7 +3611,12 @@ pub const TestAllRequiredTypesProto2 = struct {
             .i = fdf(9, .{ .scalar = .int32 }, .{ .legacy_required = true }),
         };
 
-        pub const message_set_extension = protobuf.Extension(TestAllRequiredTypesProto2.MessageSetCorrect, ?TestAllRequiredTypesProto2.MessageSetCorrectExtension2, fd(4135312, .submessage), "protobuf_test_messages.editions.proto2.TestAllRequiredTypesProto2.MessageSetCorrectExtension2.message_set_extension", null);
+        /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+        pub const _field_options = .{
+            .i = "\xaa\x01\x02\x08\x03",
+        };
+
+        pub const message_set_extension = protobuf.Extension(TestAllRequiredTypesProto2.MessageSetCorrect, ?TestAllRequiredTypesProto2.MessageSetCorrectExtension2, fd(4135312, .submessage), "protobuf_test_messages.editions.proto2.TestAllRequiredTypesProto2.MessageSetCorrectExtension2.message_set_extension", null, &.{});
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -4015,13 +4177,19 @@ pub const TestLargeOneof = struct {
     }
 };
 
-pub const extension_int32 = protobuf.Extension(TestAllTypesProto2, ?i32, fd(120, .{ .scalar = .int32 }), "protobuf_test_messages.editions.proto2.extension_int32", null);
+pub const extension_int32 = protobuf.Extension(TestAllTypesProto2, ?i32, fd(120, .{ .scalar = .int32 }), "protobuf_test_messages.editions.proto2.extension_int32", null, &.{});
 
-pub const extension_string = protobuf.Extension(TestAllTypesProto2, ?[]const u8, fd(133, .{ .scalar = .string }), "protobuf_test_messages.editions.proto2.extension_string", null);
+pub const extension_string = protobuf.Extension(TestAllTypesProto2, ?[]const u8, fd(133, .{ .scalar = .string }), "protobuf_test_messages.editions.proto2.extension_string", null, &.{});
 
-pub const extension_bytes = protobuf.Extension(TestAllTypesProto2, ?[]const u8, fd(134, .{ .scalar = .bytes }), "protobuf_test_messages.editions.proto2.extension_bytes", null);
+pub const extension_bytes = protobuf.Extension(TestAllTypesProto2, ?[]const u8, fd(134, .{ .scalar = .bytes }), "protobuf_test_messages.editions.proto2.extension_bytes", null, &.{});
 
-pub const groupfield = protobuf.Extension(TestAllTypesProto2, ?GroupField, fdf(121, .submessage, .{ .message_encoding = .delimited }), "protobuf_test_messages.editions.proto2.groupfield", null);
+pub const groupfield = protobuf.Extension(TestAllTypesProto2, ?GroupField, fdf(121, .submessage, .{ .message_encoding = .delimited }), "protobuf_test_messages.editions.proto2.groupfield", null, "\xaa\x01\x02(\x02");
 
 /// Extensions declared in this package, for `protobuf.ExtensionRegistry.init`.
 pub const extensions = .{ TestAllTypesProto2.MessageSetCorrectExtension1.message_set_extension, TestAllTypesProto2.MessageSetCorrectExtension2.message_set_extension, TestAllTypesProto2.ExtensionWithOneof.extension_with_oneof, TestAllRequiredTypesProto2.MessageSetCorrectExtension1.message_set_extension, TestAllRequiredTypesProto2.MessageSetCorrectExtension2.message_set_extension, extension_int32, extension_string, extension_bytes, groupfield };
+
+/// Options of the files of this package that have some: encoded
+/// `google.protobuf.FileOptions`, by file name.
+pub const _file_options = .{
+    .@"test_messages_proto2_editions.proto" = "\n1com.google.protobuf_test_messages.editions.proto2H\x01\xf8\x01\x01\xa2\x02\x0eEditionsProto2\x92\x03\x06\x10\x02\x18\x02 \x03",
+};

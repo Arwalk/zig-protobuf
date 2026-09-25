@@ -1050,13 +1050,13 @@ pub const TestGroupExtension = struct {
 pub const TestNestedExtension = struct {
     pub const _desc_table = .{};
 
-    pub const @"test" = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(1002, .{ .scalar = .string }), "unittest.TestNestedExtension.test", @as([]const u8, "test"));
+    pub const @"test" = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(1002, .{ .scalar = .string }), "unittest.TestNestedExtension.test", @as([]const u8, "test"), &.{});
 
-    pub const nested_string_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(1003, .{ .scalar = .string }), "unittest.TestNestedExtension.nested_string_extension", null);
+    pub const nested_string_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(1003, .{ .scalar = .string }), "unittest.TestNestedExtension.nested_string_extension", null, &.{});
 
-    pub const a = protobuf.Extension(TestGroupExtension, ?i32, fd(17, .{ .scalar = .int32 }), "unittest.TestNestedExtension.a", null);
+    pub const a = protobuf.Extension(TestGroupExtension, ?i32, fd(17, .{ .scalar = .int32 }), "unittest.TestNestedExtension.a", null, &.{});
 
-    pub const optional_foreign_enum_extension = protobuf.Extension(TestGroupExtension, ?ForeignEnum, fd(22, .@"enum"), "unittest.TestNestedExtension.optional_foreign_enum_extension", null);
+    pub const optional_foreign_enum_extension = protobuf.Extension(TestGroupExtension, ?ForeignEnum, fd(22, .@"enum"), "unittest.TestNestedExtension.optional_foreign_enum_extension", null, &.{});
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -1637,9 +1637,9 @@ pub const TestRequired = struct {
         .optional_foreign = fd(34, .submessage),
     };
 
-    pub const single = protobuf.Extension(TestAllExtensions, ?TestRequired, fd(1000, .submessage), "unittest.TestRequired.single", null);
+    pub const single = protobuf.Extension(TestAllExtensions, ?TestRequired, fd(1000, .submessage), "unittest.TestRequired.single", null, &.{});
 
-    pub const multi = protobuf.Extension(TestAllExtensions, std.ArrayList(TestRequired), fd(1001, .{ .repeated = .submessage }), "unittest.TestRequired.multi", null);
+    pub const multi = protobuf.Extension(TestAllExtensions, std.ArrayList(TestRequired), fd(1001, .{ .repeated = .submessage }), "unittest.TestRequired.multi", null, &.{});
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -3697,7 +3697,7 @@ pub const TestExtensionOrderings1 = struct {
         .my_string = fd(1, .{ .scalar = .string }),
     };
 
-    pub const test_ext_orderings1 = protobuf.Extension(TestFieldOrderings, ?TestExtensionOrderings1, fd(13, .submessage), "unittest.TestExtensionOrderings1.test_ext_orderings1", null);
+    pub const test_ext_orderings1 = protobuf.Extension(TestFieldOrderings, ?TestExtensionOrderings1, fd(13, .submessage), "unittest.TestExtensionOrderings1.test_ext_orderings1", null, &.{});
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -3776,7 +3776,7 @@ pub const TestExtensionOrderings2 = struct {
             .my_string = fd(1, .{ .scalar = .string }),
         };
 
-        pub const test_ext_orderings3 = protobuf.Extension(TestFieldOrderings, ?TestExtensionOrderings2.TestExtensionOrderings3, fd(14, .submessage), "unittest.TestExtensionOrderings2.TestExtensionOrderings3.test_ext_orderings3", null);
+        pub const test_ext_orderings3 = protobuf.Extension(TestFieldOrderings, ?TestExtensionOrderings2.TestExtensionOrderings3, fd(14, .submessage), "unittest.TestExtensionOrderings2.TestExtensionOrderings3.test_ext_orderings3", null, &.{});
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -3841,7 +3841,7 @@ pub const TestExtensionOrderings2 = struct {
         }
     };
 
-    pub const test_ext_orderings2 = protobuf.Extension(TestFieldOrderings, ?TestExtensionOrderings2, fd(12, .submessage), "unittest.TestExtensionOrderings2.test_ext_orderings2", null);
+    pub const test_ext_orderings2 = protobuf.Extension(TestFieldOrderings, ?TestExtensionOrderings2, fd(12, .submessage), "unittest.TestExtensionOrderings2.test_ext_orderings2", null, &.{});
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -6166,9 +6166,9 @@ pub const TestParsingMerge = struct {
         }
     };
 
-    pub const optional_ext = protobuf.Extension(TestParsingMerge, ?TestAllTypes, fd(1000, .submessage), "unittest.TestParsingMerge.optional_ext", null);
+    pub const optional_ext = protobuf.Extension(TestParsingMerge, ?TestAllTypes, fd(1000, .submessage), "unittest.TestParsingMerge.optional_ext", null, &.{});
 
-    pub const repeated_ext = protobuf.Extension(TestParsingMerge, std.ArrayList(TestAllTypes), fd(1001, .{ .repeated = .submessage }), "unittest.TestParsingMerge.repeated_ext", null);
+    pub const repeated_ext = protobuf.Extension(TestParsingMerge, std.ArrayList(TestAllTypes), fd(1001, .{ .repeated = .submessage }), "unittest.TestParsingMerge.repeated_ext", null, &.{});
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -7326,15 +7326,15 @@ pub const TestExtensionRangeSerialize = struct {
         .message_set = false,
     };
 
-    pub const bar_one = protobuf.Extension(TestExtensionRangeSerialize, ?i32, fd(2, .{ .scalar = .int32 }), "unittest.TestExtensionRangeSerialize.bar_one", null);
+    pub const bar_one = protobuf.Extension(TestExtensionRangeSerialize, ?i32, fd(2, .{ .scalar = .int32 }), "unittest.TestExtensionRangeSerialize.bar_one", null, &.{});
 
-    pub const bar_two = protobuf.Extension(TestExtensionRangeSerialize, ?i32, fd(4, .{ .scalar = .int32 }), "unittest.TestExtensionRangeSerialize.bar_two", null);
+    pub const bar_two = protobuf.Extension(TestExtensionRangeSerialize, ?i32, fd(4, .{ .scalar = .int32 }), "unittest.TestExtensionRangeSerialize.bar_two", null, &.{});
 
-    pub const bar_three = protobuf.Extension(TestExtensionRangeSerialize, ?i32, fd(10, .{ .scalar = .int32 }), "unittest.TestExtensionRangeSerialize.bar_three", null);
+    pub const bar_three = protobuf.Extension(TestExtensionRangeSerialize, ?i32, fd(10, .{ .scalar = .int32 }), "unittest.TestExtensionRangeSerialize.bar_three", null, &.{});
 
-    pub const bar_four = protobuf.Extension(TestExtensionRangeSerialize, ?i32, fd(15, .{ .scalar = .int32 }), "unittest.TestExtensionRangeSerialize.bar_four", null);
+    pub const bar_four = protobuf.Extension(TestExtensionRangeSerialize, ?i32, fd(15, .{ .scalar = .int32 }), "unittest.TestExtensionRangeSerialize.bar_four", null, &.{});
 
-    pub const bar_five = protobuf.Extension(TestExtensionRangeSerialize, ?i32, fd(19, .{ .scalar = .int32 }), "unittest.TestExtensionRangeSerialize.bar_five", null);
+    pub const bar_five = protobuf.Extension(TestExtensionRangeSerialize, ?i32, fd(19, .{ .scalar = .int32 }), "unittest.TestExtensionRangeSerialize.bar_five", null, &.{});
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -8576,207 +8576,207 @@ pub const EnumParseTester = struct {
     }
 };
 
-pub const optional_int32_extension = protobuf.Extension(TestAllExtensions, ?i32, fd(1, .{ .scalar = .int32 }), "unittest.optional_int32_extension", null);
+pub const optional_int32_extension = protobuf.Extension(TestAllExtensions, ?i32, fd(1, .{ .scalar = .int32 }), "unittest.optional_int32_extension", null, &.{});
 
-pub const optional_int64_extension = protobuf.Extension(TestAllExtensions, ?i64, fd(2, .{ .scalar = .int64 }), "unittest.optional_int64_extension", null);
+pub const optional_int64_extension = protobuf.Extension(TestAllExtensions, ?i64, fd(2, .{ .scalar = .int64 }), "unittest.optional_int64_extension", null, &.{});
 
-pub const optional_uint32_extension = protobuf.Extension(TestAllExtensions, ?u32, fd(3, .{ .scalar = .uint32 }), "unittest.optional_uint32_extension", null);
+pub const optional_uint32_extension = protobuf.Extension(TestAllExtensions, ?u32, fd(3, .{ .scalar = .uint32 }), "unittest.optional_uint32_extension", null, &.{});
 
-pub const optional_uint64_extension = protobuf.Extension(TestAllExtensions, ?u64, fd(4, .{ .scalar = .uint64 }), "unittest.optional_uint64_extension", null);
+pub const optional_uint64_extension = protobuf.Extension(TestAllExtensions, ?u64, fd(4, .{ .scalar = .uint64 }), "unittest.optional_uint64_extension", null, &.{});
 
-pub const optional_sint32_extension = protobuf.Extension(TestAllExtensions, ?i32, fd(5, .{ .scalar = .sint32 }), "unittest.optional_sint32_extension", null);
+pub const optional_sint32_extension = protobuf.Extension(TestAllExtensions, ?i32, fd(5, .{ .scalar = .sint32 }), "unittest.optional_sint32_extension", null, &.{});
 
-pub const optional_sint64_extension = protobuf.Extension(TestAllExtensions, ?i64, fd(6, .{ .scalar = .sint64 }), "unittest.optional_sint64_extension", null);
+pub const optional_sint64_extension = protobuf.Extension(TestAllExtensions, ?i64, fd(6, .{ .scalar = .sint64 }), "unittest.optional_sint64_extension", null, &.{});
 
-pub const optional_fixed32_extension = protobuf.Extension(TestAllExtensions, ?u32, fd(7, .{ .scalar = .fixed32 }), "unittest.optional_fixed32_extension", null);
+pub const optional_fixed32_extension = protobuf.Extension(TestAllExtensions, ?u32, fd(7, .{ .scalar = .fixed32 }), "unittest.optional_fixed32_extension", null, &.{});
 
-pub const optional_fixed64_extension = protobuf.Extension(TestAllExtensions, ?u64, fd(8, .{ .scalar = .fixed64 }), "unittest.optional_fixed64_extension", null);
+pub const optional_fixed64_extension = protobuf.Extension(TestAllExtensions, ?u64, fd(8, .{ .scalar = .fixed64 }), "unittest.optional_fixed64_extension", null, &.{});
 
-pub const optional_sfixed32_extension = protobuf.Extension(TestAllExtensions, ?i32, fd(9, .{ .scalar = .sfixed32 }), "unittest.optional_sfixed32_extension", null);
+pub const optional_sfixed32_extension = protobuf.Extension(TestAllExtensions, ?i32, fd(9, .{ .scalar = .sfixed32 }), "unittest.optional_sfixed32_extension", null, &.{});
 
-pub const optional_sfixed64_extension = protobuf.Extension(TestAllExtensions, ?i64, fd(10, .{ .scalar = .sfixed64 }), "unittest.optional_sfixed64_extension", null);
+pub const optional_sfixed64_extension = protobuf.Extension(TestAllExtensions, ?i64, fd(10, .{ .scalar = .sfixed64 }), "unittest.optional_sfixed64_extension", null, &.{});
 
-pub const optional_float_extension = protobuf.Extension(TestAllExtensions, ?f32, fd(11, .{ .scalar = .float }), "unittest.optional_float_extension", null);
+pub const optional_float_extension = protobuf.Extension(TestAllExtensions, ?f32, fd(11, .{ .scalar = .float }), "unittest.optional_float_extension", null, &.{});
 
-pub const optional_double_extension = protobuf.Extension(TestAllExtensions, ?f64, fd(12, .{ .scalar = .double }), "unittest.optional_double_extension", null);
+pub const optional_double_extension = protobuf.Extension(TestAllExtensions, ?f64, fd(12, .{ .scalar = .double }), "unittest.optional_double_extension", null, &.{});
 
-pub const optional_bool_extension = protobuf.Extension(TestAllExtensions, ?bool, fd(13, .{ .scalar = .bool }), "unittest.optional_bool_extension", null);
+pub const optional_bool_extension = protobuf.Extension(TestAllExtensions, ?bool, fd(13, .{ .scalar = .bool }), "unittest.optional_bool_extension", null, &.{});
 
-pub const optional_string_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(14, .{ .scalar = .string }), "unittest.optional_string_extension", null);
+pub const optional_string_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(14, .{ .scalar = .string }), "unittest.optional_string_extension", null, &.{});
 
-pub const optional_bytes_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(15, .{ .scalar = .bytes }), "unittest.optional_bytes_extension", null);
+pub const optional_bytes_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(15, .{ .scalar = .bytes }), "unittest.optional_bytes_extension", null, &.{});
 
-pub const a = protobuf.Extension(TestAllExtensions, ?i32, fd(17, .{ .scalar = .int32 }), "unittest.a", null);
+pub const a = protobuf.Extension(TestAllExtensions, ?i32, fd(17, .{ .scalar = .int32 }), "unittest.a", null, &.{});
 
-pub const optional_nested_message_extension = protobuf.Extension(TestAllExtensions, ?TestAllTypes.NestedMessage, fd(18, .submessage), "unittest.optional_nested_message_extension", null);
+pub const optional_nested_message_extension = protobuf.Extension(TestAllExtensions, ?TestAllTypes.NestedMessage, fd(18, .submessage), "unittest.optional_nested_message_extension", null, &.{});
 
-pub const optional_foreign_message_extension = protobuf.Extension(TestAllExtensions, ?ForeignMessage, fd(19, .submessage), "unittest.optional_foreign_message_extension", null);
+pub const optional_foreign_message_extension = protobuf.Extension(TestAllExtensions, ?ForeignMessage, fd(19, .submessage), "unittest.optional_foreign_message_extension", null, &.{});
 
-pub const optional_nested_enum_extension = protobuf.Extension(TestAllExtensions, ?TestAllTypes.NestedEnum, fd(21, .@"enum"), "unittest.optional_nested_enum_extension", null);
+pub const optional_nested_enum_extension = protobuf.Extension(TestAllExtensions, ?TestAllTypes.NestedEnum, fd(21, .@"enum"), "unittest.optional_nested_enum_extension", null, &.{});
 
-pub const optional_foreign_enum_extension = protobuf.Extension(TestAllExtensions, ?ForeignEnum, fd(22, .@"enum"), "unittest.optional_foreign_enum_extension", null);
+pub const optional_foreign_enum_extension = protobuf.Extension(TestAllExtensions, ?ForeignEnum, fd(22, .@"enum"), "unittest.optional_foreign_enum_extension", null, &.{});
 
-pub const optional_string_piece_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(24, .{ .scalar = .string }), "unittest.optional_string_piece_extension", null);
+pub const optional_string_piece_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(24, .{ .scalar = .string }), "unittest.optional_string_piece_extension", null, &.{});
 
-pub const optional_cord_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(25, .{ .scalar = .string }), "unittest.optional_cord_extension", null);
+pub const optional_cord_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(25, .{ .scalar = .string }), "unittest.optional_cord_extension", null, &.{});
 
-pub const optional_lazy_message_extension = protobuf.Extension(TestAllExtensions, ?TestAllTypes.NestedMessage, fd(27, .submessage), "unittest.optional_lazy_message_extension", null);
+pub const optional_lazy_message_extension = protobuf.Extension(TestAllExtensions, ?TestAllTypes.NestedMessage, fd(27, .submessage), "unittest.optional_lazy_message_extension", null, &.{});
 
-pub const repeated_int32_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(i32), fd(31, .{ .repeated = .{ .scalar = .int32 } }), "unittest.repeated_int32_extension", null);
+pub const repeated_int32_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(i32), fd(31, .{ .repeated = .{ .scalar = .int32 } }), "unittest.repeated_int32_extension", null, &.{});
 
-pub const repeated_int64_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(i64), fd(32, .{ .repeated = .{ .scalar = .int64 } }), "unittest.repeated_int64_extension", null);
+pub const repeated_int64_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(i64), fd(32, .{ .repeated = .{ .scalar = .int64 } }), "unittest.repeated_int64_extension", null, &.{});
 
-pub const repeated_uint32_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(u32), fd(33, .{ .repeated = .{ .scalar = .uint32 } }), "unittest.repeated_uint32_extension", null);
+pub const repeated_uint32_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(u32), fd(33, .{ .repeated = .{ .scalar = .uint32 } }), "unittest.repeated_uint32_extension", null, &.{});
 
-pub const repeated_uint64_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(u64), fd(34, .{ .repeated = .{ .scalar = .uint64 } }), "unittest.repeated_uint64_extension", null);
+pub const repeated_uint64_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(u64), fd(34, .{ .repeated = .{ .scalar = .uint64 } }), "unittest.repeated_uint64_extension", null, &.{});
 
-pub const repeated_sint32_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(i32), fd(35, .{ .repeated = .{ .scalar = .sint32 } }), "unittest.repeated_sint32_extension", null);
+pub const repeated_sint32_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(i32), fd(35, .{ .repeated = .{ .scalar = .sint32 } }), "unittest.repeated_sint32_extension", null, &.{});
 
-pub const repeated_sint64_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(i64), fd(36, .{ .repeated = .{ .scalar = .sint64 } }), "unittest.repeated_sint64_extension", null);
+pub const repeated_sint64_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(i64), fd(36, .{ .repeated = .{ .scalar = .sint64 } }), "unittest.repeated_sint64_extension", null, &.{});
 
-pub const repeated_fixed32_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(u32), fd(37, .{ .repeated = .{ .scalar = .fixed32 } }), "unittest.repeated_fixed32_extension", null);
+pub const repeated_fixed32_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(u32), fd(37, .{ .repeated = .{ .scalar = .fixed32 } }), "unittest.repeated_fixed32_extension", null, &.{});
 
-pub const repeated_fixed64_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(u64), fd(38, .{ .repeated = .{ .scalar = .fixed64 } }), "unittest.repeated_fixed64_extension", null);
+pub const repeated_fixed64_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(u64), fd(38, .{ .repeated = .{ .scalar = .fixed64 } }), "unittest.repeated_fixed64_extension", null, &.{});
 
-pub const repeated_sfixed32_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(i32), fd(39, .{ .repeated = .{ .scalar = .sfixed32 } }), "unittest.repeated_sfixed32_extension", null);
+pub const repeated_sfixed32_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(i32), fd(39, .{ .repeated = .{ .scalar = .sfixed32 } }), "unittest.repeated_sfixed32_extension", null, &.{});
 
-pub const repeated_sfixed64_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(i64), fd(40, .{ .repeated = .{ .scalar = .sfixed64 } }), "unittest.repeated_sfixed64_extension", null);
+pub const repeated_sfixed64_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(i64), fd(40, .{ .repeated = .{ .scalar = .sfixed64 } }), "unittest.repeated_sfixed64_extension", null, &.{});
 
-pub const repeated_float_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(f32), fd(41, .{ .repeated = .{ .scalar = .float } }), "unittest.repeated_float_extension", null);
+pub const repeated_float_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(f32), fd(41, .{ .repeated = .{ .scalar = .float } }), "unittest.repeated_float_extension", null, &.{});
 
-pub const repeated_double_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(f64), fd(42, .{ .repeated = .{ .scalar = .double } }), "unittest.repeated_double_extension", null);
+pub const repeated_double_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(f64), fd(42, .{ .repeated = .{ .scalar = .double } }), "unittest.repeated_double_extension", null, &.{});
 
-pub const repeated_bool_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(bool), fd(43, .{ .repeated = .{ .scalar = .bool } }), "unittest.repeated_bool_extension", null);
+pub const repeated_bool_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(bool), fd(43, .{ .repeated = .{ .scalar = .bool } }), "unittest.repeated_bool_extension", null, &.{});
 
-pub const repeated_string_extension = protobuf.Extension(TestAllExtensions, std.ArrayList([]const u8), fd(44, .{ .repeated = .{ .scalar = .string } }), "unittest.repeated_string_extension", null);
+pub const repeated_string_extension = protobuf.Extension(TestAllExtensions, std.ArrayList([]const u8), fd(44, .{ .repeated = .{ .scalar = .string } }), "unittest.repeated_string_extension", null, &.{});
 
-pub const repeated_bytes_extension = protobuf.Extension(TestAllExtensions, std.ArrayList([]const u8), fd(45, .{ .repeated = .{ .scalar = .bytes } }), "unittest.repeated_bytes_extension", null);
+pub const repeated_bytes_extension = protobuf.Extension(TestAllExtensions, std.ArrayList([]const u8), fd(45, .{ .repeated = .{ .scalar = .bytes } }), "unittest.repeated_bytes_extension", null, &.{});
 
-pub const RepeatedGroup_extension_a = protobuf.Extension(TestAllExtensions, std.ArrayList(i32), fd(47, .{ .repeated = .{ .scalar = .int32 } }), "unittest.RepeatedGroup_extension_a", null);
+pub const RepeatedGroup_extension_a = protobuf.Extension(TestAllExtensions, std.ArrayList(i32), fd(47, .{ .repeated = .{ .scalar = .int32 } }), "unittest.RepeatedGroup_extension_a", null, &.{});
 
-pub const repeated_nested_message_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(TestAllTypes.NestedMessage), fd(48, .{ .repeated = .submessage }), "unittest.repeated_nested_message_extension", null);
+pub const repeated_nested_message_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(TestAllTypes.NestedMessage), fd(48, .{ .repeated = .submessage }), "unittest.repeated_nested_message_extension", null, &.{});
 
-pub const repeated_foreign_message_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(ForeignMessage), fd(49, .{ .repeated = .submessage }), "unittest.repeated_foreign_message_extension", null);
+pub const repeated_foreign_message_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(ForeignMessage), fd(49, .{ .repeated = .submessage }), "unittest.repeated_foreign_message_extension", null, &.{});
 
-pub const repeated_nested_enum_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(TestAllTypes.NestedEnum), fd(51, .{ .repeated = .@"enum" }), "unittest.repeated_nested_enum_extension", null);
+pub const repeated_nested_enum_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(TestAllTypes.NestedEnum), fd(51, .{ .repeated = .@"enum" }), "unittest.repeated_nested_enum_extension", null, &.{});
 
-pub const repeated_foreign_enum_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(ForeignEnum), fd(52, .{ .repeated = .@"enum" }), "unittest.repeated_foreign_enum_extension", null);
+pub const repeated_foreign_enum_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(ForeignEnum), fd(52, .{ .repeated = .@"enum" }), "unittest.repeated_foreign_enum_extension", null, &.{});
 
-pub const repeated_string_piece_extension = protobuf.Extension(TestAllExtensions, std.ArrayList([]const u8), fd(54, .{ .repeated = .{ .scalar = .string } }), "unittest.repeated_string_piece_extension", null);
+pub const repeated_string_piece_extension = protobuf.Extension(TestAllExtensions, std.ArrayList([]const u8), fd(54, .{ .repeated = .{ .scalar = .string } }), "unittest.repeated_string_piece_extension", null, &.{});
 
-pub const repeated_cord_extension = protobuf.Extension(TestAllExtensions, std.ArrayList([]const u8), fd(55, .{ .repeated = .{ .scalar = .string } }), "unittest.repeated_cord_extension", null);
+pub const repeated_cord_extension = protobuf.Extension(TestAllExtensions, std.ArrayList([]const u8), fd(55, .{ .repeated = .{ .scalar = .string } }), "unittest.repeated_cord_extension", null, &.{});
 
-pub const repeated_lazy_message_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(TestAllTypes.NestedMessage), fd(57, .{ .repeated = .submessage }), "unittest.repeated_lazy_message_extension", null);
+pub const repeated_lazy_message_extension = protobuf.Extension(TestAllExtensions, std.ArrayList(TestAllTypes.NestedMessage), fd(57, .{ .repeated = .submessage }), "unittest.repeated_lazy_message_extension", null, &.{});
 
-pub const default_int32_extension = protobuf.Extension(TestAllExtensions, ?i32, fd(61, .{ .scalar = .int32 }), "unittest.default_int32_extension", @as(i32, 41));
+pub const default_int32_extension = protobuf.Extension(TestAllExtensions, ?i32, fd(61, .{ .scalar = .int32 }), "unittest.default_int32_extension", @as(i32, 41), &.{});
 
-pub const default_int64_extension = protobuf.Extension(TestAllExtensions, ?i64, fd(62, .{ .scalar = .int64 }), "unittest.default_int64_extension", @as(i64, 42));
+pub const default_int64_extension = protobuf.Extension(TestAllExtensions, ?i64, fd(62, .{ .scalar = .int64 }), "unittest.default_int64_extension", @as(i64, 42), &.{});
 
-pub const default_uint32_extension = protobuf.Extension(TestAllExtensions, ?u32, fd(63, .{ .scalar = .uint32 }), "unittest.default_uint32_extension", @as(u32, 43));
+pub const default_uint32_extension = protobuf.Extension(TestAllExtensions, ?u32, fd(63, .{ .scalar = .uint32 }), "unittest.default_uint32_extension", @as(u32, 43), &.{});
 
-pub const default_uint64_extension = protobuf.Extension(TestAllExtensions, ?u64, fd(64, .{ .scalar = .uint64 }), "unittest.default_uint64_extension", @as(u64, 44));
+pub const default_uint64_extension = protobuf.Extension(TestAllExtensions, ?u64, fd(64, .{ .scalar = .uint64 }), "unittest.default_uint64_extension", @as(u64, 44), &.{});
 
-pub const default_sint32_extension = protobuf.Extension(TestAllExtensions, ?i32, fd(65, .{ .scalar = .sint32 }), "unittest.default_sint32_extension", @as(i32, -45));
+pub const default_sint32_extension = protobuf.Extension(TestAllExtensions, ?i32, fd(65, .{ .scalar = .sint32 }), "unittest.default_sint32_extension", @as(i32, -45), &.{});
 
-pub const default_sint64_extension = protobuf.Extension(TestAllExtensions, ?i64, fd(66, .{ .scalar = .sint64 }), "unittest.default_sint64_extension", @as(i64, 46));
+pub const default_sint64_extension = protobuf.Extension(TestAllExtensions, ?i64, fd(66, .{ .scalar = .sint64 }), "unittest.default_sint64_extension", @as(i64, 46), &.{});
 
-pub const default_fixed32_extension = protobuf.Extension(TestAllExtensions, ?u32, fd(67, .{ .scalar = .fixed32 }), "unittest.default_fixed32_extension", @as(u32, 47));
+pub const default_fixed32_extension = protobuf.Extension(TestAllExtensions, ?u32, fd(67, .{ .scalar = .fixed32 }), "unittest.default_fixed32_extension", @as(u32, 47), &.{});
 
-pub const default_fixed64_extension = protobuf.Extension(TestAllExtensions, ?u64, fd(68, .{ .scalar = .fixed64 }), "unittest.default_fixed64_extension", @as(u64, 48));
+pub const default_fixed64_extension = protobuf.Extension(TestAllExtensions, ?u64, fd(68, .{ .scalar = .fixed64 }), "unittest.default_fixed64_extension", @as(u64, 48), &.{});
 
-pub const default_sfixed32_extension = protobuf.Extension(TestAllExtensions, ?i32, fd(69, .{ .scalar = .sfixed32 }), "unittest.default_sfixed32_extension", @as(i32, 49));
+pub const default_sfixed32_extension = protobuf.Extension(TestAllExtensions, ?i32, fd(69, .{ .scalar = .sfixed32 }), "unittest.default_sfixed32_extension", @as(i32, 49), &.{});
 
-pub const default_sfixed64_extension = protobuf.Extension(TestAllExtensions, ?i64, fd(70, .{ .scalar = .sfixed64 }), "unittest.default_sfixed64_extension", @as(i64, -50));
+pub const default_sfixed64_extension = protobuf.Extension(TestAllExtensions, ?i64, fd(70, .{ .scalar = .sfixed64 }), "unittest.default_sfixed64_extension", @as(i64, -50), &.{});
 
-pub const default_float_extension = protobuf.Extension(TestAllExtensions, ?f32, fd(71, .{ .scalar = .float }), "unittest.default_float_extension", @as(f32, 51.5));
+pub const default_float_extension = protobuf.Extension(TestAllExtensions, ?f32, fd(71, .{ .scalar = .float }), "unittest.default_float_extension", @as(f32, 51.5), &.{});
 
-pub const default_double_extension = protobuf.Extension(TestAllExtensions, ?f64, fd(72, .{ .scalar = .double }), "unittest.default_double_extension", @as(f64, 52000));
+pub const default_double_extension = protobuf.Extension(TestAllExtensions, ?f64, fd(72, .{ .scalar = .double }), "unittest.default_double_extension", @as(f64, 52000), &.{});
 
-pub const default_bool_extension = protobuf.Extension(TestAllExtensions, ?bool, fd(73, .{ .scalar = .bool }), "unittest.default_bool_extension", @as(bool, true));
+pub const default_bool_extension = protobuf.Extension(TestAllExtensions, ?bool, fd(73, .{ .scalar = .bool }), "unittest.default_bool_extension", @as(bool, true), &.{});
 
-pub const default_string_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(74, .{ .scalar = .string }), "unittest.default_string_extension", @as([]const u8, "hello"));
+pub const default_string_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(74, .{ .scalar = .string }), "unittest.default_string_extension", @as([]const u8, "hello"), &.{});
 
-pub const default_bytes_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(75, .{ .scalar = .bytes }), "unittest.default_bytes_extension", @as([]const u8, "world"));
+pub const default_bytes_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(75, .{ .scalar = .bytes }), "unittest.default_bytes_extension", @as([]const u8, "world"), &.{});
 
-pub const default_nested_enum_extension = protobuf.Extension(TestAllExtensions, ?TestAllTypes.NestedEnum, fd(81, .@"enum"), "unittest.default_nested_enum_extension", @as(TestAllTypes.NestedEnum, .BAR));
+pub const default_nested_enum_extension = protobuf.Extension(TestAllExtensions, ?TestAllTypes.NestedEnum, fd(81, .@"enum"), "unittest.default_nested_enum_extension", @as(TestAllTypes.NestedEnum, .BAR), &.{});
 
-pub const default_foreign_enum_extension = protobuf.Extension(TestAllExtensions, ?ForeignEnum, fd(82, .@"enum"), "unittest.default_foreign_enum_extension", @as(ForeignEnum, .FOREIGN_BAR));
+pub const default_foreign_enum_extension = protobuf.Extension(TestAllExtensions, ?ForeignEnum, fd(82, .@"enum"), "unittest.default_foreign_enum_extension", @as(ForeignEnum, .FOREIGN_BAR), &.{});
 
-pub const default_string_piece_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(84, .{ .scalar = .string }), "unittest.default_string_piece_extension", @as([]const u8, "abc"));
+pub const default_string_piece_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(84, .{ .scalar = .string }), "unittest.default_string_piece_extension", @as([]const u8, "abc"), &.{});
 
-pub const default_cord_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(85, .{ .scalar = .string }), "unittest.default_cord_extension", @as([]const u8, "123"));
+pub const default_cord_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(85, .{ .scalar = .string }), "unittest.default_cord_extension", @as([]const u8, "123"), &.{});
 
-pub const oneof_uint32_extension = protobuf.Extension(TestAllExtensions, ?u32, fd(111, .{ .scalar = .uint32 }), "unittest.oneof_uint32_extension", null);
+pub const oneof_uint32_extension = protobuf.Extension(TestAllExtensions, ?u32, fd(111, .{ .scalar = .uint32 }), "unittest.oneof_uint32_extension", null, &.{});
 
-pub const oneof_nested_message_extension = protobuf.Extension(TestAllExtensions, ?TestAllTypes.NestedMessage, fd(112, .submessage), "unittest.oneof_nested_message_extension", null);
+pub const oneof_nested_message_extension = protobuf.Extension(TestAllExtensions, ?TestAllTypes.NestedMessage, fd(112, .submessage), "unittest.oneof_nested_message_extension", null, &.{});
 
-pub const oneof_string_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(113, .{ .scalar = .string }), "unittest.oneof_string_extension", null);
+pub const oneof_string_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(113, .{ .scalar = .string }), "unittest.oneof_string_extension", null, &.{});
 
-pub const oneof_bytes_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(114, .{ .scalar = .bytes }), "unittest.oneof_bytes_extension", null);
+pub const oneof_bytes_extension = protobuf.Extension(TestAllExtensions, ?[]const u8, fd(114, .{ .scalar = .bytes }), "unittest.oneof_bytes_extension", null, &.{});
 
-pub const my_extension_string = protobuf.Extension(TestFieldOrderings, ?[]const u8, fd(50, .{ .scalar = .string }), "unittest.my_extension_string", null);
+pub const my_extension_string = protobuf.Extension(TestFieldOrderings, ?[]const u8, fd(50, .{ .scalar = .string }), "unittest.my_extension_string", null, &.{});
 
-pub const my_extension_int = protobuf.Extension(TestFieldOrderings, ?i32, fd(5, .{ .scalar = .int32 }), "unittest.my_extension_int", null);
+pub const my_extension_int = protobuf.Extension(TestFieldOrderings, ?i32, fd(5, .{ .scalar = .int32 }), "unittest.my_extension_int", null, &.{});
 
-pub const packed_int32_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(i32), fd(90, .{ .packed_repeated = .{ .scalar = .int32 } }), "unittest.packed_int32_extension", null);
+pub const packed_int32_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(i32), fd(90, .{ .packed_repeated = .{ .scalar = .int32 } }), "unittest.packed_int32_extension", null, &.{});
 
-pub const packed_int64_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(i64), fd(91, .{ .packed_repeated = .{ .scalar = .int64 } }), "unittest.packed_int64_extension", null);
+pub const packed_int64_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(i64), fd(91, .{ .packed_repeated = .{ .scalar = .int64 } }), "unittest.packed_int64_extension", null, &.{});
 
-pub const packed_uint32_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(u32), fd(92, .{ .packed_repeated = .{ .scalar = .uint32 } }), "unittest.packed_uint32_extension", null);
+pub const packed_uint32_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(u32), fd(92, .{ .packed_repeated = .{ .scalar = .uint32 } }), "unittest.packed_uint32_extension", null, &.{});
 
-pub const packed_uint64_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(u64), fd(93, .{ .packed_repeated = .{ .scalar = .uint64 } }), "unittest.packed_uint64_extension", null);
+pub const packed_uint64_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(u64), fd(93, .{ .packed_repeated = .{ .scalar = .uint64 } }), "unittest.packed_uint64_extension", null, &.{});
 
-pub const packed_sint32_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(i32), fd(94, .{ .packed_repeated = .{ .scalar = .sint32 } }), "unittest.packed_sint32_extension", null);
+pub const packed_sint32_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(i32), fd(94, .{ .packed_repeated = .{ .scalar = .sint32 } }), "unittest.packed_sint32_extension", null, &.{});
 
-pub const packed_sint64_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(i64), fd(95, .{ .packed_repeated = .{ .scalar = .sint64 } }), "unittest.packed_sint64_extension", null);
+pub const packed_sint64_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(i64), fd(95, .{ .packed_repeated = .{ .scalar = .sint64 } }), "unittest.packed_sint64_extension", null, &.{});
 
-pub const packed_fixed32_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(u32), fd(96, .{ .packed_repeated = .{ .scalar = .fixed32 } }), "unittest.packed_fixed32_extension", null);
+pub const packed_fixed32_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(u32), fd(96, .{ .packed_repeated = .{ .scalar = .fixed32 } }), "unittest.packed_fixed32_extension", null, &.{});
 
-pub const packed_fixed64_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(u64), fd(97, .{ .packed_repeated = .{ .scalar = .fixed64 } }), "unittest.packed_fixed64_extension", null);
+pub const packed_fixed64_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(u64), fd(97, .{ .packed_repeated = .{ .scalar = .fixed64 } }), "unittest.packed_fixed64_extension", null, &.{});
 
-pub const packed_sfixed32_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(i32), fd(98, .{ .packed_repeated = .{ .scalar = .sfixed32 } }), "unittest.packed_sfixed32_extension", null);
+pub const packed_sfixed32_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(i32), fd(98, .{ .packed_repeated = .{ .scalar = .sfixed32 } }), "unittest.packed_sfixed32_extension", null, &.{});
 
-pub const packed_sfixed64_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(i64), fd(99, .{ .packed_repeated = .{ .scalar = .sfixed64 } }), "unittest.packed_sfixed64_extension", null);
+pub const packed_sfixed64_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(i64), fd(99, .{ .packed_repeated = .{ .scalar = .sfixed64 } }), "unittest.packed_sfixed64_extension", null, &.{});
 
-pub const packed_float_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(f32), fd(100, .{ .packed_repeated = .{ .scalar = .float } }), "unittest.packed_float_extension", null);
+pub const packed_float_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(f32), fd(100, .{ .packed_repeated = .{ .scalar = .float } }), "unittest.packed_float_extension", null, &.{});
 
-pub const packed_double_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(f64), fd(101, .{ .packed_repeated = .{ .scalar = .double } }), "unittest.packed_double_extension", null);
+pub const packed_double_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(f64), fd(101, .{ .packed_repeated = .{ .scalar = .double } }), "unittest.packed_double_extension", null, &.{});
 
-pub const packed_bool_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(bool), fd(102, .{ .packed_repeated = .{ .scalar = .bool } }), "unittest.packed_bool_extension", null);
+pub const packed_bool_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(bool), fd(102, .{ .packed_repeated = .{ .scalar = .bool } }), "unittest.packed_bool_extension", null, &.{});
 
-pub const packed_enum_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(ForeignEnum), fd(103, .{ .packed_repeated = .@"enum" }), "unittest.packed_enum_extension", null);
+pub const packed_enum_extension = protobuf.Extension(TestPackedExtensions, std.ArrayList(ForeignEnum), fd(103, .{ .packed_repeated = .@"enum" }), "unittest.packed_enum_extension", null, &.{});
 
-pub const unpacked_int32_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(i32), fd(90, .{ .repeated = .{ .scalar = .int32 } }), "unittest.unpacked_int32_extension", null);
+pub const unpacked_int32_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(i32), fd(90, .{ .repeated = .{ .scalar = .int32 } }), "unittest.unpacked_int32_extension", null, &.{});
 
-pub const unpacked_int64_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(i64), fd(91, .{ .repeated = .{ .scalar = .int64 } }), "unittest.unpacked_int64_extension", null);
+pub const unpacked_int64_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(i64), fd(91, .{ .repeated = .{ .scalar = .int64 } }), "unittest.unpacked_int64_extension", null, &.{});
 
-pub const unpacked_uint32_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(u32), fd(92, .{ .repeated = .{ .scalar = .uint32 } }), "unittest.unpacked_uint32_extension", null);
+pub const unpacked_uint32_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(u32), fd(92, .{ .repeated = .{ .scalar = .uint32 } }), "unittest.unpacked_uint32_extension", null, &.{});
 
-pub const unpacked_uint64_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(u64), fd(93, .{ .repeated = .{ .scalar = .uint64 } }), "unittest.unpacked_uint64_extension", null);
+pub const unpacked_uint64_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(u64), fd(93, .{ .repeated = .{ .scalar = .uint64 } }), "unittest.unpacked_uint64_extension", null, &.{});
 
-pub const unpacked_sint32_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(i32), fd(94, .{ .repeated = .{ .scalar = .sint32 } }), "unittest.unpacked_sint32_extension", null);
+pub const unpacked_sint32_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(i32), fd(94, .{ .repeated = .{ .scalar = .sint32 } }), "unittest.unpacked_sint32_extension", null, &.{});
 
-pub const unpacked_sint64_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(i64), fd(95, .{ .repeated = .{ .scalar = .sint64 } }), "unittest.unpacked_sint64_extension", null);
+pub const unpacked_sint64_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(i64), fd(95, .{ .repeated = .{ .scalar = .sint64 } }), "unittest.unpacked_sint64_extension", null, &.{});
 
-pub const unpacked_fixed32_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(u32), fd(96, .{ .repeated = .{ .scalar = .fixed32 } }), "unittest.unpacked_fixed32_extension", null);
+pub const unpacked_fixed32_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(u32), fd(96, .{ .repeated = .{ .scalar = .fixed32 } }), "unittest.unpacked_fixed32_extension", null, &.{});
 
-pub const unpacked_fixed64_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(u64), fd(97, .{ .repeated = .{ .scalar = .fixed64 } }), "unittest.unpacked_fixed64_extension", null);
+pub const unpacked_fixed64_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(u64), fd(97, .{ .repeated = .{ .scalar = .fixed64 } }), "unittest.unpacked_fixed64_extension", null, &.{});
 
-pub const unpacked_sfixed32_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(i32), fd(98, .{ .repeated = .{ .scalar = .sfixed32 } }), "unittest.unpacked_sfixed32_extension", null);
+pub const unpacked_sfixed32_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(i32), fd(98, .{ .repeated = .{ .scalar = .sfixed32 } }), "unittest.unpacked_sfixed32_extension", null, &.{});
 
-pub const unpacked_sfixed64_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(i64), fd(99, .{ .repeated = .{ .scalar = .sfixed64 } }), "unittest.unpacked_sfixed64_extension", null);
+pub const unpacked_sfixed64_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(i64), fd(99, .{ .repeated = .{ .scalar = .sfixed64 } }), "unittest.unpacked_sfixed64_extension", null, &.{});
 
-pub const unpacked_float_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(f32), fd(100, .{ .repeated = .{ .scalar = .float } }), "unittest.unpacked_float_extension", null);
+pub const unpacked_float_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(f32), fd(100, .{ .repeated = .{ .scalar = .float } }), "unittest.unpacked_float_extension", null, &.{});
 
-pub const unpacked_double_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(f64), fd(101, .{ .repeated = .{ .scalar = .double } }), "unittest.unpacked_double_extension", null);
+pub const unpacked_double_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(f64), fd(101, .{ .repeated = .{ .scalar = .double } }), "unittest.unpacked_double_extension", null, &.{});
 
-pub const unpacked_bool_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(bool), fd(102, .{ .repeated = .{ .scalar = .bool } }), "unittest.unpacked_bool_extension", null);
+pub const unpacked_bool_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(bool), fd(102, .{ .repeated = .{ .scalar = .bool } }), "unittest.unpacked_bool_extension", null, &.{});
 
-pub const unpacked_enum_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(ForeignEnum), fd(103, .{ .repeated = .@"enum" }), "unittest.unpacked_enum_extension", null);
+pub const unpacked_enum_extension = protobuf.Extension(TestUnpackedExtensions, std.ArrayList(ForeignEnum), fd(103, .{ .repeated = .@"enum" }), "unittest.unpacked_enum_extension", null, &.{});
 
-pub const test_all_types = protobuf.Extension(TestHugeFieldNumbers, ?TestAllTypes, fd(536860000, .submessage), "unittest.test_all_types", null);
+pub const test_all_types = protobuf.Extension(TestHugeFieldNumbers, ?TestAllTypes, fd(536860000, .submessage), "unittest.test_all_types", null, &.{});
 
-pub const test_extension_inside_table_extension = protobuf.Extension(TestExtensionInsideTable, ?i32, fd(5, .{ .scalar = .int32 }), "unittest.test_extension_inside_table_extension", null);
+pub const test_extension_inside_table_extension = protobuf.Extension(TestExtensionInsideTable, ?i32, fd(5, .{ .scalar = .int32 }), "unittest.test_extension_inside_table_extension", null, &.{});
 
 pub fn TestService(comptime UserDataType: type, comptime ErrorSet: type) type {
     return struct {

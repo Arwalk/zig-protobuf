@@ -446,3 +446,9 @@ pub const ConformanceResponse = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 };
+
+/// Options of the files of this package that have some: encoded
+/// `google.protobuf.FileOptions`, by file name.
+pub const _file_options = .{
+    .@"conformance.proto" = "\n\x1fcom.google.protobuf.conformance\xa2\x02\x0bConformance",
+};

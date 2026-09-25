@@ -1470,3 +1470,9 @@ pub const Exemplar = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 };
+
+/// Options of the files of this package that have some: encoded
+/// `google.protobuf.FileOptions`, by file name.
+pub const _file_options = .{
+    .@"opentelemetry/proto/metrics/v1/metrics.proto" = "\n!io.opentelemetry.proto.metrics.v1B\x0cMetricsProtoP\x01Z)go.opentelemetry.io/proto/otlp/metrics/v1\xaa\x02\x1eOpenTelemetry.Proto.Metrics.V1",
+};

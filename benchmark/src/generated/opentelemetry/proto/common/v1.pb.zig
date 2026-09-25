@@ -405,3 +405,9 @@ pub const InstrumentationScope = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 };
+
+/// Options of the files of this package that have some: encoded
+/// `google.protobuf.FileOptions`, by file name.
+pub const _file_options = .{
+    .@"opentelemetry/proto/common/v1/common.proto" = "\n io.opentelemetry.proto.common.v1B\x0bCommonProtoP\x01Z(go.opentelemetry.io/proto/otlp/common/v1\xaa\x02\x1dOpenTelemetry.Proto.Common.V1",
+};

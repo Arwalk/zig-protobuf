@@ -130,6 +130,13 @@ pub const TestAllTypesEditionUnstable = struct {
         .message_set = false,
     };
 
+    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    pub const _field_options = .{
+        .optional_foreign_message = "\xaa\x01\x02(\x01",
+        .recursive_message = "\xaa\x01\x02(\x01",
+        .repeated_foreign_message = "\xaa\x01\x02(\x01",
+    };
+
     pub const MapInt32Int32Entry = struct {
         key: i32 = 0,
         value: i32 = 0,
@@ -138,6 +145,9 @@ pub const TestAllTypesEditionUnstable = struct {
             .key = fd(1, .{ .scalar = .sfixed32 }),
             .value = fd(2, .{ .scalar = .sfixed32 }),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -211,6 +221,9 @@ pub const TestAllTypesEditionUnstable = struct {
             .value = fd(2, .{ .scalar = .bool }),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -282,6 +295,9 @@ pub const TestAllTypesEditionUnstable = struct {
             .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .value = fdf(2, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -355,6 +371,9 @@ pub const TestAllTypesEditionUnstable = struct {
             .value = fd(2, .submessage),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -427,6 +446,9 @@ pub const TestAllTypesEditionUnstable = struct {
             .value = fd(2, .@"enum"),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -498,6 +520,9 @@ pub const TestAllTypesEditionUnstable = struct {
             .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .value = fd(2, .{ .scalar = .bytes }),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -696,7 +721,13 @@ pub const ForeignMessageEditionUnstable = struct {
     }
 };
 
-pub const extension_int32 = protobuf.Extension(TestAllTypesEditionUnstable, ?i32, fd(120, .{ .scalar = .sfixed32 }), "protobuf_test_messages.edition_unstable.extension_int32", null);
+pub const extension_int32 = protobuf.Extension(TestAllTypesEditionUnstable, ?i32, fd(120, .{ .scalar = .sfixed32 }), "protobuf_test_messages.edition_unstable.extension_int32", null, &.{});
 
 /// Extensions declared in this package, for `protobuf.ExtensionRegistry.init`.
 pub const extensions = .{extension_int32};
+
+/// Options of the files of this package that have some: encoded
+/// `google.protobuf.FileOptions`, by file name.
+pub const _file_options = .{
+    .@"test_messages_edition_unstable.proto" = "\n2com.google.protobuf_test_messages.edition_unstable\xa2\x02\x0fEditionUnstable\x92\x03\x02(\x02",
+};

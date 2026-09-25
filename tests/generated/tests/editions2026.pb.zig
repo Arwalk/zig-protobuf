@@ -29,6 +29,11 @@ pub const Defaults = struct {
         .implicit_number = fd(6, .{ .scalar = .int32 }),
     };
 
+    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    pub const _field_options = .{
+        .implicit_number = "\xaa\x01\x02\x08\x02",
+    };
+
     pub const Child = struct {
         a: ?i32 = null,
 

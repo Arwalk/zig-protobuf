@@ -325,3 +325,9 @@ pub const CodeGeneratorResponse = struct {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
 };
+
+/// Options of the files of this package that have some: encoded
+/// `google.protobuf.FileOptions`, by file name.
+pub const _file_options = .{
+    .@"google/protobuf/compiler/plugin.proto" = "\n\x1ccom.google.protobuf.compilerB\x0cPluginProtosZ)google.golang.org/protobuf/types/pluginpb\xaa\x02\x18Google.Protobuf.Compiler",
+};

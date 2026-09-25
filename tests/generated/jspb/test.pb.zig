@@ -765,9 +765,9 @@ pub const IsExtension = struct {
         .ext1 = fd(1, .{ .scalar = .string }),
     };
 
-    pub const ext_field = protobuf.Extension(HasExtensions, ?IsExtension, fd(100, .submessage), "jspb.test.IsExtension.ext_field", null);
+    pub const ext_field = protobuf.Extension(HasExtensions, ?IsExtension, fd(100, .submessage), "jspb.test.IsExtension.ext_field", null, &.{});
 
-    pub const simple_option = protobuf.Extension(google_protobuf.EnumOptions, ?[]const u8, fd(42113038, .{ .scalar = .string }), "jspb.test.IsExtension.simple_option", null);
+    pub const simple_option = protobuf.Extension(google_protobuf.EnumOptions, ?[]const u8, fd(42113038, .{ .scalar = .string }), "jspb.test.IsExtension.simple_option", null, &.{});
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -835,13 +835,13 @@ pub const IsExtension = struct {
 pub const IndirectExtension = struct {
     pub const _desc_table = .{};
 
-    pub const simple = protobuf.Extension(HasExtensions, ?Simple1, fd(101, .submessage), "jspb.test.IndirectExtension.simple", null);
+    pub const simple = protobuf.Extension(HasExtensions, ?Simple1, fd(101, .submessage), "jspb.test.IndirectExtension.simple", null, &.{});
 
-    pub const str = protobuf.Extension(HasExtensions, ?[]const u8, fd(102, .{ .scalar = .string }), "jspb.test.IndirectExtension.str", null);
+    pub const str = protobuf.Extension(HasExtensions, ?[]const u8, fd(102, .{ .scalar = .string }), "jspb.test.IndirectExtension.str", null, &.{});
 
-    pub const repeated_str = protobuf.Extension(HasExtensions, std.ArrayList([]const u8), fd(103, .{ .repeated = .{ .scalar = .string } }), "jspb.test.IndirectExtension.repeated_str", null);
+    pub const repeated_str = protobuf.Extension(HasExtensions, std.ArrayList([]const u8), fd(103, .{ .repeated = .{ .scalar = .string } }), "jspb.test.IndirectExtension.repeated_str", null, &.{});
 
-    pub const repeated_simple = protobuf.Extension(HasExtensions, std.ArrayList(Simple1), fd(104, .{ .repeated = .submessage }), "jspb.test.IndirectExtension.repeated_simple", null);
+    pub const repeated_simple = protobuf.Extension(HasExtensions, std.ArrayList(Simple1), fd(104, .{ .repeated = .submessage }), "jspb.test.IndirectExtension.repeated_simple", null, &.{});
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -1186,7 +1186,7 @@ pub const CloneExtension = struct {
         .ext = fd(2, .{ .scalar = .string }),
     };
 
-    pub const ext_field = protobuf.Extension(TestClone, ?CloneExtension, fd(100, .submessage), "jspb.test.CloneExtension.ext_field", null);
+    pub const ext_field = protobuf.Extension(TestClone, ?CloneExtension, fd(100, .submessage), "jspb.test.CloneExtension.ext_field", null, &.{});
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -1408,7 +1408,7 @@ pub const TestReservedNames = struct {
 pub const TestReservedNamesExtension = struct {
     pub const _desc_table = .{};
 
-    pub const foo = protobuf.Extension(TestReservedNames, ?i32, fd(10, .{ .scalar = .int32 }), "jspb.test.TestReservedNamesExtension.foo", null);
+    pub const foo = protobuf.Extension(TestReservedNames, ?i32, fd(10, .{ .scalar = .int32 }), "jspb.test.TestReservedNamesExtension.foo", null, &.{});
 
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
@@ -2839,7 +2839,7 @@ pub const Deeply = struct {
     }
 };
 
-pub const simple1 = protobuf.Extension(HasExtensions, ?Simple1, fd(105, .submessage), "jspb.test.simple1", null);
+pub const simple1 = protobuf.Extension(HasExtensions, ?Simple1, fd(105, .submessage), "jspb.test.simple1", null, &.{});
 
 /// Extensions declared in this package, for `protobuf.ExtensionRegistry.init`.
 pub const extensions = .{ IsExtension.ext_field, IsExtension.simple_option, IndirectExtension.simple, IndirectExtension.str, IndirectExtension.repeated_str, IndirectExtension.repeated_simple, CloneExtension.ext_field, TestReservedNamesExtension.foo, simple1 };

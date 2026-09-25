@@ -483,6 +483,12 @@ pub const ExtensionRangeOptions = struct {
         .message_set = false,
     };
 
+    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    pub const _field_options = .{
+        .declaration = "\x88\x01\x02",
+        .verification = "\x88\x01\x02",
+    };
+
     /// The verification state of the extension range.
     pub const VerificationState = enum(i32) {
         DECLARATION = 0,
@@ -1287,6 +1293,13 @@ pub const FileOptions = struct {
         .message_set = false,
     };
 
+    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    pub const _field_options = .{
+        .java_multiple_files = "\xb2\x01\xbd\x01\x08\xe6\x07 \xe9\x07*\xb4\x01This behavior is enabled by default in editions 2024 and above. To disable it, you can set `features.(pb.java).nest_in_file_class = YES` on individual messages, enums, or services.",
+        .java_generate_equals_and_hash = "\x18\x01",
+        .cc_enable_arenas = "\xb2\x01\x8a\x01 \xea\x07*\x84\x01cc_enable_arenas is enabled by default in every edition and overrides are ignored.This option is removed in editions 2026 and above.",
+    };
+
     /// Generated classes can be optimized for speed or code size.
     pub const OptimizeMode = enum(i32) {
         SPEED = 1,
@@ -1392,6 +1405,11 @@ pub const MessageOptions = struct {
             .{ 1000, 536870912 },
         },
         .message_set = false,
+    };
+
+    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    pub const _field_options = .{
+        .deprecated_legacy_json_field_conflicts = "\x18\x01",
     };
 
     /// Encodes the message to the writer
@@ -1510,6 +1528,11 @@ pub const FieldOptions = struct {
             .{ 1000, 536870912 },
         },
         .message_set = false,
+    };
+
+    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    pub const _field_options = .{
+        .weak = "\x18\x01",
     };
 
     pub const CType = enum(i32) {
@@ -1873,6 +1896,11 @@ pub const EnumOptions = struct {
             .{ 1000, 536870912 },
         },
         .message_set = false,
+    };
+
+    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    pub const _field_options = .{
+        .deprecated_legacy_json_field_conflicts = "\x18\x01",
     };
 
     /// Encodes the message to the writer
@@ -2431,6 +2459,19 @@ pub const FeatureSet = struct {
         .message_set = false,
     };
 
+    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    pub const _field_options = .{
+        .field_presence = "\x88\x01\x01\x98\x01\x04\x98\x01\x01\xa2\x01\r\x18\x84\x07\x12\x08EXPLICIT\xa2\x01\r\x18\xe7\x07\x12\x08IMPLICIT\xa2\x01\r\x18\xe8\x07\x12\x08EXPLICIT\xb2\x01\x03\x08\xe8\x07",
+        .enum_type = "\x88\x01\x01\x98\x01\x06\x98\x01\x01\xa2\x01\x0b\x18\x84\x07\x12\x06CLOSED\xa2\x01\t\x18\xe7\x07\x12\x04OPEN\xb2\x01\x03\x08\xe8\x07",
+        .repeated_field_encoding = "\x88\x01\x01\x98\x01\x04\x98\x01\x01\xa2\x01\r\x18\x84\x07\x12\x08EXPANDED\xa2\x01\x0b\x18\xe7\x07\x12\x06PACKED\xb2\x01\x03\x08\xe8\x07",
+        .utf8_validation = "\x88\x01\x01\x98\x01\x04\x98\x01\x01\xa2\x01\t\x18\x84\x07\x12\x04NONE\xa2\x01\x0b\x18\xe7\x07\x12\x06VERIFY\xb2\x01\x03\x08\xe8\x07",
+        .message_encoding = "\x88\x01\x01\x98\x01\x04\x98\x01\x01\xa2\x01\x14\x18\x84\x07\x12\x0fLENGTH_PREFIXED\xb2\x01\x03\x08\xe8\x07",
+        .json_format = "\x88\x01\x01\x98\x01\x03\x98\x01\x06\x98\x01\x01\xa2\x01\x17\x18\x84\x07\x12\x12LEGACY_BEST_EFFORT\xa2\x01\n\x18\xe7\x07\x12\x05ALLOW\xb2\x01\x03\x08\xe8\x07",
+        .enforce_naming_style = "\x88\x01\x02\x98\x01\x01\x98\x01\x02\x98\x01\x03\x98\x01\x04\x98\x01\x05\x98\x01\x06\x98\x01\x07\x98\x01\x08\x98\x01\t\xa2\x01\x11\x18\x84\x07\x12\x0cSTYLE_LEGACY\xa2\x01\x0e\x18\xe9\x07\x12\tSTYLE2024\xa2\x01\x0e\x18\xea\x07\x12\tSTYLE2026\xb2\x01\x03\x08\xe9\x07",
+        .default_symbol_visibility = "\x88\x01\x02\x98\x01\x01\xa2\x01\x0f\x18\x84\x07\x12\nEXPORT_ALL\xa2\x01\x15\x18\xe9\x07\x12\x10EXPORT_TOP_LEVEL\xa2\x01\x0b\x18\xea\x07\x12\x06STRICT\xb2\x01\x03\x08\xe9\x07",
+        .enforce_proto_limits = "\x88\x01\x02\x98\x01\x06\x98\x01\x03\x98\x01\x04\x98\x01\x05\xa2\x01\x1e\x18\x84\x07\x12\x19LEGACY_NO_EXPLICIT_LIMITS\xa2\x01\x15\x18\xea\x07\x12\x10PROTO_LIMITS2026\xb2\x01\x03\x08\xea\x07",
+    };
+
     pub const FieldPresence = enum(i32) {
         FIELD_PRESENCE_UNKNOWN = 0,
         EXPLICIT = 1,
@@ -2874,6 +2915,12 @@ pub const SourceCodeInfo = struct {
             .leading_detached_comments = fd(6, .{ .repeated = .{ .scalar = .string } }),
         };
 
+        /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+        pub const _field_options = .{
+            .path = "\x10\x01",
+            .span = "\x10\x01",
+        };
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -3025,6 +3072,11 @@ pub const GeneratedCodeInfo = struct {
             .semantic = fd(5, .@"enum"),
         };
 
+        /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+        pub const _field_options = .{
+            .path = "\x10\x01",
+        };
+
         /// Represents the identified object's effect on the element in the original
         /// .proto file.
         pub const Semantic = enum(i32) {
@@ -3157,4 +3209,10 @@ pub const GeneratedCodeInfo = struct {
     ) !@This() {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
+};
+
+/// Options of the files of this package that have some: encoded
+/// `google.protobuf.FileOptions`, by file name.
+pub const _file_options = .{
+    .@"google/protobuf/descriptor.proto" = "\n\x13com.google.protobufB\x10DescriptorProtosH\x01Z-google.golang.org/protobuf/types/descriptorpb\xf8\x01\x01\xa2\x02\x03GPB\xaa\x02\x1aGoogle.Protobuf.Reflection",
 };

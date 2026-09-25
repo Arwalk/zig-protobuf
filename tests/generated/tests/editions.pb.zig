@@ -9,6 +9,9 @@ const fdf = protobuf.fdf;
 pub const Closed = enum(i32) {
     CLOSED_ONE = 1,
     CLOSED_TWO = 2,
+
+    /// Options of the enum: an encoded `google.protobuf.EnumOptions`.
+    pub const _options: []const u8 = ":\x02\x10\x02";
 };
 
 pub const Open = enum(i32) {
@@ -117,6 +120,11 @@ pub const Delimited = struct {
         .choice = fd(null, .{ .oneof = choice_union }),
     };
 
+    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    pub const _field_options = .{
+        .length_prefixed = "\xaa\x01\x02(\x01",
+    };
+
     pub const ByNameEntry = struct {
         key: []const u8 = &.{},
         value: ?Child = null,
@@ -125,6 +133,9 @@ pub const Delimited = struct {
             .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .value = fd(2, .submessage),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -276,6 +287,12 @@ pub const Presence = struct {
         pub const defaulted_int: i32 = 42;
     };
 
+    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    pub const _field_options = .{
+        .implicit_int = "\xaa\x01\x02\x08\x02",
+        .required_int = "\xaa\x01\x02\x08\x03",
+    };
+
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
     /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -352,6 +369,12 @@ pub const Encoding = struct {
         .unverified = fd(4, .{ .scalar = .string }),
     };
 
+    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    pub const _field_options = .{
+        .expanded_ints = "\xaa\x01\x02\x18\x02",
+        .unverified = "\xaa\x01\x02 \x03",
+    };
+
     /// Encodes the message to the writer
     /// The allocator is used to generate submessages internally.
     /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -413,4 +436,10 @@ pub const Encoding = struct {
     ) !@This() {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
+};
+
+/// Options of the files of this package that have some: encoded
+/// `google.protobuf.FileOptions`, by file name.
+pub const _file_options = .{
+    .@"editions.proto" = "\x92\x03\x02(\x02",
 };

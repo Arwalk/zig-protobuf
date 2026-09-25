@@ -322,6 +322,48 @@ pub const TestAllTypesEdition2023 = struct {
         .message_set = false,
     };
 
+    /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+    pub const _field_options = .{
+        .optional_nested_message = "\xaa\x01\x02(\x01",
+        .optional_foreign_message = "\xaa\x01\x02(\x01",
+        .optional_string_piece = "\x08\x02",
+        .optional_cord = "\x08\x01",
+        .recursive_message = "\xaa\x01\x02(\x01",
+        .repeated_nested_message = "\xaa\x01\x02(\x01",
+        .repeated_foreign_message = "\xaa\x01\x02(\x01",
+        .repeated_string_piece = "\x08\x02",
+        .repeated_cord = "\x08\x01",
+        .packed_int32 = "\xaa\x01\x02\x18\x01",
+        .packed_int64 = "\xaa\x01\x02\x18\x01",
+        .packed_uint32 = "\xaa\x01\x02\x18\x01",
+        .packed_uint64 = "\xaa\x01\x02\x18\x01",
+        .packed_sint32 = "\xaa\x01\x02\x18\x01",
+        .packed_sint64 = "\xaa\x01\x02\x18\x01",
+        .packed_fixed32 = "\xaa\x01\x02\x18\x01",
+        .packed_fixed64 = "\xaa\x01\x02\x18\x01",
+        .packed_sfixed32 = "\xaa\x01\x02\x18\x01",
+        .packed_sfixed64 = "\xaa\x01\x02\x18\x01",
+        .packed_float = "\xaa\x01\x02\x18\x01",
+        .packed_double = "\xaa\x01\x02\x18\x01",
+        .packed_bool = "\xaa\x01\x02\x18\x01",
+        .packed_nested_enum = "\xaa\x01\x02\x18\x01",
+        .unpacked_int32 = "\xaa\x01\x02\x18\x02",
+        .unpacked_int64 = "\xaa\x01\x02\x18\x02",
+        .unpacked_uint32 = "\xaa\x01\x02\x18\x02",
+        .unpacked_uint64 = "\xaa\x01\x02\x18\x02",
+        .unpacked_sint32 = "\xaa\x01\x02\x18\x02",
+        .unpacked_sint64 = "\xaa\x01\x02\x18\x02",
+        .unpacked_fixed32 = "\xaa\x01\x02\x18\x02",
+        .unpacked_fixed64 = "\xaa\x01\x02\x18\x02",
+        .unpacked_sfixed32 = "\xaa\x01\x02\x18\x02",
+        .unpacked_sfixed64 = "\xaa\x01\x02\x18\x02",
+        .unpacked_float = "\xaa\x01\x02\x18\x02",
+        .unpacked_double = "\xaa\x01\x02\x18\x02",
+        .unpacked_bool = "\xaa\x01\x02\x18\x02",
+        .unpacked_nested_enum = "\xaa\x01\x02\x18\x02",
+        .oneof_nested_message = "\xaa\x01\x02(\x01",
+    };
+
     pub const NestedEnum = enum(i32) {
         FOO = 0,
         BAR = 1,
@@ -338,6 +380,11 @@ pub const TestAllTypesEdition2023 = struct {
         pub const _desc_table = .{
             .a = fd(1, .{ .scalar = .int32 }),
             .corecursive = fd(2, .submessage),
+        };
+
+        /// Options of the fields that have some: encoded `google.protobuf.FieldOptions`.
+        pub const _field_options = .{
+            .corecursive = "\xaa\x01\x02(\x01",
         };
 
         /// Encodes the message to the writer
@@ -412,6 +459,9 @@ pub const TestAllTypesEdition2023 = struct {
             .value = fd(2, .{ .scalar = .int32 }),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -483,6 +533,9 @@ pub const TestAllTypesEdition2023 = struct {
             .key = fd(1, .{ .scalar = .int64 }),
             .value = fd(2, .{ .scalar = .int64 }),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -556,6 +609,9 @@ pub const TestAllTypesEdition2023 = struct {
             .value = fd(2, .{ .scalar = .uint32 }),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -627,6 +683,9 @@ pub const TestAllTypesEdition2023 = struct {
             .key = fd(1, .{ .scalar = .uint64 }),
             .value = fd(2, .{ .scalar = .uint64 }),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -700,6 +759,9 @@ pub const TestAllTypesEdition2023 = struct {
             .value = fd(2, .{ .scalar = .sint32 }),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -771,6 +833,9 @@ pub const TestAllTypesEdition2023 = struct {
             .key = fd(1, .{ .scalar = .sint64 }),
             .value = fd(2, .{ .scalar = .sint64 }),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -844,6 +909,9 @@ pub const TestAllTypesEdition2023 = struct {
             .value = fd(2, .{ .scalar = .fixed32 }),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -915,6 +983,9 @@ pub const TestAllTypesEdition2023 = struct {
             .key = fd(1, .{ .scalar = .fixed64 }),
             .value = fd(2, .{ .scalar = .fixed64 }),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -988,6 +1059,9 @@ pub const TestAllTypesEdition2023 = struct {
             .value = fd(2, .{ .scalar = .sfixed32 }),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1059,6 +1133,9 @@ pub const TestAllTypesEdition2023 = struct {
             .key = fd(1, .{ .scalar = .sfixed64 }),
             .value = fd(2, .{ .scalar = .sfixed64 }),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1132,6 +1209,9 @@ pub const TestAllTypesEdition2023 = struct {
             .value = fd(2, .{ .scalar = .float }),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1203,6 +1283,9 @@ pub const TestAllTypesEdition2023 = struct {
             .key = fd(1, .{ .scalar = .int32 }),
             .value = fd(2, .{ .scalar = .double }),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1276,6 +1359,9 @@ pub const TestAllTypesEdition2023 = struct {
             .value = fd(2, .{ .scalar = .bool }),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1347,6 +1433,9 @@ pub const TestAllTypesEdition2023 = struct {
             .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .value = fdf(2, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1420,6 +1509,9 @@ pub const TestAllTypesEdition2023 = struct {
             .value = fd(2, .{ .scalar = .bytes }),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1491,6 +1583,9 @@ pub const TestAllTypesEdition2023 = struct {
             .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .value = fd(2, .submessage),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1564,6 +1659,9 @@ pub const TestAllTypesEdition2023 = struct {
             .value = fd(2, .submessage),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1636,6 +1734,9 @@ pub const TestAllTypesEdition2023 = struct {
             .value = fd(2, .@"enum"),
         };
 
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1707,6 +1808,9 @@ pub const TestAllTypesEdition2023 = struct {
             .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .value = fd(2, .@"enum"),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -1853,6 +1957,9 @@ pub const TestAllTypesEdition2023 = struct {
             .key = fd(1, .{ .scalar = .int32 }),
             .value = fd(2, .submessage),
         };
+
+        /// Options of the message: an encoded `google.protobuf.MessageOptions`.
+        pub const _options: []const u8 = "8\x01";
 
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
@@ -2122,15 +2229,21 @@ pub const GroupLikeType = struct {
     }
 };
 
-pub const extension_int32 = protobuf.Extension(TestAllTypesEdition2023, ?i32, fd(120, .{ .scalar = .int32 }), "protobuf_test_messages.editions.extension_int32", null);
+pub const extension_int32 = protobuf.Extension(TestAllTypesEdition2023, ?i32, fd(120, .{ .scalar = .int32 }), "protobuf_test_messages.editions.extension_int32", null, &.{});
 
-pub const extension_string = protobuf.Extension(TestAllTypesEdition2023, ?[]const u8, fdf(133, .{ .scalar = .string }, .{ .utf8_validation = .verify }), "protobuf_test_messages.editions.extension_string", null);
+pub const extension_string = protobuf.Extension(TestAllTypesEdition2023, ?[]const u8, fdf(133, .{ .scalar = .string }, .{ .utf8_validation = .verify }), "protobuf_test_messages.editions.extension_string", null, &.{});
 
-pub const extension_bytes = protobuf.Extension(TestAllTypesEdition2023, ?[]const u8, fd(134, .{ .scalar = .bytes }), "protobuf_test_messages.editions.extension_bytes", null);
+pub const extension_bytes = protobuf.Extension(TestAllTypesEdition2023, ?[]const u8, fd(134, .{ .scalar = .bytes }), "protobuf_test_messages.editions.extension_bytes", null, &.{});
 
-pub const groupliketype = protobuf.Extension(TestAllTypesEdition2023, ?GroupLikeType, fdf(121, .submessage, .{ .message_encoding = .delimited }), "protobuf_test_messages.editions.groupliketype", null);
+pub const groupliketype = protobuf.Extension(TestAllTypesEdition2023, ?GroupLikeType, fdf(121, .submessage, .{ .message_encoding = .delimited }), "protobuf_test_messages.editions.groupliketype", null, &.{});
 
-pub const delimited_ext = protobuf.Extension(TestAllTypesEdition2023, ?GroupLikeType, fdf(122, .submessage, .{ .message_encoding = .delimited }), "protobuf_test_messages.editions.delimited_ext", null);
+pub const delimited_ext = protobuf.Extension(TestAllTypesEdition2023, ?GroupLikeType, fdf(122, .submessage, .{ .message_encoding = .delimited }), "protobuf_test_messages.editions.delimited_ext", null, &.{});
 
 /// Extensions declared in this package, for `protobuf.ExtensionRegistry.init`.
 pub const extensions = .{ extension_int32, extension_string, extension_bytes, groupliketype, delimited_ext };
+
+/// Options of the files of this package that have some: encoded
+/// `google.protobuf.FileOptions`, by file name.
+pub const _file_options = .{
+    .@"test_messages_edition2023.proto" = "\n-com.google.protobuf_test_messages.edition2023P\x01\xa2\x02\x08Editions\x92\x03\x02(\x02",
+};
