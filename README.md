@@ -6,10 +6,10 @@
 ## State of the implementation
 
 This repository implements [protocol buffers](https://protobuf.dev/) for `proto2`, `proto3` and
-[editions](https://protobuf.dev/editions/overview/) (up to edition 2026). Extensions are not supported.
+[editions](https://protobuf.dev/editions/overview/) (up to edition 2026), including [extensions](#extensions).
 
 This project is mature enough to be used in production. It passes the upstream
-[conformance suite](conformance/) (protobuf v36.2) for the proto2, proto3 and editions test messages, in binary and JSON.
+[conformance suite](conformance/) (protobuf v36.2) for the proto2, proto3 and editions test messages, in binary and JSON. The text format is not supported.
 
 json encoding/decoding is considered a beta feature.
 
@@ -40,6 +40,10 @@ message Example {
   Nested nested = 3 [features.message_encoding = DELIMITED];   // encoded as a group
 }
 ```
+
+The in-development `edition = "UNSTABLE"` is rejected by default, as its features may change
+in any protobuf release. To accept it, set `.experimental_editions = true` in the options of
+`RunProtocStep`, which passes `--experimental_editions` to protoc and to the generator.
 
 ## Default values
 
@@ -126,6 +130,64 @@ To update your code, do these steps:
 ### Names
 
 `defaults` is a declaration of the message. Thus, a message must not have a field, oneof, message or enum with the name `defaults`. If it has one, the generator stops with an error.
+
+## Extensions
+
+A message that declares extension ranges keeps its extensions in `_extensions`, as raw wire
+data. They are encoded again as they were decoded, without any setup. Each extension is a
+generated `protobuf.Extension` declaration, in the scope (file or message) that declares it:
+
+```proto
+message Extendable {
+  extensions 100 to 199;
+}
+
+extend Extendable {
+  optional int32 number = 100;
+}
+```
+
+```zig
+var msg: pb.Extendable = .{};
+defer msg.deinit(allocator);
+
+try pb.number.set(&msg, allocator, 7);
+if (pb.number.has(msg)) {
+    // Singular extensions are `?T`, repeated extensions are `std.ArrayList(T)`.
+    var value = try pb.number.get(msg, allocator);
+    defer pb.number.deinitValue(&value, allocator);
+}
+try pb.number.clear(&msg, allocator);
+```
+
+`get` decodes the extension when you call it. Singular extensions are `null` when not set;
+their declared default value is `pb.number.default`.
+
+### Registry
+
+Some operations must know the extensions, as they need their names and types:
+
+* Validation while decoding (for example, UTF-8 of strings).
+* JSON, where an extension is written as `"[full.name]": value`.
+
+Each generated file has an `extensions` declaration, which lists its extensions. Make a
+registry from these lists, and give it to these operations:
+
+```zig
+const registry: protobuf.ExtensionRegistry = .init(pb.extensions ++ other_pb.extensions);
+
+var msg = try protobuf.decodeWithOptions(pb.Extendable, &reader, allocator, .{ .extensions = &registry });
+const json = try msg.jsonEncode(.{}, .{ .extensions = &registry }, allocator);
+const parsed = try protobuf.json.decodeWithOptions(pb.Extendable, json, .{}, .{ .extensions = &registry }, allocator);
+```
+
+Without a registry, decoding does not validate extensions, and JSON does not contain them.
+
+Messages with `option message_set_wire_format = true` encode their extensions in the MessageSet
+format. The `StreamDecoder` skips extensions, like unknown fields.
+
+The `extensions` declaration shares the top-level scope of the file. Thus, a file must not have
+a message, enum, extension or service with the name `extensions`.
 
 ## Branches
 

@@ -28,6 +28,7 @@ const proto2_pb = @import("generated/protobuf_test_messages/proto2.pb.zig");
 const editions_pb = @import("generated/protobuf_test_messages/editions.pb.zig");
 const editions_proto2_pb = @import("generated/protobuf_test_messages/editions/proto2.pb.zig");
 const editions_proto3_pb = @import("generated/protobuf_test_messages/editions/proto3.pb.zig");
+const edition_unstable_pb = @import("generated/protobuf_test_messages/edition_unstable.pb.zig");
 
 /// Test message types the conformance runner may request, by full name.
 const test_messages = .{
@@ -36,6 +37,7 @@ const test_messages = .{
     .{ "protobuf_test_messages.editions.TestAllTypesEdition2023", editions_pb.TestAllTypesEdition2023 },
     .{ "protobuf_test_messages.editions.proto2.TestAllTypesProto2", editions_proto2_pb.TestAllTypesProto2 },
     .{ "protobuf_test_messages.editions.proto3.TestAllTypesProto3", editions_proto3_pb.TestAllTypesProto3 },
+    .{ "protobuf_test_messages.edition_unstable.TestAllTypesEditionUnstable", edition_unstable_pb.TestAllTypesEditionUnstable },
 };
 
 /// Types embedded in `google.protobuf.Any` whose JSON form is a regular
@@ -45,7 +47,16 @@ const any_message_types = test_messages ++ .{
 };
 
 const wkt = protobuf.wkt;
-const pb_json_opts_flat: protobuf.json.Options = .{ .emit_oneof_field_name = false };
+/// Extensions of the test messages.
+const extension_registry: protobuf.ExtensionRegistry = .init(proto2_pb.extensions ++
+    editions_pb.extensions ++
+    editions_proto2_pb.extensions ++
+    edition_unstable_pb.extensions);
+
+const pb_json_opts_flat: protobuf.json.Options = .{
+    .emit_oneof_field_name = false,
+    .extensions = &extension_registry,
+};
 
 fn encodeToBytes(allocator: std.mem.Allocator, msg: anytype) ![]const u8 {
     var w: std.Io.Writer.Allocating = .init(allocator);
@@ -267,7 +278,7 @@ fn doRoundTrip(
     if (is_protobuf_input) {
         const payload = payload_union.protobuf_payload;
         var reader: std.Io.Reader = .fixed(payload);
-        var msg = MsgType.decode(&reader, allocator) catch
+        var msg = protobuf.decodeWithOptions(MsgType, &reader, allocator, .{ .extensions = &extension_registry }) catch
             return makeResponse(.{ .parse_error = "Failed to decode protobuf" });
         defer msg.deinit(allocator);
 
@@ -286,7 +297,7 @@ fn doRoundTrip(
         const json_opts = std.json.ParseOptions{
             .ignore_unknown_fields = test_category == .JSON_IGNORE_UNKNOWN_PARSING_TEST,
         };
-        const parsed = MsgType.jsonDecode(json_payload, json_opts, allocator) catch {
+        const parsed = protobuf.json.decodeWithOptions(MsgType, json_payload, json_opts, .{ .extensions = &extension_registry }, allocator) catch {
             return makeResponse(.{ .parse_error = "Failed to decode JSON" });
         };
         defer parsed.deinit();

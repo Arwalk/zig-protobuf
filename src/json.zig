@@ -11,6 +11,9 @@ pub const Options = struct {
     /// - `false`: emits oneof variants as flat fields in the parent object.
     ///   Example: `{"stringInOneof":"x"}` — this matches the protobuf JSON spec.
     emit_oneof_field_name: bool = true,
+    /// Known extensions, written as `"[full.name]": value`. Other extensions
+    /// are not written, as their name and type are unknown.
+    extensions: ?*const protobuf.ExtensionRegistry = null,
 };
 
 pub fn parse(
@@ -228,6 +231,14 @@ pub fn parse(
                 }
             }
             if (!matched_as_flat_oneof) {
+                if (comptime @hasField(Self, "_extensions")) {
+                    if (try parseExtension(Self, &result, field_name, allocator, source, options)) {
+                        freeAllocated(allocator, name_token.?);
+                        // Keeps the extensions from being reset to the default.
+                        fields_seen[comptime std.meta.fieldIndex(Self, "_extensions").?] = true;
+                        continue;
+                    }
+                }
                 freeAllocated(allocator, name_token.?);
                 if (options.ignore_unknown_fields) {
                     try source.skipValue();
@@ -239,6 +250,76 @@ pub fn parse(
     }
     try fillDefaultStructValues(Self, &result, &fields_seen);
     return result;
+}
+
+/// Extensions known while parsing JSON. `jsonParse` cannot carry extra
+/// state, so `decodeWithOptions` sets them for the current thread.
+threadlocal var tl_extensions: ?*const protobuf.ExtensionRegistry = null;
+
+/// Parses the value of the key `name` as an extension of `Self`, if `name` is
+/// the `[full.name]` of a known extension. Returns whether it did.
+fn parseExtension(
+    comptime Self: type,
+    result: *Self,
+    name: []const u8,
+    allocator: std.mem.Allocator,
+    source: anytype,
+    options: std.json.ParseOptions,
+) !bool {
+    const registry = tl_extensions orelse return false;
+    if (name.len < 2 or name[0] != '[' or name[name.len - 1] != ']') return false;
+    const entry = registry.findByName(Self, name[1 .. name.len - 1]) orelse return false;
+
+    const value = try std.json.innerParse(std.json.Value, allocator, source, options);
+    const text = std.json.Stringify.valueAlloc(allocator, value, .{}) catch return error.OutOfMemory;
+    defer allocator.free(text);
+    const records = entry.from_json(text, allocator, options) catch |err| switch (err) {
+        error.OutOfMemory => return error.OutOfMemory,
+        else => return error.UnexpectedToken,
+    };
+    defer allocator.free(records);
+    try protobuf.extension.replaceField(allocator, &result._extensions, entry.field_number, records);
+    return true;
+}
+
+/// Writes the known extensions set in `records` as `"[full.name]": value`.
+fn writeExtensions(
+    comptime Self: type,
+    records: []const u8,
+    jws: anytype,
+    opts: Options,
+    registry: *const protobuf.ExtensionRegistry,
+) !void {
+    if (records.len == 0) return;
+    const allocator = protobuf.wkt.tl_any_alloc orelse return error.WriteFailed;
+    for (registry.entries) |entry| {
+        if (!std.mem.eql(u8, entry.extendee, @typeName(Self))) continue;
+        if (!protobuf.extension.containsField(records, entry.field_number)) continue;
+
+        const text = entry.to_json(records, allocator, opts) catch return error.WriteFailed;
+        defer allocator.free(text);
+        const key = std.fmt.allocPrint(allocator, "[{s}]", .{entry.full_name}) catch return error.WriteFailed;
+        defer allocator.free(key);
+        try jws.objectField(key);
+        try jws.beginWriteRaw();
+        try jws.writer.writeAll(text);
+        jws.endWriteRaw();
+    }
+}
+
+/// Like `decode`, with protobuf specific options: `[full.name]` keys of the
+/// known extensions are decoded as extensions.
+pub fn decodeWithOptions(
+    comptime T: type,
+    input: []const u8,
+    options: std.json.ParseOptions,
+    pb_options: protobuf.DecodeOptions,
+    allocator: std.mem.Allocator,
+) !std.json.Parsed(T) {
+    const previous = tl_extensions;
+    tl_extensions = pb_options.extensions;
+    defer tl_extensions = previous;
+    return decode(T, input, options, allocator);
 }
 
 pub fn decode(
@@ -330,6 +411,12 @@ fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std
             );
         }
         // null optionals (including null oneofs): skip entirely
+    }
+
+    if (comptime @hasField(Self, "_extensions")) {
+        if (opts.extensions) |registry| {
+            try writeExtensions(Self, self._extensions, jws, opts, registry);
+        }
     }
 
     try jws.endObject();

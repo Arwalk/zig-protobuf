@@ -2,6 +2,8 @@
 const std = @import("std");
 
 const protobuf = @import("protobuf.zig");
+const extension = @import("extension.zig");
+const ExtensionRegistry = extension.ExtensionRegistry;
 const builtin = @import("builtin");
 const log = if (builtin.os.tag != .freestanding) std.log.scoped(.zig_protobuf) else struct {
     // no-op log implementation for freestanding targets
@@ -420,6 +422,8 @@ pub fn decodeRepeated(
         /// dropped when null.
         unknown_fields: ?*std.ArrayList(u8) = null,
         field_number: u29 = 0,
+        /// Known extensions, validated in decoded submessages.
+        extensions: ?*const ExtensionRegistry = null,
     },
 ) (std.Io.Reader.Error || std.mem.Allocator.Error || protobuf.DecodingError)!usize {
     comptime std.debug.assert(@typeInfo(@TypeOf(result)) == .pointer);
@@ -514,7 +518,7 @@ pub fn decodeRepeated(
                 msg,
                 allocator,
                 reader,
-                .{ .bytes = options.bytes, .group = options.group },
+                .{ .bytes = options.bytes, .group = options.group, .extensions = options.extensions },
             );
             if (options.bytes) |bytes| if (consumed > bytes) {
                 @branchHint(.cold);
@@ -592,6 +596,8 @@ pub const SubmessageOptions = struct {
     /// Field number of a delimited (group-encoded) submessage. Decoding
     /// stops after the matching EGROUP tag, which must be present.
     group: ?u32 = null,
+    /// Known extensions, validated when decoding messages they extend.
+    extensions: ?*const ExtensionRegistry = null,
 };
 
 /// Stores a closed-enum value that matches none of the enumerators as an
@@ -632,6 +638,11 @@ pub fn decodeMessage(
     var unknown_buf: if (has_unknown_fields) std.ArrayList(u8) else void =
         if (comptime has_unknown_fields) .empty else {};
     defer if (comptime has_unknown_fields) unknown_buf.deinit(allocator);
+    // Accumulate extension fields if the struct declares extension ranges.
+    const has_extensions = comptime @hasField(Result, "_extensions");
+    var extension_buf: if (has_extensions) std.ArrayList(u8) else void =
+        if (comptime has_extensions) .empty else {};
+    defer if (comptime has_extensions) extension_buf.deinit(allocator);
     main_loop: while (true) {
         const tag: Tag, const tag_c = b: {
             // A group must be terminated by its EGROUP tag, never by EOF.
@@ -657,7 +668,16 @@ pub fn decodeMessage(
             return error.InvalidInput;
         }
 
-        inline for (@typeInfo(@TypeOf(desc_table)).@"struct".fields) |field| {
+        // MessageSet: extensions are encoded as items of group 1, holding
+        // their type id and message.
+        if (comptime extension.isMessageSet(Result)) {
+            if (tag.field == 1 and tag.wire_type == .sgroup) {
+                consumed += try extension.readMessageSetItem(allocator, reader, &extension_buf);
+                continue :main_loop;
+            }
+        }
+
+        fields: inline for (@typeInfo(@TypeOf(desc_table)).@"struct".fields) |field| {
             const field_desc: protobuf.FieldDescriptor =
                 comptime @field(desc_table, field.name);
             const field_info: std.builtin.Type.StructField =
@@ -819,6 +839,7 @@ pub fn decodeMessage(
                                 .bytes = @intCast(len),
                                 .unknown_fields = if (comptime has_unknown_fields) &unknown_buf else null,
                                 .field_number = tag.field,
+                                .extensions = options.extensions,
                             },
                         );
                     }
@@ -835,6 +856,7 @@ pub fn decodeMessage(
                             .{
                                 .unknown_fields = if (comptime has_unknown_fields) &unknown_buf else null,
                                 .field_number = tag.field,
+                                .extensions = options.extensions,
                             },
                         );
                     }
@@ -868,6 +890,7 @@ pub fn decodeMessage(
                             .verify_utf8 = comptime field_desc.verifiesUtf8(),
                             .unknown_fields = if (comptime has_unknown_fields) &unknown_buf else null,
                             .field_number = tag.field,
+                            .extensions = options.extensions,
                         },
                     );
                 },
@@ -887,9 +910,9 @@ pub fn decodeMessage(
                         break :b len;
                     };
                     const sub_options: SubmessageOptions = if (delimited)
-                        .{ .group = tag.field }
+                        .{ .group = tag.field, .extensions = options.extensions }
                     else
-                        .{ .bytes = @intCast(len) };
+                        .{ .bytes = @intCast(len), .extensions = options.extensions };
 
                     // All submessages must be optional; submessages always
                     // have an explicit field presence, which means the
@@ -1098,9 +1121,9 @@ pub fn decodeMessage(
                                     break :b len;
                                 };
                                 const sub_options: SubmessageOptions = if (delimited)
-                                    .{ .group = tag.field }
+                                    .{ .group = tag.field, .extensions = options.extensions }
                                 else
-                                    .{ .bytes = @intCast(len) };
+                                    .{ .bytes = @intCast(len), .extensions = options.extensions };
 
                                 // Submessages are non-optional, as `oneof`s
                                 // also have explicit presence.
@@ -1224,27 +1247,71 @@ pub fn decodeMessage(
                         }
                         break :oo_fields;
                     } else {
-                        if (comptime has_unknown_fields) {
-                            consumed += try captureField(allocator, reader, tag, &unknown_buf);
-                        } else {
-                            consumed += try skipField(reader, tag);
-                        }
+                        // Not a field of this oneof: try the next fields,
+                        // which may include other oneofs.
+                        continue :fields;
                     }
                 },
             }
             comptime break;
         } else {
-            if (comptime has_unknown_fields) {
-                consumed += try captureField(allocator, reader, tag, &unknown_buf);
-            } else {
-                consumed += try skipField(reader, tag);
-            }
+            consumed += try captureUnmatched(
+                Result,
+                allocator,
+                reader,
+                tag,
+                if (comptime has_unknown_fields) &unknown_buf else null,
+                if (comptime has_extensions) &extension_buf else null,
+            );
         }
     }
     if (comptime has_unknown_fields) {
-        result._unknown_fields = try unknown_buf.toOwnedSlice(allocator);
+        try appendOwned(allocator, &result._unknown_fields, &unknown_buf);
+    }
+    if (comptime has_extensions) {
+        try appendOwned(allocator, &result._extensions, &extension_buf);
+        if (options.extensions) |registry| {
+            try registry.validate(Result, result._extensions, allocator);
+        }
     }
     return consumed;
+}
+
+/// Stores a field that matches no field of `Result`: in the extension records
+/// when it is in an extension range, else in the unknown fields if they are
+/// kept. Returns the number of bytes consumed after the tag.
+fn captureUnmatched(
+    comptime Result: type,
+    allocator: std.mem.Allocator,
+    reader: *std.Io.Reader,
+    tag: Tag,
+    unknown: ?*std.ArrayList(u8),
+    extensions: ?*std.ArrayList(u8),
+) (std.Io.Reader.Error || std.mem.Allocator.Error || protobuf.DecodingError)!usize {
+    if (comptime @hasDecl(Result, "_extensions_info")) {
+        if (extensions) |buf| {
+            inline for (Result._extensions_info.ranges) |range| {
+                if (tag.field >= range[0] and tag.field < range[1]) {
+                    return captureField(allocator, reader, tag, buf);
+                }
+            }
+        }
+    }
+    if (unknown) |buf| return captureField(allocator, reader, tag, buf);
+    return skipField(reader, tag);
+}
+
+/// Appends the bytes of `buf` to the owned slice `dest`. Messages may be
+/// decoded several times (merged), so existing bytes are kept.
+fn appendOwned(allocator: std.mem.Allocator, dest: *[]const u8, buf: *std.ArrayList(u8)) std.mem.Allocator.Error!void {
+    if (buf.items.len == 0) return;
+    if (dest.len == 0) {
+        dest.* = try buf.toOwnedSlice(allocator);
+        return;
+    }
+    const merged = try std.mem.concat(allocator, u8, &.{ dest.*, buf.items });
+    allocator.free(dest.*);
+    dest.* = merged;
 }
 
 pub fn skipField(reader: *std.Io.Reader, tag: Tag) !usize {

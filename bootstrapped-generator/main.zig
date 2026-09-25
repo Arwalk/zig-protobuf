@@ -43,11 +43,17 @@ const GenerationContext = struct {
     /// map of message names to their dependencies
     message_deps: std.StringHashMap(std.ArrayList([]const u8)),
 
+    /// map of package names to the references of the extensions they declare
+    package_extensions: std.StringHashMap(std.ArrayList([]const u8)),
+
     /// map of ".package.fully.qualified.Name" to every message in the request
     messages: std.StringHashMap(descriptor.DescriptorProto),
     /// map of ".package.fully.qualified.Name" to every enum in the request
     enums: std.StringHashMap(descriptor.EnumDescriptorProto),
     preserve_unknown_fields: bool,
+    /// Accept the in-development `edition = "UNSTABLE"`, whose features may
+    /// change in any protobuf release. protoc also needs `--experimental_editions`.
+    experimental_editions: bool,
 
     /// Helper struct for working with SourceCodeInfo
     const SourceCodeInfo = struct {
@@ -112,9 +118,11 @@ const GenerationContext = struct {
             .known_packages = .init(allocator),
             .fqn_lines = .init(allocator),
             .message_deps = .init(allocator),
+            .package_extensions = .init(allocator),
             .messages = .init(allocator),
             .enums = .init(allocator),
             .preserve_unknown_fields = false,
+            .experimental_editions = false,
         };
 
         try ctx.parseParameter(allocator);
@@ -140,6 +148,18 @@ const GenerationContext = struct {
                 continue;
             }
 
+            if (std.mem.eql(u8, param, "experimental_editions") or
+                std.mem.eql(u8, param, "experimental_editions=true"))
+            {
+                self.experimental_editions = true;
+                continue;
+            }
+
+            if (std.mem.eql(u8, param, "experimental_editions=false")) {
+                self.experimental_editions = false;
+                continue;
+            }
+
             self.res.@"error" = try std.fmt.allocPrint(
                 allocator,
                 "unsupported protoc-gen-zig parameter: {s}",
@@ -147,6 +167,13 @@ const GenerationContext = struct {
             );
             return;
         }
+    }
+
+    /// Newest edition accepted: edition 2026, or the unstable edition with
+    /// `experimental_editions`. The unstable edition has no feature defaults
+    /// of its own, so it resolves like the newest edition.
+    fn maximumEdition(self: *const GenerationContext) descriptor.Edition {
+        return if (self.experimental_editions) .EDITION_UNSTABLE else maximum_edition;
     }
 
     pub fn processRequest(self: *GenerationContext, io: std.Io, allocator: std.mem.Allocator) !void {
@@ -178,7 +205,7 @@ const GenerationContext = struct {
 
         for (self.req.proto_file.items) |file| {
             const edition = @intFromEnum(fileEdition(file));
-            if (edition < @intFromEnum(minimum_edition) or edition > @intFromEnum(maximum_edition)) {
+            if (edition < @intFromEnum(minimum_edition) or edition > @intFromEnum(self.maximumEdition())) {
                 self.res.@"error" = try std.fmt.allocPrint(
                     allocator,
                     "ERROR unsupported edition {} in {s}\n",
@@ -206,8 +233,11 @@ const GenerationContext = struct {
 
             ret.name = try allocator.dupe(u8, packageToFileName(entry.key_ptr.*, &name_buf));
             ret.content = try std.mem.concat(allocator, u8, entry.value_ptr.*.items);
+            if (try self.packageExtensionsDeclaration(allocator, entry.key_ptr.*)) |declaration| {
+                ret.content = try std.mem.concat(allocator, u8, &.{ ret.content.?, declaration });
+            }
             // Only files with fields using non-default features need `fdf`.
-            if (std.mem.indexOf(u8, ret.content.?, " = fdf(") != null) {
+            if (std.mem.indexOf(u8, ret.content.?, "fdf(") != null) {
                 ret.content = try std.mem.replaceOwned(
                     u8,
                     allocator,
@@ -224,7 +254,7 @@ const GenerationContext = struct {
             @intFromEnum(plugin.CodeGeneratorResponse.Feature.FEATURE_PROTO3_OPTIONAL) |
             @intFromEnum(plugin.CodeGeneratorResponse.Feature.FEATURE_SUPPORTS_EDITIONS);
         self.res.minimum_edition = @intFromEnum(minimum_edition);
-        self.res.maximum_edition = @intFromEnum(maximum_edition);
+        self.res.maximum_edition = @intFromEnum(self.maximumEdition());
     }
 
     /// Records `messages` and their nested messages, keyed by their fully
@@ -382,6 +412,7 @@ const GenerationContext = struct {
         try self.generateEnums(allocator, lines, fqn, file, file.enum_type, file_root_path, 5, file_features);
         // Field number 4 for message_type in FileDescriptorProto
         try self.generateMessages(allocator, lines, fqn, file, null, file.message_type, file_root_path, 4, file_features);
+        try self.generateExtensions(allocator, lines, fqn, file, file.extension, file_features);
         // Field number 6 for service in FileDescriptorProto
         try self.generateServices(allocator, lines, fqn, file, file.service, file_root_path, 6);
     }
@@ -974,6 +1005,10 @@ const GenerationContext = struct {
                     ));
                 }
             }
+            if (m.extension_range.items.len > 0) {
+                // Raw wire records of the extensions, see `protobuf.Extension`.
+                try lines.append(allocator, "    _extensions: []const u8 = &.{},\n");
+            }
             if (self.shouldPreserveUnknownFields(m)) {
                 try lines.append(allocator, "    _unknown_fields: []const u8 = &.{},\n");
             }
@@ -1075,11 +1110,13 @@ const GenerationContext = struct {
             );
 
             try self.generateDefaults(allocator, lines, messageFqn, file, m, message_features);
+            try generateExtensionsInfo(allocator, lines, m);
 
             // For nested enums, root_path is the message's path and field number is 4 (enum_type in DescriptorProto)
             try self.generateEnums(allocator, lines, messageFqn, file, m.enum_type, message_path.items, 4, message_features);
             // For nested messages, root_path is the message's path and field number is 3 (nested_type in DescriptorProto)
             try self.generateMessages(allocator, lines, messageFqn, file, m, m.nested_type, message_path.items, 3, message_features);
+            try self.generateExtensions(allocator, lines, messageFqn, file, m.extension, message_features);
 
             try lines.append(allocator, try std.fmt.allocPrint(allocator,
                 \\
@@ -1199,6 +1236,126 @@ const GenerationContext = struct {
         if (emitted) try lines.append(allocator, "    };\n");
     }
 
+    /// Emits the extensions declared in a scope (a file or a message) as
+    /// `protobuf.Extension` declarations, and records them for the
+    /// `extensions` declaration of their package.
+    fn generateExtensions(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        lines: *std.ArrayList([]const u8),
+        scope_fqn: FullName,
+        file: descriptor.FileDescriptorProto,
+        extensions: std.ArrayList(descriptor.FieldDescriptorProto),
+        scope_features: Features,
+    ) !void {
+        const package = file.package.?;
+        for (extensions.items) |ext| {
+            // Extensions resolve their features from their declaration scope.
+            // Singular extensions always have explicit presence.
+            var features = scope_features.forField(file, .{}, ext);
+            if (!isRepeated(ext)) features.field_presence = .EXPLICIT;
+
+            var extendee_field = ext;
+            extendee_field.type_name = ext.extendee;
+            const extendee = try self.fieldTypeFqn(allocator, scope_fqn, file, extendee_field);
+            // The value is stored apart from its scope, so a message type is
+            // never self-referential and needs no pointer.
+            const element_type = try self.getFieldType(allocator, scope_fqn, file, ext, features, true);
+            const value_type = if (isRepeated(ext))
+                element_type
+            else
+                try std.mem.concat(allocator, u8, &.{ "?", element_type });
+            const ftype = try self.getFieldTypeDescriptor(allocator, ext, features);
+            const field_desc = if (try self.getFieldFeatures(allocator, .{}, ext, features)) |fs|
+                try std.fmt.allocPrint(allocator, "fdf({?d}, {s}, {s})", .{ ext.number, ftype, fs })
+            else
+                try std.fmt.allocPrint(allocator, "fd({?d}, {s})", .{ ext.number, ftype });
+            const default = if (isRepeated(ext)) "null" else if (try formatDefaultValue(allocator, ext)) |value|
+                try std.fmt.allocPrint(allocator, "@as({s}, {s})", .{
+                    try self.getFieldType(allocator, scope_fqn, file, ext, features, true),
+                    value,
+                })
+            else
+                "null";
+
+            try lines.append(allocator, try std.fmt.allocPrint(
+                allocator,
+                "\npub const {f} = protobuf.Extension({s}, {s}, {s}, \"{s}.{s}\", {s});\n",
+                .{ std.zig.fmtId(ext.name.?), extendee, value_type, field_desc, scope_fqn.buf, ext.name.?, default },
+            ));
+
+            // Reference relative to the package, for the `extensions` list.
+            const reference = if (scope_fqn.buf.len == package.len)
+                try std.fmt.allocPrint(allocator, "{f}", .{std.zig.fmtId(ext.name.?)})
+            else
+                try std.fmt.allocPrint(allocator, "{s}.{f}", .{ scope_fqn.buf[package.len + 1 ..], std.zig.fmtId(ext.name.?) });
+            const entry = try self.package_extensions.getOrPut(package);
+            if (!entry.found_existing) entry.value_ptr.* = .empty;
+            try entry.value_ptr.append(allocator, reference);
+        }
+    }
+
+    /// Emits `_extensions_info` for a message with extension ranges: the
+    /// ranges, which decide the fields kept as extensions when decoding, and
+    /// whether the extensions use the legacy MessageSet format.
+    fn generateExtensionsInfo(
+        allocator: std.mem.Allocator,
+        lines: *std.ArrayList([]const u8),
+        message: descriptor.DescriptorProto,
+    ) !void {
+        if (message.extension_range.items.len == 0) return;
+        try lines.append(allocator,
+            \\
+            \\    /// Extension ranges `[start, end)`, and whether the extensions are
+            \\    /// encoded in the legacy MessageSet format.
+            \\    pub const _extensions_info = .{
+            \\        .ranges = .{
+        );
+        for (message.extension_range.items) |range| {
+            try lines.append(allocator, try std.fmt.allocPrint(
+                allocator,
+                " .{{ {?d}, {?d} }},",
+                .{ range.start, range.end },
+            ));
+        }
+        const message_set = if (message.options) |o| o.message_set_wire_format orelse false else false;
+        try lines.append(allocator, try std.fmt.allocPrint(
+            allocator,
+            " }},\n        .message_set = {},\n    }};\n",
+            .{message_set},
+        ));
+    }
+
+    /// Returns the `extensions` declaration listing the extensions of
+    /// `package`, or null if it declares none.
+    fn packageExtensionsDeclaration(self: *GenerationContext, allocator: std.mem.Allocator, package: []const u8) !?[]const u8 {
+        const references = self.package_extensions.get(package) orelse return null;
+
+        // The declaration shares the top-level scope of the package.
+        for (self.req.proto_file.items) |file| {
+            if (!std.mem.eql(u8, file.package.?, package)) continue;
+            var clash = false;
+            for (file.message_type.items) |m| clash = clash or std.mem.eql(u8, m.name.?, "extensions");
+            for (file.enum_type.items) |e| clash = clash or std.mem.eql(u8, e.name.?, "extensions");
+            for (file.extension.items) |x| clash = clash or std.mem.eql(u8, x.name.?, "extensions");
+            for (file.service.items) |s| clash = clash or std.mem.eql(u8, s.name.?, "extensions");
+            if (clash) {
+                self.res.@"error" = try std.fmt.allocPrint(
+                    allocator,
+                    "ERROR package {s} declares a member named \"extensions\", which conflicts with the generated `extensions` declaration\n",
+                    .{package},
+                );
+                return null;
+            }
+        }
+
+        return try std.fmt.allocPrint(
+            allocator,
+            "\n/// Extensions declared in this package, for `protobuf.ExtensionRegistry.init`.\npub const extensions = .{{ {s} }};\n",
+            .{try std.mem.join(allocator, ", ", references.items)},
+        );
+    }
+
     /// Whether a field, oneof, nested message or nested enum of `message` is
     /// named `defaults`, as Zig forbids members sharing a name.
     fn definesDefaultsMember(message: descriptor.DescriptorProto) bool {
@@ -1206,6 +1363,7 @@ const GenerationContext = struct {
         for (message.oneof_decl.items) |o| if (std.mem.eql(u8, o.name.?, "defaults")) return true;
         for (message.nested_type.items) |m| if (std.mem.eql(u8, m.name.?, "defaults")) return true;
         for (message.enum_type.items) |e| if (std.mem.eql(u8, e.name.?, "defaults")) return true;
+        for (message.extension.items) |x| if (std.mem.eql(u8, x.name.?, "defaults")) return true;
         return false;
     }
 

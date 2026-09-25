@@ -6,6 +6,11 @@ pub const json = @import("json.zig");
 pub const wire = @import("wire.zig");
 pub const wkt = @import("wkt.zig");
 pub const stream = @import("stream.zig");
+pub const extension = @import("extension.zig");
+
+/// See `src/extension.zig`.
+pub const Extension = extension.Extension;
+pub const ExtensionRegistry = extension.ExtensionRegistry;
 
 /// Streaming pull-decoder for the generated message type `T`.
 /// See `src/stream.zig`. Generated messages also expose this as
@@ -722,6 +727,15 @@ pub fn encode(
             try writeValue(writer, allocator, desc, @field(value, field.name), desc.features.legacy_required);
         }
     }
+    // Emit extensions as they were decoded or set.
+    if (comptime @hasField(Data, "_extensions")) {
+        const records = @field(data, "_extensions");
+        if (comptime extension.isMessageSet(Data)) {
+            try extension.writeMessageSet(writer, records);
+        } else if (records.len > 0) {
+            try writer.writeAll(records);
+        }
+    }
     // Re-emit unknown fields verbatim at the end.
     if (comptime @hasField(Data, "_unknown_fields")) {
         const uf = @field(data, "_unknown_fields");
@@ -811,6 +825,9 @@ pub fn dupe(comptime T: type, original: T, allocator: std.mem.Allocator) std.mem
     }
     if (comptime @hasField(T, "_unknown_fields")) {
         result._unknown_fields = try allocator.dupe(u8, original._unknown_fields);
+    }
+    if (comptime @hasField(T, "_extensions")) {
+        result._extensions = try allocator.dupe(u8, original._extensions);
     }
 
     return result;
@@ -1005,6 +1022,9 @@ pub fn deinit(allocator: std.mem.Allocator, data: anytype) void {
     }
     if (comptime @hasField(T, "_unknown_fields")) {
         if (data._unknown_fields.len > 0) allocator.free(data._unknown_fields);
+    }
+    if (comptime @hasField(T, "_extensions")) {
+        if (data._extensions.len > 0) allocator.free(data._extensions);
     }
 }
 
@@ -1292,13 +1312,31 @@ pub fn decode(
     reader: *std.Io.Reader,
     allocator: std.mem.Allocator,
 ) (DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!T {
+    return decodeWithOptions(T, reader, allocator, .{});
+}
+
+/// Options of `decodeWithOptions` and `json.decodeWithOptions`.
+pub const DecodeOptions = struct {
+    /// Known extensions. Without them, extensions are kept as raw fields and
+    /// only decoded by `Extension.get`. With them, known extensions are
+    /// validated while decoding, and can be decoded from JSON.
+    extensions: ?*const ExtensionRegistry = null,
+};
+
+/// Like `decode`, with options.
+pub fn decodeWithOptions(
+    comptime T: type,
+    reader: *std.Io.Reader,
+    allocator: std.mem.Allocator,
+    options: DecodeOptions,
+) (DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!T {
     @setEvalBranchQuota(comptime evalBranchQuotaFor(T));
 
     var result: T = undefined;
     internal_init(T, &result);
     errdefer deinit(allocator, &result);
 
-    _ = try wire.decodeMessage(&result, allocator, reader, .{});
+    _ = try wire.decodeMessage(&result, allocator, reader, .{ .extensions = options.extensions });
 
     return result;
 }
@@ -1426,4 +1464,5 @@ test {
     _ = json;
     _ = stream;
     _ = wkt;
+    _ = extension;
 }

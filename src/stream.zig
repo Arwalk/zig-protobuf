@@ -45,7 +45,7 @@
 //! Caveat3: Delimited (group-encoded) submessages carry no length prefix, so they cannot be
 //! surfaced as a bounded `*std.Io.Reader`. Instantiating the decoder for a message with such
 //! fields is a compile error. Values of closed enums matching no enumerator are skipped, like
-//! unknown fields.
+//! unknown fields. Extensions are skipped as well, like unknown fields.
 
 const std = @import("std");
 const protobuf = @import("protobuf.zig");

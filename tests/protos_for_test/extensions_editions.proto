@@ -1,0 +1,12 @@
+edition = "2023";
+
+package tests.extensions.editions;
+
+import "extensions.proto";
+
+// Extensions of a message of another package.
+extend tests.extensions.Extendable {
+  // Strings of editions are validated as UTF-8.
+  string checked = 150;
+  bytes unchecked = 151;
+}
