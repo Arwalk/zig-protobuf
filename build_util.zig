@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 
 const Io = std.Io;
 
-pub const PROTOC_VERSION = "32.1";
+pub const PROTOC_VERSION = "36.2";
 
 // File system utilities
 pub fn pathExists(io: Io, path: []const u8) bool {

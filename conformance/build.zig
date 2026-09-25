@@ -20,6 +20,10 @@ pub fn build(b: *std.Build) void {
         .source_files = &.{
             b.path("protos/conformance.proto"),
             b.path("protos/test_messages_proto3.proto"),
+            b.path("protos/test_messages_proto2.proto"),
+            b.path("protos/test_messages_edition2023.proto"),
+            b.path("protos/test_messages_proto2_editions.proto"),
+            b.path("protos/test_messages_proto3_editions.proto"),
         },
         .include_directories = &.{ b.path("protos"), upstream.path("src") },
         .destination_directory = b.path("generated"),
@@ -56,7 +60,7 @@ pub fn build(b: *std.Build) void {
     run_cmd.addArgs(&.{
         "--enforce_recommended",
         "--maximum_edition",
-        "2024",
+        "2026",
         "--output_dir",
         "out",
         "--failure_list",

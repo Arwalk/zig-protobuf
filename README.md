@@ -5,11 +5,127 @@
 
 ## State of the implementation
 
-This repository, so far, only aims at implementing [protocol buffers version 3](https://developers.google.com/protocol-buffers/docs/proto3#simple).
+This repository implements [protocol buffers](https://protobuf.dev/) for `proto2`, `proto3` and
+[editions](https://protobuf.dev/editions/overview/) (up to edition 2026). Extensions are not supported.
 
-This project is mature enough to be used in production.
+This project is mature enough to be used in production. It passes the upstream
+[conformance suite](conformance/) (protobuf v36.2) for the proto2, proto3 and editions test messages, in binary and JSON.
 
 json encoding/decoding is considered a beta feature.
+
+## Editions
+
+Editions replace the `syntax` keyword with fine grained *features*, which can be set for a
+whole file or for individual fields and enums. `proto2` and `proto3` are handled as the
+legacy editions they correspond to, so the same rules apply to all three. The generator
+resolves the features of every element and maps them to Zig as follows:
+
+| Feature | Zig representation |
+| --- | --- |
+| `field_presence = EXPLICIT` | optional field `?T = null`. The `[default = ...]` value is in `defaults`. Refer to [Default values](#default-values) |
+| `field_presence = IMPLICIT` | plain field `T` holding the zero value, which is not serialized |
+| `field_presence = LEGACY_REQUIRED` | plain field `T` without default, always serialized |
+| `enum_type = OPEN` | non-exhaustive enum (`_`), unknown values are kept |
+| `enum_type = CLOSED` | exhaustive enum, unknown values are stored as unknown fields |
+| `repeated_field_encoding` | `.packed_repeated` or `.repeated` field descriptor |
+| `message_encoding = DELIMITED` | `fdf(n, .submessage, .{ .message_encoding = .delimited })`, encoded as a group |
+| `utf8_validation = VERIFY` | `fdf(n, .{ .scalar = .string }, .{ .utf8_validation = .verify })`, invalid strings fail to decode |
+
+```proto
+edition = "2023";
+
+message Example {
+  int32 explicit = 1;                                          // ?i32 = null
+  int32 implicit = 2 [features.field_presence = IMPLICIT];     // i32 = 0
+  Nested nested = 3 [features.message_encoding = DELIMITED];   // encoded as a group
+}
+```
+
+## Default values
+
+> **CAUTION:** This behavior is different from the behavior of previous versions.
+> Previous versions set optional fields to their `[default = ...]` value.
+> Examine your code before you update.
+
+### Presence and value
+
+A field with explicit presence has two properties:
+
+1. Its presence. The field is set or not set.
+2. Its value. A set field has the value that it holds. A field that is not set has its default value.
+
+In Zig, an optional field (`?T`) holds the two properties. The value `null` shows that the field is not set.
+
+### Encoding
+
+The encoder examines only the presence of a field. It does not compare the value with the default value.
+
+* The encoder does not write a field that is not set.
+* The encoder writes a field that is set. This is also correct when the value is equal to the default value.
+
+Example, for `optional int32 x = 1 [default = 5];`:
+
+| Sender | Wire | Receiver |
+| --- | --- | --- |
+| Does not set `x` | no data | `x == null`, the value is 5 |
+| Sets `x` to 5 | `x = 5` | `x == 5` |
+| Sets `x` to 7 | `x = 7` | `x == 7` |
+
+The receiver can find the difference between the first two rows. The value is the same, but the presence is different.
+
+### How to read a value
+
+The generator puts the declared default values in the `defaults` declaration of the message:
+
+```zig
+pub const Example = struct {
+    x: ?i32 = null,
+
+    /// Default values of fields that are `null` when not set.
+    pub const defaults = struct {
+        pub const x: i32 = 5;
+    };
+    // ...
+};
+```
+
+To get the value of a field, use the default value when the field is not set:
+
+```zig
+const x = msg.x orelse Example.defaults.x;
+```
+
+To set a field to its default value, set it explicitly. The encoder then writes the field:
+
+```zig
+msg.x = Example.defaults.x;
+```
+
+The library does not use `defaults` during encoding or decoding. It is only for your code.
+
+### Changes from previous versions
+
+Previous versions set an optional field to its default value, for example `x: ?i32 = 5`. This caused these problems:
+
+* A new message (`.{}`) had all fields with a default value set.
+* A decoded message had all fields with a default value set, also when the input did not contain them.
+* The encoder wrote all these fields, because they were set.
+
+To update your code, do these steps:
+
+1. Find the code that reads an optional field with a default value.
+2. Replace `msg.x.?` with `msg.x orelse Example.defaults.x`.
+3. Replace comparisons such as `msg.x == 5` with `(msg.x orelse Example.defaults.x) == 5`.
+
+### Other fields
+
+* A field with implicit presence (proto3 `int32 x = 1;`) has no presence. Its default value is always zero. The encoder does not write the zero value.
+* A required field (proto2 `required`) is a plain field (`T`). The encoder always writes it, also when its value is zero.
+* The default value of a closed enum is its first value. This value is not always zero.
+
+### Names
+
+`defaults` is a declaration of the message. Thus, a message must not have a field, oneof, message or enum with the name `defaults`. If it has one, the generator stops with an error.
 
 ## Branches
 
@@ -119,7 +235,8 @@ while (try sd.next()) |item| switch (item) {
 ```
 
 Note: the decoder must not be copied after `init` — the `*std.Io.Reader` it hands out for
-length-delimited fields points back into the decoder itself.
+length-delimited fields points back into the decoder itself. Messages with delimited
+(group-encoded) fields are not supported by the `StreamDecoder`.
 
 -------
 

@@ -600,6 +600,10 @@ fn parseEnumField(comptime EnumType: type, allocator: std.mem.Allocator, source:
         .number => {
             const tag_type = @typeInfo(EnumType).@"enum".tag_type;
             const n = try std.json.innerParse(tag_type, allocator, source, options);
+            // Closed enums are exhaustive and only accept known values.
+            if (comptime @typeInfo(EnumType).@"enum".is_exhaustive) {
+                return std.enums.fromInt(EnumType, n) orelse error.InvalidEnumTag;
+            }
             return @enumFromInt(n);
         },
         else => {},
@@ -831,13 +835,14 @@ fn parseStructField(
                 }
                 const InnerType = @typeInfo(fieldInfo.type).optional.child;
                 const v = parseEnumField(InnerType, allocator, source, options) catch |e| {
-                    if (e == error.InvalidEnumTag and options.ignore_unknown_fields) break :blk @as(fieldInfo.type, @enumFromInt(0));
+                    // An ignored unknown value leaves the field unset.
+                    if (e == error.InvalidEnumTag and options.ignore_unknown_fields) break :blk @as(fieldInfo.type, null);
                     return e;
                 };
                 break :blk @as(fieldInfo.type, v);
             }
             const v = parseEnumField(fieldInfo.type, allocator, source, options) catch |e| {
-                if (e == error.InvalidEnumTag and options.ignore_unknown_fields) break :blk @as(fieldInfo.type, @enumFromInt(0));
+                if (e == error.InvalidEnumTag and options.ignore_unknown_fields) break :blk protobuf.enumDefault(fieldInfo.type);
                 return e;
             };
             break :blk v;
@@ -870,7 +875,12 @@ fn parseStructField(
                 // the string tokens "Infinity", "-Infinity", and "NaN" are valid per spec.
                 const next_type = try source.peekNextTokenType();
                 const v = try std.json.innerParse(fieldInfo.type, allocator, source, options);
-                if (next_type == .number and std.math.isInf(v)) return error.InvalidCharacter;
+                // Fields with explicit presence are optional floats.
+                const float = if (comptime @typeInfo(fieldInfo.type) == .optional)
+                    v orelse break :blk v
+                else
+                    v;
+                if (next_type == .number and std.math.isInf(float)) return error.InvalidCharacter;
                 break :blk v;
             },
             // `.string`s have their own jsonParse implementation

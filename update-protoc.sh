@@ -1,4 +1,4 @@
-PROTOC_VERSION=32.1
+PROTOC_VERSION=36.2
 
 zig fetch --save=protoc-linux-x86_64 "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip"
 zig fetch --save=protoc-linux-x86_32 "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_32.zip"

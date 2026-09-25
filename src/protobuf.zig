@@ -180,13 +180,75 @@ pub const FieldType = union(enum) {
     };
 };
 
+/// Per-field serialization behavior, resolved by the code generator from
+/// protobuf editions features (or the equivalent proto2/proto3 semantics).
+///
+/// Some features are not stored here because the Zig types already express
+/// them: explicit field presence is an optional (`?T`) field, and closed enums
+/// are exhaustive Zig enums (open enums have a `_` catch-all).
+pub const Features = struct {
+    /// `features.message_encoding`. Delimited submessages are encoded as a
+    /// group (SGROUP tag, fields, EGROUP tag) instead of being length-prefixed.
+    message_encoding: MessageEncoding = .length_prefixed,
+    /// `features.utf8_validation`. With `.verify`, decoding a `string` field
+    /// holding invalid UTF-8 fails with `error.InvalidInput`.
+    utf8_validation: Utf8Validation = .none,
+    /// `features.field_presence = LEGACY_REQUIRED` (proto2 `required`).
+    /// Required fields are always serialized, even when holding a zero value.
+    legacy_required: bool = false,
+
+    pub const MessageEncoding = enum { length_prefixed, delimited };
+    pub const Utf8Validation = enum { verify, none };
+};
+
 /// Structure describing a field. Most of the relevant informations are
 /// In the FieldType data. Tag is optional as oneof fields are "virtual" fields.
-pub const FieldDescriptor = struct { field_number: ?u32, ftype: FieldType };
+pub const FieldDescriptor = struct {
+    field_number: ?u32,
+    ftype: FieldType,
+    features: Features = .{},
 
-/// Helper function to build a FieldDescriptor. Makes code clearer, mostly.
+    /// Whether the field is a submessage encoded as a group.
+    pub fn isDelimited(comptime self: FieldDescriptor) bool {
+        const is_message = switch (self.ftype) {
+            .submessage => true,
+            .repeated, .packed_repeated => |r| r == .submessage,
+            else => false,
+        };
+        return is_message and self.features.message_encoding == .delimited;
+    }
+
+    /// Wire type used for (each element of) the field.
+    pub fn toWire(comptime self: FieldDescriptor) wire.Type {
+        return if (self.isDelimited()) .sgroup else self.ftype.toWire();
+    }
+
+    /// Whether string values must be validated as UTF-8 when decoding.
+    pub fn verifiesUtf8(comptime self: FieldDescriptor) bool {
+        const is_string = switch (self.ftype) {
+            .scalar => |s| s == .string,
+            .repeated, .packed_repeated => |r| r == .scalar and r.scalar == .string,
+            else => false,
+        };
+        return is_string and self.features.utf8_validation == .verify;
+    }
+};
+
+/// Helper function to build a FieldDescriptor.
 pub fn fd(comptime field_number: ?u32, comptime ftype: FieldType) FieldDescriptor {
     return FieldDescriptor{ .field_number = field_number, .ftype = ftype };
+}
+
+/// Like `fd`, for fields with non-default features.
+pub fn fdf(comptime field_number: ?u32, comptime ftype: FieldType, comptime features: Features) FieldDescriptor {
+    return FieldDescriptor{ .field_number = field_number, .ftype = ftype, .features = features };
+}
+
+/// Default value of an enum field: its first declared value. For open enums
+/// this is always zero; closed (proto2) enums may start at any value.
+pub fn enumDefault(comptime E: type) E {
+    const fields = @typeInfo(E).@"enum".fields;
+    return if (fields.len > 0) @enumFromInt(fields[0].value) else @enumFromInt(0);
 }
 
 // Eval branch quota tuning. The encode/decode/init/dupe/json routines all expand
@@ -448,8 +510,7 @@ fn writeSubmessageList(
     value_list: anytype,
 ) (std.mem.Allocator.Error || std.Io.Writer.Error)!void {
     for (value_list.items) |item| {
-        try writeTag(writer, field);
-        try writeSubmessage(writer, allocator, item);
+        try writeTaggedSubmessage(writer, allocator, field, item);
     }
 }
 
@@ -482,10 +543,31 @@ fn writePackedStringList(
 /// Writes the full tag of the field, if there is any.
 fn writeTag(writer: *std.Io.Writer, comptime field: FieldDescriptor) std.Io.Writer.Error!void {
     const tag: wire.Tag = comptime .{
-        .wire_type = field.ftype.toWire(),
+        .wire_type = field.toWire(),
         .field = field.field_number.?,
     };
     _ = try tag.encode(writer);
+}
+
+/// Writes a submessage including its tag, either length-prefixed or delimited
+/// (as a group terminated by an EGROUP tag) depending on the field features.
+fn writeTaggedSubmessage(
+    writer: *std.Io.Writer,
+    allocator: std.mem.Allocator,
+    comptime field: FieldDescriptor,
+    value: anytype,
+) (std.mem.Allocator.Error || std.Io.Writer.Error)!void {
+    try writeTag(writer, field);
+    if (comptime field.isDelimited()) {
+        try encode(writer, allocator, value);
+        const end_tag: wire.Tag = comptime .{
+            .wire_type = .egroup,
+            .field = field.field_number.?,
+        };
+        _ = try end_tag.encode(writer);
+    } else {
+        try writeSubmessage(writer, allocator, value);
+    }
 }
 
 /// Write a value. Starts by writing the tag, then a comptime switch
@@ -543,8 +625,7 @@ fn writeValue(
         },
         .submessage => {
             if (!is_default_scalar_value or force_append) {
-                try writeTag(writer, field);
-                try writeSubmessage(writer, allocator, value);
+                try writeTaggedSubmessage(writer, allocator, field, value);
             }
         },
         .packed_repeated => |repeated| {
@@ -636,7 +717,9 @@ pub fn encode(
             }
         } else {
             const value = data;
-            try writeValue(writer, allocator, @field(Data._desc_table, field.name), @field(value, field.name), false);
+            const desc: FieldDescriptor = @field(Data._desc_table, field.name);
+            // Required fields are always written, even when holding zero.
+            try writeValue(writer, allocator, desc, @field(value, field.name), desc.features.legacy_required);
         }
     }
     // Re-emit unknown fields verbatim at the end.
@@ -649,8 +732,7 @@ pub fn encode(
 fn get_field_default_value(comptime for_type: anytype) for_type {
     return switch (@typeInfo(for_type)) {
         .optional => null,
-        // as per protobuf spec, the first element of the enums must be 0 and it is the default value
-        .@"enum" => @as(for_type, @enumFromInt(0)),
+        .@"enum" => enumDefault(for_type),
         else => switch (for_type) {
             bool => false,
             i32, i64, i8, i16, u8, u32, u64, f32, f64 => 0,
@@ -1343,4 +1425,5 @@ test {
     _ = wire;
     _ = json;
     _ = stream;
+    _ = wkt;
 }

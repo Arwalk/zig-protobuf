@@ -145,6 +145,7 @@ pub fn build(b: *std.Build) void {
     const gen_out = gen.addPrefixedOutputDirectoryArg("--cpp_out=", "conformance_pb_gen");
     gen.addFileArg(upstream.path("conformance/conformance.proto"));
     gen.addFileArg(upstream.path("conformance/test_protos/test_messages_edition2023.proto"));
+    gen.addFileArg(upstream.path("conformance/test_protos/test_messages_edition_unstable.proto"));
     gen.addFileArg(upstream.path("editions/golden/test_messages_proto2_editions.proto"));
     gen.addFileArg(upstream.path("editions/golden/test_messages_proto3_editions.proto"));
     gen.addFileArg(upstream.path("src/google/protobuf/test_messages_proto2.proto"));
@@ -186,6 +187,10 @@ pub fn build(b: *std.Build) void {
         .language = .cpp,
     });
     runner.root_module.addCSourceFile(.{
+        .file = gen_out.path(b, "conformance/test_protos/test_messages_edition_unstable.pb.cc"),
+        .language = .cpp,
+    });
+    runner.root_module.addCSourceFile(.{
         .file = gen_out.path(b, "editions/golden/test_messages_proto2_editions.pb.cc"),
         .language = .cpp,
     });
@@ -223,11 +228,13 @@ const libprotobuf_srcs: []const []const u8 = &.{
     "src/google/protobuf/any_lite.cc",
     "src/google/protobuf/arena.cc",
     "src/google/protobuf/arena_align.cc",
+    "src/google/protobuf/arena_allocation_policy.cc",
     "src/google/protobuf/arenastring.cc",
     "src/google/protobuf/arenaz_sampler.cc",
     "src/google/protobuf/compiler/importer.cc",
     "src/google/protobuf/compiler/parser.cc",
     "src/google/protobuf/cpp_features.pb.cc",
+    "src/google/protobuf/cpp_file_options.pb.cc",
     "src/google/protobuf/descriptor.cc",
     "src/google/protobuf/descriptor.pb.cc",
     "src/google/protobuf/descriptor_database.cc",
@@ -263,11 +270,13 @@ const libprotobuf_srcs: []const []const u8 = &.{
     "src/google/protobuf/json/internal/writer.cc",
     "src/google/protobuf/json/internal/zero_copy_buffered_stream.cc",
     "src/google/protobuf/json/json.cc",
+    "src/google/protobuf/json_enumvalue_options.pb.cc",
     "src/google/protobuf/map.cc",
     "src/google/protobuf/map_field.cc",
     "src/google/protobuf/message.cc",
     "src/google/protobuf/message_lite.cc",
     "src/google/protobuf/micro_string.cc",
+    "src/google/protobuf/naming_style.cc",
     "src/google/protobuf/parse_context.cc",
     "src/google/protobuf/port.cc",
     "src/google/protobuf/raw_ptr.cc",
@@ -277,8 +286,12 @@ const libprotobuf_srcs: []const []const u8 = &.{
     "src/google/protobuf/repeated_ptr_field.cc",
     "src/google/protobuf/service.cc",
     "src/google/protobuf/stubs/common.cc",
+    "src/google/protobuf/symbol.cc",
+    "src/google/protobuf/symbol_checker.cc",
     "src/google/protobuf/text_format.cc",
+    "src/google/protobuf/type_id.cc",
     "src/google/protobuf/unknown_field_set.cc",
+    "src/google/protobuf/unknown_field_set_lite.cc",
     "src/google/protobuf/util/delimited_message_util.cc",
     "src/google/protobuf/util/field_comparator.cc",
     "src/google/protobuf/util/field_mask_util.cc",
@@ -297,6 +310,7 @@ const libprotoc_srcs: []const []const u8 = &.{
     "src/google/protobuf/compiler/cpp/extension.cc",
     "src/google/protobuf/compiler/cpp/field.cc",
     "src/google/protobuf/compiler/cpp/field_chunk.cc",
+    "src/google/protobuf/compiler/cpp/field_layout.cc",
     "src/google/protobuf/compiler/cpp/field_generators/cord_field.cc",
     "src/google/protobuf/compiler/cpp/field_generators/enum_field.cc",
     "src/google/protobuf/compiler/cpp/field_generators/map_field.cc",
@@ -315,6 +329,7 @@ const libprotoc_srcs: []const []const u8 = &.{
     "src/google/protobuf/compiler/cpp/service.cc",
     "src/google/protobuf/compiler/cpp/tracker.cc",
     "src/google/protobuf/compiler/csharp/csharp_doc_comment.cc",
+    "src/google/protobuf/compiler/csharp/c_sharp_features.pb.cc",
     "src/google/protobuf/compiler/csharp/csharp_enum.cc",
     "src/google/protobuf/compiler/csharp/csharp_enum_field.cc",
     "src/google/protobuf/compiler/csharp/csharp_field_base.cc",
@@ -395,6 +410,7 @@ const libprotoc_srcs: []const []const u8 = &.{
     "src/google/protobuf/compiler/python/pyi_generator.cc",
     "src/google/protobuf/compiler/retention.cc",
     "src/google/protobuf/compiler/ruby/ruby_generator.cc",
+    "src/google/protobuf/compiler/ruby/rbs_generator.cc",
     "src/google/protobuf/compiler/rust/accessors/accessor_case.cc",
     "src/google/protobuf/compiler/rust/accessors/accessors.cc",
     "src/google/protobuf/compiler/rust/accessors/default_value.cc",
@@ -409,6 +425,7 @@ const libprotoc_srcs: []const []const u8 = &.{
     "src/google/protobuf/compiler/rust/context.cc",
     "src/google/protobuf/compiler/rust/crate_mapping.cc",
     "src/google/protobuf/compiler/rust/enum.cc",
+    "src/google/protobuf/compiler/rust/extension.cc",
     "src/google/protobuf/compiler/rust/generator.cc",
     "src/google/protobuf/compiler/rust/message.cc",
     "src/google/protobuf/compiler/rust/naming.cc",
@@ -435,18 +452,29 @@ const protoc_srcs: []const []const u8 = &.{
 
 const upb_srcs: []const []const u8 = &.{
     "upb/base/status.c",
+    "upb/port/port.c",
     "upb/wire/decode.c",
     "upb/wire/encode.c",
+    "upb/wire/eps_copy_input_stream.c",
+    "upb/wire/reader.c",
     "upb/wire/internal/decoder.c",
+    "upb/wire/internal/back_alloc.c",
+    "upb/wire/internal/encoder.c",
+    "upb/wire/decode_fast/cardinality.c",
+    "upb/wire/decode_fast/field_extension.c",
+    "upb/wire/decode_fast/field_mismatch.c",
+    "upb/wire/decode_fast/field_unknown.c",
     "upb/mem/arena.c",
     "upb/mem/alloc.c",
     "upb/message/copy.c",
+    "upb/message/convert.c",
     "upb/message/array.c",
     "upb/message/map.c",
     "upb/message/message.c",
     "upb/message/map_sorter.c",
     "upb/message/internal/extension.c",
     "upb/message/internal/message.c",
+    "upb/message/unknown_fields.c",
     "upb/reflection/def_pool.c",
     "upb/reflection/desc_state.c",
     "upb/reflection/message_reserved_range.c",
@@ -462,6 +490,7 @@ const upb_srcs: []const []const u8 = &.{
     "upb/reflection/enum_value_def.c",
     "upb/reflection/oneof_def.c",
     "upb/reflection/stage0/google/protobuf/descriptor.upb.c",
+    "upb/reflection/stage0/google/protobuf/json_enumvalue_options.upb.c",
     "upb/reflection/internal/strdup2.c",
     "upb/reflection/internal/def_builder.c",
     "upb/hash/common.c",
@@ -471,6 +500,8 @@ const upb_srcs: []const []const u8 = &.{
     "upb/mini_descriptor/internal/base92.c",
     "upb/mini_descriptor/internal/encode.c",
     "upb/mini_table/message.c",
+    "upb/mini_table/debug_string.c",
+    "upb/mini_table/generated_registry.c",
     "upb/mini_table/extension_registry.c",
     "upb/mini_table/internal/message.c",
 };

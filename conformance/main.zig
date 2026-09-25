@@ -4,9 +4,13 @@
 //! Reads ConformanceRequest messages from stdin and writes ConformanceResponse
 //! messages to stdout using the length-prefixed wire protocol.
 //!
+//! The proto2, proto3 and editions test messages are all supported (see
+//! `test_messages`); only binary and JSON formats are.
+//!
 //! Usage:
 //!   Build with `zig build conformance`, then run with the conformance_test_runner:
-//!   conformance_test_runner --enforce_recommended ./zig-out/bin/conformance-testee
+//!   conformance_test_runner --enforce_recommended --maximum_edition 2026 ./zig-out/bin/conformance-testee
+//!   (or simply `zig build conformance-run`).
 //!
 //! The conformance_test_runner binary can be obtained by building the protobuf
 //! project from source: https://github.com/protocolbuffers/protobuf
@@ -20,7 +24,25 @@ const ConformanceResponse = conformance_pb.ConformanceResponse;
 const FailureSet = conformance_pb.FailureSet;
 
 const proto3_pb = @import("generated/protobuf_test_messages/proto3.pb.zig");
-const TestAllTypesProto3 = proto3_pb.TestAllTypesProto3;
+const proto2_pb = @import("generated/protobuf_test_messages/proto2.pb.zig");
+const editions_pb = @import("generated/protobuf_test_messages/editions.pb.zig");
+const editions_proto2_pb = @import("generated/protobuf_test_messages/editions/proto2.pb.zig");
+const editions_proto3_pb = @import("generated/protobuf_test_messages/editions/proto3.pb.zig");
+
+/// Test message types the conformance runner may request, by full name.
+const test_messages = .{
+    .{ "protobuf_test_messages.proto3.TestAllTypesProto3", proto3_pb.TestAllTypesProto3 },
+    .{ "protobuf_test_messages.proto2.TestAllTypesProto2", proto2_pb.TestAllTypesProto2 },
+    .{ "protobuf_test_messages.editions.TestAllTypesEdition2023", editions_pb.TestAllTypesEdition2023 },
+    .{ "protobuf_test_messages.editions.proto2.TestAllTypesProto2", editions_proto2_pb.TestAllTypesProto2 },
+    .{ "protobuf_test_messages.editions.proto3.TestAllTypesProto3", editions_proto3_pb.TestAllTypesProto3 },
+};
+
+/// Types embedded in `google.protobuf.Any` whose JSON form is a regular
+/// message, i.e. whose fields are inlined next to "@type".
+const any_message_types = test_messages ++ .{
+    .{ "google.protobuf.Empty", protobuf.wkt.Empty },
+};
 
 const wkt = protobuf.wkt;
 const pb_json_opts_flat: protobuf.json.Options = .{ .emit_oneof_field_name = false };
@@ -72,23 +94,23 @@ fn wkt_jsonEncode(msg: anytype, alloc: std.mem.Allocator) ![]const u8 {
 fn anyFromJson(type_url: []const u8, obj: std.json.ObjectMap, alloc: std.mem.Allocator) anyerror![]const u8 {
     const name = typeUrlName(type_url);
 
-    if (std.mem.eql(u8, name, "protobuf_test_messages.proto3.TestAllTypesProto3")) {
+    inline for (any_message_types) |entry| if (std.mem.eql(u8, name, entry[0])) {
         // Build JSON object from obj fields, excluding "@type".
         var writer: std.Io.Writer.Allocating = .init(alloc);
         var s: std.json.Stringify = .{ .writer = &writer.writer, .options = .{} };
         try s.beginObject();
         var it = obj.iterator();
-        while (it.next()) |entry| {
-            if (std.mem.eql(u8, entry.key_ptr.*, "@type")) continue;
-            try s.objectField(entry.key_ptr.*);
-            try s.write(entry.value_ptr.*);
+        while (it.next()) |field| {
+            if (std.mem.eql(u8, field.key_ptr.*, "@type")) continue;
+            try s.objectField(field.key_ptr.*);
+            try s.write(field.value_ptr.*);
         }
         try s.endObject();
         const json_str = writer.written();
-        const parsed = try TestAllTypesProto3.jsonDecode(json_str, .{}, alloc);
+        const parsed = try entry[1].jsonDecode(json_str, .{}, alloc);
         defer parsed.deinit();
         return try encodeToBytes(alloc, parsed.value);
-    }
+    };
 
     if (std.mem.eql(u8, name, "google.protobuf.Duration"))
         return parseWktFromValue(wkt.Duration, obj, alloc);
@@ -138,13 +160,13 @@ fn anyToJson(type_url: []const u8, bytes: []const u8, alloc: std.mem.Allocator) 
     const name = typeUrlName(type_url);
     var reader: std.Io.Reader = .fixed(bytes);
 
-    if (std.mem.eql(u8, name, "protobuf_test_messages.proto3.TestAllTypesProto3")) {
-        var msg = try TestAllTypesProto3.decode(&reader, alloc);
+    inline for (any_message_types) |entry| if (std.mem.eql(u8, name, entry[0])) {
+        var msg = try entry[1].decode(&reader, alloc);
         defer msg.deinit(alloc);
         const json_str = try msg.jsonEncode(.{}, pb_json_opts_flat, alloc);
         const val = try jsonBytesToValue(alloc, json_str);
         return .{ .message = val.object };
-    }
+    };
 
     if (std.mem.eql(u8, name, "google.protobuf.Duration")) {
         var msg = try wkt.Duration.decode(&reader, alloc);
@@ -310,9 +332,9 @@ fn runTest(allocator: std.mem.Allocator, req: ConformanceRequest) ConformanceRes
         return makeResponse(.{ .skipped = "Unsupported output format (JSPB/text)" });
     }
 
-    if (std.mem.eql(u8, req.message_type, "protobuf_test_messages.proto3.TestAllTypesProto3")) {
-        return doRoundTrip(TestAllTypesProto3, allocator, payload_union, is_protobuf_input, is_protobuf_output, req.test_category);
-    }
+    inline for (test_messages) |entry| if (std.mem.eql(u8, req.message_type, entry[0])) {
+        return doRoundTrip(entry[1], allocator, payload_union, is_protobuf_input, is_protobuf_output, req.test_category);
+    };
 
     return makeResponse(.{ .skipped = "Unsupported message type" });
 }

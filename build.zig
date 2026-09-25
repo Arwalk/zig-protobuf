@@ -141,6 +141,14 @@ pub fn build(b: *std.Build) !void {
             }),
         }),
         b.addTest(.{
+            .name = "editions",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/tests_editions.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        }),
+        b.addTest(.{
             .name = "stream",
             .root_module = b.createModule(.{
                 .root_source_file = b.path("tests/stream.zig"),
@@ -161,7 +169,8 @@ pub fn build(b: *std.Build) !void {
         .source_files = &.{
             b.path("tests/protos_for_test/all.proto"),
             b.path("tests/protos_for_test/complex_type.proto"),
-            b.path("tests/protos_for_test/onnx.proto"),
+            b.path("tests/protos_for_test/editions.proto"),
+            b.path("tests/protos_for_test/editions2026.proto"),
             b.path("tests/protos_for_test/test_service.proto"),
             b.path("tests/protos_for_test/whitespace-in-name.proto"),
         },

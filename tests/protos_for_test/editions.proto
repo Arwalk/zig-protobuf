@@ -1,0 +1,52 @@
+edition = "2023";
+
+package tests.editions;
+
+// Every submessage in this file is group-encoded unless stated otherwise.
+option features.message_encoding = DELIMITED;
+
+message Child {
+  int32 a = 1;
+  string s = 2;
+}
+
+message Delimited {
+  Child child = 1;
+  repeated Child children = 2;
+  Child length_prefixed = 3 [features.message_encoding = LENGTH_PREFIXED];
+  oneof choice {
+    Child oneof_child = 4;
+    int32 oneof_int = 5;
+  }
+  // Map entries are always length-prefixed, whatever the file features.
+  map<string, Child> by_name = 6;
+}
+
+enum Closed {
+  option features.enum_type = CLOSED;
+  CLOSED_ONE = 1;
+  CLOSED_TWO = 2;
+}
+
+enum Open {
+  OPEN_ZERO = 0;
+  OPEN_ONE = 1;
+}
+
+message Presence {
+  // Explicit presence is the default in edition 2023.
+  int32 explicit_int = 1;
+  int32 implicit_int = 2 [features.field_presence = IMPLICIT];
+  int32 required_int = 3 [features.field_presence = LEGACY_REQUIRED];
+  int32 defaulted_int = 4 [default = 42];
+  Closed closed_enum = 5;
+  Open open_enum = 6;
+  repeated Closed closed_enums = 7;
+}
+
+message Encoding {
+  repeated int32 packed_ints = 1;
+  repeated int32 expanded_ints = 2 [features.repeated_field_encoding = EXPANDED];
+  string verified = 3;
+  string unverified = 4 [features.utf8_validation = NONE];
+}
