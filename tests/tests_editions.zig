@@ -1,5 +1,6 @@
 const std = @import("std");
 const testing = std.testing;
+const protobuf = @import("protobuf");
 const editions = @import("./generated/tests/editions.pb.zig");
 
 fn encode(msg: anytype) ![]const u8 {
@@ -114,7 +115,28 @@ test "editions: closed enums drop unknown values, open enums keep them" {
     );
 
     // Closed enums default to their first value, which need not be zero.
-    try testing.expectEqual(.CLOSED_ONE, @import("protobuf").enumDefault(editions.Closed));
+    try testing.expectEqual(.CLOSED_ONE, protobuf.enumDefault(editions.Closed));
+}
+
+// protoc requires zero to be the first value of the enums used with implicit
+// presence, so only hand-written descriptors can declare such a field.
+const ZeroSecond = enum(i32) { ONE = 1, ZERO = 0 };
+const ImplicitClosedEnum = struct {
+    value: ZeroSecond = .ONE,
+
+    pub const _desc_table = .{ .value = protobuf.fd(1, .@"enum") };
+};
+
+test "editions: closed enums round-trip when zero is not their default" {
+    inline for (.{ ZeroSecond.ZERO, ZeroSecond.ONE }) |value| {
+        var w: std.Io.Writer.Allocating = .init(testing.allocator);
+        defer w.deinit();
+        try protobuf.encode(&w.writer, testing.allocator, ImplicitClosedEnum{ .value = value });
+
+        var reader: std.Io.Reader = .fixed(w.written());
+        const decoded = try protobuf.decode(ImplicitClosedEnum, &reader, testing.allocator);
+        try testing.expectEqual(value, decoded.value);
+    }
 }
 
 test "editions: repeated field encoding" {
@@ -166,4 +188,33 @@ test "editions 2026: runtime features keep the edition 2023 defaults" {
         0x22, 0x02, 0x01, 0x02, // numbers: LEN(4) [1, 2]
         0x2A, 0x02, 0x08, 0x01, // child: LEN(5) { a = 1 }
     }, bytes);
+}
+
+test "editions: JSON writes required fields holding zero" {
+    const msg: editions.Presence = .{ .required_int = 0 };
+    const json = try msg.jsonEncode(.{}, .{}, testing.allocator);
+    defer testing.allocator.free(json);
+    try testing.expectEqualStrings("{\"requiredInt\":0}", json);
+}
+
+test "editions: JSON round-trips a required closed enum of value zero" {
+    const msg: editions.RequiredEnum = .{ .value = .CZS_ZERO };
+    const json = try msg.jsonEncode(.{}, .{}, testing.allocator);
+    defer testing.allocator.free(json);
+    try testing.expectEqualStrings("{\"value\":\"CZS_ZERO\"}", json);
+
+    const parsed = try editions.RequiredEnum.jsonDecode(json, .{}, testing.allocator);
+    defer parsed.deinit();
+    try testing.expectEqual(.CZS_ZERO, parsed.value.value);
+}
+
+test "editions: negative lengths of repeated fields are rejected" {
+    // by_name (6), a repeated submessage, with a length of -1.
+    try testing.expectError(error.InvalidInput, decode(editions.Delimited, &.{
+        0x32, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01,
+    }));
+    // packed_ints (1), a packed repeated field, with a length of -1.
+    try testing.expectError(error.InvalidInput, decode(editions.Encoding, &.{
+        0x0A, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01,
+    }));
 }

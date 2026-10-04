@@ -13,7 +13,7 @@ pub const Color = enum(i32) {
 
 pub const Extendable = struct {
     regular: ?i32 = null,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .regular = fd(1, .{ .scalar = .int32 }),
@@ -398,7 +398,7 @@ pub const TwoOneofs = struct {
 };
 
 pub const MessageSet = struct {
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{};
 
@@ -565,5 +565,7 @@ pub const grouped = protobuf.Extension(Extendable, ?Grouped, fdf(104, .submessag
 
 pub const color = protobuf.Extension(Extendable, ?Color, fd(105, .@"enum"), "tests.extensions.color", null, .{});
 
+pub const ratio = protobuf.Extension(Extendable, ?f32, fd(106, .{ .scalar = .float }), "tests.extensions.ratio", null, .{});
+
 /// Extensions declared in this package, for `protobuf.ExtensionRegistry.init`.
-pub const extensions = .{ Scope.scoped, SetItem.item, number, text, packed_numbers, payload, grouped, color };
+pub const extensions = .{ Scope.scoped, SetItem.item, number, text, packed_numbers, payload, grouped, color, ratio };

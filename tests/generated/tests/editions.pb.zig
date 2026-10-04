@@ -25,6 +25,20 @@ pub const Open = enum(i32) {
     _,
 };
 
+/// Closed enum whose zero value is not its first value, and so not its default.
+pub const ClosedZeroSecond = enum(i32) {
+    CZS_ONE = 1,
+    CZS_ZERO = 0,
+
+    /// Options of the enum (`google.protobuf.EnumOptions`).
+    pub const _options = .{
+        .@"#raw" = ":\x02\x10\x02",
+        .features = .{
+            .enum_type = .CLOSED,
+        },
+    };
+};
+
 pub const Child = struct {
     a: ?i32 = null,
     s: ?[]const u8 = null,
@@ -404,6 +418,86 @@ pub const Encoding = struct {
             .@"#raw" = "\xaa\x01\x02 \x03",
             .features = .{
                 .utf8_validation = .NONE,
+            },
+        },
+    };
+
+    /// Encodes the message to the writer
+    /// The allocator is used to generate submessages internally.
+    /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
+    pub fn encode(
+        self: @This(),
+        writer: *std.Io.Writer,
+        allocator: std.mem.Allocator,
+    ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
+        return protobuf.encode(writer, allocator, self);
+    }
+
+    /// Decodes the message from the bytes read from the reader.
+    pub fn decode(
+        reader: *std.Io.Reader,
+        allocator: std.mem.Allocator,
+    ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
+        return protobuf.decode(@This(), reader, allocator);
+    }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
+    /// Deinitializes and frees the memory associated with the message.
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+        return protobuf.deinit(allocator, self);
+    }
+
+    /// Duplicates the message.
+    pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
+        return protobuf.dupe(@This(), self, allocator);
+    }
+
+    /// Decodes the message from the JSON string.
+    pub fn jsonDecode(
+        input: []const u8,
+        options: std.json.ParseOptions,
+        allocator: std.mem.Allocator,
+    ) !std.json.Parsed(@This()) {
+        return protobuf.json.decode(@This(), input, options, allocator);
+    }
+
+    /// Encodes the message to a JSON string.
+    pub fn jsonEncode(
+        self: @This(),
+        options: std.json.Stringify.Options,
+        pb_options: protobuf.json.Options,
+        allocator: std.mem.Allocator,
+    ) ![]const u8 {
+        return protobuf.json.encode(self, options, pb_options, allocator);
+    }
+
+    /// This method is used by std.json
+    /// internally for deserialization. DO NOT RENAME!
+    pub fn jsonParse(
+        allocator: std.mem.Allocator,
+        source: anytype,
+        options: std.json.ParseOptions,
+    ) !@This() {
+        return protobuf.json.parse(@This(), allocator, source, options);
+    }
+};
+
+pub const RequiredEnum = struct {
+    value: ClosedZeroSecond,
+
+    pub const _desc_table = .{
+        .value = fdf(1, .@"enum", .{ .legacy_required = true }),
+    };
+
+    /// Options of the fields that have some (`google.protobuf.FieldOptions`).
+    pub const _field_options = .{
+        .value = .{
+            .@"#raw" = "\xaa\x01\x02\x08\x03",
+            .features = .{
+                .field_presence = .LEGACY_REQUIRED,
             },
         },
     };

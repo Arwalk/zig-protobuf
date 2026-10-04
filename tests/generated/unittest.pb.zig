@@ -822,7 +822,7 @@ pub const TestReservedFields = struct {
 };
 
 pub const TestAllExtensions = struct {
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{};
 
@@ -969,7 +969,7 @@ pub const TestGroup = struct {
 };
 
 pub const TestGroupExtension = struct {
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{};
 
@@ -2065,7 +2065,7 @@ pub const TestEmptyMessage = struct {
 /// Like above, but declare all field numbers as potential extensions.  No
 /// actual extensions should ever be defined for this type.
 pub const TestEmptyMessageWithExtensions = struct {
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{};
 
@@ -2347,7 +2347,7 @@ pub const TestPickleNestedMessage = struct {
 };
 
 pub const TestMultipleExtensionRanges = struct {
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{};
 
@@ -3528,7 +3528,7 @@ pub const TestFieldOrderings = struct {
     my_int: ?i64 = null,
     my_float: ?f32 = null,
     optional_nested_message: ?TestFieldOrderings.NestedMessage = null,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .my_string = fd(11, .{ .scalar = .string }),
@@ -5648,7 +5648,7 @@ pub const TestUnpackedTypes = struct {
 };
 
 pub const TestPackedExtensions = struct {
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{};
 
@@ -5723,7 +5723,7 @@ pub const TestPackedExtensions = struct {
 };
 
 pub const TestUnpackedExtensions = struct {
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{};
 
@@ -6046,7 +6046,7 @@ pub const TestParsingMerge = struct {
     repeated_all_types: std.ArrayList(TestAllTypes) = .empty,
     optional_group_all_types: ?TestAllTypes = null,
     repeated_group_all_types: ?TestAllTypes = null,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .required_all_types = fdf(1, .submessage, .{ .legacy_required = true }),
@@ -6937,7 +6937,7 @@ pub const TestHugeFieldNumbers = struct {
     group_a: ?i32 = null,
     string_string_map: std.ArrayList(TestHugeFieldNumbers.StringStringMapEntry) = .empty,
     oneof_field: ?oneof_field_union = null,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _oneof_field_case = enum {
         oneof_uint32,
@@ -7124,7 +7124,7 @@ pub const TestExtensionInsideTable = struct {
     field8: ?i32 = null,
     field9: ?i32 = null,
     field10: ?i32 = null,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .field1 = fd(1, .{ .scalar = .int32 }),
@@ -7283,7 +7283,7 @@ pub const TestExtensionRangeSerialize = struct {
     foo_two: ?i32 = null,
     foo_three: ?i32 = null,
     foo_four: ?i32 = null,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .foo_one = fd(1, .{ .scalar = .int32 }),

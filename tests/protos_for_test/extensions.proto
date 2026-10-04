@@ -26,6 +26,7 @@ extend Extendable {
     optional int32 g = 1;
   }
   optional Color color = 105;
+  optional float ratio = 106;
 }
 
 message Scope {

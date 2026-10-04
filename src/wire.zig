@@ -826,6 +826,10 @@ pub fn decodeMessage(
                     if (tag.wire_type == .len) {
                         const len, const c = try decodeScalar(.int32, reader);
                         consumed += c;
+                        if (len < 0) {
+                            @branchHint(.cold);
+                            return error.InvalidInput;
+                        }
 
                         consumed += try decodeRepeated(
                             if (comptime field_ti == .optional)
@@ -877,6 +881,10 @@ pub fn decodeMessage(
                     const len: ?usize = if (tag.wire_type == .len) b: {
                         const len, const c = try decodeScalar(.int32, reader);
                         consumed += c;
+                        if (len < 0) {
+                            @branchHint(.cold);
+                            return error.InvalidInput;
+                        }
                         break :b @intCast(len);
                     } else null;
                     consumed += try decodeRepeated(
@@ -1269,9 +1277,9 @@ pub fn decodeMessage(
         try appendOwned(allocator, &result._unknown_fields, &unknown_buf);
     }
     if (comptime has_extensions) {
-        try appendOwned(allocator, &result._extensions, &extension_buf);
+        try appendOwned(allocator, &result._extensions.records, &extension_buf);
         if (options.extensions) |registry| {
-            try registry.validate(Result, result._extensions, allocator);
+            try registry.validate(Result, result._extensions.records, allocator);
         }
     }
     return consumed;

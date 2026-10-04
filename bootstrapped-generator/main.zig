@@ -1048,8 +1048,8 @@ const GenerationContext = struct {
                 }
             }
             if (m.extension_range.items.len > 0) {
-                // Raw wire records of the extensions, see `protobuf.Extension`.
-                try lines.append(allocator, "    _extensions: []const u8 = &.{},\n");
+                // Wire records of the extensions, see `protobuf.Extension`.
+                try lines.append(allocator, "    _extensions: protobuf.ExtensionSet = .empty,\n");
             }
             if (self.shouldPreserveUnknownFields(m)) {
                 try lines.append(allocator, "    _unknown_fields: []const u8 = &.{},\n");
@@ -1303,7 +1303,7 @@ const GenerationContext = struct {
             }
         }
         if (comptime @hasField(T, "_extensions")) {
-            if (try self.writeExtensionFields(allocator, w, descriptorFqn(T), message._extensions)) empty = false;
+            if (try self.writeExtensionFields(allocator, w, descriptorFqn(T), message._extensions.bytes())) empty = false;
         }
         try w.writeAll(if (empty) "}" else " }");
     }

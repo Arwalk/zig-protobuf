@@ -100,7 +100,7 @@ pub const TestAllTypesEditionUnstable = struct {
     optional_bytes: ?[]const u8 = null,
     repeated_bytes: std.ArrayList([]const u8) = .empty,
     map_string_bytes: std.ArrayList(TestAllTypesEditionUnstable.MapStringBytesEntry) = .empty,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
     _unknown_fields: []const u8 = &.{},
 
     pub const _desc_table = .{

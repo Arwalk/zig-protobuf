@@ -179,7 +179,7 @@ pub const TestAllTypesEdition2023 = struct {
     delimited_field: ?TestAllTypesEdition2023.GroupLikeType = null,
     map_recursive: std.ArrayList(TestAllTypesEdition2023.MapRecursiveEntry) = .empty,
     oneof_field: ?oneof_field_union = null,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
     _unknown_fields: []const u8 = &.{},
 
     pub const _oneof_field_case = enum {

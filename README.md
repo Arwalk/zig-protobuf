@@ -11,8 +11,6 @@ This repository implements [protocol buffers](https://protobuf.dev/) for `proto2
 This project is mature enough to be used in production. It passes the upstream
 [conformance suite](conformance/) (protobuf v36.2) for the proto2, proto3 and editions test messages, in binary and JSON. The text format is not supported.
 
-json encoding/decoding is considered a beta feature.
-
 ## Editions
 
 Editions replace the `syntax` keyword with fine grained *features*, which can be set for a
@@ -24,7 +22,7 @@ resolves the features of every element and maps them to Zig as follows:
 | --- | --- |
 | `field_presence = EXPLICIT` | optional field `?T = null`. The `[default = ...]` value is in `defaults`. Refer to [Default values](#default-values) |
 | `field_presence = IMPLICIT` | plain field `T` holding the zero value, which is not serialized |
-| `field_presence = LEGACY_REQUIRED` | plain field `T` without default, always serialized |
+| `field_presence = LEGACY_REQUIRED` | plain field `T`, always serialized. It has its `[default = ...]` value if it declares one |
 | `enum_type = OPEN` | non-exhaustive enum (`_`), unknown values are kept |
 | `enum_type = CLOSED` | exhaustive enum, unknown values are stored as unknown fields |
 | `repeated_field_encoding` | `.packed_repeated` or `.repeated` field descriptor |
@@ -49,7 +47,7 @@ in any protobuf release. To accept it, set `.experimental_editions = true` in th
 
 > **CAUTION:** This behavior is different from the behavior of previous versions.
 > Previous versions set optional fields to their `[default = ...]` value.
-> Examine your code before you update.
+> Examine your code before you update. Refer also to [Update from version 5](#update-from-version-5).
 
 ### Presence and value
 
@@ -121,6 +119,8 @@ To update your code, do these steps:
 2. Replace `msg.x.?` with `msg.x orelse Example.defaults.x`.
 3. Replace comparisons such as `msg.x == 5` with `(msg.x orelse Example.defaults.x) == 5`.
 
+This is not the only change in version 6.0.0. Refer to [Update from version 5](#update-from-version-5).
+
 ### Other fields
 
 * A field with implicit presence (proto3 `int32 x = 1;`) has no presence. Its default value is always zero. The encoder does not write the zero value.
@@ -131,10 +131,143 @@ To update your code, do these steps:
 
 `defaults` is a declaration of the message. Thus, a message must not have a field, oneof, message or enum with the name `defaults`. If it has one, the generator stops with an error.
 
+## Update from version 5
+
+Version 6.0.0 changes the generated code and some behavior of the library. Most of these changes
+do not cause a compile error: your code compiles, and then it behaves differently.
+
+To find what the update changes in your project, give
+[helper_prompts/MIGRATION_HELPER_PROMPT.md](helper_prompts/MIGRATION_HELPER_PROMPT.md) to a coding
+agent in your project. It reports the messages and the code at risk, and does not change your code.
+
+The change with the largest effect is in [Default values](#default-values). The other changes are
+below.
+
+### Enums of proto2 files
+
+An enum of a proto2 file is a closed enum. It is now an exhaustive Zig enum, without the `_` member.
+
+```zig
+// version 5                                      // version 6
+pub const Kind = enum(i32) { A = 1, B = 2, _ };   pub const Kind = enum(i32) { A = 1, B = 2 };
+```
+
+* A `switch` with a `_ =>` prong on such an enum does not compile. Remove the prong.
+* `@enumFromInt` with a number that the enum does not declare is illegal behavior.
+* The decoder does not store a number that the enum does not declare. A singular field stays
+  `null`, a repeated field does not get the element, and a oneof is not set. Version 5 stored the
+  number in the field.
+* With `preserve_unknown_fields`, the decoder keeps such a value in `_unknown_fields`, and the
+  encoder writes it again. Without this option, the value is lost.
+* The JSON parser refuses such a number with `error.InvalidEnumTag`. With
+  `ignore_unknown_fields`, an optional field becomes `null`.
+
+Enums of proto3 files do not change.
+
+### Strings of proto3 files
+
+The decoder checks that a `string` field of a proto3 or editions file is valid UTF-8. If it is
+not, decoding fails with `error.InvalidInput`. Version 5 accepted all bytes. Strings of proto2
+files are not checked. If a field holds binary data, change its type to `bytes`.
+
+### Maps of proto2 files
+
+The key and the value of a map entry are plain fields, as in proto3 files. They were optional
+fields. A message value stays optional.
+
+```zig
+// version 5                    // version 6
+key: ?[]const u8 = null,        key: []const u8 = &.{},
+value: ?i32 = null,             value: i32 = 0,
+```
+
+Remove `.?` and `if (entry.value) |v|` on these fields. The encoder does not write a key or a
+value that is zero.
+
+### Messages with extension ranges
+
+A message with `extensions N to M;` has a new field, `_extensions`. Refer to
+[Extensions](#extensions).
+
+* The decoder keeps the fields of these ranges in `_extensions`, and the encoder writes them
+  again. Version 5 dropped them, or kept them in `_unknown_fields` with `preserve_unknown_fields`.
+* Code that goes through the fields of a message (`std.meta.fields`) finds this field. It has no
+  entry in `_desc_table`, as `_unknown_fields`.
+
+### Messages with more than one oneof
+
+Version 5 could drop the fields of the second oneof of a message, and of the oneofs after it,
+during decoding. Version 6 decodes them. Remove the code that you wrote to go around this problem.
+
+### Unknown fields
+
+These changes apply to bindings generated with `preserve_unknown_fields`.
+
+* The decoder keeps unknown groups. Version 5 lost them.
+* The decoder adds to the `_unknown_fields` of a message that already has some. Version 5
+  replaced them.
+
+### Decoding of incorrect input
+
+The decoder now refuses this input with `error.InvalidInput`:
+
+* A tag longer than 5 bytes, or with a value above 32 bits.
+* A negative length for a repeated or a packed field. Version 5 stopped with a panic.
+* A group without its end tag.
+
+The `StreamDecoder` skips a value that a closed enum does not declare. It returned
+`error.InvalidInput`.
+
+### JSON
+
+* The encoder always writes a required field, also when its value is zero.
+* The encoder does not write an optional field with a default value that is not set. Refer to
+  [Default values](#default-values).
+* The parser refuses a number that a closed enum does not declare. Refer to
+  [Enums of proto2 files](#enums-of-proto2-files).
+
+### Build
+
+* The library downloads `protoc` 36.2. It was 32.1. If you give your own `protoc`, it must know
+  the editions of your files.
+* If `protoc` fails, the build step fails.
+
+### Descriptors that you write
+
+`protobuf.fd` and your `_desc_table` declarations compile as before.
+
+* The default value of an enum is its first value, for the initial value of a field and for the
+  encoder. It was zero.
+* An exhaustive enum does not make the decoder fail on a number that it does not declare. Refer
+  to [Enums of proto2 files](#enums-of-proto2-files).
+* Use `field.toWire()`, not `field.ftype.toWire()`. The first one knows groups.
+* `protobuf.fdf` makes a descriptor with features (required, delimited, UTF-8 validation).
+
+### Changes after the 5.0.0 release
+
+The `master` branch had these changes before version 6.0.0. They apply to you if you used the
+5.0.0 release.
+
+* JSON follows the protobuf JSON format:
+  * A map is a JSON object. It was a list of `key` and `value` objects, which the parser now refuses.
+  * A 64-bit integer is a string. The parser accepts a number or a string.
+  * A field name keeps the case of its first character: `APIVersion`, not `aPIVersion`.
+  * The encoder does not write a field with implicit presence that holds the zero value.
+  * The well-known types have their special form: `Timestamp` and `Duration` are strings,
+    wrappers are plain values, `Struct` and `Value` are plain JSON.
+  * An `Any` with a `type_url` needs `protobuf.wkt.any_json_resolver`.
+* The well-known types of `google.protobuf` are declarations of `protobuf.wkt`. `Value` has no
+  `_kind_case` declaration.
+* A message field with the type of a message that contains it is a pointer (`?*T`).
+* The encoder writes a repeated enum field of a proto3 file in the packed format.
+* The generator refuses parameters that it does not know.
+
 ## Extensions
 
-A message that declares extension ranges keeps its extensions in `_extensions`, as raw wire
-data. They are encoded again as they were decoded, without any setup. Each extension is a
+A message that declares extension ranges keeps its extensions in `_extensions`, a
+`protobuf.ExtensionSet` of wire records. They are encoded again as they were decoded, without
+any setup. The set only holds well-formed records: plain bytes cannot be assigned to it, and
+`protobuf.ExtensionSet.fromBytes` validates the bytes it copies. Each extension is a
 generated `protobuf.Extension` declaration, in the scope (file or message) that declares it:
 
 ```proto

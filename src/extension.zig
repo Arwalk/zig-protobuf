@@ -1,7 +1,7 @@
 //! Protobuf extensions.
 //!
 //! A message that declares extension ranges (`extensions 100 to 199;`) stores
-//! its extension fields in `_extensions`, as raw wire records. Each generated
+//! its extension fields in `_extensions`, an `ExtensionSet`. Each generated
 //! extension is an `Extension` type, which gives typed access to one of them:
 //!
 //! ```zig
@@ -20,6 +20,42 @@ const wire = @import("wire.zig");
 const json = @import("json.zig");
 
 pub const DecodeError = protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error;
+
+/// The extensions of a message: the type of its `_extensions` field.
+///
+/// The records are always well-formed, as they only come from the decoder,
+/// from `Extension.set` and from `fromBytes`, which validates them. Plain
+/// bytes cannot be assigned to `_extensions`; do not write `records` directly.
+pub const ExtensionSet = struct {
+    /// Owned wire records (tag and value of each extension field).
+    records: []const u8 = &.{},
+
+    pub const empty: ExtensionSet = .{};
+
+    /// Makes a set from a copy of `encoded` wire records, such as the bytes
+    /// of another set. Fails with `error.InvalidInput` when they are malformed.
+    pub fn fromBytes(allocator: std.mem.Allocator, encoded: []const u8) (std.mem.Allocator.Error || error{InvalidInput})!ExtensionSet {
+        var it: RecordIterator = .init(encoded);
+        while (it.next() catch return error.InvalidInput) |_| {}
+        if (encoded.len == 0) return .empty;
+        return .{ .records = try allocator.dupe(u8, encoded) };
+    }
+
+    /// The wire records of the extensions.
+    pub fn bytes(self: ExtensionSet) []const u8 {
+        return self.records;
+    }
+
+    pub fn dupe(self: ExtensionSet, allocator: std.mem.Allocator) std.mem.Allocator.Error!ExtensionSet {
+        if (self.records.len == 0) return .empty;
+        return .{ .records = try allocator.dupe(u8, self.records) };
+    }
+
+    pub fn deinit(self: *ExtensionSet, allocator: std.mem.Allocator) void {
+        if (self.records.len > 0) allocator.free(self.records);
+        self.* = .empty;
+    }
+};
 
 /// Describes the extension `full_name` of the message `Extendee_`.
 ///
@@ -76,7 +112,7 @@ pub fn Extension(
         /// Returns the value of the extension. The caller owns the value and
         /// frees it with `deinitValue`.
         pub fn get(msg: Extendee_, allocator: std.mem.Allocator) DecodeError!Value_ {
-            return decodeValue(msg._extensions, allocator, null);
+            return decodeValue(msg._extensions.records, allocator, null);
         }
 
         /// Returns the value of the extension from an encoded `Extendee`, such
@@ -89,7 +125,7 @@ pub fn Extension(
 
         /// Whether the extension is set in `msg`.
         pub fn has(msg: Extendee_) bool {
-            return containsField(msg._extensions, field_number);
+            return containsField(msg._extensions.records, field_number);
         }
 
         /// Sets the extension of `msg` to a copy of `value`.
@@ -131,15 +167,16 @@ pub fn Extension(
             deinitValue(&value, allocator);
         }
 
-        fn toJson(records: []const u8, allocator: std.mem.Allocator, json_options: json.Options) anyerror![]const u8 {
+        fn toJson(records: []const u8, allocator: std.mem.Allocator, json_options: json.Options) anyerror!?[]const u8 {
             var holder: Holder = .{ .value = try decodeValue(records, allocator, json_options.extensions) };
             defer protobuf.deinit(allocator, &holder);
-            // Minified, the holder is `{"value":<extension value>}`.
+            // Minified, the holder is `{"value":<extension value>}`, or `{}`
+            // for a repeated extension without elements.
             const text = try json.encode(holder, .{}, json_options, allocator);
             defer allocator.free(text);
             const prefix = "{\"value\":";
-            if (!std.mem.startsWith(u8, text, prefix)) return error.WriteFailed;
-            return allocator.dupe(u8, text[prefix.len .. text.len - 1]);
+            if (!std.mem.startsWith(u8, text, prefix)) return null;
+            return try allocator.dupe(u8, text[prefix.len .. text.len - 1]);
         }
 
         fn fromJson(value_json: []const u8, allocator: std.mem.Allocator, parse_options: std.json.ParseOptions) anyerror![]const u8 {
@@ -168,6 +205,7 @@ pub fn Extension(
 /// Set of known extensions, used to validate them when decoding and to
 /// encode or decode them as JSON.
 pub const ExtensionRegistry = struct {
+    /// Sorted by extendee, then by field number, as `init` does.
     entries: []const Entry,
 
     pub const Entry = struct {
@@ -177,10 +215,27 @@ pub const ExtensionRegistry = struct {
         full_name: []const u8,
         /// Decodes the extension from the extension records of a message.
         validate: *const fn (records: []const u8, allocator: std.mem.Allocator, registry: *const ExtensionRegistry) DecodeError!void,
-        /// Returns the JSON value of the extension, which must be set.
-        to_json: *const fn (records: []const u8, allocator: std.mem.Allocator, options: json.Options) anyerror![]const u8,
+        /// Returns the JSON value of the extension, which must be set, or
+        /// null when it has no value to write (an empty repeated extension).
+        to_json: *const fn (records: []const u8, allocator: std.mem.Allocator, options: json.Options) anyerror!?[]const u8,
         /// Returns the wire records of the extension from its JSON value.
         from_json: *const fn (value_json: []const u8, allocator: std.mem.Allocator, options: std.json.ParseOptions) anyerror![]const u8,
+
+        fn lessThan(_: void, a: Entry, b: Entry) bool {
+            return switch (std.mem.order(u8, a.extendee, b.extendee)) {
+                .lt => true,
+                .gt => false,
+                .eq => a.field_number < b.field_number,
+            };
+        }
+
+        fn orderExtendee(extendee: []const u8, entry: Entry) std.math.Order {
+            return std.mem.order(u8, extendee, entry.extendee);
+        }
+
+        fn orderFieldNumber(field_number: u29, entry: Entry) std.math.Order {
+            return std.math.order(field_number, entry.field_number);
+        }
     };
 
     /// Builds a registry from a tuple of `Extension` types, such as the
@@ -190,23 +245,35 @@ pub const ExtensionRegistry = struct {
         const entries = comptime blk: {
             var list: [extensions.len]Entry = undefined;
             for (extensions, 0..) |ext, i| list[i] = ext.registry_entry;
+            @setEvalBranchQuota(1000 + 1000 * list.len * (std.math.log2_int_ceil(usize, list.len + 1) + 1));
+            std.mem.sort(Entry, &list, {}, Entry.lessThan);
             break :blk list;
         };
         return .{ .entries = &entries };
     }
 
+    /// Returns the known extensions of `Extendee`, sorted by field number.
+    pub fn of(self: *const ExtensionRegistry, comptime Extendee: type) []const Entry {
+        const start, const end = std.sort.equalRange(
+            Entry,
+            self.entries,
+            @as([]const u8, @typeName(Extendee)),
+            Entry.orderExtendee,
+        );
+        return self.entries[start..end];
+    }
+
     /// Returns the extension `field_number` of `Extendee`, if known.
     pub fn find(self: *const ExtensionRegistry, comptime Extendee: type, field_number: u29) ?*const Entry {
-        for (self.entries) |*entry| {
-            if (entry.field_number == field_number and std.mem.eql(u8, entry.extendee, @typeName(Extendee))) return entry;
-        }
-        return null;
+        const known = self.of(Extendee);
+        const index = std.sort.binarySearch(Entry, known, field_number, Entry.orderFieldNumber) orelse return null;
+        return &known[index];
     }
 
     /// Returns the extension of `Extendee` with the given full name, if known.
     pub fn findByName(self: *const ExtensionRegistry, comptime Extendee: type, full_name: []const u8) ?*const Entry {
-        for (self.entries) |*entry| {
-            if (std.mem.eql(u8, entry.full_name, full_name) and std.mem.eql(u8, entry.extendee, @typeName(Extendee))) return entry;
+        for (self.of(Extendee)) |*entry| {
+            if (std.mem.eql(u8, entry.full_name, full_name)) return entry;
         }
         return null;
     }
@@ -214,13 +281,40 @@ pub const ExtensionRegistry = struct {
     /// Validates the known extensions of a decoded message of type `Extendee`.
     pub fn validate(self: *const ExtensionRegistry, comptime Extendee: type, records: []const u8, allocator: std.mem.Allocator) DecodeError!void {
         if (records.len == 0) return;
-        for (self.entries) |*entry| {
-            if (!std.mem.eql(u8, entry.extendee, @typeName(Extendee))) continue;
-            if (!containsField(records, entry.field_number)) continue;
-            try entry.validate(records, allocator, self);
-        }
+        const known = self.of(Extendee);
+        if (known.len == 0) return;
+
+        var fallback = std.heap.stackFallback(64, allocator);
+        const bits_allocator = fallback.get();
+        var present = try presentEntries(bits_allocator, known, records);
+        defer present.deinit(bits_allocator);
+        var it = present.iterator(.{});
+        while (it.next()) |index| try known[index].validate(records, allocator, self);
     }
 };
+
+/// Returns which of the `known` extensions, sorted by field number, are set
+/// in `records`. The records are only read once, whatever the number of known
+/// extensions.
+pub fn presentEntries(
+    allocator: std.mem.Allocator,
+    known: []const ExtensionRegistry.Entry,
+    records: []const u8,
+) (std.mem.Allocator.Error || protobuf.DecodingError || std.Io.Reader.Error)!std.DynamicBitSetUnmanaged {
+    var present: std.DynamicBitSetUnmanaged = try .initEmpty(allocator, known.len);
+    errdefer present.deinit(allocator);
+    var it: RecordIterator = .init(records);
+    while (try it.next()) |record| {
+        const index = std.sort.binarySearch(
+            ExtensionRegistry.Entry,
+            known,
+            record.tag.field,
+            ExtensionRegistry.Entry.orderFieldNumber,
+        ) orelse continue;
+        present.set(index);
+    }
+    return present;
+}
 
 /// Whether the extensions of `T` are encoded in the legacy MessageSet format.
 /// Messages with extension ranges declare `_extensions_info`:
@@ -239,7 +333,7 @@ pub const Record = struct {
     value: []const u8,
 };
 
-/// Iterates the fields of wire records, such as `_extensions`.
+/// Iterates the fields of wire records, such as those of an `ExtensionSet`.
 pub const RecordIterator = struct {
     reader: std.Io.Reader,
 
@@ -267,32 +361,35 @@ pub fn containsField(records: []const u8, field_number: u29) bool {
     return false;
 }
 
-/// Replaces the fields `field_number` of the owned `records` by `new`.
+/// Replaces the fields `field_number` of `set` by the well-formed records `new`.
 pub fn replaceField(
     allocator: std.mem.Allocator,
-    records: *[]const u8,
+    set: *ExtensionSet,
     field_number: u29,
     new: []const u8,
 ) std.mem.Allocator.Error!void {
+    const records = &set.records;
     var result: std.ArrayList(u8) = .empty;
-    errdefer result.deinit(allocator);
+    defer result.deinit(allocator);
     var it: RecordIterator = .init(records.*);
-    // Records are well-formed, as they were produced by the decoder or `set`.
-    while (it.next() catch null) |record| {
+    // The records of an `ExtensionSet` are well-formed.
+    while (it.next() catch unreachable) |record| {
         if (record.tag.field != field_number) try result.appendSlice(allocator, record.bytes);
     }
     try result.appendSlice(allocator, new);
 
+    // The old records are only freed once nothing can fail anymore.
+    const replaced: []const u8 = if (result.items.len > 0) try result.toOwnedSlice(allocator) else &.{};
     if (records.len > 0) allocator.free(records.*);
-    records.* = if (result.items.len > 0) try result.toOwnedSlice(allocator) else &.{};
-    result.deinit(allocator);
+    records.* = replaced;
 }
 
-/// Writes extension records in MessageSet format: each length-delimited
-/// record becomes an item group holding its type id and message.
-pub fn writeMessageSet(writer: *std.Io.Writer, records: []const u8) std.Io.Writer.Error!void {
-    var it: RecordIterator = .init(records);
-    while (it.next() catch null) |record| {
+/// Writes extensions in MessageSet format: each length-delimited record
+/// becomes an item group holding its type id and message.
+pub fn writeMessageSet(writer: *std.Io.Writer, set: ExtensionSet) std.Io.Writer.Error!void {
+    var it: RecordIterator = .init(set.records);
+    // The records of an `ExtensionSet` are well-formed.
+    while (it.next() catch unreachable) |record| {
         if (record.tag.wire_type != .len) {
             try writer.writeAll(record.bytes);
             continue;

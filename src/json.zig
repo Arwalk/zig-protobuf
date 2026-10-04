@@ -270,9 +270,9 @@ fn parseExtension(
     if (name.len < 2 or name[0] != '[' or name[name.len - 1] != ']') return false;
     const entry = registry.findByName(Self, name[1 .. name.len - 1]) orelse return false;
 
-    const value = try std.json.innerParse(std.json.Value, allocator, source, options);
-    const text = std.json.Stringify.valueAlloc(allocator, value, .{}) catch return error.OutOfMemory;
-    defer allocator.free(text);
+    var arena: std.heap.ArenaAllocator = .init(allocator);
+    defer arena.deinit();
+    const text = try nextValueText(arena.allocator(), source, options);
     const records = entry.from_json(text, allocator, options) catch |err| switch (err) {
         error.OutOfMemory => return error.OutOfMemory,
         else => return error.UnexpectedToken,
@@ -280,6 +280,21 @@ fn parseExtension(
     defer allocator.free(records);
     try protobuf.extension.replaceField(allocator, &result._extensions, entry.field_number, records);
     return true;
+}
+
+/// Consumes the next value of `source` and returns its JSON text, which is
+/// either part of the input or allocated with `arena`.
+fn nextValueText(arena: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) ![]const u8 {
+    if (@TypeOf(source.*) == std.json.Scanner and source.is_end_of_input) {
+        // The scanner holds the whole input: the value is used as written.
+        _ = try source.peekNextTokenType(); // Moves to the start of the value.
+        const start = source.cursor;
+        try source.skipValue();
+        return source.input[start..source.cursor];
+    }
+    // Streamed input is not kept, so the value is parsed and written back.
+    const value = try std.json.innerParse(std.json.Value, arena, source, options);
+    return std.json.Stringify.valueAlloc(arena, value, .{}) catch return error.OutOfMemory;
 }
 
 /// Writes the known extensions set in `records` as `"[full.name]": value`.
@@ -292,11 +307,17 @@ fn writeExtensions(
 ) !void {
     if (records.len == 0) return;
     const allocator = protobuf.wkt.tl_any_alloc orelse return error.WriteFailed;
-    for (registry.entries) |entry| {
-        if (!std.mem.eql(u8, entry.extendee, @typeName(Self))) continue;
-        if (!protobuf.extension.containsField(records, entry.field_number)) continue;
+    const known = registry.of(Self);
+    if (known.len == 0) return;
 
-        const text = entry.to_json(records, allocator, opts) catch return error.WriteFailed;
+    var fallback = std.heap.stackFallback(64, allocator);
+    const bits_allocator = fallback.get();
+    var present = protobuf.extension.presentEntries(bits_allocator, known, records) catch return error.WriteFailed;
+    defer present.deinit(bits_allocator);
+    var it = present.iterator(.{});
+    while (it.next()) |index| {
+        const entry = known[index];
+        const text = (entry.to_json(records, allocator, opts) catch return error.WriteFailed) orelse continue;
         defer allocator.free(text);
         const key = std.fmt.allocPrint(allocator, "[{s}]", .{entry.full_name}) catch return error.WriteFailed;
         defer allocator.free(key);
@@ -379,12 +400,13 @@ fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std
         const is_oneof = @as(std.meta.Tag(@TypeOf(descriptor.ftype)), descriptor.ftype) == .oneof;
 
         const field_value = @field(self, fieldInfo.name);
-        const field_present = switch (@typeInfo(fieldInfo.type)) {
+        // Required fields are always written, even when holding zero.
+        const field_present = descriptor.features.legacy_required or switch (@typeInfo(fieldInfo.type)) {
             .optional => field_value != null,
             // For non-optional fields, skip if value is proto3 default.
             .bool => field_value,
             .int, .float => field_value != 0,
-            .@"enum" => @intFromEnum(field_value) != 0,
+            .@"enum" => field_value != comptime protobuf.enumDefault(fieldInfo.type),
             .pointer => |ptr| if (ptr.size == .slice) field_value.len != 0 else true,
             .@"struct" => blk: {
                 // ArrayList (repeated/map/packed_repeated): skip when empty.
@@ -415,7 +437,7 @@ fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std
 
     if (comptime @hasField(Self, "_extensions")) {
         if (opts.extensions) |registry| {
-            try writeExtensions(Self, self._extensions, jws, opts, registry);
+            try writeExtensions(Self, self._extensions.records, jws, opts, registry);
         }
     }
 

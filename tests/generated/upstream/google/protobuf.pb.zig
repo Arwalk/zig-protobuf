@@ -41,7 +41,7 @@ pub const SymbolVisibility = enum(i32) {
 /// files it parses.
 pub const FileDescriptorSet = struct {
     file: std.ArrayList(FileDescriptorProto) = .empty,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .file = fd(1, .{ .repeated = .submessage }),
@@ -459,7 +459,7 @@ pub const ExtensionRangeOptions = struct {
     declaration: std.ArrayList(ExtensionRangeOptions.Declaration) = .empty,
     features: ?FeatureSet = null,
     verification: ?ExtensionRangeOptions.VerificationState = null,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
@@ -1237,7 +1237,7 @@ pub const FileOptions = struct {
     ruby_package: ?[]const u8 = null,
     features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .java_package = fd(1, .{ .scalar = .string }),
@@ -1361,7 +1361,7 @@ pub const MessageOptions = struct {
     deprecated_legacy_json_field_conflicts: ?bool = null,
     features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .message_set_wire_format = fd(1, .{ .scalar = .bool }),
@@ -1466,7 +1466,7 @@ pub const FieldOptions = struct {
     features: ?FeatureSet = null,
     feature_support: ?FieldOptions.FeatureSupport = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .ctype = fd(1, .@"enum"),
@@ -1756,7 +1756,7 @@ pub const FieldOptions = struct {
 pub const OneofOptions = struct {
     features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .features = fd(1, .submessage),
@@ -1840,7 +1840,7 @@ pub const EnumOptions = struct {
     deprecated_legacy_json_field_conflicts: ?bool = null,
     features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .allow_alias = fd(2, .{ .scalar = .bool }),
@@ -1932,7 +1932,7 @@ pub const EnumValueOptions = struct {
     debug_redact: ?bool = null,
     feature_support: ?FieldOptions.FeatureSupport = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .deprecated = fd(1, .{ .scalar = .bool }),
@@ -2023,7 +2023,7 @@ pub const ServiceOptions = struct {
     features: ?FeatureSet = null,
     deprecated: ?bool = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .features = fd(34, .submessage),
@@ -2112,7 +2112,7 @@ pub const MethodOptions = struct {
     idempotency_level: ?MethodOptions.IdempotencyLevel = null,
     features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .deprecated = fd(33, .{ .scalar = .bool }),
@@ -2388,7 +2388,7 @@ pub const FeatureSet = struct {
     enforce_naming_style: ?FeatureSet.EnforceNamingStyle = null,
     default_symbol_visibility: ?FeatureSet.VisibilityFeature.DefaultSymbolVisibility = null,
     enforce_proto_limits: ?FeatureSet.ProtoLimitsFeature.EnforceProtoLimits = null,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .field_presence = fd(1, .@"enum"),
@@ -2824,7 +2824,7 @@ pub const FeatureSetDefaults = struct {
 /// FileDescriptorProto was generated.
 pub const SourceCodeInfo = struct {
     location: std.ArrayList(SourceCodeInfo.Location) = .empty,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .location = fd(1, .{ .repeated = .submessage }),

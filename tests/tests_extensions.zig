@@ -90,7 +90,7 @@ test "extensions: fields outside the extension ranges are not extensions" {
     // Field 50 is neither a field nor in an extension range; field 100 is.
     var decoded = try decode(ext.Extendable, &.{ 0x90, 0x03, 0x01, 0xA0, 0x06, 0x05 }, .{});
     defer decoded.deinit(testing.allocator);
-    try testing.expectEqualSlices(u8, &.{ 0xA0, 0x06, 0x05 }, decoded._extensions);
+    try testing.expectEqualSlices(u8, &.{ 0xA0, 0x06, 0x05 }, decoded._extensions.bytes());
     try testing.expectEqual(5, (try ext.number.get(decoded, testing.allocator)).?);
 }
 
@@ -173,4 +173,70 @@ test "two oneofs: fields of the second oneof are decoded" {
     defer decoded.deinit(testing.allocator);
     try testing.expectEqual(1, decoded.first.?.a);
     try testing.expectEqual(2, decoded.second.?.c);
+}
+
+test "extensions: JSON skips empty repeated extensions" {
+    // packed_numbers (102) as an empty LEN record.
+    var msg = try decode(ext.Extendable, &.{ 0xB2, 0x06, 0x00 }, .{});
+    defer msg.deinit(testing.allocator);
+    try testing.expect(ext.packed_numbers.has(msg));
+
+    const json = try msg.jsonEncode(.{}, .{ .extensions = &registry }, testing.allocator);
+    defer testing.allocator.free(json);
+    try testing.expectEqualStrings("{}", json);
+}
+
+test "extensions: a failed set leaves the extensions unchanged" {
+    var fail_index: usize = 0;
+    while (true) : (fail_index += 1) {
+        var failing: testing.FailingAllocator = .init(testing.allocator, .{ .fail_index = fail_index });
+
+        var msg: ext.Extendable = .{};
+        defer msg.deinit(testing.allocator);
+        try ext.number.set(&msg, testing.allocator, 7);
+
+        ext.Scope.scoped.set(&msg, failing.allocator(), -1) catch {
+            try testing.expectEqualSlices(u8, &.{ 0xA0, 0x06, 0x07 }, msg._extensions.bytes());
+            continue;
+        };
+        break;
+    }
+    // The allocation of the new records is one of those that failed.
+    try testing.expect(fail_index >= 2);
+}
+
+test "extensions: JSON values are parsed as they are written" {
+    // Slightly below the midpoint of two consecutive floats, so the nearest
+    // float is the lower one. Read as a double first, it becomes the midpoint,
+    // which is then written back as a number above it.
+    const json = "{\"[tests.extensions.ratio]\":1.00000005960464477539062}";
+    const parsed = try protobuf.json.decodeWithOptions(ext.Extendable, json, .{}, .{ .extensions = &registry }, testing.allocator);
+    defer parsed.deinit();
+    try testing.expectEqual(1.0, (try ext.ratio.get(parsed.value, testing.allocator)).?);
+}
+
+test "extensions: a set only accepts well-formed records" {
+    // number (100) = 7.
+    var msg: ext.Extendable = .{ ._extensions = try .fromBytes(testing.allocator, &.{ 0xA0, 0x06, 0x07 }) };
+    defer msg.deinit(testing.allocator);
+    try testing.expectEqual(7, (try ext.number.get(msg, testing.allocator)).?);
+
+    // A value cut short, a length past the end and an invalid wire type.
+    try testing.expectError(error.InvalidInput, protobuf.ExtensionSet.fromBytes(testing.allocator, &.{ 0xA0, 0x06 }));
+    try testing.expectError(error.InvalidInput, protobuf.ExtensionSet.fromBytes(testing.allocator, &.{ 0xA2, 0x06, 0x05, 0x01 }));
+    try testing.expectError(error.InvalidInput, protobuf.ExtensionSet.fromBytes(testing.allocator, &.{ 0xA7, 0x06 }));
+
+    // Plain bytes are not a set.
+    try testing.expect(@FieldType(ext.Extendable, "_extensions") == protobuf.ExtensionSet);
+}
+
+test "extensions: dupe copies the extensions" {
+    var msg: ext.Extendable = .{};
+    defer msg.deinit(testing.allocator);
+    try ext.number.set(&msg, testing.allocator, 7);
+
+    var copy = try msg.dupe(testing.allocator);
+    defer copy.deinit(testing.allocator);
+    try ext.number.set(&msg, testing.allocator, 8);
+    try testing.expectEqual(7, (try ext.number.get(copy, testing.allocator)).?);
 }
