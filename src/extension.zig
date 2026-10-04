@@ -277,7 +277,7 @@ pub fn replaceField(
     new: []const u8,
 ) std.mem.Allocator.Error!void {
     var result: std.ArrayList(u8) = .empty;
-    errdefer result.deinit(allocator);
+    defer result.deinit(allocator);
     var it: RecordIterator = .init(records.*);
     // Records are well-formed, as they were produced by the decoder or `set`.
     while (it.next() catch null) |record| {
@@ -285,9 +285,10 @@ pub fn replaceField(
     }
     try result.appendSlice(allocator, new);
 
+    // The old records are only freed once nothing can fail anymore.
+    const replaced: []const u8 = if (result.items.len > 0) try result.toOwnedSlice(allocator) else &.{};
     if (records.len > 0) allocator.free(records.*);
-    records.* = if (result.items.len > 0) try result.toOwnedSlice(allocator) else &.{};
-    result.deinit(allocator);
+    records.* = replaced;
 }
 
 /// Writes extension records in MessageSet format: each length-delimited
