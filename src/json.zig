@@ -11,6 +11,9 @@ pub const Options = struct {
     /// - `false`: emits oneof variants as flat fields in the parent object.
     ///   Example: `{"stringInOneof":"x"}` — this matches the protobuf JSON spec.
     emit_oneof_field_name: bool = true,
+    /// Known extensions, written as `"[full.name]": value`. Other extensions
+    /// are not written, as their name and type are unknown.
+    extensions: ?*const protobuf.ExtensionRegistry = null,
 };
 
 pub fn parse(
@@ -228,6 +231,14 @@ pub fn parse(
                 }
             }
             if (!matched_as_flat_oneof) {
+                if (comptime @hasField(Self, "_extensions")) {
+                    if (try parseExtension(Self, &result, field_name, allocator, source, options)) {
+                        freeAllocated(allocator, name_token.?);
+                        // Keeps the extensions from being reset to the default.
+                        fields_seen[comptime std.meta.fieldIndex(Self, "_extensions").?] = true;
+                        continue;
+                    }
+                }
                 freeAllocated(allocator, name_token.?);
                 if (options.ignore_unknown_fields) {
                     try source.skipValue();
@@ -239,6 +250,97 @@ pub fn parse(
     }
     try fillDefaultStructValues(Self, &result, &fields_seen);
     return result;
+}
+
+/// Extensions known while parsing JSON. `jsonParse` cannot carry extra
+/// state, so `decodeWithOptions` sets them for the current thread.
+threadlocal var tl_extensions: ?*const protobuf.ExtensionRegistry = null;
+
+/// Parses the value of the key `name` as an extension of `Self`, if `name` is
+/// the `[full.name]` of a known extension. Returns whether it did.
+fn parseExtension(
+    comptime Self: type,
+    result: *Self,
+    name: []const u8,
+    allocator: std.mem.Allocator,
+    source: anytype,
+    options: std.json.ParseOptions,
+) !bool {
+    const registry = tl_extensions orelse return false;
+    if (name.len < 2 or name[0] != '[' or name[name.len - 1] != ']') return false;
+    const entry = registry.findByName(Self, name[1 .. name.len - 1]) orelse return false;
+
+    var arena: std.heap.ArenaAllocator = .init(allocator);
+    defer arena.deinit();
+    const text = try nextValueText(arena.allocator(), source, options);
+    const records = entry.from_json(text, allocator, options) catch |err| switch (err) {
+        error.OutOfMemory => return error.OutOfMemory,
+        else => return error.UnexpectedToken,
+    };
+    defer allocator.free(records);
+    try protobuf.extension.replaceField(allocator, &result._extensions, entry.field_number, records);
+    return true;
+}
+
+/// Consumes the next value of `source` and returns its JSON text, which is
+/// either part of the input or allocated with `arena`.
+fn nextValueText(arena: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) ![]const u8 {
+    if (@TypeOf(source.*) == std.json.Scanner and source.is_end_of_input) {
+        // The scanner holds the whole input: the value is used as written.
+        _ = try source.peekNextTokenType(); // Moves to the start of the value.
+        const start = source.cursor;
+        try source.skipValue();
+        return source.input[start..source.cursor];
+    }
+    // Streamed input is not kept, so the value is parsed and written back.
+    const value = try std.json.innerParse(std.json.Value, arena, source, options);
+    return std.json.Stringify.valueAlloc(arena, value, .{}) catch return error.OutOfMemory;
+}
+
+/// Writes the known extensions set in `records` as `"[full.name]": value`.
+fn writeExtensions(
+    comptime Self: type,
+    records: []const u8,
+    jws: anytype,
+    opts: Options,
+    registry: *const protobuf.ExtensionRegistry,
+) !void {
+    if (records.len == 0) return;
+    const allocator = protobuf.wkt.tl_any_alloc orelse return error.WriteFailed;
+    const known = registry.of(Self);
+    if (known.len == 0) return;
+
+    var fallback = std.heap.stackFallback(64, allocator);
+    const bits_allocator = fallback.get();
+    var present = protobuf.extension.presentEntries(bits_allocator, known, records) catch return error.WriteFailed;
+    defer present.deinit(bits_allocator);
+    var it = present.iterator(.{});
+    while (it.next()) |index| {
+        const entry = known[index];
+        const text = (entry.to_json(records, allocator, opts) catch return error.WriteFailed) orelse continue;
+        defer allocator.free(text);
+        const key = std.fmt.allocPrint(allocator, "[{s}]", .{entry.full_name}) catch return error.WriteFailed;
+        defer allocator.free(key);
+        try jws.objectField(key);
+        try jws.beginWriteRaw();
+        try jws.writer.writeAll(text);
+        jws.endWriteRaw();
+    }
+}
+
+/// Like `decode`, with protobuf specific options: `[full.name]` keys of the
+/// known extensions are decoded as extensions.
+pub fn decodeWithOptions(
+    comptime T: type,
+    input: []const u8,
+    options: std.json.ParseOptions,
+    pb_options: protobuf.DecodeOptions,
+    allocator: std.mem.Allocator,
+) !std.json.Parsed(T) {
+    const previous = tl_extensions;
+    tl_extensions = pb_options.extensions;
+    defer tl_extensions = previous;
+    return decode(T, input, options, allocator);
 }
 
 pub fn decode(
@@ -298,12 +400,13 @@ fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std
         const is_oneof = @as(std.meta.Tag(@TypeOf(descriptor.ftype)), descriptor.ftype) == .oneof;
 
         const field_value = @field(self, fieldInfo.name);
-        const field_present = switch (@typeInfo(fieldInfo.type)) {
+        // Required fields are always written, even when holding zero.
+        const field_present = descriptor.features.legacy_required or switch (@typeInfo(fieldInfo.type)) {
             .optional => field_value != null,
             // For non-optional fields, skip if value is proto3 default.
             .bool => field_value,
             .int, .float => field_value != 0,
-            .@"enum" => @intFromEnum(field_value) != 0,
+            .@"enum" => field_value != comptime protobuf.enumDefault(fieldInfo.type),
             .pointer => |ptr| if (ptr.size == .slice) field_value.len != 0 else true,
             .@"struct" => blk: {
                 // ArrayList (repeated/map/packed_repeated): skip when empty.
@@ -330,6 +433,12 @@ fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std
             );
         }
         // null optionals (including null oneofs): skip entirely
+    }
+
+    if (comptime @hasField(Self, "_extensions")) {
+        if (opts.extensions) |registry| {
+            try writeExtensions(Self, self._extensions.records, jws, opts, registry);
+        }
     }
 
     try jws.endObject();
@@ -600,6 +709,10 @@ fn parseEnumField(comptime EnumType: type, allocator: std.mem.Allocator, source:
         .number => {
             const tag_type = @typeInfo(EnumType).@"enum".tag_type;
             const n = try std.json.innerParse(tag_type, allocator, source, options);
+            // Closed enums are exhaustive and only accept known values.
+            if (comptime @typeInfo(EnumType).@"enum".is_exhaustive) {
+                return std.enums.fromInt(EnumType, n) orelse error.InvalidEnumTag;
+            }
             return @enumFromInt(n);
         },
         else => {},
@@ -831,13 +944,14 @@ fn parseStructField(
                 }
                 const InnerType = @typeInfo(fieldInfo.type).optional.child;
                 const v = parseEnumField(InnerType, allocator, source, options) catch |e| {
-                    if (e == error.InvalidEnumTag and options.ignore_unknown_fields) break :blk @as(fieldInfo.type, @enumFromInt(0));
+                    // An ignored unknown value leaves the field unset.
+                    if (e == error.InvalidEnumTag and options.ignore_unknown_fields) break :blk @as(fieldInfo.type, null);
                     return e;
                 };
                 break :blk @as(fieldInfo.type, v);
             }
             const v = parseEnumField(fieldInfo.type, allocator, source, options) catch |e| {
-                if (e == error.InvalidEnumTag and options.ignore_unknown_fields) break :blk @as(fieldInfo.type, @enumFromInt(0));
+                if (e == error.InvalidEnumTag and options.ignore_unknown_fields) break :blk protobuf.enumDefault(fieldInfo.type);
                 return e;
             };
             break :blk v;
@@ -870,7 +984,12 @@ fn parseStructField(
                 // the string tokens "Infinity", "-Infinity", and "NaN" are valid per spec.
                 const next_type = try source.peekNextTokenType();
                 const v = try std.json.innerParse(fieldInfo.type, allocator, source, options);
-                if (next_type == .number and std.math.isInf(v)) return error.InvalidCharacter;
+                // Fields with explicit presence are optional floats.
+                const float = if (comptime @typeInfo(fieldInfo.type) == .optional)
+                    v orelse break :blk v
+                else
+                    v;
+                if (next_type == .number and std.math.isInf(float)) return error.InvalidCharacter;
                 break :blk v;
             },
             // `.string`s have their own jsonParse implementation

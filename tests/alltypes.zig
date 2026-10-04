@@ -210,31 +210,37 @@ test "TestExtremeDefaultValues" {
     var decoded = try unittest.TestExtremeDefaultValues.decode(&reader, testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, "\\000\\001\\007\\010\\014\\n\\r\\t\\013\\\\\\'\\\"\\376", decoded.escaped_bytes.?);
-    try testing.expectEqual(@as(u32, 4294967295), decoded.large_uint32.?);
-    try testing.expectEqual(@as(u64, 18446744073709551615), decoded.large_uint64.?);
-    try testing.expectEqual(@as(i32, -2147483647), decoded.small_int32.?);
-    try testing.expectEqual(@as(i64, -9223372036854775807), decoded.small_int64.?);
-    try testing.expectEqual(@as(i32, -2147483648), decoded.really_small_int32.?);
-    try testing.expectEqual(@as(i64, -9223372036854775808), decoded.really_small_int64.?);
-    try testing.expectEqualSlices(u8, "\xE1\x88\xB4", decoded.utf8_string.?);
-    try testing.expectEqual(@as(f32, 0), decoded.zero_float.?);
-    try testing.expectEqual(@as(f32, 1), decoded.one_float.?);
-    try testing.expectEqual(@as(f32, 1.5), decoded.small_float.?);
-    try testing.expectEqual(@as(f32, -1), decoded.negative_one_float.?);
-    try testing.expectEqual(@as(f32, -1.5), decoded.negative_float.?);
-    try testing.expectEqual(@as(f32, 2e+08), decoded.large_float.?);
-    try testing.expectEqual(@as(f32, -8e-28), decoded.small_negative_float.?);
-    try testing.expectEqual(@as(f64, std.math.inf(f64)), decoded.inf_double.?);
-    try testing.expectEqual(@as(f64, -std.math.inf(f64)), decoded.neg_inf_double.?);
-    try testing.expect(std.math.isNan(decoded.nan_double.?));
-    try testing.expectEqual(@as(f32, std.math.inf(f32)), decoded.inf_float.?);
-    try testing.expectEqual(@as(f32, -std.math.inf(f32)), decoded.neg_inf_float.?);
-    try testing.expect(std.math.isNan(decoded.nan_float.?));
-    try testing.expectEqualSlices(u8, "? ? ?? ?? ??? ??/ ??-", decoded.cpp_trigraph.?);
-    try testing.expectEqualSlices(u8, "hel\x00lo", decoded.string_with_zero.?);
-    try testing.expectEqualSlices(u8, "wor\\000ld", decoded.bytes_with_zero.?);
-    try testing.expectEqualSlices(u8, "ab\x00c", decoded.string_piece_with_zero.?);
-    try testing.expectEqualSlices(u8, "12\x003", decoded.cord_with_zero.?);
-    try testing.expectEqualSlices(u8, "${unknown}", decoded.replacement_string.?);
+    // Fields with explicit presence stay unset; their declared defaults are
+    // exposed in `defaults` instead.
+    try testing.expectEqual(null, decoded.large_uint32);
+    try testing.expectEqual(null, decoded.utf8_string);
+    const defaults = unittest.TestExtremeDefaultValues.defaults;
+
+    try testing.expectEqualSlices(u8, "\\000\\001\\007\\010\\014\\n\\r\\t\\013\\\\\\'\\\"\\376", defaults.escaped_bytes);
+    try testing.expectEqual(@as(u32, 4294967295), defaults.large_uint32);
+    try testing.expectEqual(@as(u64, 18446744073709551615), defaults.large_uint64);
+    try testing.expectEqual(@as(i32, -2147483647), defaults.small_int32);
+    try testing.expectEqual(@as(i64, -9223372036854775807), defaults.small_int64);
+    try testing.expectEqual(@as(i32, -2147483648), defaults.really_small_int32);
+    try testing.expectEqual(@as(i64, -9223372036854775808), defaults.really_small_int64);
+    try testing.expectEqualSlices(u8, "\xE1\x88\xB4", defaults.utf8_string);
+    try testing.expectEqual(@as(f32, 0), defaults.zero_float);
+    try testing.expectEqual(@as(f32, 1), defaults.one_float);
+    try testing.expectEqual(@as(f32, 1.5), defaults.small_float);
+    try testing.expectEqual(@as(f32, -1), defaults.negative_one_float);
+    try testing.expectEqual(@as(f32, -1.5), defaults.negative_float);
+    try testing.expectEqual(@as(f32, 2e+08), defaults.large_float);
+    try testing.expectEqual(@as(f32, -8e-28), defaults.small_negative_float);
+    try testing.expectEqual(@as(f64, std.math.inf(f64)), defaults.inf_double);
+    try testing.expectEqual(@as(f64, -std.math.inf(f64)), defaults.neg_inf_double);
+    try testing.expect(std.math.isNan(defaults.nan_double));
+    try testing.expectEqual(@as(f32, std.math.inf(f32)), defaults.inf_float);
+    try testing.expectEqual(@as(f32, -std.math.inf(f32)), defaults.neg_inf_float);
+    try testing.expect(std.math.isNan(defaults.nan_float));
+    try testing.expectEqualSlices(u8, "? ? ?? ?? ??? ??/ ??-", defaults.cpp_trigraph);
+    try testing.expectEqualSlices(u8, "hel\x00lo", defaults.string_with_zero);
+    try testing.expectEqualSlices(u8, "wor\\000ld", defaults.bytes_with_zero);
+    try testing.expectEqualSlices(u8, "ab\x00c", defaults.string_piece_with_zero);
+    try testing.expectEqualSlices(u8, "12\x003", defaults.cord_with_zero);
+    try testing.expectEqualSlices(u8, "${unknown}", defaults.replacement_string);
 }

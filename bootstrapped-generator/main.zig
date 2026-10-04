@@ -42,7 +42,23 @@ const GenerationContext = struct {
 
     /// map of message names to their dependencies
     message_deps: std.StringHashMap(std.ArrayList([]const u8)),
+
+    /// map of package names to the references of the extensions they declare
+    package_extensions: std.StringHashMap(std.ArrayList([]const u8)),
+
+    /// map of package names to the entries of their `_file_options` declaration
+    package_file_options: std.StringHashMap(std.ArrayList([]const u8)),
+
+    /// map of ".package.fully.qualified.Name" to every message in the request
+    messages: std.StringHashMap(descriptor.DescriptorProto),
+    /// map of ".package.fully.qualified.Name" to every enum in the request
+    enums: std.StringHashMap(descriptor.EnumDescriptorProto),
+    /// map of "<extendee fqn>#<field number>" to every extension in the request
+    extensions: std.StringHashMap(ExtensionInfo),
     preserve_unknown_fields: bool,
+    /// Accept the in-development `edition = "UNSTABLE"`, whose features may
+    /// change in any protobuf release. protoc also needs `--experimental_editions`.
+    experimental_editions: bool,
 
     /// Helper struct for working with SourceCodeInfo
     const SourceCodeInfo = struct {
@@ -107,7 +123,13 @@ const GenerationContext = struct {
             .known_packages = .init(allocator),
             .fqn_lines = .init(allocator),
             .message_deps = .init(allocator),
+            .package_extensions = .init(allocator),
+            .package_file_options = .init(allocator),
+            .messages = .init(allocator),
+            .enums = .init(allocator),
+            .extensions = .init(allocator),
             .preserve_unknown_fields = false,
+            .experimental_editions = false,
         };
 
         try ctx.parseParameter(allocator);
@@ -133,6 +155,18 @@ const GenerationContext = struct {
                 continue;
             }
 
+            if (std.mem.eql(u8, param, "experimental_editions") or
+                std.mem.eql(u8, param, "experimental_editions=true"))
+            {
+                self.experimental_editions = true;
+                continue;
+            }
+
+            if (std.mem.eql(u8, param, "experimental_editions=false")) {
+                self.experimental_editions = false;
+                continue;
+            }
+
             self.res.@"error" = try std.fmt.allocPrint(
                 allocator,
                 "unsupported protoc-gen-zig parameter: {s}",
@@ -140,6 +174,13 @@ const GenerationContext = struct {
             );
             return;
         }
+    }
+
+    /// Newest edition accepted: edition 2026, or the unstable edition with
+    /// `experimental_editions`. The unstable edition has no feature defaults
+    /// of its own, so it resolves like the newest edition.
+    fn maximumEdition(self: *const GenerationContext) descriptor.Edition {
+        return if (self.experimental_editions) .EDITION_UNSTABLE else maximum_edition;
     }
 
     pub fn processRequest(self: *GenerationContext, io: std.Io, allocator: std.mem.Allocator) !void {
@@ -170,6 +211,22 @@ const GenerationContext = struct {
         }
 
         for (self.req.proto_file.items) |file| {
+            const edition = @intFromEnum(fileEdition(file));
+            if (edition < @intFromEnum(minimum_edition) or edition > @intFromEnum(self.maximumEdition())) {
+                self.res.@"error" = try std.fmt.allocPrint(
+                    allocator,
+                    "ERROR unsupported edition {} in {s}\n",
+                    .{ edition, file.name.? },
+                );
+                return;
+            }
+            const prefix = try std.mem.concat(allocator, u8, &.{ ".", file.package.? });
+            try self.indexMessages(allocator, prefix, file.message_type);
+            try self.indexEnums(allocator, prefix, file.enum_type);
+            try self.indexExtensions(allocator, prefix, file.extension);
+        }
+
+        for (self.req.proto_file.items) |file| {
             const t: descriptor.FileDescriptorProto = file;
 
             const name = FullName{ .buf = t.package.? };
@@ -184,11 +241,112 @@ const GenerationContext = struct {
 
             ret.name = try allocator.dupe(u8, packageToFileName(entry.key_ptr.*, &name_buf));
             ret.content = try std.mem.concat(allocator, u8, entry.value_ptr.*.items);
+            if (try self.packageExtensionsDeclaration(allocator, entry.key_ptr.*)) |declaration| {
+                ret.content = try std.mem.concat(allocator, u8, &.{ ret.content.?, declaration });
+            }
+            // Files sharing a package share its output, so their options are
+            // listed by file name.
+            if (self.package_file_options.get(entry.key_ptr.*)) |file_options| {
+                ret.content = try std.mem.concat(allocator, u8, &.{
+                    ret.content.?,
+                    "\n/// Options of the files of this package that have some\n/// (`google.protobuf.FileOptions`), by file name.\npub const _file_options = .{\n",
+                    try std.mem.concat(allocator, u8, file_options.items),
+                    "};\n",
+                });
+            }
+            // Only files with fields using non-default features need `fdf`.
+            if (std.mem.indexOf(u8, ret.content.?, "fdf(") != null) {
+                ret.content = try std.mem.replaceOwned(
+                    u8,
+                    allocator,
+                    ret.content.?,
+                    "const fd = protobuf.fd;\n",
+                    "const fd = protobuf.fd;\nconst fdf = protobuf.fdf;\n",
+                );
+            }
 
             try self.res.file.append(allocator, ret);
         }
 
-        self.res.supported_features = @intFromEnum(plugin.CodeGeneratorResponse.Feature.FEATURE_PROTO3_OPTIONAL);
+        self.res.supported_features =
+            @intFromEnum(plugin.CodeGeneratorResponse.Feature.FEATURE_PROTO3_OPTIONAL) |
+            @intFromEnum(plugin.CodeGeneratorResponse.Feature.FEATURE_SUPPORTS_EDITIONS);
+        self.res.minimum_edition = @intFromEnum(minimum_edition);
+        self.res.maximum_edition = @intFromEnum(self.maximumEdition());
+    }
+
+    /// Records `messages` and their nested messages, keyed by their fully
+    /// qualified name as used in `FieldDescriptorProto.type_name`.
+    fn indexMessages(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        prefix: []const u8,
+        messages: std.ArrayList(descriptor.DescriptorProto),
+    ) !void {
+        for (messages.items) |m| {
+            const name = try std.mem.concat(allocator, u8, &.{ prefix, ".", m.name.? });
+            try self.messages.put(name, m);
+            try self.indexMessages(allocator, name, m.nested_type);
+            try self.indexEnums(allocator, name, m.enum_type);
+            try self.indexExtensions(allocator, name, m.extension);
+        }
+    }
+
+    /// An extension of the request, used to decode custom options.
+    const ExtensionInfo = struct {
+        field: descriptor.FieldDescriptorProto,
+        /// Fully qualified name, without the leading dot.
+        full_name: []const u8,
+    };
+
+    /// Records `extensions`, keyed by extendee and field number.
+    fn indexExtensions(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        prefix: []const u8,
+        extensions: std.ArrayList(descriptor.FieldDescriptorProto),
+    ) !void {
+        for (extensions.items) |ext| {
+            const key = try std.fmt.allocPrint(allocator, "{s}#{?d}", .{ ext.extendee.?, ext.number });
+            try self.extensions.put(key, .{
+                .field = ext,
+                .full_name = try std.mem.concat(allocator, u8, &.{ prefix[1..], ".", ext.name.? }),
+            });
+        }
+    }
+
+    /// Records `enums`, keyed by their fully qualified name as used in
+    /// `FieldDescriptorProto.type_name`.
+    fn indexEnums(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        prefix: []const u8,
+        enums: std.ArrayList(descriptor.EnumDescriptorProto),
+    ) !void {
+        for (enums.items) |e| {
+            const name = try std.mem.concat(allocator, u8, &.{ prefix, ".", e.name.? });
+            try self.enums.put(name, e);
+        }
+    }
+
+    /// Whether `field` of `message` is a submessage encoded as a group. Map
+    /// fields and the fields of map entries are always length-prefixed.
+    fn isDelimited(
+        self: *GenerationContext,
+        message: descriptor.DescriptorProto,
+        field: descriptor.FieldDescriptorProto,
+        features: Features,
+    ) bool {
+        const t = field.type orelse return false;
+        if (t != .TYPE_MESSAGE and t != .TYPE_GROUP) return false;
+        if (features.message_encoding != .DELIMITED) return false;
+        if (isMapEntry(message)) return false;
+        if (field.type_name) |type_name| {
+            if (self.messages.get(type_name)) |target| {
+                if (isMapEntry(target)) return false;
+            }
+        }
+        return true;
     }
 
     fn getOutputLines(self: *GenerationContext, io: std.Io, allocator: std.mem.Allocator, name: FullName) !*std.ArrayList([]const u8) {
@@ -291,10 +449,13 @@ const GenerationContext = struct {
 
         // For file-level elements, root_path is empty
         const file_root_path: []const i32 = &.{};
+        const file_features: Features = .forFile(file);
         // Field number 5 for enum_type in FileDescriptorProto
-        try self.generateEnums(allocator, lines, fqn, file, file.enum_type, file_root_path, 5);
+        try self.generateEnums(allocator, lines, fqn, file, file.enum_type, file_root_path, 5, file_features);
         // Field number 4 for message_type in FileDescriptorProto
-        try self.generateMessages(allocator, lines, fqn, file, file.message_type, file_root_path, 4);
+        try self.generateMessages(allocator, lines, fqn, file, null, file.message_type, file_root_path, 4, file_features);
+        try self.generateExtensions(allocator, lines, fqn, file, file.extension, file_features);
+        try self.recordFileOptions(allocator, file);
         // Field number 6 for service in FileDescriptorProto
         try self.generateServices(allocator, lines, fqn, file, file.service, file_root_path, 6);
     }
@@ -353,9 +514,8 @@ const GenerationContext = struct {
         enums: std.ArrayList(descriptor.EnumDescriptorProto),
         root_path: []const i32,
         enum_field_number: i32,
+        scope_features: Features,
     ) !void {
-        _ = ctx;
-
         for (enums.items, 0..) |theEnum, enum_i| {
             const e: descriptor.EnumDescriptorProto = theEnum;
 
@@ -400,7 +560,12 @@ const GenerationContext = struct {
                 );
             }
 
-            try lines.append(allocator, "    _,\n");
+            // Open enums accept any value. Closed enums are exhaustive: values
+            // matching no enumerator are decoded as unknown fields instead.
+            const enum_features = scope_features.merge(if (e.options) |o| o.features else null);
+            if (enum_features.enum_type == .OPEN) {
+                try lines.append(allocator, "    _,\n");
+            }
             if (allow_alias and hasEnumAliases(e)) {
                 try lines.append(allocator,
                     \\    // allow_alias = true: these additional names also map to an emitted enum value.
@@ -419,6 +584,7 @@ const GenerationContext = struct {
                     \\
                 );
             }
+            try ctx.generateEnumOptions(allocator, lines, file, e);
             try lines.append(allocator, "};\n\n");
         }
     }
@@ -506,6 +672,7 @@ const GenerationContext = struct {
         fqn: FullName,
         file: descriptor.FileDescriptorProto,
         field: descriptor.FieldDescriptorProto,
+        features: Features,
         is_union: bool,
     ) ![]const u8 {
         var prefix: []const u8 = "";
@@ -517,7 +684,7 @@ const GenerationContext = struct {
             if (!is_union) {
                 // look for optional types
                 switch (t) {
-                    .TYPE_MESSAGE => {
+                    .TYPE_MESSAGE, .TYPE_GROUP => {
                         // Check if the field type is self-referential
                         if (field.type_name) |type_name| {
                             const dep_name = type_name[1..]; // Remove leading dot
@@ -530,7 +697,7 @@ const GenerationContext = struct {
                             prefix = "?";
                         }
                     },
-                    else => if (isOptional(file, field)) {
+                    else => if (hasExplicitPresence(field, features)) {
                         prefix = "?";
                     },
                 }
@@ -549,41 +716,31 @@ const GenerationContext = struct {
             .TYPE_DOUBLE => "f64",
             .TYPE_FLOAT => "f32",
             .TYPE_STRING, .TYPE_BYTES => "[]const u8",
-            .TYPE_ENUM, .TYPE_MESSAGE => try self.fieldTypeFqn(allocator, fqn, file, field),
-            else => {
-                std.debug.print("Unrecognized type {}\n", .{t});
-                @panic("Unrecognized type");
-            },
+            .TYPE_ENUM, .TYPE_MESSAGE, .TYPE_GROUP => try self.fieldTypeFqn(allocator, fqn, file, field),
         };
 
         return try std.mem.concat(allocator, u8, &.{ prefix, infix, postfix });
     }
 
     fn getFieldDefault(
-        _: *GenerationContext,
+        self: *GenerationContext,
         allocator: std.mem.Allocator,
         field: descriptor.FieldDescriptorProto,
-        file: descriptor.FileDescriptorProto,
+        features: Features,
         nullable: bool,
     ) !?[]const u8 {
-        const is_proto3 = is_proto3_file(file);
-
         // All repeated fields, across proto2/proto3/editions, have a default
         // of empty. Repeated fields cannot be marked required (or optional)
         // in proto2.
-        const repeated = isRepeated(field);
-        if (repeated) {
-            if (field.default_value) |default| {
-                return default;
-            } else return ".empty";
-        }
+        if (isRepeated(field)) return ".empty";
 
-        if (nullable and field.default_value == null) {
-            return "null";
-        }
+        // Fields with explicit presence are not set by default. Their custom
+        // default value, if any, is exposed in `defaults` instead.
+        if (nullable) return "null";
 
-        // proto3 does not support explicit default values, the default scalar values are used instead.
-        if (is_proto3) {
+        // Implicit presence fields cannot declare default values; the zero
+        // value of their type is used instead.
+        if (features.field_presence == .IMPLICIT) {
             return switch (field.type.?) {
                 .TYPE_SINT32,
                 .TYPE_SFIXED32,
@@ -600,15 +757,26 @@ const GenerationContext = struct {
                 => "0",
                 .TYPE_BOOL => "false",
                 .TYPE_STRING, .TYPE_BYTES => "&.{}",
-                .TYPE_ENUM => "@enumFromInt(0)",
+                // The first enumerator, which is zero for open enums. Closed
+                // enums (possible as map values) may start at any number.
+                .TYPE_ENUM => b: {
+                    const e = self.enums.get(field.type_name.?) orelse break :b "@enumFromInt(0)";
+                    const first = if (e.value.items.len > 0) e.value.items[0].number orelse 0 else 0;
+                    if (first == 0) break :b "@enumFromInt(0)";
+                    break :b try std.fmt.allocPrint(allocator, "@enumFromInt({})", .{first});
+                },
                 else => null,
             };
         }
 
-        if (field.default_value == null) {
-            return null;
-        }
+        // Required fields have no default unless one is declared, forcing
+        // them to be initialized.
+        return try formatDefaultValue(allocator, field);
+    }
 
+    /// Formats the custom `[default = ...]` value of a field as Zig source.
+    fn formatDefaultValue(allocator: std.mem.Allocator, field: descriptor.FieldDescriptorProto) !?[]const u8 {
+        const default = field.default_value orelse return null;
         return switch (field.type.?) {
             .TYPE_SINT32,
             .TYPE_SFIXED32,
@@ -621,28 +789,28 @@ const GenerationContext = struct {
             .TYPE_UINT64,
             .TYPE_FIXED64,
             .TYPE_BOOL,
-            => field.default_value.?,
-            .TYPE_FLOAT => if (std.mem.eql(u8, field.default_value.?, "inf"))
+            => default,
+            .TYPE_FLOAT => if (std.mem.eql(u8, default, "inf"))
                 "std.math.inf(f32)"
-            else if (std.mem.eql(u8, field.default_value.?, "-inf"))
+            else if (std.mem.eql(u8, default, "-inf"))
                 "-std.math.inf(f32)"
-            else if (std.mem.eql(u8, field.default_value.?, "nan"))
+            else if (std.mem.eql(u8, default, "nan"))
                 "std.math.nan(f32)"
             else
-                field.default_value.?,
-            .TYPE_DOUBLE => if (std.mem.eql(u8, field.default_value.?, "inf"))
+                default,
+            .TYPE_DOUBLE => if (std.mem.eql(u8, default, "inf"))
                 "std.math.inf(f64)"
-            else if (std.mem.eql(u8, field.default_value.?, "-inf"))
+            else if (std.mem.eql(u8, default, "-inf"))
                 "-std.math.inf(f64)"
-            else if (std.mem.eql(u8, field.default_value.?, "nan"))
+            else if (std.mem.eql(u8, default, "nan"))
                 "std.math.nan(f64)"
             else
-                field.default_value.?,
-            .TYPE_STRING, .TYPE_BYTES => if (field.default_value.?.len == 0)
+                default,
+            .TYPE_STRING, .TYPE_BYTES => if (default.len == 0)
                 "&.{}"
             else
-                try formatSliceEscapeImpl(allocator, field.default_value.?),
-            .TYPE_ENUM => try std.mem.concat(allocator, u8, &.{ ".", field.default_value.? }),
+                try formatSliceEscapeImpl(allocator, default),
+            .TYPE_ENUM => try std.mem.concat(allocator, u8, &.{ ".", default }),
             else => null,
         };
     }
@@ -650,18 +818,15 @@ const GenerationContext = struct {
     fn getFieldTypeDescriptor(
         _: *GenerationContext,
         allocator: std.mem.Allocator,
-        _: FullName,
-        file: descriptor.FileDescriptorProto,
         field: descriptor.FieldDescriptorProto,
-        is_union: bool,
+        features: Features,
     ) ![]const u8 {
-        _ = is_union;
         var prefix: []const u8 = "";
 
         var postfix: []const u8 = "";
 
         if (isRepeated(field)) {
-            if (isPacked(file, field)) {
+            if (isPacked(field, features)) {
                 prefix = ".{ .packed_repeated = ";
             } else {
                 prefix = ".{ .repeated = ";
@@ -686,34 +851,52 @@ const GenerationContext = struct {
             .TYPE_SINT64 => ".{ .scalar = .sint64}",
             .TYPE_STRING => ".{ .scalar = .string }",
             .TYPE_BYTES => ".{ .scalar = .bytes }",
-            .TYPE_MESSAGE => ".submessage",
-            else => {
-                std.debug.print("Unrecognized type {}\n", .{field.type.?});
-                @panic("Unrecognized type");
-            },
+            .TYPE_MESSAGE, .TYPE_GROUP => ".submessage",
         };
 
         return try std.mem.concat(allocator, u8, &.{ prefix, infix, postfix });
+    }
+
+    /// Formats the runtime features of a field that differ from the defaults
+    /// of `protobuf.Features`, as a struct literal. Null if none differ.
+    fn getFieldFeatures(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        message: descriptor.DescriptorProto,
+        field: descriptor.FieldDescriptorProto,
+        features: Features,
+    ) !?[]const u8 {
+        var parts: std.ArrayList([]const u8) = .empty;
+        if (self.isDelimited(message, field, features)) {
+            try parts.append(allocator, ".message_encoding = .delimited");
+        }
+        if (field.type == .TYPE_STRING and features.utf8_validation == .VERIFY) {
+            try parts.append(allocator, ".utf8_validation = .verify");
+        }
+        if (!isRepeated(field) and features.field_presence == .LEGACY_REQUIRED) {
+            try parts.append(allocator, ".legacy_required = true");
+        }
+        if (parts.items.len == 0) return null;
+
+        const joined = try std.mem.join(allocator, ", ", parts.items);
+        return try std.fmt.allocPrint(allocator, ".{{ {s} }}", .{joined});
     }
 
     fn generateFieldDescriptor(
         self: *GenerationContext,
         allocator: std.mem.Allocator,
         lines: *std.ArrayList([]const u8),
-        fqn: FullName,
-        file: descriptor.FileDescriptorProto,
         message: descriptor.DescriptorProto,
         field: descriptor.FieldDescriptorProto,
-        is_union: bool,
+        features: Features,
     ) !void {
-        _ = message;
         const name = try escapeName(allocator, field.name.?);
-        const descStr = try self.getFieldTypeDescriptor(allocator, fqn, file, field, is_union);
-        const format = "        .{s} = fd({?d}, {s}),\n";
-        try lines.append(
-            allocator,
-            try std.fmt.allocPrint(allocator, format, .{ name, field.number, descStr }),
-        );
+        const descStr = try self.getFieldTypeDescriptor(allocator, field, features);
+        const line = if (try self.getFieldFeatures(allocator, message, field, features)) |featuresStr|
+            try std.fmt.allocPrint(allocator, "        .{s} = fdf({?d}, {s}, {s}),\n", .{ name, field.number, descStr, featuresStr })
+        else
+            try std.fmt.allocPrint(allocator, "        .{s} = fd({?d}, {s}),\n", .{ name, field.number, descStr });
+        try lines.append(allocator, line);
     }
 
     fn generateFieldDeclaration(
@@ -722,17 +905,14 @@ const GenerationContext = struct {
         lines: *std.ArrayList([]const u8),
         fqn: FullName,
         file: descriptor.FileDescriptorProto,
-        message: descriptor.DescriptorProto,
         field: descriptor.FieldDescriptorProto,
-        is_union: bool,
+        features: Features,
     ) !void {
-        _ = message;
-
-        const type_str = try self.getFieldType(allocator, fqn, file, field, is_union);
+        const type_str = try self.getFieldType(allocator, fqn, file, field, features, false);
         const field_name = try escapeName(allocator, field.name.?);
         const nullable = type_str[0] == '?';
 
-        if (try self.getFieldDefault(allocator, field, file, nullable)) |default_value| {
+        if (try self.getFieldDefault(allocator, field, features, nullable)) |default_value| {
             try lines.append(
                 allocator,
                 try std.fmt.allocPrint(allocator, "    {s}: {s} = {s},\n", .{ field_name, type_str, default_value }),
@@ -768,9 +948,13 @@ const GenerationContext = struct {
         lines: *std.ArrayList([]const u8),
         fqn: FullName,
         file: descriptor.FileDescriptorProto,
+        /// Message declaring `messages`, null for top-level messages.
+        parent: ?descriptor.DescriptorProto,
         messages: std.ArrayList(descriptor.DescriptorProto),
         root_path: []const i32,
         message_field_number: i32,
+        /// Resolved features of the scope declaring `messages`.
+        scope_features: Features,
     ) !void {
         for (messages.items, 0..) |message, message_i| {
             const m: descriptor.DescriptorProto = message;
@@ -795,6 +979,16 @@ const GenerationContext = struct {
                 }
                 continue;
             }
+
+            // Map entries are synthesized from their map field, and inherit
+            // the features of that field rather than those of the scope.
+            var message_features = scope_features.merge(if (m.options) |o| o.features else null);
+            if (isMapEntry(m)) if (parent) |p| for (p.field.items) |pf| {
+                const type_name = pf.type_name orelse continue;
+                if (std.mem.eql(u8, type_name[1..], messageFqn.buf)) {
+                    message_features = scope_features.forField(file, p, pf);
+                }
+            };
 
             // Build the path for this message: root_path + [message_field_number, message_i]
             var message_path: std.ArrayList(i32) = .empty;
@@ -822,10 +1016,19 @@ const GenerationContext = struct {
                 try std.fmt.allocPrint(allocator, "pub const {s} = struct {{\n", .{m.name.?}),
             );
 
+            // Oneof declarations of nested messages are referenced through
+            // the message path, as an enclosing message may declare a oneof
+            // with the same name, which Zig would report as ambiguous.
+            const union_scope: []const u8 = if (parent == null) "" else try std.mem.concat(
+                allocator,
+                u8,
+                &.{ messageFqn.buf[file.package.?.len + 1 ..], "." },
+            );
+
             // append all fields that are not part of a oneof
             for (m.field.items) |f| {
                 if (f.oneof_index == null or self.amountOfElementsInOneofUnion(m, f.oneof_index) == 1) {
-                    try self.generateFieldDeclaration(allocator, lines, messageFqn, file, m, f, false);
+                    try self.generateFieldDeclaration(allocator, lines, messageFqn, file, f, message_features.forField(file, m, f));
                 }
             }
 
@@ -839,10 +1042,14 @@ const GenerationContext = struct {
                         // Oneof fields across proto2, proto3, and editions
                         // are "not set" by default, which is represented as
                         // the null value here.
-                        "    {s}: ?{s}_union = null,\n",
-                        .{ try escapeName(allocator, oneof_name), oneof_name },
+                        "    {s}: ?{s}{s}_union = null,\n",
+                        .{ try escapeName(allocator, oneof_name), union_scope, oneof_name },
                     ));
                 }
+            }
+            if (m.extension_range.items.len > 0) {
+                // Wire records of the extensions, see `protobuf.Extension`.
+                try lines.append(allocator, "    _extensions: protobuf.ExtensionSet = .empty,\n");
             }
             if (self.shouldPreserveUnknownFields(m)) {
                 try lines.append(allocator, "    _unknown_fields: []const u8 = &.{},\n");
@@ -871,15 +1078,15 @@ const GenerationContext = struct {
 
                     try lines.append(allocator, try std.fmt.allocPrint(allocator,
                         \\    }};
-                        \\    pub const {s}_union = union(_{s}_case) {{
+                        \\    pub const {s}_union = union({s}_{s}_case) {{
                         \\
-                    , .{ oneof_name, oneof_name }));
+                    , .{ oneof_name, union_scope, oneof_name }));
 
                     for (m.field.items) |field| {
                         const f: descriptor.FieldDescriptorProto = field;
                         if (f.oneof_index orelse -1 == @as(i32, @intCast(i))) {
                             const name = try escapeName(allocator, f.name.?);
-                            const typeStr = try self.getFieldType(allocator, messageFqn, file, f, true);
+                            const typeStr = try self.getFieldType(allocator, messageFqn, file, f, message_features.forField(file, m, f), true);
                             try lines.append(allocator, try std.fmt.allocPrint(
                                 allocator,
                                 "      {s}: {s},\n",
@@ -896,7 +1103,7 @@ const GenerationContext = struct {
                     for (m.field.items) |field| {
                         const f: descriptor.FieldDescriptorProto = field;
                         if (f.oneof_index orelse -1 == @as(i32, @intCast(i))) {
-                            try self.generateFieldDescriptor(allocator, lines, messageFqn, file, m, f, true);
+                            try self.generateFieldDescriptor(allocator, lines, m, f, message_features.forField(file, m, f));
                         }
                     }
 
@@ -918,7 +1125,7 @@ const GenerationContext = struct {
             // first print fields
             for (m.field.items) |f| {
                 if (f.oneof_index == null or self.amountOfElementsInOneofUnion(m, f.oneof_index) == 1) {
-                    try self.generateFieldDescriptor(allocator, lines, messageFqn, file, m, f, false);
+                    try self.generateFieldDescriptor(allocator, lines, m, f, message_features.forField(file, m, f));
                 }
             }
 
@@ -932,8 +1139,8 @@ const GenerationContext = struct {
                         allocator,
                         try std.fmt.allocPrint(
                             allocator,
-                            "    .{s} = fd(null, .{{ .oneof  = {s}_union }}),\n",
-                            .{ try escapeName(allocator, oneof_name), oneof_name },
+                            "    .{s} = fd(null, .{{ .oneof  = {s}{s}_union }}),\n",
+                            .{ try escapeName(allocator, oneof_name), union_scope, oneof_name },
                         ),
                     );
                 }
@@ -944,10 +1151,15 @@ const GenerationContext = struct {
                 \\
             );
 
+            try self.generateDefaults(allocator, lines, messageFqn, file, m, message_features);
+            try self.generateExtensionsInfo(allocator, lines, file, m);
+            try self.generateMessageOptions(allocator, lines, file, m);
+
             // For nested enums, root_path is the message's path and field number is 4 (enum_type in DescriptorProto)
-            try self.generateEnums(allocator, lines, messageFqn, file, m.enum_type, message_path.items, 4);
+            try self.generateEnums(allocator, lines, messageFqn, file, m.enum_type, message_path.items, 4, message_features);
             // For nested messages, root_path is the message's path and field number is 3 (nested_type in DescriptorProto)
-            try self.generateMessages(allocator, lines, messageFqn, file, m.nested_type, message_path.items, 3);
+            try self.generateMessages(allocator, lines, messageFqn, file, m, m.nested_type, message_path.items, 3, message_features);
+            try self.generateExtensions(allocator, lines, messageFqn, file, m.extension, message_features);
 
             try lines.append(allocator, try std.fmt.allocPrint(allocator,
                 \\
@@ -1017,6 +1229,695 @@ const GenerationContext = struct {
                 \\
             , .{}));
         }
+    }
+
+    /// Whether the option values of `file` are emitted. protoc only strips the
+    /// source-retention options of the files to generate; the other files of
+    /// the request (their dependencies) keep them, so they get no options.
+    fn emitsOptions(self: *GenerationContext, file: descriptor.FileDescriptorProto) bool {
+        for (self.req.file_to_generate.items) |name| {
+            if (std.mem.eql(u8, name, file.name.?)) return true;
+        }
+        return false;
+    }
+
+    /// Returns `options`, a `google.protobuf.*Options` message, as a Zig
+    /// literal: an anonymous struct of its set fields, where custom options
+    /// are keyed by their full name. Returns null when there are no options to
+    /// emit.
+    fn encodeOptions(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        file: descriptor.FileDescriptorProto,
+        options: anytype,
+    ) !?[]const u8 {
+        if (!self.emitsOptions(file)) return null;
+        const o = options orelse return null;
+
+        // The encoded options, for the usual decoding APIs.
+        var raw: std.Io.Writer.Allocating = .init(allocator);
+        try o.encode(&raw.writer, allocator);
+        if (raw.written().len == 0) return null;
+
+        var w: std.Io.Writer.Allocating = .init(allocator);
+        try self.writeStructLiteral(allocator, &w.writer, o);
+        const fields = w.written()[".{".len .. w.written().len - "}".len];
+        return try std.fmt.allocPrint(allocator, ".{{ .@\"#raw\" = {s},{s}}}", .{
+            try formatSliceEscapeImpl(allocator, raw.written()),
+            fields,
+        });
+    }
+
+    /// Fully qualified name (with a leading dot) of a message type of the
+    /// bootstrapped `google.protobuf` bindings.
+    fn descriptorFqn(comptime T: type) []const u8 {
+        const type_name = @typeName(T);
+        const index = comptime std.mem.lastIndexOf(u8, type_name, ".pb.").?;
+        return ".google.protobuf." ++ type_name[index + ".pb.".len ..];
+    }
+
+    /// Writes a decoded message of the bootstrapped `google.protobuf`
+    /// bindings as a literal, including its custom options (extensions).
+    fn writeStructLiteral(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        w: *std.Io.Writer,
+        message: anytype,
+    ) !void {
+        const T = @TypeOf(message);
+        try w.writeAll(".{");
+        var empty = true;
+        inline for (@typeInfo(T).@"struct".fields) |field| {
+            if (comptime !@hasField(@TypeOf(T._desc_table), field.name)) continue;
+            const value = @field(message, field.name);
+            const present = switch (@typeInfo(field.type)) {
+                .optional => value != null,
+                .@"struct" => if (comptime @hasField(field.type, "items")) value.items.len > 0 else true,
+                else => true,
+            };
+            if (present) {
+                try w.print(" .{f} = ", .{std.zig.fmtId(field.name)});
+                try self.writeValueLiteral(allocator, w, if (comptime @typeInfo(field.type) == .optional) value.? else value);
+                try w.writeByte(',');
+                empty = false;
+            }
+        }
+        if (comptime @hasField(T, "_extensions")) {
+            if (try self.writeExtensionFields(allocator, w, descriptorFqn(T), message._extensions.bytes())) empty = false;
+        }
+        try w.writeAll(if (empty) "}" else " }");
+    }
+
+    /// Writes a value of the bootstrapped `google.protobuf` bindings.
+    fn writeValueLiteral(self: *GenerationContext, allocator: std.mem.Allocator, w: *std.Io.Writer, value: anytype) !void {
+        const T = @TypeOf(value);
+        switch (@typeInfo(T)) {
+            .bool, .int => try w.print("{}", .{value}),
+            .float => try writeFloatLiteral(w, value),
+            .@"enum" => try writeEnumLiteral(w, T, @intFromEnum(value)),
+            .pointer => try w.writeAll(try formatSliceEscapeImpl(allocator, value)),
+            .@"struct" => if (comptime @hasField(T, "items")) {
+                try w.writeAll(".{");
+                for (value.items, 0..) |item, i| {
+                    try w.writeAll(if (i == 0) " " else ", ");
+                    try self.writeValueLiteral(allocator, w, item);
+                }
+                try w.writeAll(" }");
+            } else try self.writeStructLiteral(allocator, w, value),
+            else => @compileError("unsupported option type " ++ @typeName(T)),
+        }
+    }
+
+    fn writeFloatLiteral(w: *std.Io.Writer, value: anytype) !void {
+        const F = @TypeOf(value);
+        if (std.math.isNan(value)) return w.print("std.math.nan({s})", .{@typeName(F)});
+        if (std.math.isInf(value)) return w.print("{s}std.math.inf({s})", .{ if (value < 0) "-" else "", @typeName(F) });
+        // Scientific notation is always a float literal, even for integers.
+        try w.print("{e}", .{value});
+    }
+
+    fn writeEnumLiteral(w: *std.Io.Writer, comptime E: type, number: i32) !void {
+        inline for (@typeInfo(E).@"enum".fields) |field| {
+            if (field.value == number) return w.print(".{f}", .{std.zig.fmtId(field.name)});
+        }
+        try w.print("{}", .{number});
+    }
+
+    /// A field of wire data, and its value bytes (after the tag).
+    const WireField = struct { tag: pb.wire.Tag, value: []const u8 };
+
+    /// Splits wire data into its fields, stopping at an EGROUP tag.
+    fn splitWireFields(allocator: std.mem.Allocator, bytes: []const u8) !std.ArrayList(WireField) {
+        var fields: std.ArrayList(WireField) = .empty;
+        var reader: std.Io.Reader = .fixed(bytes);
+        while (reader.seek < reader.end) {
+            const tag, _ = try pb.wire.Tag.decode(&reader);
+            if (tag.wire_type == .egroup) break;
+            const start = reader.seek;
+            _ = try pb.wire.skipField(&reader, tag);
+            try fields.append(allocator, .{ .tag = tag, .value = bytes[start..reader.seek] });
+        }
+        return fields;
+    }
+
+    /// Writes the extension fields of `records` (wire data of a message of
+    /// type `extendee`) as ` .@"full.name" = value,` entries. Fields of
+    /// extensions missing from the request are kept as raw bytes, keyed by
+    /// their field number. Returns whether anything was written.
+    fn writeExtensionFields(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        w: *std.Io.Writer,
+        extendee: []const u8,
+        records: []const u8,
+    ) !bool {
+        if (records.len == 0) return false;
+        const fields = try splitWireFields(allocator, records);
+        var written = false;
+        for (fields.items, 0..) |field, i| {
+            // Each field number is written once, from all of its occurrences.
+            if (seenBefore(fields.items[0..i], field.tag.field)) continue;
+            const key = try std.fmt.allocPrint(allocator, "{s}#{d}", .{ extendee, field.tag.field });
+            if (self.extensions.get(key)) |ext| {
+                try w.print(" .{f} = ", .{std.zig.fmtId(ext.full_name)});
+                try self.writeFieldValue(allocator, w, ext.field, fields.items);
+            } else {
+                try w.print(" .@\"{d}\" = ", .{field.tag.field});
+                try w.writeAll(try formatSliceEscapeImpl(allocator, try concatFieldValues(allocator, fields.items, field.tag.field)));
+            }
+            try w.writeByte(',');
+            written = true;
+        }
+        return written;
+    }
+
+    fn seenBefore(fields: []const WireField, number: u29) bool {
+        for (fields) |f| if (f.tag.field == number) return true;
+        return false;
+    }
+
+    fn concatFieldValues(allocator: std.mem.Allocator, fields: []const WireField, number: u29) ![]const u8 {
+        var result: std.ArrayList(u8) = .empty;
+        for (fields) |f| if (f.tag.field == number) try result.appendSlice(allocator, f.value);
+        return result.items;
+    }
+
+    /// Writes the value of `field` from its occurrences in `fields`.
+    fn writeFieldValue(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        w: *std.Io.Writer,
+        field: descriptor.FieldDescriptorProto,
+        fields: []const WireField,
+    ) !void {
+        const number: u29 = @intCast(field.number.?);
+        const t = field.type.?;
+        if (t == .TYPE_MESSAGE or t == .TYPE_GROUP) {
+            if (isRepeated(field)) {
+                try w.writeAll(".{");
+                var first = true;
+                for (fields) |f| if (f.tag.field == number) {
+                    try w.writeAll(if (first) " " else ", ");
+                    try self.writeDescribedMessage(allocator, w, field.type_name.?, try messagePayload(f));
+                    first = false;
+                };
+                return w.writeAll(" }");
+            }
+            // Occurrences of a singular message are merged.
+            return self.writeDescribedMessage(allocator, w, field.type_name.?, try self.mergeMessages(allocator, fields, number, t == .TYPE_GROUP));
+        }
+
+        // Scalars: a repeated field lists every element, packed or not; a
+        // singular field keeps its last value.
+        var elements: std.ArrayList([]const u8) = .empty;
+        for (fields) |f| if (f.tag.field == number) {
+            var reader: std.Io.Reader = .fixed(f.value);
+            if (f.tag.wire_type == .len and t != .TYPE_STRING and t != .TYPE_BYTES) {
+                const len, _ = try pb.wire.decodeScalar(.int32, &reader);
+                _ = len;
+                while (reader.seek < reader.end) {
+                    try elements.append(allocator, try self.scalarLiteral(allocator, field, &reader, .varint));
+                }
+            } else {
+                try elements.append(allocator, try self.scalarLiteral(allocator, field, &reader, f.tag.wire_type));
+            }
+        };
+        if (!isRepeated(field)) return w.writeAll(elements.items[elements.items.len - 1]);
+        try w.writeAll(".{");
+        for (elements.items, 0..) |e, i| try w.print("{s}{s}", .{ if (i == 0) " " else ", ", e });
+        try w.writeAll(" }");
+    }
+
+    /// The fields of a message value: after the length prefix of a
+    /// length-delimited message; a group ends at its EGROUP tag, where
+    /// `splitWireFields` stops.
+    fn messagePayload(f: WireField) ![]const u8 {
+        if (f.tag.wire_type != .len) return f.value;
+        var reader: std.Io.Reader = .fixed(f.value);
+        _, _ = try pb.wire.decodeScalar(.int32, &reader);
+        return f.value[reader.seek..];
+    }
+
+    /// Concatenates the payloads of the occurrences of a message field, which
+    /// decodes as their merge.
+    fn mergeMessages(self: *GenerationContext, allocator: std.mem.Allocator, fields: []const WireField, number: u29, group: bool) ![]const u8 {
+        _ = self;
+        var result: std.ArrayList(u8) = .empty;
+        for (fields) |f| if (f.tag.field == number) {
+            if (group) {
+                // Drop the EGROUP tag ending each occurrence.
+                for ((try splitWireFields(allocator, f.value)).items) |inner| {
+                    var tag_buf: [10]u8 = undefined;
+                    var tag_w: std.Io.Writer = .fixed(&tag_buf);
+                    try writeRawVarint(&tag_w, @as(u32, @bitCast(inner.tag)));
+                    try result.appendSlice(allocator, tag_w.buffered());
+                    try result.appendSlice(allocator, inner.value);
+                }
+            } else {
+                var reader: std.Io.Reader = .fixed(f.value);
+                _, _ = try pb.wire.decodeScalar(.int32, &reader);
+                try result.appendSlice(allocator, f.value[reader.seek..]);
+            }
+        };
+        return result.items;
+    }
+
+    /// Returns the literal of a scalar value of `field`, read from `reader`.
+    /// For packed values, `wire_type` is the one of each element.
+    fn scalarLiteral(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        field: descriptor.FieldDescriptorProto,
+        reader: *std.Io.Reader,
+        wire_type: pb.wire.Type,
+    ) ![]const u8 {
+        _ = wire_type;
+        return switch (field.type.?) {
+            .TYPE_STRING, .TYPE_BYTES => b: {
+                const len, _ = try pb.wire.decodeScalar(.int32, reader);
+                break :b try formatSliceEscapeImpl(allocator, try reader.take(@intCast(len)));
+            },
+            .TYPE_BOOL => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.bool, reader))[0]}),
+            .TYPE_INT32 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.int32, reader))[0]}),
+            .TYPE_INT64 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.int64, reader))[0]}),
+            .TYPE_UINT32 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.uint32, reader))[0]}),
+            .TYPE_UINT64 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.uint64, reader))[0]}),
+            .TYPE_SINT32 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.sint32, reader))[0]}),
+            .TYPE_SINT64 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.sint64, reader))[0]}),
+            .TYPE_FIXED32 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.fixed32, reader))[0]}),
+            .TYPE_FIXED64 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.fixed64, reader))[0]}),
+            .TYPE_SFIXED32 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.sfixed32, reader))[0]}),
+            .TYPE_SFIXED64 => try std.fmt.allocPrint(allocator, "{}", .{(try pb.wire.decodeScalar(.sfixed64, reader))[0]}),
+            .TYPE_FLOAT, .TYPE_DOUBLE => b: {
+                var w: std.Io.Writer.Allocating = .init(allocator);
+                if (field.type.? == .TYPE_FLOAT) {
+                    try writeFloatLiteral(&w.writer, (try pb.wire.decodeScalar(.float, reader))[0]);
+                } else {
+                    try writeFloatLiteral(&w.writer, (try pb.wire.decodeScalar(.double, reader))[0]);
+                }
+                break :b w.written();
+            },
+            .TYPE_ENUM => b: {
+                const number = (try pb.wire.decodeScalar(.int32, reader))[0];
+                if (self.enums.get(field.type_name.?)) |e| for (e.value.items) |v| {
+                    if (v.number == number) break :b try std.fmt.allocPrint(allocator, ".{f}", .{std.zig.fmtId(v.name.?)});
+                };
+                break :b try std.fmt.allocPrint(allocator, "{}", .{number});
+            },
+            .TYPE_MESSAGE, .TYPE_GROUP => unreachable,
+        };
+    }
+
+    /// Writes wire data of the message type `type_name` of the request as a
+    /// literal, using its descriptor. Fields matching no field or extension
+    /// are kept as raw bytes, keyed by their field number.
+    fn writeDescribedMessage(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        w: *std.Io.Writer,
+        type_name: []const u8,
+        bytes: []const u8,
+    ) anyerror!void {
+        const message = self.messages.get(type_name) orelse {
+            return w.writeAll(try formatSliceEscapeImpl(allocator, bytes));
+        };
+        const fields = try splitWireFields(allocator, bytes);
+        try w.writeAll(".{");
+        var empty = true;
+        for (message.field.items) |field| {
+            if (!seenBefore(fields.items, @intCast(field.number.?))) continue;
+            try w.print(" .{f} = ", .{std.zig.fmtId(field.name.?)});
+            try self.writeFieldValue(allocator, w, field, fields.items);
+            try w.writeByte(',');
+            empty = false;
+        }
+        // Extensions of the message, and fields unknown to its descriptor.
+        const message_set = if (message.options) |o| o.message_set_wire_format orelse false else false;
+        var others: std.ArrayList(u8) = .empty;
+        for (fields.items) |f| {
+            if (hasFieldNumber(message, f.tag.field)) continue;
+            if (message_set and f.tag.field == 1 and f.tag.wire_type == .sgroup) {
+                // A MessageSet item: the extension `type_id`, holding `message`.
+                try appendMessageSetItem(allocator, &others, f.value);
+                continue;
+            }
+            var tag_buf: [10]u8 = undefined;
+            var tag_w: std.Io.Writer = .fixed(&tag_buf);
+            try writeRawVarint(&tag_w, @as(u32, @bitCast(f.tag)));
+            try others.appendSlice(allocator, tag_w.buffered());
+            try others.appendSlice(allocator, f.value);
+        }
+        if (try self.writeExtensionFields(allocator, w, type_name, others.items)) empty = false;
+        try w.writeAll(if (empty) "}" else " }");
+    }
+
+    /// Appends a MessageSet item (the fields of its group) to `records` as the
+    /// length-delimited field `type_id` holding `message`.
+    fn appendMessageSetItem(allocator: std.mem.Allocator, records: *std.ArrayList(u8), item: []const u8) !void {
+        var type_id: ?u64 = null;
+        var payload: []const u8 = &.{};
+        for ((try splitWireFields(allocator, item)).items) |f| {
+            var reader: std.Io.Reader = .fixed(f.value);
+            if (f.tag.field == 2 and f.tag.wire_type == .varint) {
+                type_id = (try pb.wire.decodeScalar(.uint64, &reader))[0];
+            } else if (f.tag.field == 3 and f.tag.wire_type == .len) {
+                payload = f.value;
+            }
+        }
+        const id = type_id orelse return;
+        var buf: [10]u8 = undefined;
+        var w: std.Io.Writer = .fixed(&buf);
+        try writeRawVarint(&w, (id << 3) | @intFromEnum(pb.wire.Type.len));
+        try records.appendSlice(allocator, w.buffered());
+        // `payload` is still length-prefixed, as a length-delimited value.
+        try records.appendSlice(allocator, if (payload.len > 0) payload else "\x00");
+    }
+
+    fn hasFieldNumber(message: descriptor.DescriptorProto, number: u29) bool {
+        for (message.field.items) |field| if (field.number == number) return true;
+        return false;
+    }
+
+    fn writeRawVarint(w: *std.Io.Writer, value: u64) !void {
+        var v = value;
+        while (v > 0x7F) : (v >>= 7) try w.writeByte(0x80 | @as(u8, @truncate(v)));
+        try w.writeByte(@intCast(v));
+    }
+
+    /// Emits `pub const <decl> = .{ .<name> = <options>, ... };` for the
+    /// elements of `items` that have options.
+    fn generateOptionsTable(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        lines: *std.ArrayList([]const u8),
+        file: descriptor.FileDescriptorProto,
+        comptime decl: []const u8,
+        comptime doc: []const u8,
+        items: anytype,
+    ) !void {
+        var emitted = false;
+        for (items) |item| {
+            const encoded = try self.encodeOptions(allocator, file, item.options) orelse continue;
+            if (!emitted) {
+                try lines.append(allocator, "\n    /// " ++ doc ++ "\n    pub const " ++ decl ++ " = .{\n");
+                emitted = true;
+            }
+            try lines.append(allocator, try std.fmt.allocPrint(
+                allocator,
+                "        .{f} = {s},\n",
+                .{ std.zig.fmtId(item.name.?), encoded },
+            ));
+        }
+        if (emitted) try lines.append(allocator, "    };\n");
+    }
+
+    /// Emits the options of a message, of its fields and of its oneofs.
+    fn generateMessageOptions(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        lines: *std.ArrayList([]const u8),
+        file: descriptor.FileDescriptorProto,
+        message: descriptor.DescriptorProto,
+    ) !void {
+        if (try self.encodeOptions(allocator, file, message.options)) |encoded| {
+            try lines.append(allocator, try std.fmt.allocPrint(
+                allocator,
+                "\n    /// Options of the message (`google.protobuf.MessageOptions`).\n    pub const _options = {s};\n",
+                .{encoded},
+            ));
+        }
+        try self.generateOptionsTable(
+            allocator,
+            lines,
+            file,
+            "_field_options",
+            "Options of the fields that have some (`google.protobuf.FieldOptions`).",
+            message.field.items,
+        );
+        try self.generateOptionsTable(
+            allocator,
+            lines,
+            file,
+            "_oneof_options",
+            "Options of the oneofs that have some (`google.protobuf.OneofOptions`).",
+            message.oneof_decl.items,
+        );
+    }
+
+    /// Emits the options of an enum and of its values.
+    fn generateEnumOptions(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        lines: *std.ArrayList([]const u8),
+        file: descriptor.FileDescriptorProto,
+        e: descriptor.EnumDescriptorProto,
+    ) !void {
+        if (try self.encodeOptions(allocator, file, e.options)) |encoded| {
+            try lines.append(allocator, try std.fmt.allocPrint(
+                allocator,
+                "\n    /// Options of the enum (`google.protobuf.EnumOptions`).\n    pub const _options = {s};\n",
+                .{encoded},
+            ));
+        }
+        try self.generateOptionsTable(
+            allocator,
+            lines,
+            file,
+            "_value_options",
+            "Options of the values that have some (`google.protobuf.EnumValueOptions`).",
+            e.value.items,
+        );
+    }
+
+    /// Emits the options of a service and of its methods.
+    fn generateServiceOptions(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        lines: *std.ArrayList([]const u8),
+        file: descriptor.FileDescriptorProto,
+        service: descriptor.ServiceDescriptorProto,
+    ) !void {
+        if (try self.encodeOptions(allocator, file, service.options)) |encoded| {
+            try lines.append(allocator, try std.fmt.allocPrint(
+                allocator,
+                "\n    /// Options of the service (`google.protobuf.ServiceOptions`).\n    pub const _options = {s};\n",
+                .{encoded},
+            ));
+        }
+        try self.generateOptionsTable(
+            allocator,
+            lines,
+            file,
+            "_method_options",
+            "Options of the methods that have some (`google.protobuf.MethodOptions`).",
+            service.method.items,
+        );
+    }
+
+    /// Records the options of `file`, for the `_file_options` declaration of
+    /// its package.
+    fn recordFileOptions(self: *GenerationContext, allocator: std.mem.Allocator, file: descriptor.FileDescriptorProto) !void {
+        const encoded = try self.encodeOptions(allocator, file, file.options) orelse return;
+        const entry = try self.package_file_options.getOrPut(file.package.?);
+        if (!entry.found_existing) entry.value_ptr.* = .empty;
+        try entry.value_ptr.append(allocator, try std.fmt.allocPrint(
+            allocator,
+            "    .{f} = {s},\n",
+            .{ std.zig.fmtId(file.name.?), encoded },
+        ));
+    }
+
+    /// Emits `defaults`, holding the custom `[default = ...]` values of the
+    /// fields with explicit presence. Such fields are `null` when unset, in
+    /// which case their value is the one declared here.
+    fn generateDefaults(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        lines: *std.ArrayList([]const u8),
+        fqn: FullName,
+        file: descriptor.FileDescriptorProto,
+        message: descriptor.DescriptorProto,
+        message_features: Features,
+    ) !void {
+        var emitted = false;
+        for (message.field.items) |f| {
+            if (isRepeated(f) or f.default_value == null) continue;
+            const features = message_features.forField(file, message, f);
+            if (!hasExplicitPresence(f, features)) continue;
+            const value = try formatDefaultValue(allocator, f) orelse continue;
+
+            if (!emitted) {
+                if (definesDefaultsMember(message)) {
+                    self.res.@"error" = try std.fmt.allocPrint(
+                        allocator,
+                        "ERROR {s} declares a member named \"defaults\", which conflicts with the generated `defaults` declaration\n",
+                        .{fqn.buf},
+                    );
+                    return;
+                }
+                try lines.append(allocator,
+                    \\
+                    \\    /// Default values of fields that are `null` when not set.
+                    \\    pub const defaults = struct {
+                    \\
+                );
+                emitted = true;
+            }
+            // Non-optional type of the field, as used within unions.
+            const type_str = try self.getFieldType(allocator, fqn, file, f, features, true);
+            try lines.append(allocator, try std.fmt.allocPrint(
+                allocator,
+                // Unlike fields, declarations may not shadow primitives.
+                "        pub const {f}: {s} = {s};\n",
+                .{ std.zig.fmtId(f.name.?), type_str, value },
+            ));
+        }
+        if (emitted) try lines.append(allocator, "    };\n");
+    }
+
+    /// Emits the extensions declared in a scope (a file or a message) as
+    /// `protobuf.Extension` declarations, and records them for the
+    /// `extensions` declaration of their package.
+    fn generateExtensions(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        lines: *std.ArrayList([]const u8),
+        scope_fqn: FullName,
+        file: descriptor.FileDescriptorProto,
+        extensions: std.ArrayList(descriptor.FieldDescriptorProto),
+        scope_features: Features,
+    ) !void {
+        const package = file.package.?;
+        for (extensions.items) |ext| {
+            // Extensions resolve their features from their declaration scope.
+            // Singular extensions always have explicit presence.
+            var features = scope_features.forField(file, .{}, ext);
+            if (!isRepeated(ext)) features.field_presence = .EXPLICIT;
+
+            var extendee_field = ext;
+            extendee_field.type_name = ext.extendee;
+            const extendee = try self.fieldTypeFqn(allocator, scope_fqn, file, extendee_field);
+            // The value is stored apart from its scope, so a message type is
+            // never self-referential and needs no pointer.
+            const element_type = try self.getFieldType(allocator, scope_fqn, file, ext, features, true);
+            const value_type = if (isRepeated(ext))
+                element_type
+            else
+                try std.mem.concat(allocator, u8, &.{ "?", element_type });
+            const ftype = try self.getFieldTypeDescriptor(allocator, ext, features);
+            const field_desc = if (try self.getFieldFeatures(allocator, .{}, ext, features)) |fs|
+                try std.fmt.allocPrint(allocator, "fdf({?d}, {s}, {s})", .{ ext.number, ftype, fs })
+            else
+                try std.fmt.allocPrint(allocator, "fd({?d}, {s})", .{ ext.number, ftype });
+            const default = if (isRepeated(ext)) "null" else if (try formatDefaultValue(allocator, ext)) |value|
+                try std.fmt.allocPrint(allocator, "@as({s}, {s})", .{
+                    try self.getFieldType(allocator, scope_fqn, file, ext, features, true),
+                    value,
+                })
+            else
+                "null";
+
+            try lines.append(allocator, try std.fmt.allocPrint(
+                allocator,
+                "\npub const {f} = protobuf.Extension({s}, {s}, {s}, \"{s}.{s}\", {s}, {s});\n",
+                .{ std.zig.fmtId(ext.name.?), extendee, value_type, field_desc, scope_fqn.buf, ext.name.?, default, try self.encodeOptions(allocator, file, ext.options) orelse ".{}" },
+            ));
+
+            // Reference relative to the package, for the `extensions` list.
+            const reference = if (scope_fqn.buf.len == package.len)
+                try std.fmt.allocPrint(allocator, "{f}", .{std.zig.fmtId(ext.name.?)})
+            else
+                try std.fmt.allocPrint(allocator, "{s}.{f}", .{ scope_fqn.buf[package.len + 1 ..], std.zig.fmtId(ext.name.?) });
+            const entry = try self.package_extensions.getOrPut(package);
+            if (!entry.found_existing) entry.value_ptr.* = .empty;
+            try entry.value_ptr.append(allocator, reference);
+        }
+    }
+
+    /// Emits `_extensions_info` for a message with extension ranges: the
+    /// ranges, which decide the fields kept as extensions when decoding,
+    /// whether the extensions use the legacy MessageSet format, and the
+    /// options of the ranges, when some have options.
+    fn generateExtensionsInfo(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        lines: *std.ArrayList([]const u8),
+        file: descriptor.FileDescriptorProto,
+        message: descriptor.DescriptorProto,
+    ) !void {
+        if (message.extension_range.items.len == 0) return;
+        try lines.append(allocator,
+            \\
+            \\    pub const _extensions_info = .{
+            \\        .ranges = .{
+        );
+        var range_options: std.ArrayList([]const u8) = .empty;
+        var any_options = false;
+        for (message.extension_range.items) |range| {
+            try lines.append(allocator, try std.fmt.allocPrint(
+                allocator,
+                " .{{ {?d}, {?d} }},",
+                .{ range.start, range.end },
+            ));
+            const options = try self.encodeOptions(allocator, file, range.options);
+            any_options = any_options or options != null;
+            try range_options.append(allocator, options orelse ".{}");
+        }
+        const message_set = if (message.options) |o| o.message_set_wire_format orelse false else false;
+        try lines.append(allocator, try std.fmt.allocPrint(
+            allocator,
+            " }},\n        .message_set = {},\n",
+            .{message_set},
+        ));
+        if (any_options) {
+            try lines.append(allocator, try std.fmt.allocPrint(
+                allocator,
+                "        .range_options = .{{ {s} }},\n",
+                .{try std.mem.join(allocator, ", ", range_options.items)},
+            ));
+        }
+        try lines.append(allocator, "    };\n");
+    }
+
+    /// Returns the `extensions` declaration listing the extensions of
+    /// `package`, or null if it declares none.
+    fn packageExtensionsDeclaration(self: *GenerationContext, allocator: std.mem.Allocator, package: []const u8) !?[]const u8 {
+        const references = self.package_extensions.get(package) orelse return null;
+
+        // The declaration shares the top-level scope of the package.
+        for (self.req.proto_file.items) |file| {
+            if (!std.mem.eql(u8, file.package.?, package)) continue;
+            var clash = false;
+            for (file.message_type.items) |m| clash = clash or std.mem.eql(u8, m.name.?, "extensions");
+            for (file.enum_type.items) |e| clash = clash or std.mem.eql(u8, e.name.?, "extensions");
+            for (file.extension.items) |x| clash = clash or std.mem.eql(u8, x.name.?, "extensions");
+            for (file.service.items) |s| clash = clash or std.mem.eql(u8, s.name.?, "extensions");
+            if (clash) {
+                self.res.@"error" = try std.fmt.allocPrint(
+                    allocator,
+                    "ERROR package {s} declares a member named \"extensions\", which conflicts with the generated `extensions` declaration\n",
+                    .{package},
+                );
+                return null;
+            }
+        }
+
+        return try std.fmt.allocPrint(
+            allocator,
+            "\n/// Extensions declared in this package, for `protobuf.ExtensionRegistry.init`.\npub const extensions = .{{ {s} }};\n",
+            .{try std.mem.join(allocator, ", ", references.items)},
+        );
+    }
+
+    /// Whether a field, oneof, nested message or nested enum of `message` is
+    /// named `defaults`, as Zig forbids members sharing a name.
+    fn definesDefaultsMember(message: descriptor.DescriptorProto) bool {
+        for (message.field.items) |f| if (std.mem.eql(u8, f.name.?, "defaults")) return true;
+        for (message.oneof_decl.items) |o| if (std.mem.eql(u8, o.name.?, "defaults")) return true;
+        for (message.nested_type.items) |m| if (std.mem.eql(u8, m.name.?, "defaults")) return true;
+        for (message.enum_type.items) |e| if (std.mem.eql(u8, e.name.?, "defaults")) return true;
+        for (message.extension.items) |x| if (std.mem.eql(u8, x.name.?, "defaults")) return true;
+        return false;
     }
 
     /// Analyzes message dependencies to detect self-referential messages
@@ -1149,6 +2050,7 @@ const GenerationContext = struct {
                     .{service_name},
                 ),
             );
+            try self.generateServiceOptions(allocator, lines, file, service);
 
             // Generate vtable fields (function pointers only)
             try self.generateVTableFields(
@@ -1311,6 +2213,120 @@ const GenerationContext = struct {
     }
 };
 
+const FeatureSet = descriptor.FeatureSet;
+
+/// Oldest and newest editions this generator supports. proto2 and proto3 are
+/// handled as the legacy editions they correspond to. Editions 2024 and 2026
+/// only change features with source retention (naming style, symbol
+/// visibility, proto limits), which protoc enforces itself, so the features
+/// resolved here are the same from edition 2023 onwards.
+const minimum_edition: descriptor.Edition = .EDITION_PROTO2;
+const maximum_edition: descriptor.Edition = .EDITION_2026;
+
+/// Fully resolved editions features of a file, message, enum or field.
+///
+/// protoc only hands plugins the features that were set explicitly, so every
+/// element is resolved here: the edition defaults are overridden by the file,
+/// then by each enclosing message, then by the element itself.
+const Features = struct {
+    field_presence: FeatureSet.FieldPresence,
+    enum_type: FeatureSet.EnumType,
+    repeated_field_encoding: FeatureSet.RepeatedFieldEncoding,
+    utf8_validation: FeatureSet.Utf8Validation,
+    message_encoding: FeatureSet.MessageEncoding,
+
+    /// Feature defaults of an edition, as specified by descriptor.proto.
+    fn defaults(edition: descriptor.Edition) Features {
+        const e = @intFromEnum(edition);
+        if (e < @intFromEnum(descriptor.Edition.EDITION_PROTO3)) return .{
+            .field_presence = .EXPLICIT,
+            .enum_type = .CLOSED,
+            .repeated_field_encoding = .EXPANDED,
+            .utf8_validation = .NONE,
+            .message_encoding = .LENGTH_PREFIXED,
+        };
+        return .{
+            .field_presence = if (edition == .EDITION_PROTO3) .IMPLICIT else .EXPLICIT,
+            .enum_type = .OPEN,
+            .repeated_field_encoding = .PACKED,
+            .utf8_validation = .VERIFY,
+            .message_encoding = .LENGTH_PREFIXED,
+        };
+    }
+
+    /// Resolved features at the top-level scope of a file.
+    fn forFile(file: descriptor.FileDescriptorProto) Features {
+        const options_features = if (file.options) |o| o.features else null;
+        return defaults(fileEdition(file)).merge(options_features);
+    }
+
+    /// Returns the features with the explicitly set ones in `set` applied.
+    fn merge(self: Features, set: ?FeatureSet) Features {
+        var result = self;
+        const s = set orelse return result;
+        if (s.field_presence) |v| if (v != .FIELD_PRESENCE_UNKNOWN) {
+            result.field_presence = v;
+        };
+        if (s.enum_type) |v| if (v != .ENUM_TYPE_UNKNOWN) {
+            result.enum_type = v;
+        };
+        if (s.repeated_field_encoding) |v| if (v != .REPEATED_FIELD_ENCODING_UNKNOWN) {
+            result.repeated_field_encoding = v;
+        };
+        if (s.utf8_validation) |v| if (v != .UTF8_VALIDATION_UNKNOWN) {
+            result.utf8_validation = v;
+        };
+        if (s.message_encoding) |v| if (v != .MESSAGE_ENCODING_UNKNOWN) {
+            result.message_encoding = v;
+        };
+        return result;
+    }
+
+    /// Resolved features of `field`, declared in `message` whose resolved
+    /// features are `self`.
+    fn forField(
+        self: Features,
+        file: descriptor.FileDescriptorProto,
+        message: descriptor.DescriptorProto,
+        field: descriptor.FieldDescriptorProto,
+    ) Features {
+        var result = self;
+        if (field.oneof_index) |i| {
+            const oneof = message.oneof_decl.items[@intCast(i)];
+            if (oneof.options) |o| result = result.merge(o.features);
+        }
+        if (field.options) |o| result = result.merge(o.features);
+
+        // proto2 and proto3 express these features with dedicated syntax.
+        if (!std.mem.eql(u8, file.syntax orelse "proto2", "editions")) {
+            if (field.label == .LABEL_REQUIRED) result.field_presence = .LEGACY_REQUIRED;
+            if (field.proto3_optional orelse false) result.field_presence = .EXPLICIT;
+            if (field.type == .TYPE_GROUP) result.message_encoding = .DELIMITED;
+            if (field.options) |o| if (o.@"packed") |p| {
+                result.repeated_field_encoding = if (p) .PACKED else .EXPANDED;
+            };
+        }
+
+        // The key and value of a map entry are always considered present, a
+        // missing one meaning its zero value.
+        if (isMapEntry(message)) result.field_presence = .IMPLICIT;
+        return result;
+    }
+};
+
+fn isMapEntry(message: descriptor.DescriptorProto) bool {
+    const options = message.options orelse return false;
+    return options.map_entry orelse false;
+}
+
+/// Edition of a file, with proto2 and proto3 mapped to their legacy editions.
+fn fileEdition(file: descriptor.FileDescriptorProto) descriptor.Edition {
+    const syntax = file.syntax orelse "proto2";
+    if (std.mem.eql(u8, syntax, "editions")) return file.edition orelse .EDITION_UNKNOWN;
+    if (std.mem.eql(u8, syntax, "proto3")) return .EDITION_PROTO3;
+    return .EDITION_PROTO2;
+}
+
 fn packageToFileName(package: []const u8, output: []u8) []const u8 {
     const result_len = package.len + ".pb.zig".len;
     std.debug.assert(output.len >= result_len);
@@ -1363,34 +2379,18 @@ fn isScalarNumeric(t: descriptor.FieldDescriptorProto.Type) bool {
     };
 }
 
-fn isPacked(file: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto) bool {
-    const default = if (is_proto3_file(file))
-        isScalarNumeric(field.type orelse return false)
-    else
-        false;
-
-    if (field.options) |o| {
-        if (o.@"packed") |p| {
-            return p;
-        }
-    }
-    return default;
+fn isPacked(field: descriptor.FieldDescriptorProto, features: Features) bool {
+    // Only repeated scalar numeric fields can be packed.
+    if (!isScalarNumeric(field.type orelse return false)) return false;
+    return features.repeated_field_encoding == .PACKED;
 }
 
-fn isOptional(file: descriptor.FileDescriptorProto, field: descriptor.FieldDescriptorProto) bool {
-    if (is_proto3_file(file)) {
-        return field.proto3_optional orelse false;
-    }
-
-    return (field.label orelse return false) == .LABEL_OPTIONAL;
-}
-
-fn is_proto3_file(file: descriptor.FileDescriptorProto) bool {
-    return std.mem.eql(
-        u8,
-        "proto3",
-        file.syntax orelse return false,
-    );
+/// Whether a singular, non-message field tracks presence, in which case it is
+/// generated as an optional (`?T`) field.
+fn hasExplicitPresence(field: descriptor.FieldDescriptorProto, features: Features) bool {
+    // Fields of a oneof always have explicit presence.
+    if (field.oneof_index != null) return true;
+    return features.field_presence == .EXPLICIT;
 }
 
 pub fn formatSliceEscapeImpl(allocator: std.mem.Allocator, str: []const u8) ![]const u8 {

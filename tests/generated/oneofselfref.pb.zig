@@ -4,6 +4,7 @@ const std = @import("std");
 
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
+const fdf = protobuf.fdf;
 
 pub const Result = struct {
     version: i32 = 0,
@@ -89,7 +90,7 @@ pub const Node = struct {
         some_string: []const u8,
         pub const _desc_table = .{
             .sub_node = fd(1, .submessage),
-            .some_string = fd(2, .{ .scalar = .string }),
+            .some_string = fdf(2, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         };
     };
 
@@ -166,7 +167,7 @@ pub const SubNode = struct {
 
     pub const _desc_table = .{
         .sub = fd(1, .submessage),
-        .another_string = fd(2, .{ .scalar = .string }),
+        .another_string = fdf(2, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
     };
 
     /// Encodes the message to the writer

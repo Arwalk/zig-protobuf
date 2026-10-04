@@ -9,6 +9,8 @@ pub const Any = protobuf.wkt.Any;
 
 pub const Duration = protobuf.wkt.Duration;
 
+pub const Empty = protobuf.wkt.Empty;
+
 pub const FieldMask = protobuf.wkt.FieldMask;
 
 pub const NullValue = protobuf.wkt.NullValue;

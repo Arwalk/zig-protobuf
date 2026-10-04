@@ -1,6 +1,6 @@
 .{
     .name = .protobuf,
-    .version = "5.0.0",
+    .version = "6.0.0",
 
     .fingerprint = 0x99fac5be6a36efd1,
 
@@ -8,43 +8,43 @@
 
     .dependencies = .{
         .@"protoc-linux-64" = .{
-            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.1/protoc-32.1-win64.zip",
-            .hash = "N-V-__8AAAOIwgCuuT3IhPlAW6erD8SspcE7iVKY4nbJWLV6",
+            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v36.2/protoc-36.2-win64.zip",
+            .hash = "N-V-__8AABekzACgnTDmenHY7N0E55oHnTfOliLw8ReYHEDH",
             .lazy = true,
         },
         .@"protoc-linux-x86_64" = .{
-            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.1/protoc-32.1-linux-x86_64.zip",
-            .hash = "N-V-__8AAGKbngAmNuaBMSXq_WgmQi6N8WVWVKp0moFSTvoJ",
+            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v36.2/protoc-36.2-linux-x86_64.zip",
+            .hash = "N-V-__8AAMtRpADAGtPCqgS57gPLl02TIK7HbJ1MkIm4Eq8F",
             .lazy = true,
         },
         .@"protoc-linux-x86_32" = .{
-            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.1/protoc-32.1-linux-x86_32.zip",
-            .hash = "N-V-__8AAHpvrAAEcEurDCWYQt6jTJSozCfLDwkGTptKEyJ7",
+            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v36.2/protoc-36.2-linux-x86_32.zip",
+            .hash = "N-V-__8AAI98sgALeHzk_97rNng7AXDOLHKXDxkSlzanbKOy",
             .lazy = true,
         },
         .@"protoc-linux-aarch_64" = .{
-            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.1/protoc-32.1-linux-aarch_64.zip",
-            .hash = "N-V-__8AAJKMngA8y82sENkRg-JF100BtRa7GQxoBIfU3c3_",
+            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v36.2/protoc-36.2-linux-aarch_64.zip",
+            .hash = "N-V-__8AAJtTpABBCU2sJAPkeqWvUtTttRQ-OsmdzFEIUSDi",
             .lazy = true,
         },
         .@"protoc-osx-aarch_64" = .{
-            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.1/protoc-32.1-osx-aarch_64.zip",
-            .hash = "N-V-__8AANrukAA2AHP6xuzchs_iwsyg1UYhIFhpUR6R0x7K",
+            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v36.2/protoc-36.2-osx-aarch_64.zip",
+            .hash = "N-V-__8AAEMzlwBZp20Y1DKVJqyV3AsG1IteRnb4aUF3gHSn",
             .lazy = true,
         },
         .@"protoc-osx-x86_64" = .{
-            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.1/protoc-32.1-osx-x86_64.zip",
-            .hash = "N-V-__8AAFoXkgBrHnNjViSdp84aL1ciwtWKZdYHK7dSSppd",
+            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v36.2/protoc-36.2-osx-x86_64.zip",
+            .hash = "N-V-__8AADN7mAAz1e7gPxuQfAAIPUvhsh2xZqntvaO9KAi_",
             .lazy = true,
         },
         .@"protoc-win64" = .{
-            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.1/protoc-32.1-win64.zip",
-            .hash = "N-V-__8AAAOIwgCuuT3IhPlAW6erD8SspcE7iVKY4nbJWLV6",
+            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v36.2/protoc-36.2-win64.zip",
+            .hash = "N-V-__8AABekzACgnTDmenHY7N0E55oHnTfOliLw8ReYHEDH",
             .lazy = true,
         },
         .@"protoc-linux-s390" = .{
-            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.1/protoc-32.1-linux-s390_64.zip",
-            .hash = "N-V-__8AADKo3ADb6qHynR1iiBhHFQcaoAE0qpLZuh3GtoT2",
+            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v36.2/protoc-36.2-linux-s390_64.zip",
+            .hash = "N-V-__8AAMvu4gDIIsn0ocNRIfwtpNpmoIeDbJY_zvRdSp83",
             .lazy = true,
         },
     },

@@ -20,12 +20,19 @@ pub fn build(b: *std.Build) void {
         .source_files = &.{
             b.path("protos/conformance.proto"),
             b.path("protos/test_messages_proto3.proto"),
+            b.path("protos/test_messages_proto2.proto"),
+            b.path("protos/test_messages_edition2023.proto"),
+            b.path("protos/test_messages_proto2_editions.proto"),
+            b.path("protos/test_messages_proto3_editions.proto"),
+            b.path("protos/test_messages_edition_unstable.proto"),
         },
         .include_directories = &.{ b.path("protos"), upstream.path("src") },
         .destination_directory = b.path("generated"),
         .generator = protoc_gen_zig,
         .protoc = protoc.getEmittedBin(),
         .preserve_unknown_fields = true,
+        // The unstable edition test messages use `edition = "UNSTABLE"`.
+        .experimental_editions = true,
     });
 
     // Instruct zig build system to first build protoc before trying to generate the .pb.zig!
@@ -56,7 +63,7 @@ pub fn build(b: *std.Build) void {
     run_cmd.addArgs(&.{
         "--enforce_recommended",
         "--maximum_edition",
-        "2024",
+        "2026",
         "--output_dir",
         "out",
         "--failure_list",

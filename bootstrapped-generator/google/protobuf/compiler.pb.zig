@@ -40,6 +40,10 @@ pub const Version = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -115,6 +119,10 @@ pub const CodeGeneratorRequest = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -176,7 +184,6 @@ pub const CodeGeneratorResponse = struct {
         FEATURE_NONE = 0,
         FEATURE_PROTO3_OPTIONAL = 1,
         FEATURE_SUPPORTS_EDITIONS = 2,
-        _,
     };
 
     /// Represents a single generated file.
@@ -211,6 +218,10 @@ pub const CodeGeneratorResponse = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -271,6 +282,10 @@ pub const CodeGeneratorResponse = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -309,4 +324,16 @@ pub const CodeGeneratorResponse = struct {
     ) !@This() {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
+};
+
+/// Options of the files of this package that have some
+/// (`google.protobuf.FileOptions`), by file name.
+pub const _file_options = .{
+    .@"google/protobuf/compiler/plugin.proto" = .{
+        .@"#raw" = "\n\x1ccom.google.protobuf.compilerB\x0cPluginProtosZ)google.golang.org/protobuf/types/pluginpb\xaa\x02\x18Google.Protobuf.Compiler",
+        .java_package = "com.google.protobuf.compiler",
+        .java_outer_classname = "PluginProtos",
+        .go_package = "google.golang.org/protobuf/types/pluginpb",
+        .csharp_namespace = "Google.Protobuf.Compiler",
+    },
 };

@@ -4,6 +4,7 @@ const std = @import("std");
 
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
+const fdf = protobuf.fdf;
 /// import package google.protobuf
 const google_protobuf = @import("../google/protobuf.pb.zig");
 
@@ -191,7 +192,7 @@ pub const TestAllTypesProto3 = struct {
         pub const _desc_table = .{
             .oneof_uint32 = fd(111, .{ .scalar = .uint32 }),
             .oneof_nested_message = fd(112, .submessage),
-            .oneof_string = fd(113, .{ .scalar = .string }),
+            .oneof_string = fdf(113, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .oneof_bytes = fd(114, .{ .scalar = .bytes }),
             .oneof_bool = fd(115, .{ .scalar = .bool }),
             .oneof_uint64 = fd(116, .{ .scalar = .uint64 }),
@@ -216,15 +217,15 @@ pub const TestAllTypesProto3 = struct {
         .optional_float = fd(11, .{ .scalar = .float }),
         .optional_double = fd(12, .{ .scalar = .double }),
         .optional_bool = fd(13, .{ .scalar = .bool }),
-        .optional_string = fd(14, .{ .scalar = .string }),
+        .optional_string = fdf(14, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         .optional_bytes = fd(15, .{ .scalar = .bytes }),
         .optional_nested_message = fd(18, .submessage),
         .optional_foreign_message = fd(19, .submessage),
         .optional_nested_enum = fd(21, .@"enum"),
         .optional_foreign_enum = fd(22, .@"enum"),
         .optional_aliased_enum = fd(23, .@"enum"),
-        .optional_string_piece = fd(24, .{ .scalar = .string }),
-        .optional_cord = fd(25, .{ .scalar = .string }),
+        .optional_string_piece = fdf(24, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+        .optional_cord = fdf(25, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         .recursive_message = fd(27, .submessage),
         .repeated_int32 = fd(31, .{ .packed_repeated = .{ .scalar = .int32 } }),
         .repeated_int64 = fd(32, .{ .packed_repeated = .{ .scalar = .int64 } }),
@@ -239,14 +240,14 @@ pub const TestAllTypesProto3 = struct {
         .repeated_float = fd(41, .{ .packed_repeated = .{ .scalar = .float } }),
         .repeated_double = fd(42, .{ .packed_repeated = .{ .scalar = .double } }),
         .repeated_bool = fd(43, .{ .packed_repeated = .{ .scalar = .bool } }),
-        .repeated_string = fd(44, .{ .repeated = .{ .scalar = .string } }),
+        .repeated_string = fdf(44, .{ .repeated = .{ .scalar = .string } }, .{ .utf8_validation = .verify }),
         .repeated_bytes = fd(45, .{ .repeated = .{ .scalar = .bytes } }),
         .repeated_nested_message = fd(48, .{ .repeated = .submessage }),
         .repeated_foreign_message = fd(49, .{ .repeated = .submessage }),
         .repeated_nested_enum = fd(51, .{ .packed_repeated = .@"enum" }),
         .repeated_foreign_enum = fd(52, .{ .packed_repeated = .@"enum" }),
-        .repeated_string_piece = fd(54, .{ .repeated = .{ .scalar = .string } }),
-        .repeated_cord = fd(55, .{ .repeated = .{ .scalar = .string } }),
+        .repeated_string_piece = fdf(54, .{ .repeated = .{ .scalar = .string } }, .{ .utf8_validation = .verify }),
+        .repeated_cord = fdf(55, .{ .repeated = .{ .scalar = .string } }, .{ .utf8_validation = .verify }),
         .packed_int32 = fd(75, .{ .packed_repeated = .{ .scalar = .int32 } }),
         .packed_int64 = fd(76, .{ .packed_repeated = .{ .scalar = .int64 } }),
         .packed_uint32 = fd(77, .{ .packed_repeated = .{ .scalar = .uint32 } }),
@@ -1381,8 +1382,8 @@ pub const TestAllTypesProto3 = struct {
         value: []const u8 = &.{},
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .scalar = .string }),
-            .value = fd(2, .{ .scalar = .string }),
+            .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+            .value = fdf(2, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         };
 
         /// Encodes the message to the writer
@@ -1453,7 +1454,7 @@ pub const TestAllTypesProto3 = struct {
         value: []const u8 = &.{},
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .scalar = .string }),
+            .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .value = fd(2, .{ .scalar = .bytes }),
         };
 
@@ -1525,7 +1526,7 @@ pub const TestAllTypesProto3 = struct {
         value: ?TestAllTypesProto3.NestedMessage = null,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .scalar = .string }),
+            .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .value = fd(2, .submessage),
         };
 
@@ -1597,7 +1598,7 @@ pub const TestAllTypesProto3 = struct {
         value: ?ForeignMessage = null,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .scalar = .string }),
+            .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .value = fd(2, .submessage),
         };
 
@@ -1669,7 +1670,7 @@ pub const TestAllTypesProto3 = struct {
         value: TestAllTypesProto3.NestedEnum = @enumFromInt(0),
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .scalar = .string }),
+            .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .value = fd(2, .@"enum"),
         };
 
@@ -1741,7 +1742,7 @@ pub const TestAllTypesProto3 = struct {
         value: ForeignEnum = @enumFromInt(0),
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .scalar = .string }),
+            .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .value = fd(2, .@"enum"),
         };
 

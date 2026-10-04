@@ -4,6 +4,7 @@ const std = @import("std");
 
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
+const fdf = protobuf.fdf;
 
 pub const InventoryItem = struct {
     slot: i32 = 0,
@@ -15,10 +16,10 @@ pub const InventoryItem = struct {
 
     pub const _desc_table = .{
         .slot = fd(1, .{ .scalar = .int32 }),
-        .name = fd(2, .{ .scalar = .string }),
+        .name = fdf(2, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         .image = fd(3, .{ .scalar = .int32 }),
         .quantity = fd(4, .{ .scalar = .int32 }),
-        .description = fd(5, .{ .scalar = .string }),
+        .description = fdf(5, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         .id = fd(6, .{ .scalar = .int32 }),
     };
 
@@ -101,7 +102,7 @@ pub const Character = struct {
     enabled: bool = false,
 
     pub const _desc_table = .{
-        .id = fd(1, .{ .scalar = .string }),
+        .id = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         .class = fd(2, .{ .scalar = .int32 }),
         .gender = fd(3, .{ .scalar = .int32 }),
         .race = fd(4, .{ .scalar = .int32 }),
@@ -109,10 +110,10 @@ pub const Character = struct {
         .body = fd(6, .{ .scalar = .int32 }),
         .helmet = fd(7, .{ .scalar = .int32 }),
         .right_hand = fd(8, .{ .scalar = .int32 }),
-        .nick = fd(9, .{ .scalar = .string }),
+        .nick = fdf(9, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         .left_hand = fd(10, .{ .scalar = .int32 }),
-        .color = fd(11, .{ .scalar = .string }),
-        .clan = fd(12, .{ .scalar = .string }),
+        .color = fdf(11, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+        .clan = fdf(12, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         .enabled = fd(13, .{ .scalar = .bool }),
     };
 
@@ -185,9 +186,9 @@ pub const Alignment = struct {
     color: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .id = fd(1, .{ .scalar = .string }),
-        .name = fd(2, .{ .scalar = .string }),
-        .color = fd(3, .{ .scalar = .string }),
+        .id = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+        .name = fdf(2, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+        .color = fdf(3, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
     };
 
     /// Encodes the message to the writer
@@ -267,7 +268,7 @@ pub const Index = struct {
         .offset_x = fd(3, .{ .scalar = .int32 }),
         .offset_y = fd(4, .{ .scalar = .int32 }),
         .animations = fd(5, .{ .repeated = .submessage }),
-        .name = fd(6, .{ .scalar = .string }),
+        .name = fdf(6, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
     };
 
     pub const AnimationsEntry = struct {
@@ -275,7 +276,7 @@ pub const Index = struct {
         value: i32 = 0,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .scalar = .string }),
+            .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .value = fd(2, .{ .scalar = .int32 }),
         };
 
@@ -492,7 +493,7 @@ pub const MapEntity = struct {
         .light = fd(3, .submessage),
         .collider = fd(4, .submessage),
         .graphic_id = fd(5, .{ .scalar = .int32 }),
-        .entity_id = fd(6, .{ .scalar = .string }),
+        .entity_id = fdf(6, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         .vertical_graphic = fd(7, .{ .scalar = .bool }),
     };
 
@@ -800,9 +801,9 @@ pub const Npc = struct {
         .x = fd(1, .{ .scalar = .int32 }),
         .y = fd(2, .{ .scalar = .int32 }),
         .items = fd(3, .{ .repeated = .submessage }),
-        .name = fd(4, .{ .scalar = .string }),
-        .alignment = fd(5, .{ .scalar = .string }),
-        .ai = fd(6, .{ .scalar = .string }),
+        .name = fdf(4, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+        .alignment = fdf(5, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+        .ai = fdf(6, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         .min_hp = fd(7, .{ .scalar = .int32 }),
         .max_hp = fd(8, .{ .scalar = .int32 }),
         .min_mana = fd(9, .{ .scalar = .int32 }),
@@ -1276,8 +1277,8 @@ pub const Script = struct {
     code: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .path = fd(1, .{ .scalar = .string }),
-        .code = fd(2, .{ .scalar = .string }),
+        .path = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+        .code = fdf(2, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
     };
 
     /// Encodes the message to the writer
@@ -1351,9 +1352,9 @@ pub const SubTexture = struct {
     height: i32 = 0,
 
     pub const _desc_table = .{
-        .diffuse = fd(1, .{ .scalar = .string }),
-        .normal = fd(2, .{ .scalar = .string }),
-        .emmisive = fd(3, .{ .scalar = .string }),
+        .diffuse = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+        .normal = fdf(2, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+        .emmisive = fdf(3, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         .width = fd(4, .{ .scalar = .int32 }),
         .height = fd(5, .{ .scalar = .int32 }),
     };
@@ -1432,9 +1433,9 @@ pub const Texture = struct {
     dxt5: ?SubTexture = null,
 
     pub const _desc_table = .{
-        .diffuse = fd(1, .{ .scalar = .string }),
-        .normal = fd(2, .{ .scalar = .string }),
-        .emmisive = fd(3, .{ .scalar = .string }),
+        .diffuse = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+        .normal = fdf(2, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+        .emmisive = fdf(3, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         .width = fd(4, .{ .scalar = .int32 }),
         .height = fd(5, .{ .scalar = .int32 }),
         .dxt1 = fd(6, .submessage),
@@ -1525,7 +1526,7 @@ pub const Graphic = struct {
 
     pub const _desc_table = .{
         .id = fd(1, .{ .scalar = .int32 }),
-        .name = fd(4, .{ .scalar = .string }),
+        .name = fdf(4, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         .type = fd(null, .{ .oneof = type_union }),
     };
 
@@ -1752,9 +1753,9 @@ pub const Spine = struct {
     atlas: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .name = fd(1, .{ .scalar = .string }),
-        .json = fd(2, .{ .scalar = .string }),
-        .atlas = fd(3, .{ .scalar = .string }),
+        .name = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+        .json = fdf(2, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+        .atlas = fdf(3, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
     };
 
     /// Encodes the message to the writer

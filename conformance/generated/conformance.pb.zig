@@ -4,6 +4,7 @@ const std = @import("std");
 
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
+const fdf = protobuf.fdf;
 
 pub const WireFormat = enum(i32) {
     UNSPECIFIED = 0,
@@ -31,9 +32,9 @@ pub const TestStatus = struct {
     _unknown_fields: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .name = fd(1, .{ .scalar = .string }),
-        .failure_message = fd(2, .{ .scalar = .string }),
-        .matched_name = fd(3, .{ .scalar = .string }),
+        .name = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+        .failure_message = fdf(2, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+        .matched_name = fdf(3, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
     };
 
     /// Encodes the message to the writer
@@ -54,6 +55,10 @@ pub const TestStatus = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -122,6 +127,10 @@ pub const FailureSet = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -189,6 +198,10 @@ pub const JspbEncodingConfig = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -251,15 +264,15 @@ pub const ConformanceRequest = struct {
         text_payload: []const u8,
         pub const _desc_table = .{
             .protobuf_payload = fd(1, .{ .scalar = .bytes }),
-            .json_payload = fd(2, .{ .scalar = .string }),
-            .jspb_payload = fd(7, .{ .scalar = .string }),
-            .text_payload = fd(8, .{ .scalar = .string }),
+            .json_payload = fdf(2, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+            .jspb_payload = fdf(7, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+            .text_payload = fdf(8, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         };
     };
 
     pub const _desc_table = .{
         .requested_output_format = fd(3, .@"enum"),
-        .message_type = fd(4, .{ .scalar = .string }),
+        .message_type = fdf(4, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         .test_category = fd(5, .@"enum"),
         .jspb_encoding_options = fd(6, .submessage),
         .print_unknown_fields = fd(9, .{ .scalar = .bool }),
@@ -284,6 +297,10 @@ pub const ConformanceRequest = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -351,15 +368,15 @@ pub const ConformanceResponse = struct {
         jspb_payload: []const u8,
         text_payload: []const u8,
         pub const _desc_table = .{
-            .parse_error = fd(1, .{ .scalar = .string }),
-            .serialize_error = fd(6, .{ .scalar = .string }),
-            .timeout_error = fd(9, .{ .scalar = .string }),
-            .runtime_error = fd(2, .{ .scalar = .string }),
+            .parse_error = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+            .serialize_error = fdf(6, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+            .timeout_error = fdf(9, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+            .runtime_error = fdf(2, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .protobuf_payload = fd(3, .{ .scalar = .bytes }),
-            .json_payload = fd(4, .{ .scalar = .string }),
-            .skipped = fd(5, .{ .scalar = .string }),
-            .jspb_payload = fd(7, .{ .scalar = .string }),
-            .text_payload = fd(8, .{ .scalar = .string }),
+            .json_payload = fdf(4, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+            .skipped = fdf(5, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+            .jspb_payload = fdf(7, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+            .text_payload = fdf(8, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         };
     };
 
@@ -385,6 +402,10 @@ pub const ConformanceResponse = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -424,4 +445,14 @@ pub const ConformanceResponse = struct {
     ) !@This() {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
+};
+
+/// Options of the files of this package that have some
+/// (`google.protobuf.FileOptions`), by file name.
+pub const _file_options = .{
+    .@"conformance.proto" = .{
+        .@"#raw" = "\n\x1fcom.google.protobuf.conformance\xa2\x02\x0bConformance",
+        .java_package = "com.google.protobuf.conformance",
+        .objc_class_prefix = "Conformance",
+    },
 };

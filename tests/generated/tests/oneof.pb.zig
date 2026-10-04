@@ -4,6 +4,7 @@ const std = @import("std");
 
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
+const fdf = protobuf.fdf;
 
 pub const Enum = enum(i32) {
     UNSPECIFIED = 0,
@@ -18,7 +19,7 @@ pub const Message = struct {
 
     pub const _desc_table = .{
         .value = fd(1, .{ .scalar = .int32 }),
-        .str = fd(2, .{ .scalar = .string }),
+        .str = fdf(2, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
     };
 
     /// Encodes the message to the writer
@@ -101,7 +102,7 @@ pub const OneofContainer = struct {
         a_number: i32,
         enum_value: Enum,
         pub const _desc_table = .{
-            .string_in_oneof = fd(1, .{ .scalar = .string }),
+            .string_in_oneof = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .message_in_oneof = fd(2, .submessage),
             .a_number = fd(3, .{ .scalar = .int32 }),
             .enum_value = fd(6, .@"enum"),
@@ -109,7 +110,7 @@ pub const OneofContainer = struct {
     };
 
     pub const _desc_table = .{
-        .regular_field = fd(4, .{ .scalar = .string }),
+        .regular_field = fdf(4, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         .enum_field = fd(5, .@"enum"),
         .some_oneof = fd(null, .{ .oneof = some_oneof_union }),
     };
@@ -403,7 +404,7 @@ pub const Conflict = struct {
     reason: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .reason = fd(1, .{ .scalar = .string }),
+        .reason = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
     };
 
     /// Encodes the message to the writer

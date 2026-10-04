@@ -3,7 +3,7 @@ const builtin = @import("builtin");
 
 const Io = std.Io;
 
-pub const PROTOC_VERSION = "32.1";
+pub const PROTOC_VERSION = "36.2";
 
 // File system utilities
 pub fn pathExists(io: Io, path: []const u8) bool {
@@ -82,6 +82,7 @@ pub const RunProtocStep = struct {
     generator_bin: std.Build.LazyPath,
     protoc_override_bin: ?std.Build.LazyPath = null,
     preserve_unknown_fields: bool = false,
+    experimental_editions: bool = false,
     verbose: bool = false,
 
     pub const base_id = .protoc;
@@ -100,6 +101,9 @@ pub const RunProtocStep = struct {
         /// When true, every generated message preserves unknown fields during
         /// binary decode/encode round trips. Defaults to false.
         preserve_unknown_fields: bool = false,
+        /// When true, accept the in-development `edition = "UNSTABLE"`, whose
+        /// features may change in any protobuf release. Defaults to false.
+        experimental_editions: bool = false,
     };
 
     pub const StepErr = error{
@@ -127,6 +131,7 @@ pub const RunProtocStep = struct {
             .generator_bin = generator.getEmittedBin(),
             .protoc_override_bin = options.protoc,
             .preserve_unknown_fields = options.preserve_unknown_fields,
+            .experimental_editions = options.experimental_editions,
         };
 
         self.step.dependOn(&self.generator.step);
@@ -146,6 +151,7 @@ pub const RunProtocStep = struct {
             .generator = generator,
             .protoc = options.protoc,
             .preserve_unknown_fields = options.preserve_unknown_fields,
+            .experimental_editions = options.experimental_editions,
         });
     }
 
@@ -175,8 +181,20 @@ pub const RunProtocStep = struct {
                     self.generator_bin.getPath2(b, step),
                 }));
 
-                const zig_out = if (self.preserve_unknown_fields)
-                    try std.mem.concat(b.allocator, u8, &.{ "--zig_out=preserve_unknown_fields=true:", absolute_dest_dir })
+                // Generator parameters, passed as `--zig_out=a,b:dir`.
+                var params: std.ArrayList([]const u8) = .empty;
+                if (self.preserve_unknown_fields) try params.append(b.allocator, "preserve_unknown_fields=true");
+                if (self.experimental_editions) {
+                    try params.append(b.allocator, "experimental_editions=true");
+                    try argv.append(b.allocator, "--experimental_editions");
+                }
+                const zig_out = if (params.items.len > 0)
+                    try std.mem.concat(b.allocator, u8, &.{
+                        "--zig_out=",
+                        try std.mem.join(b.allocator, ",", params.items),
+                        ":",
+                        absolute_dest_dir,
+                    })
                 else
                     try std.mem.concat(b.allocator, u8, &.{ "--zig_out=", absolute_dest_dir });
 
@@ -200,7 +218,17 @@ pub const RunProtocStep = struct {
                     std.debug.print("\n", .{});
                 }
 
-                _ = try step.captureChildProcess(step.owner.allocator, make_opt.progress_node, argv.items);
+                const result = try step.captureChildProcess(step.owner.allocator, make_opt.progress_node, argv.items);
+                if (result.term != .exited or result.term.exited != 0) {
+                    return step.fail("protoc failed", .{});
+                }
+                // protoc succeeded: its output only holds warnings, which are
+                // not errors. They are shown with `verbose`.
+                if (self.verbose) {
+                    for (step.result_error_msgs.items) |msg| std.debug.print("{s}", .{msg});
+                }
+                step.result_error_msgs.clearRetainingCapacity();
+                step.result_failed_command = null;
             }
 
             { // run zig fmt <destination>

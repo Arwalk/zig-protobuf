@@ -4,6 +4,7 @@ const std = @import("std");
 
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
+const fdf = protobuf.fdf;
 
 pub const WouldYouParseThisForMePlease = struct {
     field: ?Test = null,
@@ -79,7 +80,7 @@ pub const Test = struct {
     field: []const u8 = &.{},
 
     pub const _desc_table = .{
-        .field = fd(1, .{ .scalar = .string }),
+        .field = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
     };
 
     /// Encodes the message to the writer

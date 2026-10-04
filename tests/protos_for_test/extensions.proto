@@ -1,0 +1,61 @@
+syntax = "proto2";
+
+package tests.extensions;
+
+message Extendable {
+  optional int32 regular = 1;
+  extensions 100 to 199;
+  extensions 1000 to max;
+}
+
+enum Color {
+  RED = 1;
+  GREEN = 2;
+}
+
+message Payload {
+  optional int32 a = 1;
+}
+
+extend Extendable {
+  optional int32 number = 100;
+  optional string text = 101 [default = "none"];
+  repeated int32 packed_numbers = 102 [packed = true];
+  optional Payload payload = 103;
+  optional group Grouped = 104 {
+    optional int32 g = 1;
+  }
+  optional Color color = 105;
+  optional float ratio = 106;
+}
+
+message Scope {
+  // Extensions may be declared in the scope of a message.
+  extend Extendable {
+    optional int64 scoped = 1000;
+  }
+}
+
+// Messages with two oneofs.
+message TwoOneofs {
+  oneof first {
+    int32 a = 1;
+    string b = 2;
+  }
+  oneof second {
+    int32 c = 3;
+    string d = 4;
+  }
+}
+
+message MessageSet {
+  option message_set_wire_format = true;
+  extensions 4 to max;
+}
+
+message SetItem {
+  optional int32 i = 1;
+  extend MessageSet {
+    optional SetItem item = 1234;
+  }
+}

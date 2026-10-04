@@ -4,6 +4,7 @@ const std = @import("std");
 
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
+const fdf = protobuf.fdf;
 
 /// The full set of known editions.
 pub const Edition = enum(i32) {
@@ -13,13 +14,14 @@ pub const Edition = enum(i32) {
     EDITION_PROTO3 = 999,
     EDITION_2023 = 1000,
     EDITION_2024 = 1001,
+    EDITION_2026 = 1002,
+    EDITION_UNSTABLE = 9999,
     EDITION_1_TEST_ONLY = 1,
     EDITION_2_TEST_ONLY = 2,
     EDITION_99997_TEST_ONLY = 99997,
     EDITION_99998_TEST_ONLY = 99998,
     EDITION_99999_TEST_ONLY = 99999,
     EDITION_MAX = 2147483647,
-    _,
 };
 
 /// Describes the 'visibility' of a symbol with respect to the proto import
@@ -31,16 +33,23 @@ pub const SymbolVisibility = enum(i32) {
     VISIBILITY_UNSET = 0,
     VISIBILITY_LOCAL = 1,
     VISIBILITY_EXPORT = 2,
-    _,
 };
 
 /// The protocol compiler can output a FileDescriptorSet containing the .proto
 /// files it parses.
 pub const FileDescriptorSet = struct {
     file: std.ArrayList(FileDescriptorProto) = .empty,
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .file = fd(1, .{ .repeated = .submessage }),
+    };
+
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 536000000, 536000001 },
+        },
+        .message_set = false,
     };
 
     /// Encodes the message to the writer
@@ -61,6 +70,10 @@ pub const FileDescriptorSet = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -154,6 +167,10 @@ pub const FileDescriptorProto = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -253,6 +270,10 @@ pub const DescriptorProto = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
@@ -324,6 +345,10 @@ pub const DescriptorProto = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
@@ -382,6 +407,10 @@ pub const DescriptorProto = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -427,7 +456,8 @@ pub const ExtensionRangeOptions = struct {
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
     declaration: std.ArrayList(ExtensionRangeOptions.Declaration) = .empty,
     features: ?FeatureSet = null,
-    verification: ?ExtensionRangeOptions.VerificationState = .UNVERIFIED,
+    verification: ?ExtensionRangeOptions.VerificationState = null,
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
@@ -436,11 +466,35 @@ pub const ExtensionRangeOptions = struct {
         .verification = fd(3, .@"enum"),
     };
 
+    /// Default values of fields that are `null` when not set.
+    pub const defaults = struct {
+        pub const verification: ExtensionRangeOptions.VerificationState = .UNVERIFIED;
+    };
+
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 990, 999 },
+            .{ 1000, 536870912 },
+        },
+        .message_set = false,
+    };
+
+    /// Options of the fields that have some (`google.protobuf.FieldOptions`).
+    pub const _field_options = .{
+        .declaration = .{
+            .@"#raw" = "\x88\x01\x02",
+            .retention = .RETENTION_SOURCE,
+        },
+        .verification = .{
+            .@"#raw" = "\x88\x01\x02",
+            .retention = .RETENTION_SOURCE,
+        },
+    };
+
     /// The verification state of the extension range.
     pub const VerificationState = enum(i32) {
         DECLARATION = 0,
         UNVERIFIED = 1,
-        _,
     };
 
     pub const Declaration = struct {
@@ -476,6 +530,10 @@ pub const ExtensionRangeOptions = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -535,6 +593,10 @@ pub const ExtensionRangeOptions = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -623,14 +685,12 @@ pub const FieldDescriptorProto = struct {
         TYPE_SFIXED64 = 16,
         TYPE_SINT32 = 17,
         TYPE_SINT64 = 18,
-        _,
     };
 
     pub const Label = enum(i32) {
         LABEL_OPTIONAL = 1,
         LABEL_REPEATED = 3,
         LABEL_REQUIRED = 2,
-        _,
     };
 
     /// Encodes the message to the writer
@@ -651,6 +711,10 @@ pub const FieldDescriptorProto = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -720,6 +784,10 @@ pub const OneofDescriptorProto = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -813,6 +881,10 @@ pub const EnumDescriptorProto = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
@@ -871,6 +943,10 @@ pub const EnumDescriptorProto = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -943,6 +1019,10 @@ pub const EnumValueDescriptorProto = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -1014,6 +1094,10 @@ pub const ServiceDescriptorProto = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -1060,8 +1144,8 @@ pub const MethodDescriptorProto = struct {
     input_type: ?[]const u8 = null,
     output_type: ?[]const u8 = null,
     options: ?MethodOptions = null,
-    client_streaming: ?bool = false,
-    server_streaming: ?bool = false,
+    client_streaming: ?bool = null,
+    server_streaming: ?bool = null,
 
     pub const _desc_table = .{
         .name = fd(1, .{ .scalar = .string }),
@@ -1070,6 +1154,12 @@ pub const MethodDescriptorProto = struct {
         .options = fd(4, .submessage),
         .client_streaming = fd(5, .{ .scalar = .bool }),
         .server_streaming = fd(6, .{ .scalar = .bool }),
+    };
+
+    /// Default values of fields that are `null` when not set.
+    pub const defaults = struct {
+        pub const client_streaming: bool = false;
+        pub const server_streaming: bool = false;
     };
 
     /// Encodes the message to the writer
@@ -1090,6 +1180,10 @@ pub const MethodDescriptorProto = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1134,16 +1228,16 @@ pub const MethodDescriptorProto = struct {
 pub const FileOptions = struct {
     java_package: ?[]const u8 = null,
     java_outer_classname: ?[]const u8 = null,
-    java_multiple_files: ?bool = false,
+    java_multiple_files: ?bool = null,
     java_generate_equals_and_hash: ?bool = null,
-    java_string_check_utf8: ?bool = false,
-    optimize_for: ?FileOptions.OptimizeMode = .SPEED,
+    java_string_check_utf8: ?bool = null,
+    optimize_for: ?FileOptions.OptimizeMode = null,
     go_package: ?[]const u8 = null,
-    cc_generic_services: ?bool = false,
-    java_generic_services: ?bool = false,
-    py_generic_services: ?bool = false,
-    deprecated: ?bool = false,
-    cc_enable_arenas: ?bool = true,
+    cc_generic_services: ?bool = null,
+    java_generic_services: ?bool = null,
+    py_generic_services: ?bool = null,
+    deprecated: ?bool = null,
+    cc_enable_arenas: ?bool = null,
     objc_class_prefix: ?[]const u8 = null,
     csharp_namespace: ?[]const u8 = null,
     swift_prefix: ?[]const u8 = null,
@@ -1153,6 +1247,7 @@ pub const FileOptions = struct {
     ruby_package: ?[]const u8 = null,
     features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .java_package = fd(1, .{ .scalar = .string }),
@@ -1178,12 +1273,54 @@ pub const FileOptions = struct {
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
+    /// Default values of fields that are `null` when not set.
+    pub const defaults = struct {
+        pub const java_multiple_files: bool = false;
+        pub const java_string_check_utf8: bool = false;
+        pub const optimize_for: FileOptions.OptimizeMode = .SPEED;
+        pub const cc_generic_services: bool = false;
+        pub const java_generic_services: bool = false;
+        pub const py_generic_services: bool = false;
+        pub const deprecated: bool = false;
+        pub const cc_enable_arenas: bool = true;
+    };
+
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 990, 999 },
+            .{ 1000, 536870912 },
+        },
+        .message_set = false,
+    };
+
+    /// Options of the fields that have some (`google.protobuf.FieldOptions`).
+    pub const _field_options = .{
+        .java_multiple_files = .{
+            .@"#raw" = "\xb2\x01\xbd\x01\x08\xe6\x07 \xe9\x07*\xb4\x01This behavior is enabled by default in editions 2024 and above. To disable it, you can set `features.(pb.java).nest_in_file_class = YES` on individual messages, enums, or services.",
+            .feature_support = .{
+                .edition_introduced = .EDITION_PROTO2,
+                .edition_removed = .EDITION_2024,
+                .removal_error = "This behavior is enabled by default in editions 2024 and above. To disable it, you can set `features.(pb.java).nest_in_file_class = YES` on individual messages, enums, or services.",
+            },
+        },
+        .java_generate_equals_and_hash = .{
+            .@"#raw" = "\x18\x01",
+            .deprecated = true,
+        },
+        .cc_enable_arenas = .{
+            .@"#raw" = "\xb2\x01\x8a\x01 \xea\x07*\x84\x01cc_enable_arenas is enabled by default in every edition and overrides are ignored.This option is removed in editions 2026 and above.",
+            .feature_support = .{
+                .edition_removed = .EDITION_2026,
+                .removal_error = "cc_enable_arenas is enabled by default in every edition and overrides are ignored.This option is removed in editions 2026 and above.",
+            },
+        },
+    };
+
     /// Generated classes can be optimized for speed or code size.
     pub const OptimizeMode = enum(i32) {
         SPEED = 1,
         CODE_SIZE = 2,
         LITE_RUNTIME = 3,
-        _,
     };
 
     /// Encodes the message to the writer
@@ -1204,6 +1341,10 @@ pub const FileOptions = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1246,13 +1387,14 @@ pub const FileOptions = struct {
 };
 
 pub const MessageOptions = struct {
-    message_set_wire_format: ?bool = false,
-    no_standard_descriptor_accessor: ?bool = false,
-    deprecated: ?bool = false,
+    message_set_wire_format: ?bool = null,
+    no_standard_descriptor_accessor: ?bool = null,
+    deprecated: ?bool = null,
     map_entry: ?bool = null,
     deprecated_legacy_json_field_conflicts: ?bool = null,
     features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .message_set_wire_format = fd(1, .{ .scalar = .bool }),
@@ -1262,6 +1404,29 @@ pub const MessageOptions = struct {
         .deprecated_legacy_json_field_conflicts = fd(11, .{ .scalar = .bool }),
         .features = fd(12, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
+    };
+
+    /// Default values of fields that are `null` when not set.
+    pub const defaults = struct {
+        pub const message_set_wire_format: bool = false;
+        pub const no_standard_descriptor_accessor: bool = false;
+        pub const deprecated: bool = false;
+    };
+
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 990, 999 },
+            .{ 1000, 536870912 },
+        },
+        .message_set = false,
+    };
+
+    /// Options of the fields that have some (`google.protobuf.FieldOptions`).
+    pub const _field_options = .{
+        .deprecated_legacy_json_field_conflicts = .{
+            .@"#raw" = "\x18\x01",
+            .deprecated = true,
+        },
     };
 
     /// Encodes the message to the writer
@@ -1282,6 +1447,10 @@ pub const MessageOptions = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1324,20 +1493,21 @@ pub const MessageOptions = struct {
 };
 
 pub const FieldOptions = struct {
-    ctype: ?FieldOptions.CType = .STRING,
+    ctype: ?FieldOptions.CType = null,
     @"packed": ?bool = null,
-    jstype: ?FieldOptions.JSType = .JS_NORMAL,
-    lazy: ?bool = false,
-    unverified_lazy: ?bool = false,
-    deprecated: ?bool = false,
-    weak: ?bool = false,
-    debug_redact: ?bool = false,
+    jstype: ?FieldOptions.JSType = null,
+    lazy: ?bool = null,
+    unverified_lazy: ?bool = null,
+    deprecated: ?bool = null,
+    weak: ?bool = null,
+    debug_redact: ?bool = null,
     retention: ?FieldOptions.OptionRetention = null,
     targets: std.ArrayList(FieldOptions.OptionTargetType) = .empty,
     edition_defaults: std.ArrayList(FieldOptions.EditionDefault) = .empty,
     features: ?FeatureSet = null,
     feature_support: ?FieldOptions.FeatureSupport = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .ctype = fd(1, .@"enum"),
@@ -1356,18 +1526,43 @@ pub const FieldOptions = struct {
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
     };
 
+    /// Default values of fields that are `null` when not set.
+    pub const defaults = struct {
+        pub const ctype: FieldOptions.CType = .STRING;
+        pub const jstype: FieldOptions.JSType = .JS_NORMAL;
+        pub const lazy: bool = false;
+        pub const unverified_lazy: bool = false;
+        pub const deprecated: bool = false;
+        pub const weak: bool = false;
+        pub const debug_redact: bool = false;
+    };
+
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 990, 999 },
+            .{ 1000, 536870912 },
+        },
+        .message_set = false,
+    };
+
+    /// Options of the fields that have some (`google.protobuf.FieldOptions`).
+    pub const _field_options = .{
+        .weak = .{
+            .@"#raw" = "\x18\x01",
+            .deprecated = true,
+        },
+    };
+
     pub const CType = enum(i32) {
         STRING = 0,
         CORD = 1,
         STRING_PIECE = 2,
-        _,
     };
 
     pub const JSType = enum(i32) {
         JS_NORMAL = 0,
         JS_STRING = 1,
         JS_NUMBER = 2,
-        _,
     };
 
     /// If set to RETENTION_SOURCE, the option will be omitted from the binary.
@@ -1375,7 +1570,6 @@ pub const FieldOptions = struct {
         RETENTION_UNKNOWN = 0,
         RETENTION_RUNTIME = 1,
         RETENTION_SOURCE = 2,
-        _,
     };
 
     /// This indicates the types of entities that the field may apply to when used
@@ -1392,7 +1586,6 @@ pub const FieldOptions = struct {
         TARGET_TYPE_ENUM_ENTRY = 7,
         TARGET_TYPE_SERVICE = 8,
         TARGET_TYPE_METHOD = 9,
-        _,
     };
 
     pub const EditionDefault = struct {
@@ -1422,6 +1615,10 @@ pub const FieldOptions = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1469,12 +1666,14 @@ pub const FieldOptions = struct {
         edition_deprecated: ?Edition = null,
         deprecation_warning: ?[]const u8 = null,
         edition_removed: ?Edition = null,
+        removal_error: ?[]const u8 = null,
 
         pub const _desc_table = .{
             .edition_introduced = fd(1, .@"enum"),
             .edition_deprecated = fd(2, .@"enum"),
             .deprecation_warning = fd(3, .{ .scalar = .string }),
             .edition_removed = fd(4, .@"enum"),
+            .removal_error = fd(5, .{ .scalar = .string }),
         };
 
         /// Encodes the message to the writer
@@ -1495,6 +1694,10 @@ pub const FieldOptions = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1555,6 +1758,10 @@ pub const FieldOptions = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -1598,10 +1805,19 @@ pub const FieldOptions = struct {
 pub const OneofOptions = struct {
     features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .features = fd(1, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
+    };
+
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 990, 999 },
+            .{ 1000, 536870912 },
+        },
+        .message_set = false,
     };
 
     /// Encodes the message to the writer
@@ -1622,6 +1838,10 @@ pub const OneofOptions = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1665,10 +1885,11 @@ pub const OneofOptions = struct {
 
 pub const EnumOptions = struct {
     allow_alias: ?bool = null,
-    deprecated: ?bool = false,
+    deprecated: ?bool = null,
     deprecated_legacy_json_field_conflicts: ?bool = null,
     features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .allow_alias = fd(2, .{ .scalar = .bool }),
@@ -1676,6 +1897,27 @@ pub const EnumOptions = struct {
         .deprecated_legacy_json_field_conflicts = fd(6, .{ .scalar = .bool }),
         .features = fd(7, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
+    };
+
+    /// Default values of fields that are `null` when not set.
+    pub const defaults = struct {
+        pub const deprecated: bool = false;
+    };
+
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 990, 999 },
+            .{ 1000, 536870912 },
+        },
+        .message_set = false,
+    };
+
+    /// Options of the fields that have some (`google.protobuf.FieldOptions`).
+    pub const _field_options = .{
+        .deprecated_legacy_json_field_conflicts = .{
+            .@"#raw" = "\x18\x01",
+            .deprecated = true,
+        },
     };
 
     /// Encodes the message to the writer
@@ -1696,6 +1938,10 @@ pub const EnumOptions = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1738,11 +1984,12 @@ pub const EnumOptions = struct {
 };
 
 pub const EnumValueOptions = struct {
-    deprecated: ?bool = false,
+    deprecated: ?bool = null,
     features: ?FeatureSet = null,
-    debug_redact: ?bool = false,
+    debug_redact: ?bool = null,
     feature_support: ?FieldOptions.FeatureSupport = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .deprecated = fd(1, .{ .scalar = .bool }),
@@ -1750,6 +1997,20 @@ pub const EnumValueOptions = struct {
         .debug_redact = fd(3, .{ .scalar = .bool }),
         .feature_support = fd(4, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
+    };
+
+    /// Default values of fields that are `null` when not set.
+    pub const defaults = struct {
+        pub const deprecated: bool = false;
+        pub const debug_redact: bool = false;
+    };
+
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 990, 999 },
+            .{ 1000, 536870912 },
+        },
+        .message_set = false,
     };
 
     /// Encodes the message to the writer
@@ -1770,6 +2031,10 @@ pub const EnumValueOptions = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1813,13 +2078,27 @@ pub const EnumValueOptions = struct {
 
 pub const ServiceOptions = struct {
     features: ?FeatureSet = null,
-    deprecated: ?bool = false,
+    deprecated: ?bool = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .features = fd(34, .submessage),
         .deprecated = fd(33, .{ .scalar = .bool }),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
+    };
+
+    /// Default values of fields that are `null` when not set.
+    pub const defaults = struct {
+        pub const deprecated: bool = false;
+    };
+
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 990, 999 },
+            .{ 1000, 536870912 },
+        },
+        .message_set = false,
     };
 
     /// Encodes the message to the writer
@@ -1840,6 +2119,10 @@ pub const ServiceOptions = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1882,16 +2165,31 @@ pub const ServiceOptions = struct {
 };
 
 pub const MethodOptions = struct {
-    deprecated: ?bool = false,
-    idempotency_level: ?MethodOptions.IdempotencyLevel = .IDEMPOTENCY_UNKNOWN,
+    deprecated: ?bool = null,
+    idempotency_level: ?MethodOptions.IdempotencyLevel = null,
     features: ?FeatureSet = null,
     uninterpreted_option: std.ArrayList(UninterpretedOption) = .empty,
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .deprecated = fd(33, .{ .scalar = .bool }),
         .idempotency_level = fd(34, .@"enum"),
         .features = fd(35, .submessage),
         .uninterpreted_option = fd(999, .{ .repeated = .submessage }),
+    };
+
+    /// Default values of fields that are `null` when not set.
+    pub const defaults = struct {
+        pub const deprecated: bool = false;
+        pub const idempotency_level: MethodOptions.IdempotencyLevel = .IDEMPOTENCY_UNKNOWN;
+    };
+
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 990, 999 },
+            .{ 1000, 536870912 },
+        },
+        .message_set = false,
     };
 
     /// Is this method side-effect-free (or safe in HTTP parlance), or idempotent,
@@ -1901,7 +2199,6 @@ pub const MethodOptions = struct {
         IDEMPOTENCY_UNKNOWN = 0,
         NO_SIDE_EFFECTS = 1,
         IDEMPOTENT = 2,
-        _,
     };
 
     /// Encodes the message to the writer
@@ -1922,6 +2219,10 @@ pub const MethodOptions = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1998,8 +2299,8 @@ pub const UninterpretedOption = struct {
         is_extension: bool,
 
         pub const _desc_table = .{
-            .name_part = fd(1, .{ .scalar = .string }),
-            .is_extension = fd(2, .{ .scalar = .bool }),
+            .name_part = fdf(1, .{ .scalar = .string }, .{ .legacy_required = true }),
+            .is_extension = fdf(2, .{ .scalar = .bool }, .{ .legacy_required = true }),
         };
 
         /// Encodes the message to the writer
@@ -2020,6 +2321,10 @@ pub const UninterpretedOption = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -2079,6 +2384,10 @@ pub const UninterpretedOption = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -2135,6 +2444,8 @@ pub const FeatureSet = struct {
     json_format: ?FeatureSet.JsonFormat = null,
     enforce_naming_style: ?FeatureSet.EnforceNamingStyle = null,
     default_symbol_visibility: ?FeatureSet.VisibilityFeature.DefaultSymbolVisibility = null,
+    enforce_proto_limits: ?FeatureSet.ProtoLimitsFeature.EnforceProtoLimits = null,
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .field_presence = fd(1, .@"enum"),
@@ -2145,6 +2456,161 @@ pub const FeatureSet = struct {
         .json_format = fd(6, .@"enum"),
         .enforce_naming_style = fd(7, .@"enum"),
         .default_symbol_visibility = fd(8, .@"enum"),
+        .enforce_proto_limits = fd(9, .@"enum"),
+    };
+
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 1000, 9995 },
+            .{ 9995, 10000 },
+            .{ 10000, 10001 },
+        },
+        .message_set = false,
+    };
+
+    /// Options of the fields that have some (`google.protobuf.FieldOptions`).
+    pub const _field_options = .{
+        .field_presence = .{
+            .@"#raw" = "\x88\x01\x01\x98\x01\x04\x98\x01\x01\xa2\x01\r\x18\x84\x07\x12\x08EXPLICIT\xa2\x01\r\x18\xe7\x07\x12\x08IMPLICIT\xa2\x01\r\x18\xe8\x07\x12\x08EXPLICIT\xb2\x01\x03\x08\xe8\x07",
+            .retention = .RETENTION_RUNTIME,
+            .targets = .{ .TARGET_TYPE_FIELD, .TARGET_TYPE_FILE },
+            .edition_defaults = .{ .{
+                .edition = .EDITION_LEGACY,
+                .value = "EXPLICIT",
+            }, .{
+                .edition = .EDITION_PROTO3,
+                .value = "IMPLICIT",
+            }, .{
+                .edition = .EDITION_2023,
+                .value = "EXPLICIT",
+            } },
+            .feature_support = .{
+                .edition_introduced = .EDITION_2023,
+            },
+        },
+        .enum_type = .{
+            .@"#raw" = "\x88\x01\x01\x98\x01\x06\x98\x01\x01\xa2\x01\x0b\x18\x84\x07\x12\x06CLOSED\xa2\x01\t\x18\xe7\x07\x12\x04OPEN\xb2\x01\x03\x08\xe8\x07",
+            .retention = .RETENTION_RUNTIME,
+            .targets = .{ .TARGET_TYPE_ENUM, .TARGET_TYPE_FILE },
+            .edition_defaults = .{ .{
+                .edition = .EDITION_LEGACY,
+                .value = "CLOSED",
+            }, .{
+                .edition = .EDITION_PROTO3,
+                .value = "OPEN",
+            } },
+            .feature_support = .{
+                .edition_introduced = .EDITION_2023,
+            },
+        },
+        .repeated_field_encoding = .{
+            .@"#raw" = "\x88\x01\x01\x98\x01\x04\x98\x01\x01\xa2\x01\r\x18\x84\x07\x12\x08EXPANDED\xa2\x01\x0b\x18\xe7\x07\x12\x06PACKED\xb2\x01\x03\x08\xe8\x07",
+            .retention = .RETENTION_RUNTIME,
+            .targets = .{ .TARGET_TYPE_FIELD, .TARGET_TYPE_FILE },
+            .edition_defaults = .{ .{
+                .edition = .EDITION_LEGACY,
+                .value = "EXPANDED",
+            }, .{
+                .edition = .EDITION_PROTO3,
+                .value = "PACKED",
+            } },
+            .feature_support = .{
+                .edition_introduced = .EDITION_2023,
+            },
+        },
+        .utf8_validation = .{
+            .@"#raw" = "\x88\x01\x01\x98\x01\x04\x98\x01\x01\xa2\x01\t\x18\x84\x07\x12\x04NONE\xa2\x01\x0b\x18\xe7\x07\x12\x06VERIFY\xb2\x01\x03\x08\xe8\x07",
+            .retention = .RETENTION_RUNTIME,
+            .targets = .{ .TARGET_TYPE_FIELD, .TARGET_TYPE_FILE },
+            .edition_defaults = .{ .{
+                .edition = .EDITION_LEGACY,
+                .value = "NONE",
+            }, .{
+                .edition = .EDITION_PROTO3,
+                .value = "VERIFY",
+            } },
+            .feature_support = .{
+                .edition_introduced = .EDITION_2023,
+            },
+        },
+        .message_encoding = .{
+            .@"#raw" = "\x88\x01\x01\x98\x01\x04\x98\x01\x01\xa2\x01\x14\x18\x84\x07\x12\x0fLENGTH_PREFIXED\xb2\x01\x03\x08\xe8\x07",
+            .retention = .RETENTION_RUNTIME,
+            .targets = .{ .TARGET_TYPE_FIELD, .TARGET_TYPE_FILE },
+            .edition_defaults = .{.{
+                .edition = .EDITION_LEGACY,
+                .value = "LENGTH_PREFIXED",
+            }},
+            .feature_support = .{
+                .edition_introduced = .EDITION_2023,
+            },
+        },
+        .json_format = .{
+            .@"#raw" = "\x88\x01\x01\x98\x01\x03\x98\x01\x06\x98\x01\x01\xa2\x01\x17\x18\x84\x07\x12\x12LEGACY_BEST_EFFORT\xa2\x01\n\x18\xe7\x07\x12\x05ALLOW\xb2\x01\x03\x08\xe8\x07",
+            .retention = .RETENTION_RUNTIME,
+            .targets = .{ .TARGET_TYPE_MESSAGE, .TARGET_TYPE_ENUM, .TARGET_TYPE_FILE },
+            .edition_defaults = .{ .{
+                .edition = .EDITION_LEGACY,
+                .value = "LEGACY_BEST_EFFORT",
+            }, .{
+                .edition = .EDITION_PROTO3,
+                .value = "ALLOW",
+            } },
+            .feature_support = .{
+                .edition_introduced = .EDITION_2023,
+            },
+        },
+        .enforce_naming_style = .{
+            .@"#raw" = "\x88\x01\x02\x98\x01\x01\x98\x01\x02\x98\x01\x03\x98\x01\x04\x98\x01\x05\x98\x01\x06\x98\x01\x07\x98\x01\x08\x98\x01\t\xa2\x01\x11\x18\x84\x07\x12\x0cSTYLE_LEGACY\xa2\x01\x0e\x18\xe9\x07\x12\tSTYLE2024\xa2\x01\x0e\x18\xea\x07\x12\tSTYLE2026\xb2\x01\x03\x08\xe9\x07",
+            .retention = .RETENTION_SOURCE,
+            .targets = .{ .TARGET_TYPE_FILE, .TARGET_TYPE_EXTENSION_RANGE, .TARGET_TYPE_MESSAGE, .TARGET_TYPE_FIELD, .TARGET_TYPE_ONEOF, .TARGET_TYPE_ENUM, .TARGET_TYPE_ENUM_ENTRY, .TARGET_TYPE_SERVICE, .TARGET_TYPE_METHOD },
+            .edition_defaults = .{ .{
+                .edition = .EDITION_LEGACY,
+                .value = "STYLE_LEGACY",
+            }, .{
+                .edition = .EDITION_2024,
+                .value = "STYLE2024",
+            }, .{
+                .edition = .EDITION_2026,
+                .value = "STYLE2026",
+            } },
+            .feature_support = .{
+                .edition_introduced = .EDITION_2024,
+            },
+        },
+        .default_symbol_visibility = .{
+            .@"#raw" = "\x88\x01\x02\x98\x01\x01\xa2\x01\x0f\x18\x84\x07\x12\nEXPORT_ALL\xa2\x01\x15\x18\xe9\x07\x12\x10EXPORT_TOP_LEVEL\xa2\x01\x0b\x18\xea\x07\x12\x06STRICT\xb2\x01\x03\x08\xe9\x07",
+            .retention = .RETENTION_SOURCE,
+            .targets = .{.TARGET_TYPE_FILE},
+            .edition_defaults = .{ .{
+                .edition = .EDITION_LEGACY,
+                .value = "EXPORT_ALL",
+            }, .{
+                .edition = .EDITION_2024,
+                .value = "EXPORT_TOP_LEVEL",
+            }, .{
+                .edition = .EDITION_2026,
+                .value = "STRICT",
+            } },
+            .feature_support = .{
+                .edition_introduced = .EDITION_2024,
+            },
+        },
+        .enforce_proto_limits = .{
+            .@"#raw" = "\x88\x01\x02\x98\x01\x06\x98\x01\x03\x98\x01\x04\x98\x01\x05\xa2\x01\x1e\x18\x84\x07\x12\x19LEGACY_NO_EXPLICIT_LIMITS\xa2\x01\x15\x18\xea\x07\x12\x10PROTO_LIMITS2026\xb2\x01\x03\x08\xea\x07",
+            .retention = .RETENTION_SOURCE,
+            .targets = .{ .TARGET_TYPE_ENUM, .TARGET_TYPE_MESSAGE, .TARGET_TYPE_FIELD, .TARGET_TYPE_ONEOF },
+            .edition_defaults = .{ .{
+                .edition = .EDITION_LEGACY,
+                .value = "LEGACY_NO_EXPLICIT_LIMITS",
+            }, .{
+                .edition = .EDITION_2026,
+                .value = "PROTO_LIMITS2026",
+            } },
+            .feature_support = .{
+                .edition_introduced = .EDITION_2026,
+            },
+        },
     };
 
     pub const FieldPresence = enum(i32) {
@@ -2152,49 +2618,43 @@ pub const FeatureSet = struct {
         EXPLICIT = 1,
         IMPLICIT = 2,
         LEGACY_REQUIRED = 3,
-        _,
     };
 
     pub const EnumType = enum(i32) {
         ENUM_TYPE_UNKNOWN = 0,
         OPEN = 1,
         CLOSED = 2,
-        _,
     };
 
     pub const RepeatedFieldEncoding = enum(i32) {
         REPEATED_FIELD_ENCODING_UNKNOWN = 0,
         PACKED = 1,
         EXPANDED = 2,
-        _,
     };
 
     pub const Utf8Validation = enum(i32) {
         UTF8_VALIDATION_UNKNOWN = 0,
         VERIFY = 2,
         NONE = 3,
-        _,
     };
 
     pub const MessageEncoding = enum(i32) {
         MESSAGE_ENCODING_UNKNOWN = 0,
         LENGTH_PREFIXED = 1,
         DELIMITED = 2,
-        _,
     };
 
     pub const JsonFormat = enum(i32) {
         JSON_FORMAT_UNKNOWN = 0,
         ALLOW = 1,
         LEGACY_BEST_EFFORT = 2,
-        _,
     };
 
     pub const EnforceNamingStyle = enum(i32) {
         ENFORCE_NAMING_STYLE_UNKNOWN = 0,
         STYLE2024 = 1,
         STYLE_LEGACY = 2,
-        _,
+        STYLE2026 = 3,
     };
 
     pub const VisibilityFeature = struct {
@@ -2206,7 +2666,6 @@ pub const FeatureSet = struct {
             EXPORT_TOP_LEVEL = 2,
             LOCAL_ALL = 3,
             STRICT = 4,
-            _,
         };
 
         /// Encodes the message to the writer
@@ -2227,6 +2686,82 @@ pub const FeatureSet = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
+        /// Deinitializes and frees the memory associated with the message.
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+            return protobuf.deinit(allocator, self);
+        }
+
+        /// Duplicates the message.
+        pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
+            return protobuf.dupe(@This(), self, allocator);
+        }
+
+        /// Decodes the message from the JSON string.
+        pub fn jsonDecode(
+            input: []const u8,
+            options: std.json.ParseOptions,
+            allocator: std.mem.Allocator,
+        ) !std.json.Parsed(@This()) {
+            return protobuf.json.decode(@This(), input, options, allocator);
+        }
+
+        /// Encodes the message to a JSON string.
+        pub fn jsonEncode(
+            self: @This(),
+            options: std.json.Stringify.Options,
+            pb_options: protobuf.json.Options,
+            allocator: std.mem.Allocator,
+        ) ![]const u8 {
+            return protobuf.json.encode(self, options, pb_options, allocator);
+        }
+
+        /// This method is used by std.json
+        /// internally for deserialization. DO NOT RENAME!
+        pub fn jsonParse(
+            allocator: std.mem.Allocator,
+            source: anytype,
+            options: std.json.ParseOptions,
+        ) !@This() {
+            return protobuf.json.parse(@This(), allocator, source, options);
+        }
+    };
+
+    pub const ProtoLimitsFeature = struct {
+        pub const _desc_table = .{};
+
+        pub const EnforceProtoLimits = enum(i32) {
+            PROTO_LIMITS_UNKNOWN = 0,
+            LEGACY_NO_EXPLICIT_LIMITS = 1,
+            PROTO_LIMITS2026 = 2,
+        };
+
+        /// Encodes the message to the writer
+        /// The allocator is used to generate submessages internally.
+        /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
+        pub fn encode(
+            self: @This(),
+            writer: *std.Io.Writer,
+            allocator: std.mem.Allocator,
+        ) (std.Io.Writer.Error || std.mem.Allocator.Error)!void {
+            return protobuf.encode(writer, allocator, self);
+        }
+
+        /// Decodes the message from the bytes read from the reader.
+        pub fn decode(
+            reader: *std.Io.Reader,
+            allocator: std.mem.Allocator,
+        ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
+            return protobuf.decode(@This(), reader, allocator);
+        }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -2286,6 +2821,10 @@ pub const FeatureSet = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -2376,6 +2915,10 @@ pub const FeatureSetDefaults = struct {
             return protobuf.decode(@This(), reader, allocator);
         }
 
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
             return protobuf.deinit(allocator, self);
@@ -2434,6 +2977,10 @@ pub const FeatureSetDefaults = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -2479,9 +3026,17 @@ pub const FeatureSetDefaults = struct {
 /// FileDescriptorProto was generated.
 pub const SourceCodeInfo = struct {
     location: std.ArrayList(SourceCodeInfo.Location) = .empty,
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .location = fd(1, .{ .repeated = .submessage }),
+    };
+
+    pub const _extensions_info = .{
+        .ranges = .{
+            .{ 536000000, 536000001 },
+        },
+        .message_set = false,
     };
 
     pub const Location = struct {
@@ -2497,6 +3052,18 @@ pub const SourceCodeInfo = struct {
             .leading_comments = fd(3, .{ .scalar = .string }),
             .trailing_comments = fd(4, .{ .scalar = .string }),
             .leading_detached_comments = fd(6, .{ .repeated = .{ .scalar = .string } }),
+        };
+
+        /// Options of the fields that have some (`google.protobuf.FieldOptions`).
+        pub const _field_options = .{
+            .path = .{
+                .@"#raw" = "\x10\x01",
+                .@"packed" = true,
+            },
+            .span = .{
+                .@"#raw" = "\x10\x01",
+                .@"packed" = true,
+            },
         };
 
         /// Encodes the message to the writer
@@ -2517,6 +3084,10 @@ pub const SourceCodeInfo = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -2576,6 +3147,10 @@ pub const SourceCodeInfo = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -2642,13 +3217,20 @@ pub const GeneratedCodeInfo = struct {
             .semantic = fd(5, .@"enum"),
         };
 
+        /// Options of the fields that have some (`google.protobuf.FieldOptions`).
+        pub const _field_options = .{
+            .path = .{
+                .@"#raw" = "\x10\x01",
+                .@"packed" = true,
+            },
+        };
+
         /// Represents the identified object's effect on the element in the original
         /// .proto file.
         pub const Semantic = enum(i32) {
             NONE = 0,
             SET = 1,
             ALIAS = 2,
-            _,
         };
 
         /// Encodes the message to the writer
@@ -2669,6 +3251,10 @@ pub const GeneratedCodeInfo = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -2729,6 +3315,10 @@ pub const GeneratedCodeInfo = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -2767,4 +3357,19 @@ pub const GeneratedCodeInfo = struct {
     ) !@This() {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
+};
+
+/// Options of the files of this package that have some
+/// (`google.protobuf.FileOptions`), by file name.
+pub const _file_options = .{
+    .@"google/protobuf/descriptor.proto" = .{
+        .@"#raw" = "\n\x13com.google.protobufB\x10DescriptorProtosH\x01Z-google.golang.org/protobuf/types/descriptorpb\xf8\x01\x01\xa2\x02\x03GPB\xaa\x02\x1aGoogle.Protobuf.Reflection",
+        .java_package = "com.google.protobuf",
+        .java_outer_classname = "DescriptorProtos",
+        .optimize_for = .SPEED,
+        .go_package = "google.golang.org/protobuf/types/descriptorpb",
+        .cc_enable_arenas = true,
+        .objc_class_prefix = "GPB",
+        .csharp_namespace = "Google.Protobuf.Reflection",
+    },
 };

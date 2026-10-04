@@ -1,0 +1,13 @@
+// Port of the file built by `CustomOptions.OptionsFromDependency`, in
+// src/google/protobuf/descriptor_unittest.cc of protobuf v36.2: to use a
+// custom option, only the file defining it is imported, not descriptor.proto.
+syntax = "proto2";
+
+package ported_options;
+
+import "google/protobuf/unittest_custom_options.proto";
+
+option (proto2_unittest.file_opt1) = 1234;
+// Non-extension and enum-typed options, which once failed next to it.
+option java_package = "foo";
+option optimize_for = SPEED;

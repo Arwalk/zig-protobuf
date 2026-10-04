@@ -4,6 +4,7 @@ const std = @import("std");
 
 const protobuf = @import("protobuf");
 const fd = protobuf.fd;
+const fdf = protobuf.fdf;
 /// import package google.protobuf
 const google_protobuf = @import("../google/protobuf.pb.zig");
 
@@ -138,6 +139,7 @@ pub const TestAllTypesProto3 = struct {
     optional_any: ?google_protobuf.Any = null,
     optional_value: ?google_protobuf.Value = null,
     optional_null_value: google_protobuf.NullValue = @enumFromInt(0),
+    optional_empty: ?google_protobuf.Empty = null,
     repeated_duration: std.ArrayList(google_protobuf.Duration) = .empty,
     repeated_timestamp: std.ArrayList(google_protobuf.Timestamp) = .empty,
     repeated_fieldmask: std.ArrayList(google_protobuf.FieldMask) = .empty,
@@ -145,6 +147,7 @@ pub const TestAllTypesProto3 = struct {
     repeated_any: std.ArrayList(google_protobuf.Any) = .empty,
     repeated_value: std.ArrayList(google_protobuf.Value) = .empty,
     repeated_list_value: std.ArrayList(google_protobuf.ListValue) = .empty,
+    repeated_empty: std.ArrayList(google_protobuf.Empty) = .empty,
     fieldname1: i32 = 0,
     field_name2: i32 = 0,
     _field_name3: i32 = 0,
@@ -192,7 +195,7 @@ pub const TestAllTypesProto3 = struct {
         pub const _desc_table = .{
             .oneof_uint32 = fd(111, .{ .scalar = .uint32 }),
             .oneof_nested_message = fd(112, .submessage),
-            .oneof_string = fd(113, .{ .scalar = .string }),
+            .oneof_string = fdf(113, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .oneof_bytes = fd(114, .{ .scalar = .bytes }),
             .oneof_bool = fd(115, .{ .scalar = .bool }),
             .oneof_uint64 = fd(116, .{ .scalar = .uint64 }),
@@ -217,15 +220,15 @@ pub const TestAllTypesProto3 = struct {
         .optional_float = fd(11, .{ .scalar = .float }),
         .optional_double = fd(12, .{ .scalar = .double }),
         .optional_bool = fd(13, .{ .scalar = .bool }),
-        .optional_string = fd(14, .{ .scalar = .string }),
+        .optional_string = fdf(14, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         .optional_bytes = fd(15, .{ .scalar = .bytes }),
         .optional_nested_message = fd(18, .submessage),
         .optional_foreign_message = fd(19, .submessage),
         .optional_nested_enum = fd(21, .@"enum"),
         .optional_foreign_enum = fd(22, .@"enum"),
         .optional_aliased_enum = fd(23, .@"enum"),
-        .optional_string_piece = fd(24, .{ .scalar = .string }),
-        .optional_cord = fd(25, .{ .scalar = .string }),
+        .optional_string_piece = fdf(24, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+        .optional_cord = fdf(25, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
         .recursive_message = fd(27, .submessage),
         .repeated_int32 = fd(31, .{ .packed_repeated = .{ .scalar = .int32 } }),
         .repeated_int64 = fd(32, .{ .packed_repeated = .{ .scalar = .int64 } }),
@@ -240,14 +243,14 @@ pub const TestAllTypesProto3 = struct {
         .repeated_float = fd(41, .{ .packed_repeated = .{ .scalar = .float } }),
         .repeated_double = fd(42, .{ .packed_repeated = .{ .scalar = .double } }),
         .repeated_bool = fd(43, .{ .packed_repeated = .{ .scalar = .bool } }),
-        .repeated_string = fd(44, .{ .repeated = .{ .scalar = .string } }),
+        .repeated_string = fdf(44, .{ .repeated = .{ .scalar = .string } }, .{ .utf8_validation = .verify }),
         .repeated_bytes = fd(45, .{ .repeated = .{ .scalar = .bytes } }),
         .repeated_nested_message = fd(48, .{ .repeated = .submessage }),
         .repeated_foreign_message = fd(49, .{ .repeated = .submessage }),
         .repeated_nested_enum = fd(51, .{ .packed_repeated = .@"enum" }),
         .repeated_foreign_enum = fd(52, .{ .packed_repeated = .@"enum" }),
-        .repeated_string_piece = fd(54, .{ .repeated = .{ .scalar = .string } }),
-        .repeated_cord = fd(55, .{ .repeated = .{ .scalar = .string } }),
+        .repeated_string_piece = fdf(54, .{ .repeated = .{ .scalar = .string } }, .{ .utf8_validation = .verify }),
+        .repeated_cord = fdf(55, .{ .repeated = .{ .scalar = .string } }, .{ .utf8_validation = .verify }),
         .packed_int32 = fd(75, .{ .packed_repeated = .{ .scalar = .int32 } }),
         .packed_int64 = fd(76, .{ .packed_repeated = .{ .scalar = .int64 } }),
         .packed_uint32 = fd(77, .{ .packed_repeated = .{ .scalar = .uint32 } }),
@@ -320,6 +323,7 @@ pub const TestAllTypesProto3 = struct {
         .optional_any = fd(305, .submessage),
         .optional_value = fd(306, .submessage),
         .optional_null_value = fd(307, .@"enum"),
+        .optional_empty = fd(308, .submessage),
         .repeated_duration = fd(311, .{ .repeated = .submessage }),
         .repeated_timestamp = fd(312, .{ .repeated = .submessage }),
         .repeated_fieldmask = fd(313, .{ .repeated = .submessage }),
@@ -327,6 +331,7 @@ pub const TestAllTypesProto3 = struct {
         .repeated_any = fd(315, .{ .repeated = .submessage }),
         .repeated_value = fd(316, .{ .repeated = .submessage }),
         .repeated_list_value = fd(317, .{ .repeated = .submessage }),
+        .repeated_empty = fd(318, .{ .repeated = .submessage }),
         .fieldname1 = fd(401, .{ .scalar = .int32 }),
         .field_name2 = fd(402, .{ .scalar = .int32 }),
         ._field_name3 = fd(403, .{ .scalar = .int32 }),
@@ -348,6 +353,138 @@ pub const TestAllTypesProto3 = struct {
         .oneof_field = fd(null, .{ .oneof = oneof_field_union }),
     };
 
+    /// Options of the fields that have some (`google.protobuf.FieldOptions`).
+    pub const _field_options = .{
+        .optional_string_piece = .{
+            .@"#raw" = "\x08\x02",
+            .ctype = .STRING_PIECE,
+        },
+        .optional_cord = .{
+            .@"#raw" = "\x08\x01",
+            .ctype = .CORD,
+        },
+        .repeated_string_piece = .{
+            .@"#raw" = "\x08\x02",
+            .ctype = .STRING_PIECE,
+        },
+        .repeated_cord = .{
+            .@"#raw" = "\x08\x01",
+            .ctype = .CORD,
+        },
+        .packed_int32 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_int64 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_uint32 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_uint64 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_sint32 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_sint64 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_fixed32 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_fixed64 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_sfixed32 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_sfixed64 = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_float = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_double = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_bool = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .packed_nested_enum = .{
+            .@"#raw" = "\x10\x01",
+            .@"packed" = true,
+        },
+        .unpacked_int32 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_int64 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_uint32 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_uint64 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_sint32 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_sint64 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_fixed32 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_fixed64 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_sfixed32 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_sfixed64 = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_float = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_double = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_bool = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+        .unpacked_nested_enum = .{
+            .@"#raw" = "\x10\x00",
+            .@"packed" = false,
+        },
+    };
+
     pub const NestedEnum = enum(i32) {
         FOO = 0,
         BAR = 1,
@@ -366,6 +503,12 @@ pub const TestAllTypesProto3 = struct {
             .{ .name = "MOO", .value = 2 },
             .{ .name = "moo", .value = 2 },
             .{ .name = "bAz", .value = 2 },
+        };
+
+        /// Options of the enum (`google.protobuf.EnumOptions`).
+        pub const _options = .{
+            .@"#raw" = "\x10\x01",
+            .allow_alias = true,
         };
     };
 
@@ -397,6 +540,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -447,6 +594,12 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .int32 }),
         };
 
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -465,6 +618,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -515,6 +672,12 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .int64 }),
         };
 
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -533,6 +696,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -583,6 +750,12 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .uint32 }),
         };
 
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -601,6 +774,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -651,6 +828,12 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .uint64 }),
         };
 
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -669,6 +852,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -719,6 +906,12 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .sint32 }),
         };
 
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -737,6 +930,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -787,6 +984,12 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .sint64 }),
         };
 
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -805,6 +1008,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -855,6 +1062,12 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .fixed32 }),
         };
 
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -873,6 +1086,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -923,6 +1140,12 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .fixed64 }),
         };
 
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -941,6 +1164,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -991,6 +1218,12 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .sfixed32 }),
         };
 
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1009,6 +1242,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1059,6 +1296,12 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .sfixed64 }),
         };
 
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1077,6 +1320,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1127,6 +1374,12 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .float }),
         };
 
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1145,6 +1398,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1195,6 +1452,12 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .double }),
         };
 
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1213,6 +1476,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1263,6 +1530,12 @@ pub const TestAllTypesProto3 = struct {
             .value = fd(2, .{ .scalar = .bool }),
         };
 
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
+        };
+
         /// Encodes the message to the writer
         /// The allocator is used to generate submessages internally.
         /// Hence, an ArenaAllocator is a preferred choice if allocations are a bottleneck.
@@ -1281,6 +1554,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1327,8 +1604,14 @@ pub const TestAllTypesProto3 = struct {
         value: []const u8 = &.{},
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .scalar = .string }),
-            .value = fd(2, .{ .scalar = .string }),
+            .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+            .value = fdf(2, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
+        };
+
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
         };
 
         /// Encodes the message to the writer
@@ -1349,6 +1632,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1395,8 +1682,14 @@ pub const TestAllTypesProto3 = struct {
         value: []const u8 = &.{},
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .scalar = .string }),
+            .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .value = fd(2, .{ .scalar = .bytes }),
+        };
+
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
         };
 
         /// Encodes the message to the writer
@@ -1417,6 +1710,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1463,8 +1760,14 @@ pub const TestAllTypesProto3 = struct {
         value: ?TestAllTypesProto3.NestedMessage = null,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .scalar = .string }),
+            .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .value = fd(2, .submessage),
+        };
+
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
         };
 
         /// Encodes the message to the writer
@@ -1485,6 +1788,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1531,8 +1838,14 @@ pub const TestAllTypesProto3 = struct {
         value: ?ForeignMessage = null,
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .scalar = .string }),
+            .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .value = fd(2, .submessage),
+        };
+
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
         };
 
         /// Encodes the message to the writer
@@ -1553,6 +1866,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1599,8 +1916,14 @@ pub const TestAllTypesProto3 = struct {
         value: TestAllTypesProto3.NestedEnum = @enumFromInt(0),
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .scalar = .string }),
+            .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .value = fd(2, .@"enum"),
+        };
+
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
         };
 
         /// Encodes the message to the writer
@@ -1621,6 +1944,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1667,8 +1994,14 @@ pub const TestAllTypesProto3 = struct {
         value: ForeignEnum = @enumFromInt(0),
 
         pub const _desc_table = .{
-            .key = fd(1, .{ .scalar = .string }),
+            .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
             .value = fd(2, .@"enum"),
+        };
+
+        /// Options of the message (`google.protobuf.MessageOptions`).
+        pub const _options = .{
+            .@"#raw" = "8\x01",
+            .map_entry = true,
         };
 
         /// Encodes the message to the writer
@@ -1689,6 +2022,10 @@ pub const TestAllTypesProto3 = struct {
         ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
             return protobuf.decode(@This(), reader, allocator);
         }
+
+        /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+        /// field at a time without allocating. See `src/stream.zig`.
+        pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
         /// Deinitializes and frees the memory associated with the message.
         pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1748,6 +2085,10 @@ pub const TestAllTypesProto3 = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1816,6 +2157,10 @@ pub const ForeignMessage = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -1879,6 +2224,10 @@ pub const NullHypothesisProto3 = struct {
     ) (protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!@This() {
         return protobuf.decode(@This(), reader, allocator);
     }
+
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
 
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
@@ -1950,6 +2299,10 @@ pub const EnumOnlyProto3 = struct {
         return protobuf.decode(@This(), reader, allocator);
     }
 
+    /// Streaming pull-decoder: walks a `std.Io.Reader` one wire
+    /// field at a time without allocating. See `src/stream.zig`.
+    pub const StreamDecoder = protobuf.StreamDecoder(@This());
+
     /// Deinitializes and frees the memory associated with the message.
     pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
         return protobuf.deinit(allocator, self);
@@ -1988,4 +2341,16 @@ pub const EnumOnlyProto3 = struct {
     ) !@This() {
         return protobuf.json.parse(@This(), allocator, source, options);
     }
+};
+
+/// Options of the files of this package that have some
+/// (`google.protobuf.FileOptions`), by file name.
+pub const _file_options = .{
+    .@"test_messages_proto3.proto" = .{
+        .@"#raw" = "\n(com.google.protobuf_test_messages.proto3H\x01\xf8\x01\x01\xa2\x02\x06Proto3",
+        .java_package = "com.google.protobuf_test_messages.proto3",
+        .optimize_for = .SPEED,
+        .cc_enable_arenas = true,
+        .objc_class_prefix = "Proto3",
+    },
 };

@@ -41,6 +41,11 @@
 //! was properly encoded in the first place. If any encoding error happens in the middle of the process
 //! it is the user's responsibility to manage the consequences. This implies that the stream decoder
 //! should only used with trusted sources of protobuf messages.
+//!
+//! Caveat3: Delimited (group-encoded) submessages carry no length prefix, so they cannot be
+//! surfaced as a bounded `*std.Io.Reader`. Instantiating the decoder for a message with such
+//! fields is a compile error. Values of closed enums matching no enumerator are skipped, like
+//! unknown fields. Extensions are skipped as well, like unknown fields.
 
 const std = @import("std");
 const protobuf = @import("protobuf.zig");
@@ -98,20 +103,25 @@ pub fn StreamDecoder(comptime T: type) type {
                 self.internals.pending_limited = false;
             }
 
-            // Continue emitting elements of an in-progress packed repeated run.
-            if (self.internals.packed_field != null) {
-                if (self.internals.packed_remaining > 0) return try self.continuePacked();
-                self.internals.packed_field = null;
-            }
-
             while (true) {
+                // Continue emitting elements of an in-progress packed repeated run.
+                if (self.internals.packed_field != null) {
+                    if (self.internals.packed_remaining > 0) {
+                        if (try self.continuePacked()) |ev| return ev;
+                        // Unknown closed-enum value skipped; keep going.
+                        continue;
+                    }
+                    self.internals.packed_field = null;
+                }
+
                 const tag: wire.Tag, _ = wire.Tag.decode(self.internals.source) catch |err| switch (err) {
                     error.EndOfStream => return null,
                     else => |e| return e,
                 };
                 if (try self.dispatch(tag)) |ev| return ev;
-                // Otherwise the field was matched-but-empty (empty packed run)
-                // or unknown-and-skipped; loop for the next tag.
+                // Otherwise no event was produced: a packed run was started
+                // (its elements are emitted above), or the field was unknown
+                // and skipped; loop for the next tag.
             }
         }
 
@@ -175,7 +185,7 @@ pub fn StreamDecoder(comptime T: type) type {
             comptime name: []const u8,
             comptime ftype: FieldType,
             comptime Declared: type,
-        ) Error!Event {
+        ) Error!?Event {
             switch (comptime ftype) {
                 .scalar => |s| {
                     if (comptime s.isSlice()) {
@@ -187,7 +197,8 @@ pub fn StreamDecoder(comptime T: type) type {
                 .@"enum" => {
                     const E = comptime UnwrapOptional(Declared);
                     const raw, _ = try wire.decodeScalar(.int32, self.internals.source);
-                    const decoded = enumFromRaw(E, raw) orelse return error.InvalidInput;
+                    // Unknown values of closed enums are skipped, like unknown fields.
+                    const decoded = enumFromRaw(E, raw) orelse return null;
                     return @unionInit(Event, name, decoded);
                 },
                 .submessage => return @unionInit(Event, name, try self.openLen()),
@@ -216,7 +227,7 @@ pub fn StreamDecoder(comptime T: type) type {
                     if (tag.wire_type == .len) return try self.beginPacked(tag);
                     const E = comptime ElementType(Declared);
                     const raw, _ = try wire.decodeScalar(.int32, self.internals.source);
-                    const decoded = enumFromRaw(E, raw) orelse return error.InvalidInput;
+                    const decoded = enumFromRaw(E, raw) orelse return null; // unknown closed-enum value
                     return @unionInit(Event, name, decoded);
                 },
                 .submessage => return @unionInit(Event, name, try self.openLen()),
@@ -245,7 +256,7 @@ pub fn StreamDecoder(comptime T: type) type {
         }
 
         /// Emit one more element of the in-progress packed run.
-        fn continuePacked(self: *Self) Error!Event {
+        fn continuePacked(self: *Self) Error!?Event {
             const fnum = self.internals.packed_field.?;
             const desc_table = T._desc_table;
             inline for (@typeInfo(@TypeOf(desc_table)).@"struct".fields) |sf| {
@@ -269,7 +280,7 @@ pub fn StreamDecoder(comptime T: type) type {
             comptime name: []const u8,
             comptime rep: FieldType.Repeated,
             comptime Declared: type,
-        ) Error!Event {
+        ) Error!?Event {
             switch (comptime rep) {
                 .scalar => |s| {
                     comptime std.debug.assert(!s.isSlice());
@@ -280,8 +291,9 @@ pub fn StreamDecoder(comptime T: type) type {
                 .@"enum" => {
                     const E = comptime ElementType(Declared);
                     const raw, const c = try wire.decodeScalar(.int32, self.internals.source);
-                    const decoded = enumFromRaw(E, raw) orelse return error.InvalidInput;
                     try self.consumePacked(c);
+                    // Unknown values of closed enums are skipped.
+                    const decoded = enumFromRaw(E, raw) orelse return null;
                     return @unionInit(Event, name, decoded);
                 },
                 .submessage => unreachable, // submessages are never packed
@@ -304,11 +316,13 @@ fn EventUnion(comptime T: type) type {
     var types: []const type = &.{};
     for (@typeInfo(@TypeOf(desc_table)).@"struct".fields) |sf| {
         const field_desc: protobuf.FieldDescriptor = @field(desc_table, sf.name);
+        if (field_desc.isDelimited()) unsupportedDelimited(T, sf.name);
         if (field_desc.ftype == .oneof) {
             const OneOf = field_desc.ftype.oneof;
             const inner = OneOf._desc_table;
             for (@typeInfo(@TypeOf(inner)).@"struct".fields) |oo| {
                 const idesc: protobuf.FieldDescriptor = @field(inner, oo.name);
+                if (idesc.isDelimited()) unsupportedDelimited(T, oo.name);
                 names = names ++ [_][]const u8{oo.name};
                 types = types ++ [_]type{PayloadType(idesc.ftype, @FieldType(OneOf, oo.name))};
             }
@@ -324,6 +338,13 @@ fn EventUnion(comptime T: type) type {
     const TagEnum = @Enum(IntTag, .exhaustive, &name_arr, &std.simd.iota(IntTag, count));
     const attrs: [count]std.builtin.Type.UnionField.Attributes = @splat(.{});
     return @Union(.auto, TagEnum, &name_arr, &type_arr, &attrs);
+}
+
+/// Delimited (group-encoded) submessages have no length prefix, so they cannot
+/// be handed out as a bounded `*std.Io.Reader` like length-prefixed ones.
+fn unsupportedDelimited(comptime T: type, comptime field_name: []const u8) noreturn {
+    @compileError("StreamDecoder does not support delimited (group-encoded) fields, found " ++
+        @typeName(T) ++ "." ++ field_name);
 }
 
 /// Payload type for one leaf field's event variant.
