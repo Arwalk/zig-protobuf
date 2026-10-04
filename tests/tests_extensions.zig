@@ -185,3 +185,22 @@ test "extensions: JSON skips empty repeated extensions" {
     defer testing.allocator.free(json);
     try testing.expectEqualStrings("{}", json);
 }
+
+test "extensions: a failed set leaves the extensions unchanged" {
+    var fail_index: usize = 0;
+    while (true) : (fail_index += 1) {
+        var failing: testing.FailingAllocator = .init(testing.allocator, .{ .fail_index = fail_index });
+
+        var msg: ext.Extendable = .{};
+        defer msg.deinit(testing.allocator);
+        try ext.number.set(&msg, testing.allocator, 7);
+
+        ext.Scope.scoped.set(&msg, failing.allocator(), -1) catch {
+            try testing.expectEqualSlices(u8, &.{ 0xA0, 0x06, 0x07 }, msg._extensions);
+            continue;
+        };
+        break;
+    }
+    // The allocation of the new records is one of those that failed.
+    try testing.expect(fail_index >= 2);
+}
