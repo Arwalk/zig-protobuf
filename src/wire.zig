@@ -826,6 +826,10 @@ pub fn decodeMessage(
                     if (tag.wire_type == .len) {
                         const len, const c = try decodeScalar(.int32, reader);
                         consumed += c;
+                        if (len < 0) {
+                            @branchHint(.cold);
+                            return error.InvalidInput;
+                        }
 
                         consumed += try decodeRepeated(
                             if (comptime field_ti == .optional)
@@ -877,6 +881,10 @@ pub fn decodeMessage(
                     const len: ?usize = if (tag.wire_type == .len) b: {
                         const len, const c = try decodeScalar(.int32, reader);
                         consumed += c;
+                        if (len < 0) {
+                            @branchHint(.cold);
+                            return error.InvalidInput;
+                        }
                         break :b @intCast(len);
                     } else null;
                     consumed += try decodeRepeated(
