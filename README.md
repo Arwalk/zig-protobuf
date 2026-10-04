@@ -11,8 +11,6 @@ This repository implements [protocol buffers](https://protobuf.dev/) for `proto2
 This project is mature enough to be used in production. It passes the upstream
 [conformance suite](conformance/) (protobuf v36.2) for the proto2, proto3 and editions test messages, in binary and JSON. The text format is not supported.
 
-json encoding/decoding is considered a beta feature.
-
 ## Editions
 
 Editions replace the `syntax` keyword with fine grained *features*, which can be set for a
