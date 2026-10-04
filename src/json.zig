@@ -296,7 +296,7 @@ fn writeExtensions(
         if (!std.mem.eql(u8, entry.extendee, @typeName(Self))) continue;
         if (!protobuf.extension.containsField(records, entry.field_number)) continue;
 
-        const text = entry.to_json(records, allocator, opts) catch return error.WriteFailed;
+        const text = (entry.to_json(records, allocator, opts) catch return error.WriteFailed) orelse continue;
         defer allocator.free(text);
         const key = std.fmt.allocPrint(allocator, "[{s}]", .{entry.full_name}) catch return error.WriteFailed;
         defer allocator.free(key);

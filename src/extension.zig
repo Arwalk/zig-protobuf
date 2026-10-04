@@ -131,15 +131,16 @@ pub fn Extension(
             deinitValue(&value, allocator);
         }
 
-        fn toJson(records: []const u8, allocator: std.mem.Allocator, json_options: json.Options) anyerror![]const u8 {
+        fn toJson(records: []const u8, allocator: std.mem.Allocator, json_options: json.Options) anyerror!?[]const u8 {
             var holder: Holder = .{ .value = try decodeValue(records, allocator, json_options.extensions) };
             defer protobuf.deinit(allocator, &holder);
-            // Minified, the holder is `{"value":<extension value>}`.
+            // Minified, the holder is `{"value":<extension value>}`, or `{}`
+            // for a repeated extension without elements.
             const text = try json.encode(holder, .{}, json_options, allocator);
             defer allocator.free(text);
             const prefix = "{\"value\":";
-            if (!std.mem.startsWith(u8, text, prefix)) return error.WriteFailed;
-            return allocator.dupe(u8, text[prefix.len .. text.len - 1]);
+            if (!std.mem.startsWith(u8, text, prefix)) return null;
+            return try allocator.dupe(u8, text[prefix.len .. text.len - 1]);
         }
 
         fn fromJson(value_json: []const u8, allocator: std.mem.Allocator, parse_options: std.json.ParseOptions) anyerror![]const u8 {
@@ -177,8 +178,9 @@ pub const ExtensionRegistry = struct {
         full_name: []const u8,
         /// Decodes the extension from the extension records of a message.
         validate: *const fn (records: []const u8, allocator: std.mem.Allocator, registry: *const ExtensionRegistry) DecodeError!void,
-        /// Returns the JSON value of the extension, which must be set.
-        to_json: *const fn (records: []const u8, allocator: std.mem.Allocator, options: json.Options) anyerror![]const u8,
+        /// Returns the JSON value of the extension, which must be set, or
+        /// null when it has no value to write (an empty repeated extension).
+        to_json: *const fn (records: []const u8, allocator: std.mem.Allocator, options: json.Options) anyerror!?[]const u8,
         /// Returns the wire records of the extension from its JSON value.
         from_json: *const fn (value_json: []const u8, allocator: std.mem.Allocator, options: std.json.ParseOptions) anyerror![]const u8,
     };
