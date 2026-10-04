@@ -379,12 +379,13 @@ fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std
         const is_oneof = @as(std.meta.Tag(@TypeOf(descriptor.ftype)), descriptor.ftype) == .oneof;
 
         const field_value = @field(self, fieldInfo.name);
-        const field_present = switch (@typeInfo(fieldInfo.type)) {
+        // Required fields are always written, even when holding zero.
+        const field_present = descriptor.features.legacy_required or switch (@typeInfo(fieldInfo.type)) {
             .optional => field_value != null,
             // For non-optional fields, skip if value is proto3 default.
             .bool => field_value,
             .int, .float => field_value != 0,
-            .@"enum" => @intFromEnum(field_value) != 0,
+            .@"enum" => field_value != comptime protobuf.enumDefault(fieldInfo.type),
             .pointer => |ptr| if (ptr.size == .slice) field_value.len != 0 else true,
             .@"struct" => blk: {
                 // ArrayList (repeated/map/packed_repeated): skip when empty.
