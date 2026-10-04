@@ -169,6 +169,7 @@ pub fn Extension(
 /// Set of known extensions, used to validate them when decoding and to
 /// encode or decode them as JSON.
 pub const ExtensionRegistry = struct {
+    /// Sorted by extendee, then by field number, as `init` does.
     entries: []const Entry,
 
     pub const Entry = struct {
@@ -183,6 +184,22 @@ pub const ExtensionRegistry = struct {
         to_json: *const fn (records: []const u8, allocator: std.mem.Allocator, options: json.Options) anyerror!?[]const u8,
         /// Returns the wire records of the extension from its JSON value.
         from_json: *const fn (value_json: []const u8, allocator: std.mem.Allocator, options: std.json.ParseOptions) anyerror![]const u8,
+
+        fn lessThan(_: void, a: Entry, b: Entry) bool {
+            return switch (std.mem.order(u8, a.extendee, b.extendee)) {
+                .lt => true,
+                .gt => false,
+                .eq => a.field_number < b.field_number,
+            };
+        }
+
+        fn orderExtendee(extendee: []const u8, entry: Entry) std.math.Order {
+            return std.mem.order(u8, extendee, entry.extendee);
+        }
+
+        fn orderFieldNumber(field_number: u29, entry: Entry) std.math.Order {
+            return std.math.order(field_number, entry.field_number);
+        }
     };
 
     /// Builds a registry from a tuple of `Extension` types, such as the
@@ -192,23 +209,35 @@ pub const ExtensionRegistry = struct {
         const entries = comptime blk: {
             var list: [extensions.len]Entry = undefined;
             for (extensions, 0..) |ext, i| list[i] = ext.registry_entry;
+            @setEvalBranchQuota(1000 + 1000 * list.len * (std.math.log2_int_ceil(usize, list.len + 1) + 1));
+            std.mem.sort(Entry, &list, {}, Entry.lessThan);
             break :blk list;
         };
         return .{ .entries = &entries };
     }
 
+    /// Returns the known extensions of `Extendee`, sorted by field number.
+    pub fn of(self: *const ExtensionRegistry, comptime Extendee: type) []const Entry {
+        const start, const end = std.sort.equalRange(
+            Entry,
+            self.entries,
+            @as([]const u8, @typeName(Extendee)),
+            Entry.orderExtendee,
+        );
+        return self.entries[start..end];
+    }
+
     /// Returns the extension `field_number` of `Extendee`, if known.
     pub fn find(self: *const ExtensionRegistry, comptime Extendee: type, field_number: u29) ?*const Entry {
-        for (self.entries) |*entry| {
-            if (entry.field_number == field_number and std.mem.eql(u8, entry.extendee, @typeName(Extendee))) return entry;
-        }
-        return null;
+        const known = self.of(Extendee);
+        const index = std.sort.binarySearch(Entry, known, field_number, Entry.orderFieldNumber) orelse return null;
+        return &known[index];
     }
 
     /// Returns the extension of `Extendee` with the given full name, if known.
     pub fn findByName(self: *const ExtensionRegistry, comptime Extendee: type, full_name: []const u8) ?*const Entry {
-        for (self.entries) |*entry| {
-            if (std.mem.eql(u8, entry.full_name, full_name) and std.mem.eql(u8, entry.extendee, @typeName(Extendee))) return entry;
+        for (self.of(Extendee)) |*entry| {
+            if (std.mem.eql(u8, entry.full_name, full_name)) return entry;
         }
         return null;
     }
@@ -216,13 +245,40 @@ pub const ExtensionRegistry = struct {
     /// Validates the known extensions of a decoded message of type `Extendee`.
     pub fn validate(self: *const ExtensionRegistry, comptime Extendee: type, records: []const u8, allocator: std.mem.Allocator) DecodeError!void {
         if (records.len == 0) return;
-        for (self.entries) |*entry| {
-            if (!std.mem.eql(u8, entry.extendee, @typeName(Extendee))) continue;
-            if (!containsField(records, entry.field_number)) continue;
-            try entry.validate(records, allocator, self);
-        }
+        const known = self.of(Extendee);
+        if (known.len == 0) return;
+
+        var fallback = std.heap.stackFallback(64, allocator);
+        const bits_allocator = fallback.get();
+        var present = try presentEntries(bits_allocator, known, records);
+        defer present.deinit(bits_allocator);
+        var it = present.iterator(.{});
+        while (it.next()) |index| try known[index].validate(records, allocator, self);
     }
 };
+
+/// Returns which of the `known` extensions, sorted by field number, are set
+/// in `records`. The records are only read once, whatever the number of known
+/// extensions.
+pub fn presentEntries(
+    allocator: std.mem.Allocator,
+    known: []const ExtensionRegistry.Entry,
+    records: []const u8,
+) (std.mem.Allocator.Error || protobuf.DecodingError || std.Io.Reader.Error)!std.DynamicBitSetUnmanaged {
+    var present: std.DynamicBitSetUnmanaged = try .initEmpty(allocator, known.len);
+    errdefer present.deinit(allocator);
+    var it: RecordIterator = .init(records);
+    while (try it.next()) |record| {
+        const index = std.sort.binarySearch(
+            ExtensionRegistry.Entry,
+            known,
+            record.tag.field,
+            ExtensionRegistry.Entry.orderFieldNumber,
+        ) orelse continue;
+        present.set(index);
+    }
+    return present;
+}
 
 /// Whether the extensions of `T` are encoded in the legacy MessageSet format.
 /// Messages with extension ranges declare `_extensions_info`:

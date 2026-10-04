@@ -307,10 +307,16 @@ fn writeExtensions(
 ) !void {
     if (records.len == 0) return;
     const allocator = protobuf.wkt.tl_any_alloc orelse return error.WriteFailed;
-    for (registry.entries) |entry| {
-        if (!std.mem.eql(u8, entry.extendee, @typeName(Self))) continue;
-        if (!protobuf.extension.containsField(records, entry.field_number)) continue;
+    const known = registry.of(Self);
+    if (known.len == 0) return;
 
+    var fallback = std.heap.stackFallback(64, allocator);
+    const bits_allocator = fallback.get();
+    var present = protobuf.extension.presentEntries(bits_allocator, known, records) catch return error.WriteFailed;
+    defer present.deinit(bits_allocator);
+    var it = present.iterator(.{});
+    while (it.next()) |index| {
+        const entry = known[index];
         const text = (entry.to_json(records, allocator, opts) catch return error.WriteFailed) orelse continue;
         defer allocator.free(text);
         const key = std.fmt.allocPrint(allocator, "[{s}]", .{entry.full_name}) catch return error.WriteFailed;
