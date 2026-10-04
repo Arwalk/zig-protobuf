@@ -204,3 +204,13 @@ test "extensions: a failed set leaves the extensions unchanged" {
     // The allocation of the new records is one of those that failed.
     try testing.expect(fail_index >= 2);
 }
+
+test "extensions: JSON values are parsed as they are written" {
+    // Slightly below the midpoint of two consecutive floats, so the nearest
+    // float is the lower one. Read as a double first, it becomes the midpoint,
+    // which is then written back as a number above it.
+    const json = "{\"[tests.extensions.ratio]\":1.00000005960464477539062}";
+    const parsed = try protobuf.json.decodeWithOptions(ext.Extendable, json, .{}, .{ .extensions = &registry }, testing.allocator);
+    defer parsed.deinit();
+    try testing.expectEqual(1.0, (try ext.ratio.get(parsed.value, testing.allocator)).?);
+}
