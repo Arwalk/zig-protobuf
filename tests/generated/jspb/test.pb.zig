@@ -530,7 +530,7 @@ pub const HasExtensions = struct {
     str1: ?[]const u8 = null,
     str2: ?[]const u8 = null,
     str3: ?[]const u8 = null,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .str1 = fd(1, .{ .scalar = .string }),
@@ -1095,7 +1095,7 @@ pub const TestClone = struct {
     simple2: std.ArrayList(Simple1) = .empty,
     bytes_field: ?[]const u8 = null,
     unused: ?[]const u8 = null,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .str = fd(1, .{ .scalar = .string }),
@@ -1323,7 +1323,7 @@ pub const TestGroup = struct {
 
 pub const TestReservedNames = struct {
     extension: ?i32 = null,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .extension = fd(1, .{ .scalar = .int32 }),

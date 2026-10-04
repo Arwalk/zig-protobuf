@@ -437,7 +437,7 @@ fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std
 
     if (comptime @hasField(Self, "_extensions")) {
         if (opts.extensions) |registry| {
-            try writeExtensions(Self, self._extensions, jws, opts, registry);
+            try writeExtensions(Self, self._extensions.records, jws, opts, registry);
         }
     }
 

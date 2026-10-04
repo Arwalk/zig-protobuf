@@ -133,8 +133,10 @@ To update your code, do these steps:
 
 ## Extensions
 
-A message that declares extension ranges keeps its extensions in `_extensions`, as raw wire
-data. They are encoded again as they were decoded, without any setup. Each extension is a
+A message that declares extension ranges keeps its extensions in `_extensions`, a
+`protobuf.ExtensionSet` of wire records. They are encoded again as they were decoded, without
+any setup. The set only holds well-formed records: plain bytes cannot be assigned to it, and
+`protobuf.ExtensionSet.fromBytes` validates the bytes it copies. Each extension is a
 generated `protobuf.Extension` declaration, in the scope (file or message) that declares it:
 
 ```proto

@@ -66,7 +66,7 @@ pub const CustomOptionLifetimesMessage = struct {
     deprecated_option: ?[]const u8 = null,
     repeated_custom_option_lifetimes_enum: std.ArrayList(CustomOptionLifetimesEnum) = .empty,
     nested_custom_option_lifetimes_message: ?NestedCustomOptionLifetimesMessage = null,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .removed_option = fd(1, .{ .scalar = .string }),
@@ -1533,7 +1533,7 @@ pub const ComplexOptionType1 = struct {
     foo3: ?i32 = null,
     foo4: std.ArrayList(i32) = .empty,
     my_map: std.ArrayList(ComplexOptionType1.MyMapEntry) = .empty,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .foo = fd(1, .{ .scalar = .int32 }),
@@ -1696,7 +1696,7 @@ pub const ComplexOptionType2 = struct {
     baz: ?i32 = null,
     fred: ?ComplexOptionType2.ComplexOptionType4 = null,
     barney: std.ArrayList(ComplexOptionType2.ComplexOptionType4) = .empty,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .bar = fd(1, .submessage),
@@ -2185,7 +2185,7 @@ pub const VariousComplexOptions = struct {
 };
 
 pub const AggregateMessageSet = struct {
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{};
 
@@ -3184,7 +3184,7 @@ pub const OptionsMessage = struct {
 };
 
 pub const Extendee = struct {
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{};
 
@@ -3262,7 +3262,7 @@ pub const Extendee = struct {
 pub const TopLevelMessage = struct {
     f: ?f32 = null,
     i: ?i64 = null,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .f = fd(1, .{ .scalar = .float }),

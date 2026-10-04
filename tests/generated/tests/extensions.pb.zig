@@ -13,7 +13,7 @@ pub const Color = enum(i32) {
 
 pub const Extendable = struct {
     regular: ?i32 = null,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{
         .regular = fd(1, .{ .scalar = .int32 }),
@@ -398,7 +398,7 @@ pub const TwoOneofs = struct {
 };
 
 pub const MessageSet = struct {
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
 
     pub const _desc_table = .{};
 

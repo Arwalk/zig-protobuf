@@ -149,7 +149,7 @@ pub const TestAllTypesProto2 = struct {
     Field_name18__: ?i32 = null,
     message_set_correct: ?TestAllTypesProto2.MessageSetCorrect = null,
     oneof_field: ?oneof_field_union = null,
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
     _unknown_fields: []const u8 = &.{},
 
     pub const _oneof_field_case = enum {
@@ -2343,7 +2343,7 @@ pub const TestAllTypesProto2 = struct {
 
     /// message_set test case.
     pub const MessageSetCorrect = struct {
-        _extensions: []const u8 = &.{},
+        _extensions: protobuf.ExtensionSet = .empty,
         _unknown_fields: []const u8 = &.{},
 
         pub const _desc_table = .{};
@@ -3344,7 +3344,7 @@ pub const TestAllRequiredTypesProto2 = struct {
     default_bool: bool = true,
     default_string: []const u8 = "Rosebud",
     default_bytes: []const u8 = "joshua",
-    _extensions: []const u8 = &.{},
+    _extensions: protobuf.ExtensionSet = .empty,
     _unknown_fields: []const u8 = &.{},
 
     pub const _desc_table = .{
@@ -3566,7 +3566,7 @@ pub const TestAllRequiredTypesProto2 = struct {
 
     /// message_set test case.
     pub const MessageSetCorrect = struct {
-        _extensions: []const u8 = &.{},
+        _extensions: protobuf.ExtensionSet = .empty,
         _unknown_fields: []const u8 = &.{},
 
         pub const _desc_table = .{};

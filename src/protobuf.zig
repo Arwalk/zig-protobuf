@@ -11,6 +11,7 @@ pub const extension = @import("extension.zig");
 /// See `src/extension.zig`.
 pub const Extension = extension.Extension;
 pub const ExtensionRegistry = extension.ExtensionRegistry;
+pub const ExtensionSet = extension.ExtensionSet;
 
 /// Streaming pull-decoder for the generated message type `T`.
 /// See `src/stream.zig`. Generated messages also expose this as
@@ -729,11 +730,11 @@ pub fn encode(
     }
     // Emit extensions as they were decoded or set.
     if (comptime @hasField(Data, "_extensions")) {
-        const records = @field(data, "_extensions");
+        const set: ExtensionSet = @field(data, "_extensions");
         if (comptime extension.isMessageSet(Data)) {
-            try extension.writeMessageSet(writer, records);
-        } else if (records.len > 0) {
-            try writer.writeAll(records);
+            try extension.writeMessageSet(writer, set);
+        } else if (set.records.len > 0) {
+            try writer.writeAll(set.records);
         }
     }
     // Re-emit unknown fields verbatim at the end.
@@ -827,7 +828,7 @@ pub fn dupe(comptime T: type, original: T, allocator: std.mem.Allocator) std.mem
         result._unknown_fields = try allocator.dupe(u8, original._unknown_fields);
     }
     if (comptime @hasField(T, "_extensions")) {
-        result._extensions = try allocator.dupe(u8, original._extensions);
+        result._extensions = try original._extensions.dupe(allocator);
     }
 
     return result;
@@ -1024,7 +1025,7 @@ pub fn deinit(allocator: std.mem.Allocator, data: anytype) void {
         if (data._unknown_fields.len > 0) allocator.free(data._unknown_fields);
     }
     if (comptime @hasField(T, "_extensions")) {
-        if (data._extensions.len > 0) allocator.free(data._extensions);
+        data._extensions.deinit(allocator);
     }
 }
 

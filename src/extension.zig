@@ -1,7 +1,7 @@
 //! Protobuf extensions.
 //!
 //! A message that declares extension ranges (`extensions 100 to 199;`) stores
-//! its extension fields in `_extensions`, as raw wire records. Each generated
+//! its extension fields in `_extensions`, an `ExtensionSet`. Each generated
 //! extension is an `Extension` type, which gives typed access to one of them:
 //!
 //! ```zig
@@ -20,6 +20,42 @@ const wire = @import("wire.zig");
 const json = @import("json.zig");
 
 pub const DecodeError = protobuf.DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error;
+
+/// The extensions of a message: the type of its `_extensions` field.
+///
+/// The records are always well-formed, as they only come from the decoder,
+/// from `Extension.set` and from `fromBytes`, which validates them. Plain
+/// bytes cannot be assigned to `_extensions`; do not write `records` directly.
+pub const ExtensionSet = struct {
+    /// Owned wire records (tag and value of each extension field).
+    records: []const u8 = &.{},
+
+    pub const empty: ExtensionSet = .{};
+
+    /// Makes a set from a copy of `encoded` wire records, such as the bytes
+    /// of another set. Fails with `error.InvalidInput` when they are malformed.
+    pub fn fromBytes(allocator: std.mem.Allocator, encoded: []const u8) (std.mem.Allocator.Error || error{InvalidInput})!ExtensionSet {
+        var it: RecordIterator = .init(encoded);
+        while (it.next() catch return error.InvalidInput) |_| {}
+        if (encoded.len == 0) return .empty;
+        return .{ .records = try allocator.dupe(u8, encoded) };
+    }
+
+    /// The wire records of the extensions.
+    pub fn bytes(self: ExtensionSet) []const u8 {
+        return self.records;
+    }
+
+    pub fn dupe(self: ExtensionSet, allocator: std.mem.Allocator) std.mem.Allocator.Error!ExtensionSet {
+        if (self.records.len == 0) return .empty;
+        return .{ .records = try allocator.dupe(u8, self.records) };
+    }
+
+    pub fn deinit(self: *ExtensionSet, allocator: std.mem.Allocator) void {
+        if (self.records.len > 0) allocator.free(self.records);
+        self.* = .empty;
+    }
+};
 
 /// Describes the extension `full_name` of the message `Extendee_`.
 ///
@@ -76,7 +112,7 @@ pub fn Extension(
         /// Returns the value of the extension. The caller owns the value and
         /// frees it with `deinitValue`.
         pub fn get(msg: Extendee_, allocator: std.mem.Allocator) DecodeError!Value_ {
-            return decodeValue(msg._extensions, allocator, null);
+            return decodeValue(msg._extensions.records, allocator, null);
         }
 
         /// Returns the value of the extension from an encoded `Extendee`, such
@@ -89,7 +125,7 @@ pub fn Extension(
 
         /// Whether the extension is set in `msg`.
         pub fn has(msg: Extendee_) bool {
-            return containsField(msg._extensions, field_number);
+            return containsField(msg._extensions.records, field_number);
         }
 
         /// Sets the extension of `msg` to a copy of `value`.
@@ -297,7 +333,7 @@ pub const Record = struct {
     value: []const u8,
 };
 
-/// Iterates the fields of wire records, such as `_extensions`.
+/// Iterates the fields of wire records, such as those of an `ExtensionSet`.
 pub const RecordIterator = struct {
     reader: std.Io.Reader,
 
@@ -325,18 +361,19 @@ pub fn containsField(records: []const u8, field_number: u29) bool {
     return false;
 }
 
-/// Replaces the fields `field_number` of the owned `records` by `new`.
+/// Replaces the fields `field_number` of `set` by the well-formed records `new`.
 pub fn replaceField(
     allocator: std.mem.Allocator,
-    records: *[]const u8,
+    set: *ExtensionSet,
     field_number: u29,
     new: []const u8,
 ) std.mem.Allocator.Error!void {
+    const records = &set.records;
     var result: std.ArrayList(u8) = .empty;
     defer result.deinit(allocator);
     var it: RecordIterator = .init(records.*);
-    // Records are well-formed, as they were produced by the decoder or `set`.
-    while (it.next() catch null) |record| {
+    // The records of an `ExtensionSet` are well-formed.
+    while (it.next() catch unreachable) |record| {
         if (record.tag.field != field_number) try result.appendSlice(allocator, record.bytes);
     }
     try result.appendSlice(allocator, new);
@@ -347,11 +384,12 @@ pub fn replaceField(
     records.* = replaced;
 }
 
-/// Writes extension records in MessageSet format: each length-delimited
-/// record becomes an item group holding its type id and message.
-pub fn writeMessageSet(writer: *std.Io.Writer, records: []const u8) std.Io.Writer.Error!void {
-    var it: RecordIterator = .init(records);
-    while (it.next() catch null) |record| {
+/// Writes extensions in MessageSet format: each length-delimited record
+/// becomes an item group holding its type id and message.
+pub fn writeMessageSet(writer: *std.Io.Writer, set: ExtensionSet) std.Io.Writer.Error!void {
+    var it: RecordIterator = .init(set.records);
+    // The records of an `ExtensionSet` are well-formed.
+    while (it.next() catch unreachable) |record| {
         if (record.tag.wire_type != .len) {
             try writer.writeAll(record.bytes);
             continue;

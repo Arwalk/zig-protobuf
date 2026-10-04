@@ -1277,9 +1277,9 @@ pub fn decodeMessage(
         try appendOwned(allocator, &result._unknown_fields, &unknown_buf);
     }
     if (comptime has_extensions) {
-        try appendOwned(allocator, &result._extensions, &extension_buf);
+        try appendOwned(allocator, &result._extensions.records, &extension_buf);
         if (options.extensions) |registry| {
-            try registry.validate(Result, result._extensions, allocator);
+            try registry.validate(Result, result._extensions.records, allocator);
         }
     }
     return consumed;
