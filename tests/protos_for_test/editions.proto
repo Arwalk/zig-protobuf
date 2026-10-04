@@ -50,3 +50,14 @@ message Encoding {
   string verified = 3;
   string unverified = 4 [features.utf8_validation = NONE];
 }
+
+// Closed enum whose zero value is not its first value, and so not its default.
+enum ClosedZeroSecond {
+  option features.enum_type = CLOSED;
+  CZS_ONE = 1;
+  CZS_ZERO = 0;
+}
+
+message RequiredEnum {
+  ClosedZeroSecond value = 1 [features.field_presence = LEGACY_REQUIRED];
+}

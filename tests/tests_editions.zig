@@ -189,3 +189,21 @@ test "editions 2026: runtime features keep the edition 2023 defaults" {
         0x2A, 0x02, 0x08, 0x01, // child: LEN(5) { a = 1 }
     }, bytes);
 }
+
+test "editions: JSON writes required fields holding zero" {
+    const msg: editions.Presence = .{ .required_int = 0 };
+    const json = try msg.jsonEncode(.{}, .{}, testing.allocator);
+    defer testing.allocator.free(json);
+    try testing.expectEqualStrings("{\"requiredInt\":0}", json);
+}
+
+test "editions: JSON round-trips a required closed enum of value zero" {
+    const msg: editions.RequiredEnum = .{ .value = .CZS_ZERO };
+    const json = try msg.jsonEncode(.{}, .{}, testing.allocator);
+    defer testing.allocator.free(json);
+    try testing.expectEqualStrings("{\"value\":\"CZS_ZERO\"}", json);
+
+    const parsed = try editions.RequiredEnum.jsonDecode(json, .{}, testing.allocator);
+    defer parsed.deinit();
+    try testing.expectEqual(.CZS_ZERO, parsed.value.value);
+}
