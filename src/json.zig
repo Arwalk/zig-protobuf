@@ -270,9 +270,9 @@ fn parseExtension(
     if (name.len < 2 or name[0] != '[' or name[name.len - 1] != ']') return false;
     const entry = registry.findByName(Self, name[1 .. name.len - 1]) orelse return false;
 
-    const value = try std.json.innerParse(std.json.Value, allocator, source, options);
-    const text = std.json.Stringify.valueAlloc(allocator, value, .{}) catch return error.OutOfMemory;
-    defer allocator.free(text);
+    var arena: std.heap.ArenaAllocator = .init(allocator);
+    defer arena.deinit();
+    const text = try nextValueText(arena.allocator(), source, options);
     const records = entry.from_json(text, allocator, options) catch |err| switch (err) {
         error.OutOfMemory => return error.OutOfMemory,
         else => return error.UnexpectedToken,
@@ -280,6 +280,21 @@ fn parseExtension(
     defer allocator.free(records);
     try protobuf.extension.replaceField(allocator, &result._extensions, entry.field_number, records);
     return true;
+}
+
+/// Consumes the next value of `source` and returns its JSON text, which is
+/// either part of the input or allocated with `arena`.
+fn nextValueText(arena: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) ![]const u8 {
+    if (@TypeOf(source.*) == std.json.Scanner and source.is_end_of_input) {
+        // The scanner holds the whole input: the value is used as written.
+        _ = try source.peekNextTokenType(); // Moves to the start of the value.
+        const start = source.cursor;
+        try source.skipValue();
+        return source.input[start..source.cursor];
+    }
+    // Streamed input is not kept, so the value is parsed and written back.
+    const value = try std.json.innerParse(std.json.Value, arena, source, options);
+    return std.json.Stringify.valueAlloc(arena, value, .{}) catch return error.OutOfMemory;
 }
 
 /// Writes the known extensions set in `records` as `"[full.name]": value`.
