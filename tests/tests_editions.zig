@@ -207,3 +207,14 @@ test "editions: JSON round-trips a required closed enum of value zero" {
     defer parsed.deinit();
     try testing.expectEqual(.CZS_ZERO, parsed.value.value);
 }
+
+test "editions: negative lengths of repeated fields are rejected" {
+    // by_name (6), a repeated submessage, with a length of -1.
+    try testing.expectError(error.InvalidInput, decode(editions.Delimited, &.{
+        0x32, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01,
+    }));
+    // packed_ints (1), a packed repeated field, with a length of -1.
+    try testing.expectError(error.InvalidInput, decode(editions.Encoding, &.{
+        0x0A, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01,
+    }));
+}
