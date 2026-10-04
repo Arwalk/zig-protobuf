@@ -592,8 +592,8 @@ fn writeValue(
     // TODO: review semantics of default-value in regards to wire protocol
     const is_default_scalar_value = switch (@typeInfo(@TypeOf(value))) {
         .optional => value == null,
-        // as per protobuf spec, the first element of the enums must be 0 and it is the default value
-        .@"enum" => @intFromEnum(value) == 0,
+        // The default of an enum is its first value, which is zero for open enums.
+        .@"enum" => value == comptime enumDefault(@TypeOf(value)),
         else => switch (@TypeOf(value)) {
             bool => value == false,
             i32, u32, i64, u64, f32, f64 => value == 0,
