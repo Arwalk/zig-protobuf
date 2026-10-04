@@ -1,5 +1,6 @@
 const std = @import("std");
 const testing = std.testing;
+const protobuf = @import("protobuf");
 const editions = @import("./generated/tests/editions.pb.zig");
 
 fn encode(msg: anytype) ![]const u8 {
@@ -114,7 +115,28 @@ test "editions: closed enums drop unknown values, open enums keep them" {
     );
 
     // Closed enums default to their first value, which need not be zero.
-    try testing.expectEqual(.CLOSED_ONE, @import("protobuf").enumDefault(editions.Closed));
+    try testing.expectEqual(.CLOSED_ONE, protobuf.enumDefault(editions.Closed));
+}
+
+// protoc requires zero to be the first value of the enums used with implicit
+// presence, so only hand-written descriptors can declare such a field.
+const ZeroSecond = enum(i32) { ONE = 1, ZERO = 0 };
+const ImplicitClosedEnum = struct {
+    value: ZeroSecond = .ONE,
+
+    pub const _desc_table = .{ .value = protobuf.fd(1, .@"enum") };
+};
+
+test "editions: closed enums round-trip when zero is not their default" {
+    inline for (.{ ZeroSecond.ZERO, ZeroSecond.ONE }) |value| {
+        var w: std.Io.Writer.Allocating = .init(testing.allocator);
+        defer w.deinit();
+        try protobuf.encode(&w.writer, testing.allocator, ImplicitClosedEnum{ .value = value });
+
+        var reader: std.Io.Reader = .fixed(w.written());
+        const decoded = try protobuf.decode(ImplicitClosedEnum, &reader, testing.allocator);
+        try testing.expectEqual(value, decoded.value);
+    }
 }
 
 test "editions: repeated field encoding" {
