@@ -174,3 +174,14 @@ test "two oneofs: fields of the second oneof are decoded" {
     try testing.expectEqual(1, decoded.first.?.a);
     try testing.expectEqual(2, decoded.second.?.c);
 }
+
+test "extensions: JSON skips empty repeated extensions" {
+    // packed_numbers (102) as an empty LEN record.
+    var msg = try decode(ext.Extendable, &.{ 0xB2, 0x06, 0x00 }, .{});
+    defer msg.deinit(testing.allocator);
+    try testing.expect(ext.packed_numbers.has(msg));
+
+    const json = try msg.jsonEncode(.{}, .{ .extensions = &registry }, testing.allocator);
+    defer testing.allocator.free(json);
+    try testing.expectEqualStrings("{}", json);
+}
