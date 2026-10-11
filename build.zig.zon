@@ -7,11 +7,6 @@
     .minimum_zig_version = "0.16.0",
 
     .dependencies = .{
-        .@"protoc-linux-64" = .{
-            .url = "https://github.com/protocolbuffers/protobuf/releases/download/v36.2/protoc-36.2-win64.zip",
-            .hash = "N-V-__8AABekzACgnTDmenHY7N0E55oHnTfOliLw8ReYHEDH",
-            .lazy = true,
-        },
         .@"protoc-linux-x86_64" = .{
             .url = "https://github.com/protocolbuffers/protobuf/releases/download/v36.2/protoc-36.2-linux-x86_64.zip",
             .hash = "N-V-__8AAMtRpADAGtPCqgS57gPLl02TIK7HbJ1MkIm4Eq8F",
