@@ -116,7 +116,7 @@ pub const TopLevelEnum = enum(i32) {
 };
 
 pub const WithEnum = struct {
-    value: WithEnum.SomeEnum = @fromBackingInt(@intCast(0)),
+    value: WithEnum.SomeEnum = @fromBackingInt(0),
 
     pub const _desc_table = .{
         .value = fd(1, .@"enum"),
@@ -195,7 +195,7 @@ pub const WithEnum = struct {
 
 /// tests shadowing names
 pub const WithEnumShadow = struct {
-    value: WithEnumShadow.SomeEnum = @fromBackingInt(@intCast(0)),
+    value: WithEnumShadow.SomeEnum = @fromBackingInt(0),
 
     pub const _desc_table = .{
         .value = fd(1, .@"enum"),

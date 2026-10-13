@@ -760,10 +760,10 @@ const GenerationContext = struct {
                 // The first enumerator, which is zero for open enums. Closed
                 // enums (possible as map values) may start at any number.
                 .TYPE_ENUM => b: {
-                    const e = self.enums.get(field.type_name.?) orelse break :b "@enumFromInt(0)";
+                    const e = self.enums.get(field.type_name.?) orelse break :b "@fromBackingInt(0)";
                     const first = if (e.value.items.len > 0) e.value.items[0].number orelse 0 else 0;
-                    if (first == 0) break :b "@enumFromInt(0)";
-                    break :b try std.fmt.allocPrint(allocator, "@enumFromInt({})", .{first});
+                    if (first == 0) break :b "@fromBackingInt(0)";
+                    break :b try std.fmt.allocPrint(allocator, "@fromBackingInt({})", .{first});
                 },
                 else => null,
             };

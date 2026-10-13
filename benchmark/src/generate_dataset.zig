@@ -34,7 +34,7 @@ pub fn generateRandomManagedString(allocator: std.mem.Allocator) AllocatorError!
 
 fn generateRandomAnyValue(allocator: std.mem.Allocator) AllocatorError!common.AnyValue {
     const value_case = random().intRangeAtMost(usize, 0, 6);
-    const to_enum: common.AnyValue._value_case = @enumFromInt(value_case);
+    const to_enum: common.AnyValue._value_case = @fromBackingInt(@intCast(value_case));
 
     return switch (to_enum) {
         .string_value => .{ .value = .{ .string_value = try generateRandomManagedString(allocator) } },

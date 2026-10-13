@@ -464,7 +464,7 @@ pub const TestAllTypesEditionUnstable = struct {
 
     pub const MapStringForeignEnumEntry = struct {
         key: []const u8 = &.{},
-        value: ForeignEnumEditionUnstable = @fromBackingInt(@intCast(0)),
+        value: ForeignEnumEditionUnstable = @fromBackingInt(0),
 
         pub const _desc_table = .{
             .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
