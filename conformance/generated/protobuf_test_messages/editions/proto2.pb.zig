@@ -2024,7 +2024,7 @@ pub const TestAllTypesProto2 = struct {
 
     pub const MapStringNestedEnumEntry = struct {
         key: []const u8 = &.{},
-        value: TestAllTypesProto2.NestedEnum = @enumFromInt(0),
+        value: TestAllTypesProto2.NestedEnum = @fromBackingInt(@intCast(0)),
 
         pub const _desc_table = .{
             .key = fd(1, .{ .scalar = .string }),
@@ -2102,7 +2102,7 @@ pub const TestAllTypesProto2 = struct {
 
     pub const MapStringForeignEnumEntry = struct {
         key: []const u8 = &.{},
-        value: ForeignEnumProto2 = @enumFromInt(0),
+        value: ForeignEnumProto2 = @fromBackingInt(@intCast(0)),
 
         pub const _desc_table = .{
             .key = fd(1, .{ .scalar = .string }),
