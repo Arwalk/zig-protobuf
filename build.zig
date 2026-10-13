@@ -228,9 +228,9 @@ pub fn build(b: *std.Build) !void {
         // This will evaluate the `test` step rather than the default, which is "install".
         const run_main_tests = b.addRunArtifact(test_item);
 
-        test_item.step.dependOn(&convertStep.step);
-        test_item.step.dependOn(&convertStep2.step);
-        test_item.step.dependOn(&convertUpstream.step);
+        test_item.step.dependOn(convertStep.step);
+        test_item.step.dependOn(convertStep2.step);
+        test_item.step.dependOn(convertUpstream.step);
 
         test_step.dependOn(&run_main_tests.step);
     }
@@ -245,8 +245,8 @@ pub fn build(b: *std.Build) !void {
             include.path(b, "google/protobuf/compiler/plugin.proto"),
             include.path(b, "google/protobuf/descriptor.proto"),
         },
-        .include_directories = &.{},
+        .include_directories = &.{include},
     });
 
-    bootstrap.dependOn(&bootstrapConversion.step);
+    bootstrap.dependOn(bootstrapConversion.step);
 }

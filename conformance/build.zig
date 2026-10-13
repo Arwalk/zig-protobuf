@@ -38,7 +38,7 @@ pub fn build(b: *std.Build) void {
     // Instruct zig build system to first build protoc before trying to generate the .pb.zig!
     gen_zig.step.dependOn(&protoc.step);
 
-    b.step("generate", "Regenerate Zig bindings for conformance protos").dependOn(&gen_zig.step);
+    b.step("generate", "Regenerate Zig bindings for conformance protos").dependOn(gen_zig.step);
 
     // Testee binary — uses pre-generated bindings from conformance/generated/.
     const testee = b.addExecutable(.{

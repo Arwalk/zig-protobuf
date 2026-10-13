@@ -37,6 +37,10 @@ pub fn build(b: *std.Build) void {
         .root = upstream.path(""),
         .files = upb_srcs,
         .language = .c,
+        // The stage0 headers declare the descriptor minitables as functions;
+        // without this, UPB_DESC_MINITABLE takes their address instead of calling
+        // them, which newer clang rejects as an incompatible pointer type.
+        .flags = &.{"-DUPB_BOOTSTRAP_STAGE=0"},
     });
     b.installArtifact(upb);
 

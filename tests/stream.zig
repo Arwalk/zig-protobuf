@@ -104,7 +104,7 @@ test "stream: submessage recursed via a nested decoder" {
 
     const ev = (try sd.next()).?;
     var inner = tests.WithEnum.StreamDecoder.init(ev.with_enum);
-    var got: tests.WithEnum.SomeEnum = @enumFromInt(0);
+    var got: tests.WithEnum.SomeEnum = @fromBackingInt(@intCast(0));
     while (try inner.next()) |item| switch (item) {
         .value => |v| got = v,
     };

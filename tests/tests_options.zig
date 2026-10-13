@@ -57,7 +57,7 @@ test "options: service and method options" {
 test "options: options of extension fields" {
     // The definition of `source_retention_option` sets `retention`.
     try testing.expectEqual(.RETENTION_SOURCE, opts.source_retention_option.options.retention);
-    try testing.expectEqual(0, @typeInfo(@TypeOf(opts.file_options.options)).@"struct".fields.len);
+    try testing.expectEqual(0, @typeInfo(@TypeOf(opts.file_options.options)).@"struct".field_names.len);
 }
 
 test "options: target types of an option field" {

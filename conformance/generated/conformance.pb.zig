@@ -243,9 +243,9 @@ pub const JspbEncodingConfig = struct {
 };
 
 pub const ConformanceRequest = struct {
-    requested_output_format: WireFormat = @enumFromInt(0),
+    requested_output_format: WireFormat = @fromBackingInt(0),
     message_type: []const u8 = &.{},
-    test_category: TestCategory = @enumFromInt(0),
+    test_category: TestCategory = @fromBackingInt(0),
     jspb_encoding_options: ?JspbEncodingConfig = null,
     print_unknown_fields: bool = false,
     payload: ?payload_union = null,

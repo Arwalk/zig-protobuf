@@ -2068,7 +2068,7 @@ pub const TestMapFieldsNoBinary = struct {
 
     pub const MapStringEnumEntry = struct {
         key: []const u8 = &.{},
-        value: MapValueEnumNoBinary = @enumFromInt(0),
+        value: MapValueEnumNoBinary = @fromBackingInt(0),
 
         pub const _desc_table = .{
             .key = fd(1, .{ .scalar = .string }),

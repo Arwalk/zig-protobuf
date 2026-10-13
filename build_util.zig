@@ -1,29 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-const Io = std.Io;
-
 pub const PROTOC_VERSION = "36.2";
-
-// File system utilities
-pub fn pathExists(io: Io, path: []const u8) bool {
-    Io.Dir.cwd().access(io, path, .{}) catch return false;
-    return true;
-}
-
-pub fn ensureProtocBinaryDownloaded(
-    protoc_owner: *std.Build,
-    step: *std.Build.Step,
-) !?[]const u8 {
-    if (try getProtocBin(protoc_owner, step)) |executable_path| {
-        if (pathExists(step.owner.graph.io, executable_path)) {
-            return executable_path;
-        }
-        std.log.err("zig-protobuf: file not found: {s}", .{executable_path});
-        std.process.exit(1);
-    }
-    return null;
-}
 
 pub fn getProtocDependency(b: *std.Build) !?*std.Build.Dependency {
     const os: ?[]const u8 = switch (builtin.os.tag) {
@@ -56,12 +34,12 @@ pub fn getProtocDependency(b: *std.Build) !?*std.Build.Dependency {
     return null;
 }
 
-pub fn getProtocBin(protoc_owner: *std.Build, step: *std.Build.Step) !?[]const u8 {
-    if (try getProtocDependency(protoc_owner)) |dep| {
+pub fn getProtocBin(b: *std.Build) !?std.Build.LazyPath {
+    if (try getProtocDependency(b)) |dep| {
         if (builtin.os.tag == .windows)
-            return dep.path("bin/protoc.exe").getPath2(protoc_owner, step);
+            return dep.path("bin/protoc.exe");
 
-        return dep.path("bin/protoc").getPath2(protoc_owner, step);
+        return dep.path("bin/protoc");
     }
     return null;
 }
@@ -69,21 +47,20 @@ pub fn getProtocBin(protoc_owner: *std.Build, step: *std.Build.Step) !?[]const u
 fn dupeLazyPaths(b: *std.Build, paths: []const std.Build.LazyPath) []std.Build.LazyPath {
     const array = b.allocator.alloc(std.Build.LazyPath, paths.len) catch @panic("OOM");
     for (array, paths) |*dest, source|
-        dest.* = source.dupe(b);
+        dest.* = source.dupe(b.graph);
     return array;
 }
 
 pub const RunProtocStep = struct {
-    step: std.Build.Step,
+    step: *std.Build.Step,
     source_files: []std.Build.LazyPath,
     include_directories: []std.Build.LazyPath,
     destination_directory: std.Build.LazyPath,
     generator: *std.Build.Step.Compile,
-    generator_bin: std.Build.LazyPath,
-    protoc_override_bin: ?std.Build.LazyPath = null,
+    protoc_run: *std.Build.Step.Run,
+    fmt_step: *std.Build.Step.Fmt,
     preserve_unknown_fields: bool = false,
     experimental_editions: bool = false,
-    verbose: bool = false,
 
     pub const base_id = .protoc;
 
@@ -115,28 +92,11 @@ pub const RunProtocStep = struct {
         target: std.Build.ResolvedTarget,
         options: Options,
     ) *RunProtocStep {
-        var self: *RunProtocStep = owner.allocator.create(RunProtocStep) catch @panic("OOM");
-        const generator = options.generator orelse buildGenerator(owner, .{ .target = target });
-        self.* = .{
-            .step = std.Build.Step.init(.{
-                .id = .check_file,
-                .name = "run protoc",
-                .owner = owner,
-                .makeFn = make,
-            }),
-            .source_files = dupeLazyPaths(owner, options.source_files),
-            .include_directories = dupeLazyPaths(owner, options.include_directories),
-            .destination_directory = options.destination_directory.dupe(owner),
-            .generator = generator,
-            .generator_bin = generator.getEmittedBin(),
-            .protoc_override_bin = options.protoc,
-            .preserve_unknown_fields = options.preserve_unknown_fields,
-            .experimental_editions = options.experimental_editions,
-        };
-
-        self.step.dependOn(&self.generator.step);
-
-        return self;
+        return createWithGenerator(
+            owner,
+            options.generator orelse buildGenerator(owner, .{ .target = target }),
+            options,
+        );
     }
 
     pub fn createWithGenerator(
@@ -144,105 +104,95 @@ pub const RunProtocStep = struct {
         generator: *std.Build.Step.Compile,
         options: Options,
     ) *RunProtocStep {
-        return create(owner, generator.root_module.resolved_target.?, .{
-            .source_files = options.source_files,
-            .include_directories = options.include_directories,
-            .destination_directory = options.destination_directory,
+        // The outputs are written into the source tree, which the build cache does not
+        // track. The mkdir and protoc steps must always run, otherwise a deleted file
+        // would not be regenerated. The fmt step has no cache and always runs.
+        const mkdir_run = makeDestinationDirectory(owner, options.destination_directory);
+        mkdir_run.has_side_effects = true;
+        const protoc_run = makeProtocRun(owner, generator, options);
+        protoc_run.has_side_effects = true;
+        protoc_run.step.dependOn(&mkdir_run.step);
+
+        const fmt_step = owner.addFmt(.{ .paths = &.{options.destination_directory} });
+        fmt_step.step.dependOn(&protoc_run.step);
+
+        const self: *RunProtocStep = owner.allocator.create(RunProtocStep) catch @panic("OOM");
+        self.* = .{
+            .step = &fmt_step.step,
+            .source_files = dupeLazyPaths(owner, options.source_files),
+            .include_directories = dupeLazyPaths(owner, options.include_directories),
+            .destination_directory = options.destination_directory.dupe(owner.graph),
             .generator = generator,
-            .protoc = options.protoc,
+            .protoc_run = protoc_run,
+            .fmt_step = fmt_step,
             .preserve_unknown_fields = options.preserve_unknown_fields,
             .experimental_editions = options.experimental_editions,
-        });
+        };
+        return self;
     }
 
     pub fn setName(self: *RunProtocStep, name: []const u8) void {
         self.step.name = name;
     }
 
-    fn make(step: *std.Build.Step, make_opt: std.Build.Step.MakeOptions) anyerror!void {
-        const b = step.owner;
-        const self: *RunProtocStep = @fieldParentPtr("step", step);
+    fn makeDestinationDirectory(owner: *std.Build, destination_directory: std.Build.LazyPath) *std.Build.Step.Run {
+        const run = if (builtin.os.tag == .windows) run: {
+            const run = owner.addSystemCommand(&.{ "cmd", "/C", "if", "not", "exist" });
+            run.addDirectoryArg(destination_directory);
+            run.addArg("mkdir");
+            run.addDirectoryArg(destination_directory);
+            break :run run;
+        } else run: {
+            const run = owner.addSystemCommand(&.{ "mkdir", "-p" });
+            run.addDirectoryArg(destination_directory);
+            break :run run;
+        };
+        return run;
+    }
 
-        const absolute_dest_dir = self.destination_directory.getPath2(b, step);
+    fn makeProtocRun(
+        owner: *std.Build,
+        generator: *std.Build.Step.Compile,
+        options: Options,
+    ) *std.Build.Step.Run {
+        // The protoc binary comes from the dependency that owns the generator,
+        // since a consumer builder does not declare the protoc dependencies.
+        const protoc_bin = options.protoc orelse
+            (getProtocBin(generator.step.owner) catch @panic("OOM"));
+        const run = if (protoc_bin) |bin|
+            owner.addRunFile(bin)
+        else
+            owner.addSystemCommand(&.{"protoc"});
 
-        { // run protoc
-            var argv: std.ArrayList([]const u8) = .empty;
+        run.setName("run protoc");
+        run.addPrefixedArtifactArg("--plugin=protoc-gen-zig=", generator);
 
-            const maybe_protoc_path: ?[]const u8 = if (self.protoc_override_bin) |bin|
-                bin.getPath2(b, step)
-            else
-                try ensureProtocBinaryDownloaded(self.generator.step.owner, step);
-
-            if (maybe_protoc_path) |protoc_path| {
-                try argv.append(b.allocator, protoc_path);
-
-                try argv.append(b.allocator, try std.mem.concat(b.allocator, u8, &.{
-                    "--plugin=protoc-gen-zig=",
-                    self.generator_bin.getPath2(b, step),
-                }));
-
-                // Generator parameters, passed as `--zig_out=a,b:dir`.
-                var params: std.ArrayList([]const u8) = .empty;
-                if (self.preserve_unknown_fields) try params.append(b.allocator, "preserve_unknown_fields=true");
-                if (self.experimental_editions) {
-                    try params.append(b.allocator, "experimental_editions=true");
-                    try argv.append(b.allocator, "--experimental_editions");
-                }
-                const zig_out = if (params.items.len > 0)
-                    try std.mem.concat(b.allocator, u8, &.{
-                        "--zig_out=",
-                        try std.mem.join(b.allocator, ",", params.items),
-                        ":",
-                        absolute_dest_dir,
-                    })
-                else
-                    try std.mem.concat(b.allocator, u8, &.{ "--zig_out=", absolute_dest_dir });
-
-                try argv.append(b.allocator, zig_out);
-                if (!pathExists(b.graph.io, absolute_dest_dir)) {
-                    try Io.Dir.cwd().createDir(b.graph.io, absolute_dest_dir, .default_dir);
-                }
-
-                for (self.include_directories) |it| {
-                    try argv.appendSlice(b.allocator, &.{ "-I", it.getPath2(b, step) });
-                }
-                for (self.source_files) |it| {
-                    try argv.append(b.allocator, it.getPath2(b, step));
-                }
-
-                if (self.verbose) {
-                    std.debug.print("Running protoc:", .{});
-                    for (argv.items) |it| {
-                        std.debug.print(" {s}", .{it});
-                    }
-                    std.debug.print("\n", .{});
-                }
-
-                const result = try step.captureChildProcess(step.owner.allocator, make_opt.progress_node, argv.items);
-                if (result.term != .exited or result.term.exited != 0) {
-                    return step.fail("protoc failed", .{});
-                }
-                // protoc succeeded: its output only holds warnings, which are
-                // not errors. They are shown with `verbose`.
-                if (self.verbose) {
-                    for (step.result_error_msgs.items) |msg| std.debug.print("{s}", .{msg});
-                }
-                step.result_error_msgs.clearRetainingCapacity();
-                step.result_failed_command = null;
-            }
-
-            { // run zig fmt <destination>
-                argv = .empty;
-
-                try argv.append(b.allocator, b.graph.zig_exe);
-                try argv.append(b.allocator, "fmt");
-                try argv.append(b.allocator, absolute_dest_dir);
-
-                step.result_failed_command = null;
-
-                _ = try step.captureChildProcess(step.owner.allocator, make_opt.progress_node, argv.items);
-            }
+        // Generator parameters, passed as `--zig_out=a,b:dir`.
+        var params: std.ArrayList([]const u8) = .empty;
+        if (options.preserve_unknown_fields) params.append(owner.allocator, "preserve_unknown_fields=true") catch @panic("OOM");
+        if (options.experimental_editions) {
+            params.append(owner.allocator, "experimental_editions=true") catch @panic("OOM");
+            run.addArg("--experimental_editions");
         }
+        const zig_out_prefix = if (params.items.len > 0)
+            std.mem.concat(owner.allocator, u8, &.{
+                "--zig_out=",
+                std.mem.join(owner.allocator, ",", params.items) catch @panic("OOM"),
+                ":",
+            }) catch @panic("OOM")
+        else
+            "--zig_out=";
+        run.addPrefixedDirectoryArg(zig_out_prefix, options.destination_directory);
+
+        for (options.include_directories) |include_directory| {
+            run.addArg("-I");
+            run.addDirectoryArg(include_directory);
+        }
+        for (options.source_files) |source_file| {
+            run.addFileArg(source_file);
+        }
+
+        return run;
     }
 };
 
@@ -261,7 +211,7 @@ pub fn buildGenerator(b: *std.Build, opt: GenOptions) *std.Build.Step.Compile {
         }),
     });
 
-    const module = b.addModule("protobuf", .{
+    const module = b.createModule(.{
         .root_source_file = b.path("src/protobuf.zig"),
     });
 

@@ -284,8 +284,9 @@ pub const ExtensionRegistry = struct {
         const known = self.of(Extendee);
         if (known.len == 0) return;
 
-        var fallback = std.heap.stackFallback(64, allocator);
-        const bits_allocator = fallback.get();
+        var fallback_buffer: [64]u8 = undefined;
+        var fallback: std.heap.BufferFirstAllocator = .init(&fallback_buffer, allocator);
+        const bits_allocator = fallback.allocator();
         var present = try presentEntries(bits_allocator, known, records);
         defer present.deinit(bits_allocator);
         var it = present.iterator(.{});

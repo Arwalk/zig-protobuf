@@ -35,9 +35,10 @@ fn _compare_numerics(value1: anytype, value2: @TypeOf(value1)) bool {
 }
 
 fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
-    const T = @TypeOf(value1);
-    inline for (std.meta.fields(T)) |structInfo| {
-        const field_type = @TypeOf(@field(value1, structInfo.name));
+    const T = comptime @TypeOf(value1);
+    const struct_info = comptime @typeInfo(T).@"struct";
+    inline for (struct_info.field_names) |field_name| {
+        const field_type = @TypeOf(@field(value1, field_name));
 
         var field1: switch (@typeInfo(field_type)) {
             .optional => |optional| optional.child,
@@ -55,38 +56,38 @@ fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
             .optional => {
                 if (@field(
                     value1,
-                    structInfo.name,
+                    field_name,
                 ) == null and @field(
                     value2,
-                    structInfo.name,
+                    field_name,
                 ) == null) {
                     // Both field are nulls, so they're
                     // passing the equality check
                     are_optionals_equal = true;
                 } else if (@field(
                     value1,
-                    structInfo.name,
+                    field_name,
                 ) == null or @field(
                     value2,
-                    structInfo.name,
+                    field_name,
                 ) == null) {
                     // One optional field is null while other one
                     // is not - equality check definitely failed here
                     are_optionals_equal = false;
                 } else {
-                    field1 = @field(value1, structInfo.name).?;
-                    field2 = @field(value2, structInfo.name).?;
+                    field1 = @field(value1, field_name).?;
+                    field2 = @field(value2, field_name).?;
                 }
             },
             else => {
-                field1 = @field(value1, structInfo.name);
-                field2 = @field(value2, structInfo.name);
+                field1 = @field(value1, field_name);
+                field2 = @field(value2, field_name);
             },
         }
 
         if (are_optionals_equal != null) {
             if (!are_optionals_equal.?) return false;
-        } else switch (@field(T._desc_table, structInfo.name).ftype) {
+        } else switch (@field(T._desc_table, field_name).ftype) {
             .repeated, .packed_repeated => |repeated| {
                 if (field1.items.len != field2.items.len) return false;
                 for (field1.items, field2.items) |array1_el, array2_el| {
@@ -113,33 +114,33 @@ fn compare_pb_structs(value1: anytype, value2: @TypeOf(value1)) bool {
                 const union2_active_tag = std.meta.activeTag(field2);
                 if (union1_active_tag != union2_active_tag) return false;
 
-                inline for (union_info.fields) |field_info| {
+                inline for (union_info.field_names) |union_field_name| {
                     if (@field(
                         union_info.tag_type.?,
-                        field_info.name,
+                        union_field_name,
                     ) == union1_active_tag) {
                         if (!switch (@field(
                             @TypeOf(field1)._desc_table,
-                            field_info.name,
+                            union_field_name,
                         ).ftype) {
                             .scalar => |scalar| switch (scalar) {
                                 .string, .bytes => std.mem.eql(
                                     u8,
-                                    @field(field1, field_info.name),
-                                    @field(field2, field_info.name),
+                                    @field(field1, union_field_name),
+                                    @field(field2, union_field_name),
                                 ),
                                 else => _compare_numerics(
-                                    @field(field1, field_info.name),
-                                    @field(field2, field_info.name),
+                                    @field(field1, union_field_name),
+                                    @field(field2, union_field_name),
                                 ),
                             },
                             .@"enum" => _compare_numerics(
-                                @field(field1, field_info.name),
-                                @field(field2, field_info.name),
+                                @field(field1, union_field_name),
+                                @field(field2, union_field_name),
                             ),
                             .submessage => compare_pb_structs(
-                                @field(field1, field_info.name),
-                                @field(field2, field_info.name),
+                                @field(field1, union_field_name),
+                                @field(field2, union_field_name),
                             ),
                             else => unreachable,
                         }) return false;

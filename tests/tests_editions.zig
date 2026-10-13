@@ -107,7 +107,7 @@ test "editions: closed enums drop unknown values, open enums keep them" {
     defer decoded.deinit(testing.allocator);
 
     try testing.expectEqual(null, decoded.closed_enum);
-    try testing.expectEqual(7, @intFromEnum(decoded.open_enum.?));
+    try testing.expectEqual(7, @backingInt(decoded.open_enum.?));
     try testing.expectEqualSlices(
         editions.Closed,
         &.{ .CLOSED_ONE, .CLOSED_TWO },
@@ -170,7 +170,7 @@ test "editions 2026: runtime features keep the edition 2023 defaults" {
     // Explicit presence, open enums.
     try testing.expectEqual(?i32, @FieldType(Defaults, "number"));
     try testing.expectEqual(?editions2026.Kind, @FieldType(Defaults, "kind"));
-    try testing.expect(!@typeInfo(editions2026.Kind).@"enum".is_exhaustive);
+    try testing.expect(@typeInfo(editions2026.Kind).@"enum".mode == .nonexhaustive);
     try testing.expectEqual(i32, @FieldType(Defaults, "implicit_number"));
 
     // Packed repeated fields, verified strings, length-prefixed submessages.

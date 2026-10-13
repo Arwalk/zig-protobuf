@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: mlugg/setup-zig@v2
         with:
-          version: "0.16.0"
+          version: "0.17.0"
       - run: zig build
       - run: zig build test
       - run: zig build install
@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: mlugg/setup-zig@v2
         with:
-          version: "0.16.0"
+          version: "0.17.0"
       - run: zig build test
       - run: zig build bootstrap
       - run: zig build test
@@ -43,7 +43,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: mlugg/setup-zig@v2
         with:
-          version: "0.16.0"
+          version: "0.17.0"
       - run: zig build
       - run: zig build conformance-run
         working-directory: conformance
@@ -55,7 +55,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: mlugg/setup-zig@v2
         with:
-          version: "0.16.0"
+          version: "0.17.0"
       - run: zig build
       - run: zig build benchmark
         working-directory: benchmark
@@ -68,5 +68,5 @@ jobs:
       - uses: actions/checkout@v2
       - uses: mlugg/setup-zig@v2
         with:
-          version: "0.16.0"
+          version: "0.17.0"
       - run: zig fmt --check src/protobuf.zig

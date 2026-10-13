@@ -211,8 +211,8 @@ const GenerationContext = struct {
         }
 
         for (self.req.proto_file.items) |file| {
-            const edition = @intFromEnum(fileEdition(file));
-            if (edition < @intFromEnum(minimum_edition) or edition > @intFromEnum(self.maximumEdition())) {
+            const edition = @backingInt(fileEdition(file));
+            if (edition < @backingInt(minimum_edition) or edition > @backingInt(self.maximumEdition())) {
                 self.res.@"error" = try std.fmt.allocPrint(
                     allocator,
                     "ERROR unsupported edition {} in {s}\n",
@@ -269,10 +269,10 @@ const GenerationContext = struct {
         }
 
         self.res.supported_features =
-            @intFromEnum(plugin.CodeGeneratorResponse.Feature.FEATURE_PROTO3_OPTIONAL) |
-            @intFromEnum(plugin.CodeGeneratorResponse.Feature.FEATURE_SUPPORTS_EDITIONS);
-        self.res.minimum_edition = @intFromEnum(minimum_edition);
-        self.res.maximum_edition = @intFromEnum(self.maximumEdition());
+            @backingInt(plugin.CodeGeneratorResponse.Feature.FEATURE_PROTO3_OPTIONAL) |
+            @backingInt(plugin.CodeGeneratorResponse.Feature.FEATURE_SUPPORTS_EDITIONS);
+        self.res.minimum_edition = @backingInt(minimum_edition);
+        self.res.maximum_edition = @backingInt(self.maximumEdition());
     }
 
     /// Records `messages` and their nested messages, keyed by their fully
@@ -760,10 +760,10 @@ const GenerationContext = struct {
                 // The first enumerator, which is zero for open enums. Closed
                 // enums (possible as map values) may start at any number.
                 .TYPE_ENUM => b: {
-                    const e = self.enums.get(field.type_name.?) orelse break :b "@enumFromInt(0)";
+                    const e = self.enums.get(field.type_name.?) orelse break :b "@fromBackingInt(0)";
                     const first = if (e.value.items.len > 0) e.value.items[0].number orelse 0 else 0;
-                    if (first == 0) break :b "@enumFromInt(0)";
-                    break :b try std.fmt.allocPrint(allocator, "@enumFromInt({})", .{first});
+                    if (first == 0) break :b "@fromBackingInt(0)";
+                    break :b try std.fmt.allocPrint(allocator, "@fromBackingInt({})", .{first});
                 },
                 else => null,
             };
@@ -1287,17 +1287,18 @@ const GenerationContext = struct {
         const T = @TypeOf(message);
         try w.writeAll(".{");
         var empty = true;
-        inline for (@typeInfo(T).@"struct".fields) |field| {
-            if (comptime !@hasField(@TypeOf(T._desc_table), field.name)) continue;
-            const value = @field(message, field.name);
-            const present = switch (@typeInfo(field.type)) {
+        const struct_info = @typeInfo(T).@"struct";
+        inline for (struct_info.field_names, struct_info.field_types) |field_name, Field| {
+            if (comptime !@hasField(@TypeOf(T._desc_table), field_name)) continue;
+            const value = @field(message, field_name);
+            const present = switch (@typeInfo(Field)) {
                 .optional => value != null,
-                .@"struct" => if (comptime @hasField(field.type, "items")) value.items.len > 0 else true,
+                .@"struct" => if (comptime @hasField(Field, "items")) value.items.len > 0 else true,
                 else => true,
             };
             if (present) {
-                try w.print(" .{f} = ", .{std.zig.fmtId(field.name)});
-                try self.writeValueLiteral(allocator, w, if (comptime @typeInfo(field.type) == .optional) value.? else value);
+                try w.print(" .{f} = ", .{std.zig.fmtId(field_name)});
+                try self.writeValueLiteral(allocator, w, if (comptime @typeInfo(Field) == .optional) value.? else value);
                 try w.writeByte(',');
                 empty = false;
             }
@@ -1314,7 +1315,7 @@ const GenerationContext = struct {
         switch (@typeInfo(T)) {
             .bool, .int => try w.print("{}", .{value}),
             .float => try writeFloatLiteral(w, value),
-            .@"enum" => try writeEnumLiteral(w, T, @intFromEnum(value)),
+            .@"enum" => try writeEnumLiteral(w, T, @backingInt(value)),
             .pointer => try w.writeAll(try formatSliceEscapeImpl(allocator, value)),
             .@"struct" => if (comptime @hasField(T, "items")) {
                 try w.writeAll(".{");
@@ -1337,8 +1338,9 @@ const GenerationContext = struct {
     }
 
     fn writeEnumLiteral(w: *std.Io.Writer, comptime E: type, number: i32) !void {
-        inline for (@typeInfo(E).@"enum".fields) |field| {
-            if (field.value == number) return w.print(".{f}", .{std.zig.fmtId(field.name)});
+        const enum_info = @typeInfo(E).@"enum";
+        inline for (enum_info.field_names, enum_info.field_values) |field_name, field_value| {
+            if (field_value == number) return w.print(".{f}", .{std.zig.fmtId(field_name)});
         }
         try w.print("{}", .{number});
     }
@@ -1587,7 +1589,7 @@ const GenerationContext = struct {
         const id = type_id orelse return;
         var buf: [10]u8 = undefined;
         var w: std.Io.Writer = .fixed(&buf);
-        try writeRawVarint(&w, (id << 3) | @intFromEnum(pb.wire.Type.len));
+        try writeRawVarint(&w, (id << 3) | @backingInt(pb.wire.Type.len));
         try records.appendSlice(allocator, w.buffered());
         // `payload` is still length-prefixed, as a length-delimited value.
         try records.appendSlice(allocator, if (payload.len > 0) payload else "\x00");
@@ -2237,8 +2239,8 @@ const Features = struct {
 
     /// Feature defaults of an edition, as specified by descriptor.proto.
     fn defaults(edition: descriptor.Edition) Features {
-        const e = @intFromEnum(edition);
-        if (e < @intFromEnum(descriptor.Edition.EDITION_PROTO3)) return .{
+        const e = @backingInt(edition);
+        if (e < @backingInt(descriptor.Edition.EDITION_PROTO3)) return .{
             .field_presence = .EXPLICIT,
             .enum_type = .CLOSED,
             .repeated_field_encoding = .EXPANDED,
@@ -2393,9 +2395,24 @@ fn hasExplicitPresence(field: descriptor.FieldDescriptorProto, features: Feature
     return features.field_presence == .EXPLICIT;
 }
 
+// Hex-escapes every non-printable-ASCII byte so generated output does not
+// depend on how std.zig.fmtString treats bytes >= 0x80 in a given Zig version.
 pub fn formatSliceEscapeImpl(allocator: std.mem.Allocator, str: []const u8) ![]const u8 {
     var writer: std.Io.Writer.Allocating = .init(allocator);
-    try writer.writer.print("\"{f}\"", .{std.zig.fmtString(str)});
+    const w = &writer.writer;
+    try w.writeByte('"');
+    for (str) |byte| switch (byte) {
+        '\t' => try w.writeAll("\\t"),
+        '\n' => try w.writeAll("\\n"),
+        '\r' => try w.writeAll("\\r"),
+        '\\' => try w.writeAll("\\\\"),
+        '"' => try w.writeAll("\\\""),
+        else => if (std.ascii.isPrint(byte))
+            try w.writeByte(byte)
+        else
+            try w.print("\\x{x:0>2}", .{byte}),
+    };
+    try w.writeByte('"');
 
     return try writer.toOwnedSlice();
 }

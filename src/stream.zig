@@ -130,23 +130,23 @@ pub fn StreamDecoder(comptime T: type) type {
         /// unknown field that was skipped).
         fn dispatch(self: *Self, tag: wire.Tag) Error!?Event {
             const desc_table = T._desc_table;
-            inline for (@typeInfo(@TypeOf(desc_table)).@"struct".fields) |sf| {
-                const field_desc: protobuf.FieldDescriptor = comptime @field(desc_table, sf.name);
+            inline for (@typeInfo(@TypeOf(desc_table)).@"struct".field_names) |sf_name| {
+                const field_desc: protobuf.FieldDescriptor = comptime @field(desc_table, sf_name);
                 if (comptime field_desc.ftype == .oneof) {
                     const OneOf = comptime field_desc.ftype.oneof;
                     const inner = comptime OneOf._desc_table;
-                    inline for (@typeInfo(@TypeOf(inner)).@"struct".fields) |oo| {
-                        const idesc: protobuf.FieldDescriptor = comptime @field(inner, oo.name);
+                    inline for (@typeInfo(@TypeOf(inner)).@"struct".field_names) |oo_name| {
+                        const idesc: protobuf.FieldDescriptor = comptime @field(inner, oo_name);
                         if (comptime idesc.field_number != null) {
                             if (idesc.field_number.? == tag.field) {
                                 if (idesc.ftype.toWire() != tag.wire_type) return error.InvalidInput;
-                                return try self.emitSingle(oo.name, comptime idesc.ftype, @FieldType(OneOf, oo.name));
+                                return try self.emitSingle(oo_name, comptime idesc.ftype, @FieldType(OneOf, oo_name));
                             }
                         }
                     }
                 } else if (comptime field_desc.field_number != null) {
                     if (field_desc.field_number.? == tag.field) {
-                        return try self.handleField(sf.name, comptime field_desc, tag);
+                        return try self.handleField(sf_name, comptime field_desc, tag);
                     }
                 }
             }
@@ -259,13 +259,13 @@ pub fn StreamDecoder(comptime T: type) type {
         fn continuePacked(self: *Self) Error!?Event {
             const fnum = self.internals.packed_field.?;
             const desc_table = T._desc_table;
-            inline for (@typeInfo(@TypeOf(desc_table)).@"struct".fields) |sf| {
-                const field_desc: protobuf.FieldDescriptor = comptime @field(desc_table, sf.name);
+            inline for (@typeInfo(@TypeOf(desc_table)).@"struct".field_names) |sf_name| {
+                const field_desc: protobuf.FieldDescriptor = comptime @field(desc_table, sf_name);
                 switch (comptime field_desc.ftype) {
                     .repeated, .packed_repeated => |rep| {
                         if (comptime field_desc.field_number != null) {
                             if (field_desc.field_number.? == fnum) {
-                                return try self.decodePackedOne(sf.name, rep, @FieldType(T, sf.name));
+                                return try self.decodePackedOne(sf_name, rep, @FieldType(T, sf_name));
                             }
                         }
                     },
@@ -314,21 +314,21 @@ fn EventUnion(comptime T: type) type {
     const desc_table = T._desc_table;
     var names: []const []const u8 = &.{};
     var types: []const type = &.{};
-    for (@typeInfo(@TypeOf(desc_table)).@"struct".fields) |sf| {
-        const field_desc: protobuf.FieldDescriptor = @field(desc_table, sf.name);
-        if (field_desc.isDelimited()) unsupportedDelimited(T, sf.name);
+    for (@typeInfo(@TypeOf(desc_table)).@"struct".field_names) |sf_name| {
+        const field_desc: protobuf.FieldDescriptor = @field(desc_table, sf_name);
+        if (field_desc.isDelimited()) unsupportedDelimited(T, sf_name);
         if (field_desc.ftype == .oneof) {
             const OneOf = field_desc.ftype.oneof;
             const inner = OneOf._desc_table;
-            for (@typeInfo(@TypeOf(inner)).@"struct".fields) |oo| {
-                const idesc: protobuf.FieldDescriptor = @field(inner, oo.name);
-                if (idesc.isDelimited()) unsupportedDelimited(T, oo.name);
-                names = names ++ [_][]const u8{oo.name};
-                types = types ++ [_]type{PayloadType(idesc.ftype, @FieldType(OneOf, oo.name))};
+            for (@typeInfo(@TypeOf(inner)).@"struct".field_names) |oo_name| {
+                const idesc: protobuf.FieldDescriptor = @field(inner, oo_name);
+                if (idesc.isDelimited()) unsupportedDelimited(T, oo_name);
+                names = names ++ [_][]const u8{oo_name};
+                types = types ++ [_]type{PayloadType(idesc.ftype, @FieldType(OneOf, oo_name))};
             }
         } else if (field_desc.field_number != null) {
-            names = names ++ [_][]const u8{sf.name};
-            types = types ++ [_]type{PayloadType(field_desc.ftype, @FieldType(T, sf.name))};
+            names = names ++ [_][]const u8{sf_name};
+            types = types ++ [_]type{PayloadType(field_desc.ftype, @FieldType(T, sf_name))};
         }
     }
     const count = names.len;
@@ -336,7 +336,7 @@ fn EventUnion(comptime T: type) type {
     const name_arr: [count][]const u8 = names[0..count].*;
     const type_arr: [count]type = types[0..count].*;
     const TagEnum = @Enum(IntTag, .exhaustive, &name_arr, &std.simd.iota(IntTag, count));
-    const attrs: [count]std.builtin.Type.UnionField.Attributes = @splat(.{});
+    const attrs: [count]std.builtin.Type.Union.FieldAttributes = @splat(.{});
     return @Union(.auto, TagEnum, &name_arr, &type_arr, &attrs);
 }
 
@@ -379,7 +379,7 @@ fn ElementType(comptime Declared: type) type {
 /// Convert a raw int32 to enum `E`, validating against known values for
 /// exhaustive enums (mirrors `wire.zig`'s private helper).
 fn enumFromRaw(comptime E: type, raw: i32) ?E {
-    if (comptime !@typeInfo(E).@"enum".is_exhaustive) return @enumFromInt(raw);
+    if (comptime @typeInfo(E).@"enum".mode == .nonexhaustive) return @fromBackingInt(@intCast(raw));
     return std.enums.fromInt(E, raw);
 }
 

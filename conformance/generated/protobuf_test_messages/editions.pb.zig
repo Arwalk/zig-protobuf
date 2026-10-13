@@ -1963,7 +1963,7 @@ pub const TestAllTypesEdition2023 = struct {
 
     pub const MapStringNestedEnumEntry = struct {
         key: []const u8 = &.{},
-        value: TestAllTypesEdition2023.NestedEnum = @enumFromInt(0),
+        value: TestAllTypesEdition2023.NestedEnum = @fromBackingInt(0),
 
         pub const _desc_table = .{
             .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
@@ -2041,7 +2041,7 @@ pub const TestAllTypesEdition2023 = struct {
 
     pub const MapStringForeignEnumEntry = struct {
         key: []const u8 = &.{},
-        value: ForeignEnumEdition2023 = @enumFromInt(0),
+        value: ForeignEnumEdition2023 = @fromBackingInt(0),
 
         pub const _desc_table = .{
             .key = fdf(1, .{ .scalar = .string }, .{ .utf8_validation = .verify }),
