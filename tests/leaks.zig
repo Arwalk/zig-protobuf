@@ -25,6 +25,22 @@ test "leak in allocated string" {
     try testing.expectEqualSlices(u8, "asd", demo.field.?.field);
 }
 
+test "dupe: repeated scalar bytes" {
+    var my_bytes: std.ArrayList([]const u8) = try .initCapacity(testing.allocator, 2);
+    try my_bytes.append(testing.allocator, try testing.allocator.dupe(u8, "hello"));
+    try my_bytes.append(testing.allocator, try testing.allocator.dupe(u8, "world"));
+
+    var msg: tests.WithRepeatedBytes = .{ .byte_field = my_bytes };
+    defer msg.deinit(testing.allocator);
+
+    var copy = try msg.dupe(testing.allocator);
+    defer copy.deinit(testing.allocator);
+
+    try testing.expectEqual(msg.byte_field.items.len, copy.byte_field.items.len);
+    try testing.expectEqualSlices(u8, msg.byte_field.items[0], copy.byte_field.items[0]);
+    try testing.expectEqualSlices(u8, msg.byte_field.items[1], copy.byte_field.items[1]);
+}
+
 test "leak in list of allocated bytes" {
     var my_bytes: std.ArrayList([]const u8) = try .initCapacity(testing.allocator, 1);
     try my_bytes.append(std.testing.allocator, try std.testing.allocator.dupe(u8, "abcdef"));

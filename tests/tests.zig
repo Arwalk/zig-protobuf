@@ -19,12 +19,22 @@ test "DefaultValuesInit" {
     var demo: DefaultValues = .{};
     defer demo.deinit(std.testing.allocator);
 
-    try std.testing.expectEqualSlices(u8, "default<>'\"abc", demo.string_field.?);
-    try std.testing.expectEqual(true, demo.bool_field.?);
-    try std.testing.expectEqual(demo.int_field, 11);
-    try std.testing.expectEqual(demo.enum_field.?, .E1);
-    try std.testing.expectEqualSlices(u8, "", demo.empty_field.?);
-    try std.testing.expectEqualSlices(u8, "moo", demo.bytes_field.?);
+    // Fields with explicit presence are unset until assigned...
+    try std.testing.expectEqual(null, demo.string_field);
+    try std.testing.expectEqual(null, demo.bool_field);
+    try std.testing.expectEqual(null, demo.int_field);
+    try std.testing.expectEqual(null, demo.enum_field);
+    try std.testing.expectEqual(null, demo.empty_field);
+    try std.testing.expectEqual(null, demo.bytes_field);
+
+    // ...and their declared default values are exposed in `defaults`.
+    const defaults = DefaultValues.defaults;
+    try std.testing.expectEqualSlices(u8, "default<>'\"abc", defaults.string_field);
+    try std.testing.expectEqual(true, defaults.bool_field);
+    try std.testing.expectEqual(11, defaults.int_field);
+    try std.testing.expectEqual(.E1, defaults.enum_field);
+    try std.testing.expectEqualSlices(u8, "", defaults.empty_field);
+    try std.testing.expectEqualSlices(u8, "moo", defaults.bytes_field);
 }
 
 test "DefaultValuesDecode" {
@@ -32,12 +42,18 @@ test "DefaultValuesDecode" {
     var demo = try DefaultValues.decode(&reader, std.testing.allocator);
     defer demo.deinit(std.testing.allocator);
 
-    try std.testing.expectEqualSlices(u8, "default<>'\"abc", demo.string_field.?);
-    try std.testing.expectEqual(true, demo.bool_field.?);
-    try std.testing.expectEqual(demo.int_field, 11);
-    try std.testing.expectEqual(demo.enum_field.?, .E1);
-    try std.testing.expectEqualSlices(u8, "", demo.empty_field.?);
-    try std.testing.expectEqualSlices(u8, "moo", demo.bytes_field.?);
+    try std.testing.expectEqual(null, demo.string_field);
+    try std.testing.expectEqual(null, demo.bool_field);
+    try std.testing.expectEqual(null, demo.int_field);
+    try std.testing.expectEqual(null, demo.enum_field);
+    try std.testing.expectEqual(null, demo.empty_field);
+    try std.testing.expectEqual(null, demo.bytes_field);
+
+    // Unset fields are not serialized, even though they have a default value.
+    var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer w.deinit();
+    try demo.encode(&w.writer, std.testing.allocator);
+    try std.testing.expectEqual(0, w.written().len);
 }
 
 test "issue #74" {

@@ -1,7 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-pub const PROTOC_VERSION = "32.1";
+pub const PROTOC_VERSION = "36.2";
 
 pub fn getProtocDependency(b: *std.Build) !?*std.Build.Dependency {
     const os: ?[]const u8 = switch (builtin.os.tag) {
@@ -59,6 +59,8 @@ pub const RunProtocStep = struct {
     generator: *std.Build.Step.Compile,
     protoc_run: *std.Build.Step.Run,
     fmt_run: *std.Build.Step.Run,
+    preserve_unknown_fields: bool = false,
+    experimental_editions: bool = false,
     verbose: bool = false,
 
     pub const base_id = .protoc;
@@ -67,6 +69,19 @@ pub const RunProtocStep = struct {
         source_files: []const std.Build.LazyPath,
         include_directories: []const std.Build.LazyPath = &.{},
         destination_directory: std.Build.LazyPath,
+        /// Optional pre-built protoc-gen-zig artifact. When provided, the
+        /// protoc step can be owned by a consumer builder while the generator
+        /// stays owned by the zig-protobuf dependency builder.
+        generator: ?*std.Build.Step.Compile = null,
+        /// Optional pre-built protoc binary. When provided, overrides the
+        /// built-in protoc download mechanism.
+        protoc: ?std.Build.LazyPath = null,
+        /// When true, every generated message preserves unknown fields during
+        /// binary decode/encode round trips. Defaults to false.
+        preserve_unknown_fields: bool = false,
+        /// When true, accept the in-development `edition = "UNSTABLE"`, whose
+        /// features may change in any protobuf release. Defaults to false.
+        experimental_editions: bool = false,
     };
 
     pub const StepErr = error{
@@ -78,7 +93,11 @@ pub const RunProtocStep = struct {
         target: std.Build.ResolvedTarget,
         options: Options,
     ) *RunProtocStep {
-        return createWithGenerator(owner, buildGenerator(owner, .{ .target = target }), options);
+        return createWithGenerator(
+            owner,
+            options.generator orelse buildGenerator(owner, .{ .target = target }),
+            options,
+        );
     }
 
     pub fn createWithGenerator(
@@ -104,6 +123,8 @@ pub const RunProtocStep = struct {
             .generator = generator,
             .protoc_run = protoc_run,
             .fmt_run = fmt_run,
+            .preserve_unknown_fields = options.preserve_unknown_fields,
+            .experimental_editions = options.experimental_editions,
         };
         return self;
     }
@@ -132,7 +153,10 @@ pub const RunProtocStep = struct {
         generator: *std.Build.Step.Compile,
         options: Options,
     ) *std.Build.Step.Run {
-        const protoc_bin = getProtocBin(owner) catch @panic("OOM");
+        // The protoc binary comes from the dependency that owns the generator,
+        // since a consumer builder does not declare the protoc dependencies.
+        const protoc_bin = options.protoc orelse
+            (getProtocBin(generator.step.owner) catch @panic("OOM"));
         const run = if (protoc_bin) |bin|
             owner.addRunFile(bin)
         else
@@ -140,8 +164,23 @@ pub const RunProtocStep = struct {
 
         run.setName("run protoc");
         run.addPrefixedArtifactArg("--plugin=protoc-gen-zig=", generator);
-        run.addArg("--zig_out");
-        run.addDirectoryArg(options.destination_directory);
+
+        // Generator parameters, passed as `--zig_out=a,b:dir`.
+        var params: std.ArrayList([]const u8) = .empty;
+        if (options.preserve_unknown_fields) params.append(owner.allocator, "preserve_unknown_fields=true") catch @panic("OOM");
+        if (options.experimental_editions) {
+            params.append(owner.allocator, "experimental_editions=true") catch @panic("OOM");
+            run.addArg("--experimental_editions");
+        }
+        const zig_out_prefix = if (params.items.len > 0)
+            std.mem.concat(owner.allocator, u8, &.{
+                "--zig_out=",
+                std.mem.join(owner.allocator, ",", params.items) catch @panic("OOM"),
+                ":",
+            }) catch @panic("OOM")
+        else
+            "--zig_out=";
+        run.addPrefixedDirectoryArg(zig_out_prefix, options.destination_directory);
 
         for (options.include_directories) |include_directory| {
             run.addArg("-I");
@@ -175,8 +214,6 @@ pub fn buildGenerator(b: *std.Build, opt: GenOptions) *std.Build.Step.Compile {
     });
 
     exe.root_module.addImport("protobuf", module);
-
-    b.installArtifact(exe);
 
     return exe;
 }

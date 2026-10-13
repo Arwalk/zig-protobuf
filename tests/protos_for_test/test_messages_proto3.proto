@@ -64,8 +64,7 @@ option cc_enable_arenas = true;
 message TestAllTypesProto3 {
   message NestedMessage {
     int32 a = 1;
-    // FIXME
-    // TestAllTypesProto3 corecursive = 2;
+    TestAllTypesProto3 corecursive = 2;
   }
 
   enum NestedEnum {
@@ -76,14 +75,14 @@ message TestAllTypesProto3 {
   }
 
   enum AliasedEnum {
-    // option allow_alias = true;
+    option allow_alias = true;
 
     ALIAS_FOO = 0;
     ALIAS_BAR = 1;
-    // ALIAS_BAZ = 2;
+    ALIAS_BAZ = 2;
     MOO = 2;
-    //moo = 2;
-    //bAz = 2;
+    moo = 2;
+    bAz = 2;
   }
 
   // Singular
@@ -113,8 +112,7 @@ message TestAllTypesProto3 {
   string optional_string_piece = 24 [ctype = STRING_PIECE];
   string optional_cord = 25 [ctype = CORD];
 
-  // FIXME
-  // TestAllTypesProto3 recursive_message = 27;
+  TestAllTypesProto3 recursive_message = 27;
 
   // Repeated
   repeated int32 repeated_int32 = 31;

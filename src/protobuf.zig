@@ -4,6 +4,19 @@ const log = std.log.scoped(.zig_protobuf);
 
 pub const json = @import("json.zig");
 pub const wire = @import("wire.zig");
+pub const wkt = @import("wkt.zig");
+pub const stream = @import("stream.zig");
+pub const extension = @import("extension.zig");
+
+/// See `src/extension.zig`.
+pub const Extension = extension.Extension;
+pub const ExtensionRegistry = extension.ExtensionRegistry;
+pub const ExtensionSet = extension.ExtensionSet;
+
+/// Streaming pull-decoder for the generated message type `T`.
+/// See `src/stream.zig`. Generated messages also expose this as
+/// `MyMessage.StreamDecoder`.
+pub const StreamDecoder = stream.StreamDecoder;
 
 pub const DecodingError = error{ NotEnoughData, InvalidInput };
 
@@ -14,6 +27,8 @@ pub const DecodingError = error{ NotEnoughData, InvalidInput };
 /// Example:
 ///     requireDecls(ServerContext, &.{"UnaryCallError", "StreamError"});
 pub fn requireDecls(comptime T: type, comptime required_decls: []const []const u8) void {
+    @setEvalBranchQuota(comptime evalBranchQuotaFor(T));
+
     inline for (required_decls) |decl_name| {
         if (!@hasDecl(T, decl_name)) {
             @compileError("Type '" ++ @typeName(T) ++ "' must have a '" ++ decl_name ++ "' declaration");
@@ -31,7 +46,6 @@ pub const FieldType = union(enum) {
     oneof: type,
 
     pub fn toWire(comptime ftype: FieldType) wire.Type {
-        @setEvalBranchQuota(1000000);
         return switch (comptime ftype) {
             .scalar => |s| s.toWire(),
             .submessage, .packed_repeated => .len,
@@ -172,13 +186,152 @@ pub const FieldType = union(enum) {
     };
 };
 
+/// Per-field serialization behavior, resolved by the code generator from
+/// protobuf editions features (or the equivalent proto2/proto3 semantics).
+///
+/// Some features are not stored here because the Zig types already express
+/// them: explicit field presence is an optional (`?T`) field, and closed enums
+/// are exhaustive Zig enums (open enums have a `_` catch-all).
+pub const Features = struct {
+    /// `features.message_encoding`. Delimited submessages are encoded as a
+    /// group (SGROUP tag, fields, EGROUP tag) instead of being length-prefixed.
+    message_encoding: MessageEncoding = .length_prefixed,
+    /// `features.utf8_validation`. With `.verify`, decoding a `string` field
+    /// holding invalid UTF-8 fails with `error.InvalidInput`.
+    utf8_validation: Utf8Validation = .none,
+    /// `features.field_presence = LEGACY_REQUIRED` (proto2 `required`).
+    /// Required fields are always serialized, even when holding a zero value.
+    legacy_required: bool = false,
+
+    pub const MessageEncoding = enum { length_prefixed, delimited };
+    pub const Utf8Validation = enum { verify, none };
+};
+
 /// Structure describing a field. Most of the relevant informations are
 /// In the FieldType data. Tag is optional as oneof fields are "virtual" fields.
-pub const FieldDescriptor = struct { field_number: ?u32, ftype: FieldType };
+pub const FieldDescriptor = struct {
+    field_number: ?u32,
+    ftype: FieldType,
+    features: Features = .{},
 
-/// Helper function to build a FieldDescriptor. Makes code clearer, mostly.
+    /// Whether the field is a submessage encoded as a group.
+    pub fn isDelimited(comptime self: FieldDescriptor) bool {
+        const is_message = switch (self.ftype) {
+            .submessage => true,
+            .repeated, .packed_repeated => |r| r == .submessage,
+            else => false,
+        };
+        return is_message and self.features.message_encoding == .delimited;
+    }
+
+    /// Wire type used for (each element of) the field.
+    pub fn toWire(comptime self: FieldDescriptor) wire.Type {
+        return if (self.isDelimited()) .sgroup else self.ftype.toWire();
+    }
+
+    /// Whether string values must be validated as UTF-8 when decoding.
+    pub fn verifiesUtf8(comptime self: FieldDescriptor) bool {
+        const is_string = switch (self.ftype) {
+            .scalar => |s| s == .string,
+            .repeated, .packed_repeated => |r| r == .scalar and r.scalar == .string,
+            else => false,
+        };
+        return is_string and self.features.utf8_validation == .verify;
+    }
+};
+
+/// Helper function to build a FieldDescriptor.
 pub fn fd(comptime field_number: ?u32, comptime ftype: FieldType) FieldDescriptor {
     return FieldDescriptor{ .field_number = field_number, .ftype = ftype };
+}
+
+/// Like `fd`, for fields with non-default features.
+pub fn fdf(comptime field_number: ?u32, comptime ftype: FieldType, comptime features: Features) FieldDescriptor {
+    return FieldDescriptor{ .field_number = field_number, .ftype = ftype, .features = features };
+}
+
+/// Default value of an enum field: its first declared value. For open enums
+/// this is always zero; closed (proto2) enums may start at any value.
+pub fn enumDefault(comptime E: type) E {
+    const values = @typeInfo(E).@"enum".field_values;
+    return if (values.len > 0) @fromBackingInt(values[0]) else @fromBackingInt(0);
+}
+
+// Eval branch quota tuning. The encode/decode/init/dupe/json routines all expand
+// `inline for` loops over a message's fields and run comptime switches per field,
+// which consumes the compiler's backwards-branch budget. Rather than hard-coding a
+// magic `@setEvalBranchQuota`, we derive a sufficient value from the message
+// structure (see `evalBranchQuotaFor`). These two constants are the only knobs.
+const base_eval_quota: usize = 10_000;
+const per_field_eval_quota: usize = 10_000;
+
+/// Computes an eval branch quota sufficient to process `T` at comptime, derived
+/// from the total number of fields reachable from `T` (its own fields plus those
+/// of every distinct submessage and oneof union it can reach). Self-referential
+/// messages are handled by the `seen` cycle guard. `@setEvalBranchQuota` only ever
+/// raises the limit, so calling this at the top of each comptime-heavy entry point
+/// is always safe — the outermost (largest) value wins.
+pub fn evalBranchQuotaFor(comptime T: type) usize {
+    @setEvalBranchQuota(base_eval_quota); // need a base value high enough to calculate the initial need.
+
+    comptime {
+        return base_eval_quota + countReachableFields(T, &.{}) * per_field_eval_quota;
+    }
+}
+
+/// Recursively counts the fields of `T` and of every distinct message/oneof type
+/// reachable from it. `seen` guards against cycles (e.g. self-referential messages).
+fn countReachableFields(comptime T: type, comptime seen: []const type) usize {
+    comptime {
+        switch (@typeInfo(T)) {
+            .@"struct", .@"union" => {},
+            // Not a message container (scalar, slice, well-known type, …).
+            else => return 0,
+        }
+        if (!@hasDecl(T, "_desc_table")) return 0;
+        for (seen) |s| {
+            if (s == T) return 0;
+        }
+        const seen2 = seen ++ &[_]type{T};
+
+        var total: usize = 0;
+        for (@typeInfo(@TypeOf(T._desc_table)).@"struct".field_names) |f_name| {
+            total += 1;
+            const desc: FieldDescriptor = @field(T._desc_table, f_name);
+            switch (desc.ftype) {
+                .submessage => total += countReachableFields(
+                    submessageChild(@FieldType(T, f_name)),
+                    seen2,
+                ),
+                .repeated, .packed_repeated => |inner| switch (inner) {
+                    .submessage => total += countReachableFields(
+                        arrayListChild(@FieldType(T, f_name)),
+                        seen2,
+                    ),
+                    else => {},
+                },
+                .oneof => |OneOf| total += countReachableFields(OneOf, seen2),
+                else => {},
+            }
+        }
+        return total;
+    }
+}
+
+/// Unwraps the message type behind a `.submessage` field, whose declared type is
+/// `?Child`, `*Child` (self-referential), or `Child`.
+fn submessageChild(comptime FieldT: type) type {
+    return switch (@typeInfo(FieldT)) {
+        .optional => |o| submessageChild(o.child),
+        .pointer => |p| submessageChild(p.child),
+        else => FieldT,
+    };
+}
+
+/// Unwraps the element type of a repeated submessage field, whose declared type is
+/// `std.ArrayList(Child)`.
+fn arrayListChild(comptime FieldT: type) type {
+    return @typeInfo(@FieldType(FieldT, "items")).pointer.child;
 }
 
 // encoding
@@ -363,8 +516,7 @@ fn writeSubmessageList(
     value_list: anytype,
 ) (std.mem.Allocator.Error || std.Io.Writer.Error)!void {
     for (value_list.items) |item| {
-        try writeTag(writer, field);
-        try writeSubmessage(writer, allocator, item);
+        try writeTaggedSubmessage(writer, allocator, field, item);
     }
 }
 
@@ -397,10 +549,31 @@ fn writePackedStringList(
 /// Writes the full tag of the field, if there is any.
 fn writeTag(writer: *std.Io.Writer, comptime field: FieldDescriptor) std.Io.Writer.Error!void {
     const tag: wire.Tag = comptime .{
-        .wire_type = field.ftype.toWire(),
+        .wire_type = field.toWire(),
         .field = field.field_number.?,
     };
     _ = try tag.encode(writer);
+}
+
+/// Writes a submessage including its tag, either length-prefixed or delimited
+/// (as a group terminated by an EGROUP tag) depending on the field features.
+fn writeTaggedSubmessage(
+    writer: *std.Io.Writer,
+    allocator: std.mem.Allocator,
+    comptime field: FieldDescriptor,
+    value: anytype,
+) (std.mem.Allocator.Error || std.Io.Writer.Error)!void {
+    try writeTag(writer, field);
+    if (comptime field.isDelimited()) {
+        try encode(writer, allocator, value);
+        const end_tag: wire.Tag = comptime .{
+            .wire_type = .egroup,
+            .field = field.field_number.?,
+        };
+        _ = try end_tag.encode(writer);
+    } else {
+        try writeSubmessage(writer, allocator, value);
+    }
 }
 
 /// Write a value. Starts by writing the tag, then a comptime switch
@@ -420,8 +593,8 @@ fn writeValue(
     // TODO: review semantics of default-value in regards to wire protocol
     const is_default_scalar_value = switch (@typeInfo(@TypeOf(value))) {
         .optional => value == null,
-        // as per protobuf spec, the first element of the enums must be 0 and it is the default value
-        .@"enum" => @backingInt(value) == 0,
+        // The default of an enum is its first value, which is zero for open enums.
+        .@"enum" => value == comptime enumDefault(@TypeOf(value)),
         else => switch (@TypeOf(value)) {
             bool => value == false,
             i32, u32, i64, u64, f32, f64 => value == 0,
@@ -458,8 +631,7 @@ fn writeValue(
         },
         .submessage => {
             if (!is_default_scalar_value or force_append) {
-                try writeTag(writer, field);
-                try writeSubmessage(writer, allocator, value);
+                try writeTaggedSubmessage(writer, allocator, field, value);
             }
         },
         .packed_repeated => |repeated| {
@@ -540,8 +712,12 @@ pub fn encode(
         .pointer => |p| p.child,
         else => @TypeOf(data),
     };
+    @setEvalBranchQuota(comptime evalBranchQuotaFor(Data));
+
     const data_info = @typeInfo(Data).@"struct";
     inline for (data_info.field_names, data_info.field_types) |field_name, Field| {
+        // Skip fields not present in _desc_table (e.g. _unknown_fields).
+        if (comptime !@hasField(@TypeOf(Data._desc_table), field_name)) continue;
         if (comptime @typeInfo(Field) == .optional) {
             const temp = data;
             if (@field(temp, field_name)) |value| {
@@ -549,16 +725,31 @@ pub fn encode(
             }
         } else {
             const value = data;
-            try writeValue(writer, allocator, @field(Data._desc_table, field_name), @field(value, field_name), false);
+            const desc: FieldDescriptor = @field(Data._desc_table, field_name);
+            // Required fields are always written, even when holding zero.
+            try writeValue(writer, allocator, desc, @field(value, field_name), desc.features.legacy_required);
         }
+    }
+    // Emit extensions as they were decoded or set.
+    if (comptime @hasField(Data, "_extensions")) {
+        const set: ExtensionSet = @field(data, "_extensions");
+        if (comptime extension.isMessageSet(Data)) {
+            try extension.writeMessageSet(writer, set);
+        } else if (set.records.len > 0) {
+            try writer.writeAll(set.records);
+        }
+    }
+    // Re-emit unknown fields verbatim at the end.
+    if (comptime @hasField(Data, "_unknown_fields")) {
+        const uf = @field(data, "_unknown_fields");
+        if (uf.len > 0) try writer.writeAll(uf);
     }
 }
 
 fn get_field_default_value(comptime for_type: anytype) for_type {
     return switch (@typeInfo(for_type)) {
         .optional => null,
-        // as per protobuf spec, the first element of the enums must be 0 and it is the default value
-        .@"enum" => @as(for_type, @fromBackingInt(@intCast(0))),
+        .@"enum" => enumDefault(for_type),
         else => switch (for_type) {
             bool => false,
             i32, i64, i8, i16, u8, u32, u64, f32, f64 => 0,
@@ -568,15 +759,22 @@ fn get_field_default_value(comptime for_type: anytype) for_type {
     };
 }
 
-inline fn internal_init(comptime T: type, value: *T) void {
+pub inline fn internal_init(comptime T: type, value: *T) void {
     if (comptime @typeInfo(T) != .@"struct") {
         @compileError(std.fmt.comptimePrint(
             "Invalid internal init type {s}",
             .{@typeName(T)},
         ));
     }
+    @setEvalBranchQuota(comptime evalBranchQuotaFor(T));
     const struct_info = @typeInfo(T).@"struct";
     inline for (struct_info.field_names, struct_info.field_types, struct_info.field_attrs) |field_name, Field, field_attrs| {
+        if (comptime !@hasField(@TypeOf(T._desc_table), field_name)) {
+            if (field_attrs.defaultValue(Field)) |val| {
+                @field(value, field_name) = val;
+            }
+            continue;
+        }
         switch (comptime @field(T._desc_table, field_name).ftype) {
             .@"enum", .scalar => {
                 if (field_attrs.defaultValue(Field)) |val| {
@@ -603,6 +801,7 @@ inline fn internal_init(comptime T: type, value: *T) void {
 /// their protobuf field type default values. Prefer standard struct
 /// initialization `... = .{}` whenever possible.
 pub fn init(comptime T: type, allocator: std.mem.Allocator) std.mem.Allocator.Error!T {
+    @setEvalBranchQuota(comptime evalBranchQuotaFor(T));
     switch (comptime @typeInfo(@TypeOf(T))) {
         .pointer => |p| {
             const value = try allocator.create(p.child);
@@ -620,11 +819,20 @@ pub fn init(comptime T: type, allocator: std.mem.Allocator) std.mem.Allocator.Er
 /// Generic function to deeply duplicate a message using a new allocator.
 /// The original parameter is constant
 pub fn dupe(comptime T: type, original: T, allocator: std.mem.Allocator) std.mem.Allocator.Error!T {
+    @setEvalBranchQuota(comptime evalBranchQuotaFor(T));
+
     var result: T = undefined;
 
     const struct_info = @typeInfo(T).@"struct";
     inline for (struct_info.field_names) |field_name| {
+        if (comptime !@hasField(@TypeOf(T._desc_table), field_name)) continue;
         @field(result, field_name) = try dupeField(original, field_name, @field(T._desc_table, field_name).ftype, allocator);
+    }
+    if (comptime @hasField(T, "_unknown_fields")) {
+        result._unknown_fields = try allocator.dupe(u8, original._unknown_fields);
+    }
+    if (comptime @hasField(T, "_extensions")) {
+        result._extensions = try original._extensions.dupe(allocator);
     }
 
     return result;
@@ -705,7 +913,7 @@ fn dupeField(
                 .scalar => |scalar| switch (scalar) {
                     .string, .bytes => {
                         for (@field(original, field_name).items) |item| {
-                            try list.append(allocator, try item.dupe(allocator));
+                            try list.append(allocator, try allocator.dupe(u8, item));
                         }
                     },
                     else => {
@@ -810,11 +1018,20 @@ fn dupeField(
 
 /// Generic deinit function. Properly cleans any field required. Meant to be embedded in generated structs.
 pub fn deinit(allocator: std.mem.Allocator, data: anytype) void {
+    @setEvalBranchQuota(comptime evalBranchQuotaFor(@TypeOf(data)));
+
     const T = @typeInfo(@TypeOf(data)).pointer.child;
 
     const struct_info = @typeInfo(T).@"struct";
     inline for (struct_info.field_names) |field_name| {
+        if (comptime !@hasField(@TypeOf(T._desc_table), field_name)) continue;
         deinitField(allocator, data, field_name);
+    }
+    if (comptime @hasField(T, "_unknown_fields")) {
+        if (data._unknown_fields.len > 0) allocator.free(data._unknown_fields);
+    }
+    if (comptime @hasField(T, "_extensions")) {
+        data._extensions.deinit(allocator);
     }
 }
 
@@ -1098,10 +1315,31 @@ pub fn decode(
     reader: *std.Io.Reader,
     allocator: std.mem.Allocator,
 ) (DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!T {
+    return decodeWithOptions(T, reader, allocator, .{});
+}
+
+/// Options of `decodeWithOptions` and `json.decodeWithOptions`.
+pub const DecodeOptions = struct {
+    /// Known extensions. Without them, extensions are kept as raw fields and
+    /// only decoded by `Extension.get`. With them, known extensions are
+    /// validated while decoding, and can be decoded from JSON.
+    extensions: ?*const ExtensionRegistry = null,
+};
+
+/// Like `decode`, with options.
+pub fn decodeWithOptions(
+    comptime T: type,
+    reader: *std.Io.Reader,
+    allocator: std.mem.Allocator,
+    options: DecodeOptions,
+) (DecodingError || std.Io.Reader.Error || std.mem.Allocator.Error)!T {
+    @setEvalBranchQuota(comptime evalBranchQuotaFor(T));
+
     var result: T = undefined;
     internal_init(T, &result);
+    errdefer deinit(allocator, &result);
 
-    _ = try wire.decodeMessage(&result, allocator, reader, .{});
+    _ = try wire.decodeMessage(&result, allocator, reader, .{ .extensions = options.extensions });
 
     return result;
 }
@@ -1227,4 +1465,7 @@ test "incorrect data - decode" {
 test {
     _ = wire;
     _ = json;
+    _ = stream;
+    _ = wkt;
+    _ = extension;
 }

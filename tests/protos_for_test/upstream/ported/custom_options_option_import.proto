@@ -1,0 +1,37 @@
+// Port of the files built by the `CustomOptions` tests of
+// src/google/protobuf/descriptor_unittest.cc of protobuf v36.2 that use an
+// option dependency (`import option`), with one message per test.
+edition = "2024";
+
+package ported.options2024;
+
+import option "google/protobuf/unittest_custom_options.proto";
+
+// OptionsFromOptionDependency
+option (proto2_unittest.file_opt1) = 1234;
+
+// OptionExtensionFromOptionDependency
+message ExtensionFromOptionDependency {
+  option (proto2_unittest.complex_opt1) = { [proto2_unittest.mooo]: 1234 };
+}
+
+// MessageOptionThreeFieldsSet
+message ThreeFieldsSet {
+  option (proto2_unittest.complex_opt1).foo = 1234;
+  option (proto2_unittest.complex_opt1).foo2 = 1234;
+  option (proto2_unittest.complex_opt1).foo3 = 1234;
+}
+
+// MessageOptionRepeatedLeafFieldSet
+message RepeatedLeafFieldSet {
+  option (proto2_unittest.complex_opt1).foo4 = 12;
+  option (proto2_unittest.complex_opt1).foo4 = 34;
+  option (proto2_unittest.complex_opt1).foo4 = 56;
+}
+
+// MessageOptionRepeatedMsgFieldSet
+message RepeatedMsgFieldSet {
+  option (proto2_unittest.complex_opt2).barney = { waldo: 1 };
+  option (proto2_unittest.complex_opt2).barney = { waldo: 10 };
+  option (proto2_unittest.complex_opt2).barney = { waldo: 100 };
+}

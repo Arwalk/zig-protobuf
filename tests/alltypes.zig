@@ -4,6 +4,7 @@ const testing = std.testing;
 const protobuf = @import("protobuf");
 const tests = @import("./generated/tests.pb.zig");
 const proto3 = @import("./generated/protobuf_test_messages/proto3.pb.zig");
+const selfref = @import("./generated/selfref.pb.zig");
 const longs = @import("./generated/tests/longs.pb.zig");
 const jspb = @import("./generated/jspb/test.pb.zig");
 const unittest = @import("./generated/unittest.pb.zig");
@@ -83,15 +84,15 @@ test "unpacked int32_list" {
 }
 
 test "Required.Proto3.ProtobufInput.ValidDataRepeated.BOOL.PackedInput.ProtobufOutput" {
-    const err_bytes = "\xda\x02\x28\x00\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01\xce\xc2\xf1\x05\x80\x80\x80\x80\x20\xff\xff\xff\xff\xff\xff\xff\xff\x7f\x80\x80\x80\x80\x80\x80\x80\x80\x80\x01";
-
-    var err_reader: std.Io.Reader = .fixed(err_bytes);
-
-    // Bools MUST be encoded as either `0x00` or `0x01` bytes.
-    // https://protobuf.dev/programming-guides/encoding/#bools-and-enums
-    try std.testing.expectError(
-        error.InvalidInput,
-        proto3.TestAllTypesProto3.decode(&err_reader, testing.allocator),
+    // Multi-byte varint booleans: any non-zero value is true per proto3 spec.
+    const multi_bytes = "\xda\x02\x28\x00\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01\xce\xc2\xf1\x05\x80\x80\x80\x80\x20\xff\xff\xff\xff\xff\xff\xff\xff\x7f\x80\x80\x80\x80\x80\x80\x80\x80\x80\x01";
+    var multi_reader: std.Io.Reader = .fixed(multi_bytes);
+    var multi_m = try proto3.TestAllTypesProto3.decode(&multi_reader, testing.allocator);
+    defer multi_m.deinit(std.testing.allocator);
+    try testing.expectEqualSlices(
+        bool,
+        &.{ false, true, true, true, true, true, true },
+        multi_m.repeated_bool.items,
     );
 
     const bytes = "\xda\x02\x07\x00\x00\x00\x00\x01\x00\x00";
@@ -105,6 +106,85 @@ test "Required.Proto3.ProtobufInput.ValidDataRepeated.BOOL.PackedInput.ProtobufO
         &.{ false, false, false, false, true, false, false },
         m.repeated_bool.items,
     );
+}
+
+test "proto3 recursive and corecursive fields are generated as pointers" {
+    try testing.expectEqual(
+        ?*proto3.TestAllTypesProto3,
+        @FieldType(proto3.TestAllTypesProto3, "recursive_message"),
+    );
+    try testing.expectEqual(
+        ?*proto3.TestAllTypesProto3,
+        @FieldType(proto3.TestAllTypesProto3.NestedMessage, "corecursive"),
+    );
+}
+
+test "proto3 recursive message round trips through protobuf bytes" {
+    const child = try testing.allocator.create(proto3.TestAllTypesProto3);
+    child.* = .{ .optional_int32 = 123 };
+
+    var original: proto3.TestAllTypesProto3 = .{
+        .optional_int32 = 7,
+        .recursive_message = child,
+    };
+    defer original.deinit(testing.allocator);
+
+    var w: std.Io.Writer.Allocating = .init(testing.allocator);
+    defer w.deinit();
+    try original.encode(&w.writer, testing.allocator);
+
+    var reader: std.Io.Reader = .fixed(w.written());
+    var decoded = try proto3.TestAllTypesProto3.decode(&reader, testing.allocator);
+    defer decoded.deinit(testing.allocator);
+
+    try testing.expectEqual(@as(i32, 7), decoded.optional_int32);
+    try testing.expect(decoded.recursive_message != null);
+    try testing.expectEqual(@as(i32, 123), decoded.recursive_message.?.optional_int32);
+}
+
+test "proto3 nested corecursive message round trips through protobuf bytes" {
+    const parent = try testing.allocator.create(proto3.TestAllTypesProto3);
+    parent.* = .{ .optional_int32 = 456 };
+
+    var original: proto3.TestAllTypesProto3 = .{
+        .optional_nested_message = .{
+            .a = 11,
+            .corecursive = parent,
+        },
+    };
+    defer original.deinit(testing.allocator);
+
+    var w: std.Io.Writer.Allocating = .init(testing.allocator);
+    defer w.deinit();
+    try original.encode(&w.writer, testing.allocator);
+
+    var reader: std.Io.Reader = .fixed(w.written());
+    var decoded = try proto3.TestAllTypesProto3.decode(&reader, testing.allocator);
+    defer decoded.deinit(testing.allocator);
+
+    try testing.expect(decoded.optional_nested_message != null);
+    try testing.expectEqual(@as(i32, 11), decoded.optional_nested_message.?.a);
+    try testing.expect(decoded.optional_nested_message.?.corecursive != null);
+    try testing.expectEqual(@as(i32, 456), decoded.optional_nested_message.?.corecursive.?.optional_int32);
+}
+
+test "recursive pointer fields duplicate deeply" {
+    const child = try testing.allocator.create(selfref.SelfRefNode);
+    child.* = .{ .version = 99 };
+
+    var original: selfref.SelfRefNode = .{
+        .version = 1,
+        .node = child,
+    };
+    defer original.deinit(testing.allocator);
+
+    var duplicate = try original.dupe(testing.allocator);
+    defer duplicate.deinit(testing.allocator);
+
+    try testing.expect(duplicate.node != null);
+    try testing.expect(original.node != duplicate.node);
+    try testing.expectEqual(@as(i32, 1), duplicate.version);
+    try testing.expectEqual(@as(i32, 99), duplicate.node.?.version);
 }
 
 test "msg-longs.proto" {
@@ -130,31 +210,37 @@ test "TestExtremeDefaultValues" {
     var decoded = try unittest.TestExtremeDefaultValues.decode(&reader, testing.allocator);
     defer decoded.deinit(std.testing.allocator);
 
-    try testing.expectEqualSlices(u8, "\\000\\001\\007\\010\\014\\n\\r\\t\\013\\\\\\'\\\"\\376", decoded.escaped_bytes.?);
-    try testing.expectEqual(@as(u32, 4294967295), decoded.large_uint32.?);
-    try testing.expectEqual(@as(u64, 18446744073709551615), decoded.large_uint64.?);
-    try testing.expectEqual(@as(i32, -2147483647), decoded.small_int32.?);
-    try testing.expectEqual(@as(i64, -9223372036854775807), decoded.small_int64.?);
-    try testing.expectEqual(@as(i32, -2147483648), decoded.really_small_int32.?);
-    try testing.expectEqual(@as(i64, -9223372036854775808), decoded.really_small_int64.?);
-    try testing.expectEqualSlices(u8, "\xE1\x88\xB4", decoded.utf8_string.?);
-    try testing.expectEqual(@as(f32, 0), decoded.zero_float.?);
-    try testing.expectEqual(@as(f32, 1), decoded.one_float.?);
-    try testing.expectEqual(@as(f32, 1.5), decoded.small_float.?);
-    try testing.expectEqual(@as(f32, -1), decoded.negative_one_float.?);
-    try testing.expectEqual(@as(f32, -1.5), decoded.negative_float.?);
-    try testing.expectEqual(@as(f32, 2e+08), decoded.large_float.?);
-    try testing.expectEqual(@as(f32, -8e-28), decoded.small_negative_float.?);
-    try testing.expectEqual(@as(f64, std.math.inf(f64)), decoded.inf_double.?);
-    try testing.expectEqual(@as(f64, -std.math.inf(f64)), decoded.neg_inf_double.?);
-    try testing.expect(std.math.isNan(decoded.nan_double.?));
-    try testing.expectEqual(@as(f32, std.math.inf(f32)), decoded.inf_float.?);
-    try testing.expectEqual(@as(f32, -std.math.inf(f32)), decoded.neg_inf_float.?);
-    try testing.expect(std.math.isNan(decoded.nan_float.?));
-    try testing.expectEqualSlices(u8, "? ? ?? ?? ??? ??/ ??-", decoded.cpp_trigraph.?);
-    try testing.expectEqualSlices(u8, "hel\x00lo", decoded.string_with_zero.?);
-    try testing.expectEqualSlices(u8, "wor\\000ld", decoded.bytes_with_zero.?);
-    try testing.expectEqualSlices(u8, "ab\x00c", decoded.string_piece_with_zero.?);
-    try testing.expectEqualSlices(u8, "12\x003", decoded.cord_with_zero.?);
-    try testing.expectEqualSlices(u8, "${unknown}", decoded.replacement_string.?);
+    // Fields with explicit presence stay unset; their declared defaults are
+    // exposed in `defaults` instead.
+    try testing.expectEqual(null, decoded.large_uint32);
+    try testing.expectEqual(null, decoded.utf8_string);
+    const defaults = unittest.TestExtremeDefaultValues.defaults;
+
+    try testing.expectEqualSlices(u8, "\\000\\001\\007\\010\\014\\n\\r\\t\\013\\\\\\'\\\"\\376", defaults.escaped_bytes);
+    try testing.expectEqual(@as(u32, 4294967295), defaults.large_uint32);
+    try testing.expectEqual(@as(u64, 18446744073709551615), defaults.large_uint64);
+    try testing.expectEqual(@as(i32, -2147483647), defaults.small_int32);
+    try testing.expectEqual(@as(i64, -9223372036854775807), defaults.small_int64);
+    try testing.expectEqual(@as(i32, -2147483648), defaults.really_small_int32);
+    try testing.expectEqual(@as(i64, -9223372036854775808), defaults.really_small_int64);
+    try testing.expectEqualSlices(u8, "\xE1\x88\xB4", defaults.utf8_string);
+    try testing.expectEqual(@as(f32, 0), defaults.zero_float);
+    try testing.expectEqual(@as(f32, 1), defaults.one_float);
+    try testing.expectEqual(@as(f32, 1.5), defaults.small_float);
+    try testing.expectEqual(@as(f32, -1), defaults.negative_one_float);
+    try testing.expectEqual(@as(f32, -1.5), defaults.negative_float);
+    try testing.expectEqual(@as(f32, 2e+08), defaults.large_float);
+    try testing.expectEqual(@as(f32, -8e-28), defaults.small_negative_float);
+    try testing.expectEqual(@as(f64, std.math.inf(f64)), defaults.inf_double);
+    try testing.expectEqual(@as(f64, -std.math.inf(f64)), defaults.neg_inf_double);
+    try testing.expect(std.math.isNan(defaults.nan_double));
+    try testing.expectEqual(@as(f32, std.math.inf(f32)), defaults.inf_float);
+    try testing.expectEqual(@as(f32, -std.math.inf(f32)), defaults.neg_inf_float);
+    try testing.expect(std.math.isNan(defaults.nan_float));
+    try testing.expectEqualSlices(u8, "? ? ?? ?? ??? ??/ ??-", defaults.cpp_trigraph);
+    try testing.expectEqualSlices(u8, "hel\x00lo", defaults.string_with_zero);
+    try testing.expectEqualSlices(u8, "wor\\000ld", defaults.bytes_with_zero);
+    try testing.expectEqualSlices(u8, "ab\x00c", defaults.string_piece_with_zero);
+    try testing.expectEqualSlices(u8, "12\x003", defaults.cord_with_zero);
+    try testing.expectEqualSlices(u8, "${unknown}", defaults.replacement_string);
 }
