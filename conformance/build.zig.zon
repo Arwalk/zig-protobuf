@@ -2,7 +2,7 @@
     .name = .conformance,
     .version = "0.0.0",
     .fingerprint = 0xe81515e77c853519,
-    .minimum_zig_version = "0.17.0",
+    .minimum_zig_version = "0.18.0-dev.246+05671ced9",
     .dependencies = .{
         .protobuf_pkg = .{ .path = "pkg/protobuf" },
         .zig_protobuf = .{ .path = ".." },

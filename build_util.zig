@@ -198,7 +198,7 @@ pub const RunProtocStep = struct {
 
 pub const GenOptions = struct {
     target: std.Build.ResolvedTarget,
-    optimize: std.builtin.OptimizeMode = .Debug,
+    optimize: ?std.builtin.Optimize = null,
 };
 
 pub fn buildGenerator(b: *std.Build, opt: GenOptions) *std.Build.Step.Compile {
