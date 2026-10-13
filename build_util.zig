@@ -61,7 +61,6 @@ pub const RunProtocStep = struct {
     fmt_step: *std.Build.Step.Fmt,
     preserve_unknown_fields: bool = false,
     experimental_editions: bool = false,
-    verbose: bool = false,
 
     pub const base_id = .protoc;
 
