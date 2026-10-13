@@ -58,7 +58,7 @@ pub const RunProtocStep = struct {
     destination_directory: std.Build.LazyPath,
     generator: *std.Build.Step.Compile,
     protoc_run: *std.Build.Step.Run,
-    fmt_run: *std.Build.Step.Run,
+    fmt_step: *std.Build.Step.Fmt,
     preserve_unknown_fields: bool = false,
     experimental_editions: bool = false,
     verbose: bool = false,
@@ -106,29 +106,26 @@ pub const RunProtocStep = struct {
         options: Options,
     ) *RunProtocStep {
         // The outputs are written into the source tree, which the build cache does not
-        // track. These steps must always run, otherwise a regenerated file would not be
-        // formatted again, and a deleted one would not be regenerated.
+        // track. The mkdir and protoc steps must always run, otherwise a deleted file
+        // would not be regenerated. The fmt step has no cache and always runs.
         const mkdir_run = makeDestinationDirectory(owner, options.destination_directory);
         mkdir_run.has_side_effects = true;
         const protoc_run = makeProtocRun(owner, generator, options);
         protoc_run.has_side_effects = true;
         protoc_run.step.dependOn(&mkdir_run.step);
 
-        const fmt_run = owner.addSystemCommand(&.{ owner.graph.zig_exe, "fmt" });
-        fmt_run.addDirectoryArg(options.destination_directory);
-        fmt_run.expectExitCode(0);
-        fmt_run.has_side_effects = true;
-        fmt_run.step.dependOn(&protoc_run.step);
+        const fmt_step = owner.addFmt(.{ .paths = &.{options.destination_directory} });
+        fmt_step.step.dependOn(&protoc_run.step);
 
         const self: *RunProtocStep = owner.allocator.create(RunProtocStep) catch @panic("OOM");
         self.* = .{
-            .step = &fmt_run.step,
+            .step = &fmt_step.step,
             .source_files = dupeLazyPaths(owner, options.source_files),
             .include_directories = dupeLazyPaths(owner, options.include_directories),
             .destination_directory = options.destination_directory.dupe(owner.graph),
             .generator = generator,
             .protoc_run = protoc_run,
-            .fmt_run = fmt_run,
+            .fmt_step = fmt_step,
             .preserve_unknown_fields = options.preserve_unknown_fields,
             .experimental_editions = options.experimental_editions,
         };
