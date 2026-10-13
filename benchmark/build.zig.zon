@@ -33,8 +33,8 @@
     // internet connectivity.
     .dependencies = .{
         .zbench = .{
-            .url = "https://github.com/hendriknielaender/zBench/archive/refs/tags/v0.13.0.zip",
-            .hash = "zbench-0.13.0-YTdc7xVBAQCCMC-IdLLuotBeiNNNm8k9Pi2V4VYqrwfI",
+            .url = "https://github.com/hendriknielaender/zBench/archive/refs/tags/v0.14.1.tar.gz",
+            .hash = "zbench-0.14.1-YTdc781OAQCR6wxqkgAwm9bG4TnFGzm8c9aE-ZPiTAU1",
         },
         .protobuf = .{
             .path = "./..",

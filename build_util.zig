@@ -105,13 +105,19 @@ pub const RunProtocStep = struct {
         generator: *std.Build.Step.Compile,
         options: Options,
     ) *RunProtocStep {
+        // The outputs are written into the source tree, which the build cache does not
+        // track. These steps must always run, otherwise a regenerated file would not be
+        // formatted again, and a deleted one would not be regenerated.
         const mkdir_run = makeDestinationDirectory(owner, options.destination_directory);
+        mkdir_run.has_side_effects = true;
         const protoc_run = makeProtocRun(owner, generator, options);
+        protoc_run.has_side_effects = true;
         protoc_run.step.dependOn(&mkdir_run.step);
 
         const fmt_run = owner.addSystemCommand(&.{ owner.graph.zig_exe, "fmt" });
         fmt_run.addDirectoryArg(options.destination_directory);
         fmt_run.expectExitCode(0);
+        fmt_run.has_side_effects = true;
         fmt_run.step.dependOn(&protoc_run.step);
 
         const self: *RunProtocStep = owner.allocator.create(RunProtocStep) catch @panic("OOM");
