@@ -677,7 +677,6 @@ pub fn decodeMessage(
             }
         }
 
-        @setEvalBranchQuota(50_000);
         const desc_info = @typeInfo(@TypeOf(desc_table)).@"struct";
         fields: inline for (desc_info.field_names) |field_name| {
             const field_desc: protobuf.FieldDescriptor =
