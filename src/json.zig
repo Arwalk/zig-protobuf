@@ -258,6 +258,17 @@ pub fn parse(
 /// state, so `decodeWithOptions` sets them for the current thread.
 threadlocal var tl_extensions: ?*const protobuf.ExtensionRegistry = null;
 
+/// `DecodeOptions.recursion_limit` of the JSON being parsed on this thread,
+/// set by `decodeWithOptions` like `tl_extensions`.
+threadlocal var tl_recursion_limit: u32 = protobuf.wire.default_recursion_limit;
+
+/// How deeply values that nest by themselves (`google.protobuf.Value`) may
+/// nest in the JSON being parsed on this thread: the `recursion_limit` given
+/// to `decodeWithOptions`, else the default.
+pub fn recursionLimit() u32 {
+    return tl_recursion_limit;
+}
+
 /// Parses the value of the key `name` as an extension of `Self`, if `name` is
 /// the `[full.name]` of a known extension. Returns whether it did.
 fn parseExtension(
@@ -343,6 +354,9 @@ pub fn decodeWithOptions(
     const previous = tl_extensions;
     tl_extensions = pb_options.extensions;
     defer tl_extensions = previous;
+    const previous_limit = tl_recursion_limit;
+    tl_recursion_limit = pb_options.recursion_limit;
+    defer tl_recursion_limit = previous_limit;
     return decode(T, input, options, allocator);
 }
 

@@ -1324,6 +1324,17 @@ pub const DecodeOptions = struct {
     /// only decoded by `Extension.get`. With them, known extensions are
     /// validated while decoding, and can be decoded from JSON.
     extensions: ?*const ExtensionRegistry = null,
+    /// How deeply messages and groups may nest below the decoded message.
+    /// Deeper input fails with `error.InvalidInput` (`error.SyntaxError` for
+    /// JSON `google.protobuf.Value`s), so hostile input cannot exhaust the
+    /// stack.
+    recursion_limit: u32 = wire.default_recursion_limit,
+    /// Bytes read at a time when a length-delimited value is longer than
+    /// what the reader holds. Memory for such a value grows with the bytes
+    /// that arrive, at most this far ahead of them, so a length prefix
+    /// larger than the input fails before anything near that size is
+    /// allocated. Not used when decoding JSON.
+    read_chunk: usize = wire.default_read_chunk,
 };
 
 /// Like `decode`, with options.
@@ -1339,7 +1350,11 @@ pub fn decodeWithOptions(
     internal_init(T, &result);
     errdefer deinit(allocator, &result);
 
-    _ = try wire.decodeMessage(&result, allocator, reader, .{ .extensions = options.extensions });
+    _ = try wire.decodeMessage(&result, allocator, reader, .{
+        .extensions = options.extensions,
+        .recursion_limit = options.recursion_limit,
+        .read_chunk = options.read_chunk,
+    });
 
     return result;
 }

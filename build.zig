@@ -180,6 +180,14 @@ pub fn build(b: *std.Build) !void {
                 .optimize = optimize,
             }),
         }),
+        b.addTest(.{
+            .name = "malformed_input",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/malformed_input.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        }),
     };
 
     const convertStep = RunProtocStep.createWithGenerator(b, exe, .{
