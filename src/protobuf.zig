@@ -1326,8 +1326,8 @@ pub const DecodeOptions = struct {
     extensions: ?*const ExtensionRegistry = null,
     /// How deeply messages and groups may nest below the decoded message.
     /// Deeper input fails with `error.InvalidInput` (`error.SyntaxError` for
-    /// JSON `google.protobuf.Value`s), so hostile input cannot exhaust the
-    /// stack.
+    /// JSON, where messages and `google.protobuf.Value`s are bounded
+    /// separately), so hostile input cannot exhaust the stack.
     recursion_limit: u32 = wire.default_recursion_limit,
     /// Bytes read at a time when a length-delimited value is longer than
     /// what the reader holds. Memory for such a value grows with the bytes
