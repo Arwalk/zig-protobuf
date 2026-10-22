@@ -153,3 +153,43 @@ test "malformed input: varints of unknown fields are at most 10 bytes" {
     // Ten bytes are fine.
     try decodeCapped(ext.Extendable, "\xa0\x06" ++ "\xff\xff\xff\xff\xff\xff\xff\xff\xff" ++ "\x01");
 }
+
+test "malformed input: Timestamp fields out of range are refused" {
+    const gpa = testing.allocator;
+    const Timestamp = protobuf.wkt.Timestamp;
+    for ([_][]const u8{
+        "\"2024-03-00T00:00:00Z\"",
+        "\"2024-01-00T00:00:00Z\"",
+        "\"2024-00-10T00:00:00Z\"",
+        "\"2024-13-01T00:00:00Z\"",
+        "\"2023-02-29T00:00:00Z\"",
+        "\"2024-04-31T00:00:00Z\"",
+        "\"2024-01-32T00:00:00Z\"",
+        "\"2024-01-01T24:00:00Z\"",
+        "\"2024-01-01T00:60:00Z\"",
+        "\"2024-01-01T00:00:61Z\"",
+        "\"2024-01-01T00:00:00+24:00\"",
+        "\"2024-01-01T00:00:00+00:60\"",
+        "\"2024-+1-01T00:00:00Z\"",
+        "\"+024-01-01T00:00:00Z\"",
+        "\"2024-01-01T00:00:00.+5Z\"",
+        "\"2024-01-01T00:00:00+-1:00\"",
+    }) |text| {
+        if (Timestamp.jsonDecode(text, .{}, gpa)) |parsed| {
+            parsed.deinit();
+            std.debug.print("accepted {s}\n", .{text});
+            return error.TestUnexpectedResult;
+        } else |_| {}
+    }
+    for ([_]struct { []const u8, i64 }{
+        .{ "\"2024-02-29T00:00:00Z\"", 1709164800 },
+        .{ "\"2000-02-29T12:30:45Z\"", 951827445 },
+        .{ "\"0001-01-01T00:00:00Z\"", -62135596800 },
+        .{ "\"9999-12-31T23:59:59Z\"", 253402300799 },
+        .{ "\"1970-01-01T01:00:00+01:00\"", 0 },
+    }) |case| {
+        const parsed = try Timestamp.jsonDecode(case[0], .{}, gpa);
+        defer parsed.deinit();
+        try testing.expectEqual(case[1], parsed.value.seconds);
+    }
+}
