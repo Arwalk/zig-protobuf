@@ -437,7 +437,7 @@ pub fn readMessageSetItem(
             const len, const c = try wire.decodeScalar(.int32, reader);
             consumed += c;
             if (len < 0) return error.InvalidInput;
-            const bytes = try reader.readAlloc(allocator, @intCast(len));
+            const bytes = try wire.readBytesAlloc(allocator, reader, @intCast(len));
             consumed += bytes.len;
             if (message) |m| allocator.free(m);
             message = bytes;
