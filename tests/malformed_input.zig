@@ -130,9 +130,14 @@ test "malformed input: unknown groups nest at most default_recursion_limit deep"
 
 /// A `SelfRefNode` nested `depth` deep, encoded.
 fn nestedNodes(gpa: std.mem.Allocator, depth: usize) ![]u8 {
+    return nestedNodesAround(gpa, depth, "\x08\x01"); // version = 1
+}
+
+/// A `SelfRefNode` nested `depth` deep around the fields `innermost`, encoded.
+fn nestedNodesAround(gpa: std.mem.Allocator, depth: usize, innermost: []const u8) ![]u8 {
     var bytes: std.ArrayList(u8) = .empty;
     errdefer bytes.deinit(gpa);
-    try bytes.appendSlice(gpa, "\x08\x01"); // version = 1
+    try bytes.appendSlice(gpa, innermost);
     for (0..depth) |_| {
         var prefix: [11]u8 = undefined;
         var w: std.Io.Writer = .fixed(&prefix);
@@ -412,4 +417,28 @@ test "malformed input: length prefixes must fit an int32" {
     // Streamed values.
     try expectLengthChecked(streamer(tests.WithStrings), "\x0a", "A", "");
     try expectLengthChecked(streamer(tests.Packed), "\x0a", "\x01", "");
+}
+
+test "malformed input: empty submessages count toward the recursion limit" {
+    const gpa = testing.allocator;
+    // The innermost node is empty (length 0), so it has no fields to decode.
+    const ok = try nestedNodesAround(gpa, protobuf.wire.default_recursion_limit, "");
+    defer gpa.free(ok);
+    try decodeCapped(selfref.SelfRefNode, ok);
+    const too_deep = try nestedNodesAround(gpa, protobuf.wire.default_recursion_limit + 1, "");
+    defer gpa.free(too_deep);
+    try testing.expectError(error.InvalidInput, decodeCapped(selfref.SelfRefNode, too_deep));
+
+    const limit: protobuf.DecodeOptions = .{ .recursion_limit = 3 };
+    const three = try nestedNodesAround(gpa, 3, "");
+    defer gpa.free(three);
+    try decodeCappedWith(selfref.SelfRefNode, three, limit, 1 << 20);
+    const four = try nestedNodesAround(gpa, 4, "");
+    defer gpa.free(four);
+    try testing.expectError(error.InvalidInput, decodeCappedWith(selfref.SelfRefNode, four, limit, 1 << 20));
+    // A limit of 0 refuses even one empty submessage.
+    try testing.expectError(error.InvalidInput, decodeCappedWith(selfref.SelfRefNode, "\x12\x00", .{ .recursion_limit = 0 }, 1 << 20));
+    // The same in a oneof (message_in_oneof is field 2).
+    try decodeCappedWith(tests_oneof.OneofContainer, "\x12\x00", .{ .recursion_limit = 1 }, 1 << 20);
+    try testing.expectError(error.InvalidInput, decodeCappedWith(tests_oneof.OneofContainer, "\x12\x00", .{ .recursion_limit = 0 }, 1 << 20));
 }
