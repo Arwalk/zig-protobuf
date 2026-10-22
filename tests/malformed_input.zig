@@ -331,3 +331,85 @@ test "malformed input: Timestamp fields out of range are refused" {
         try testing.expectEqual(case[1], parsed.value.seconds);
     }
 }
+
+test "malformed input: a captured length must fit an int32" {
+    // Field 100 (in Extendable's extension range), length 2^31 and no data:
+    // refused like everywhere else, rather than kept as a record that later
+    // passes over the records cannot read back.
+    const len_2_31 = "\xa2\x06\x80\x80\x80\x80\x08";
+    try testing.expectError(error.InvalidInput, decodeCappedWith(ext.Extendable, len_2_31, .{ .read_chunk = 16 }, 1024));
+    try testing.expectError(error.InvalidInput, decodeCapped(ext.Extendable, len_2_31));
+}
+
+/// Decodes `bytes` as a `T` (see `decodeCapped`).
+fn decoder(comptime T: type) fn ([]const u8) anyerror!void {
+    return struct {
+        fn decode(bytes: []const u8) anyerror!void {
+            return decodeCapped(T, bytes);
+        }
+    }.decode;
+}
+
+/// Pulls every event of `bytes` from a `T.StreamDecoder`, reading the
+/// length-delimited values to their end.
+fn streamer(comptime T: type) fn ([]const u8) anyerror!void {
+    return struct {
+        fn decode(bytes: []const u8) anyerror!void {
+            var reader: std.Io.Reader = .fixed(bytes);
+            var sd = T.StreamDecoder.init(&reader);
+            while (try sd.next()) |event| switch (event) {
+                inline else => |value| if (@TypeOf(value) == *std.Io.Reader) {
+                    _ = try value.discardRemaining();
+                },
+            };
+        }
+    }.decode;
+}
+
+/// Checks the length prefix of a field: `prefix`, the length, `payload`,
+/// then `suffix` decode with the true length of `payload`, and fail with
+/// `error.InvalidInput` for any length that does not fit an int32, including
+/// those equal to the true length modulo 2^32.
+fn expectLengthChecked(
+    comptime decode: fn ([]const u8) anyerror!void,
+    prefix: []const u8,
+    payload: []const u8,
+    suffix: []const u8,
+) !void {
+    const lengths = [_]u64{ payload.len, (1 << 32) + payload.len, 1 << 32, 1 << 31, std.math.maxInt(u64) };
+    for (lengths, 0..) |len, i| {
+        var buffer: [64]u8 = undefined;
+        var w: std.Io.Writer = .fixed(&buffer);
+        try w.writeAll(prefix);
+        try w.writeUleb128(len);
+        try w.writeAll(payload);
+        try w.writeAll(suffix);
+        if (i == 0) {
+            try decode(w.buffered());
+        } else if (decode(w.buffered())) {
+            std.debug.print("accepted length {d} after {x}\n", .{ len, prefix });
+            return error.TestUnexpectedResult;
+        } else |err| try testing.expectEqual(error.InvalidInput, err);
+    }
+}
+
+test "malformed input: length prefixes must fit an int32" {
+    // Strings and bytes.
+    try expectLengthChecked(decoder(tests.WithStrings), "\x0a", "A", "");
+    try expectLengthChecked(decoder(tests.WithBytes), "\x0a", "A", "");
+    try expectLengthChecked(decoder(tests.WithRepeatedStrings), "\x0a", "A", "");
+    try expectLengthChecked(decoder(tests_oneof.OneofContainer), "\x0a", "A", "");
+    // Packed repeated values.
+    try expectLengthChecked(decoder(tests.Packed), "\x0a", "\x01", "");
+    // Submessages, also in a oneof.
+    try expectLengthChecked(decoder(selfref.SelfRefNode), "\x12", "\x08\x01", "");
+    try expectLengthChecked(decoder(tests_oneof.OneofContainer), "\x12", "\x08\x01", "");
+    // Unknown fields, skipped or kept as extension records.
+    try expectLengthChecked(decoder(tests.WithStrings), "\x12", "A", "");
+    try expectLengthChecked(decoder(ext.Extendable), "\xa2\x06", "A", "");
+    // The message of a MessageSet item.
+    try expectLengthChecked(decoder(ext.MessageSet), "\x0b\x1a", "A", "\x0c");
+    // Streamed values.
+    try expectLengthChecked(streamer(tests.WithStrings), "\x0a", "A", "");
+    try expectLengthChecked(streamer(tests.Packed), "\x0a", "\x01", "");
+}
