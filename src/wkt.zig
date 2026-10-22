@@ -448,9 +448,6 @@ pub const Struct = struct {
 
 // ─── google.protobuf.Value ──────────────────────────────────────────────────
 
-/// Maximum nesting of `Value`s accepted when parsing JSON, the default
-/// recursion limit of the reference implementation.
-const max_value_depth = 100;
 /// Nesting of the `Value` being parsed from JSON. `jsonParse` cannot carry
 /// extra state, so it is tracked per thread.
 threadlocal var value_parse_depth: u32 = 0;
@@ -500,9 +497,11 @@ pub const Value = struct {
     }
 
     pub fn jsonParse(allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
-        // Values nest through Struct and ListValue. Deeply nested input is
-        // rejected, like other implementations do, to bound the recursion.
-        if (value_parse_depth >= max_value_depth) return error.SyntaxError;
+        // Values nest through Struct and ListValue. Input nested deeper than
+        // the recursion limit (`DecodeOptions.recursion_limit`, 100 by
+        // default, as in the reference implementation) is rejected, like
+        // other implementations do, to bound the recursion.
+        if (value_parse_depth >= protobuf.json.recursionLimit()) return error.SyntaxError;
         value_parse_depth += 1;
         defer value_parse_depth -= 1;
 

@@ -52,6 +52,15 @@ fn decodeCapped(comptime T: type, bytes: []const u8) !void {
     msg.deinit(gpa);
 }
 
+/// `decodeCapped` with decode options and an allocation cap.
+fn decodeCappedWith(comptime T: type, bytes: []const u8, options: protobuf.DecodeOptions, max: usize) !void {
+    var capped: CappedAllocator = .{ .max = max };
+    const gpa = capped.allocator();
+    var reader: std.Io.Reader = .fixed(bytes);
+    var msg = try protobuf.decodeWithOptions(T, &reader, gpa, options);
+    msg.deinit(gpa);
+}
+
 test "malformed input: a length prefix larger than the input is not allocated" {
     // Field 1, length 2^31 - 1, and no data.
     const huge = "\x0a\xff\xff\xff\xff\x07";
@@ -94,7 +103,7 @@ fn nestedGroups(gpa: std.mem.Allocator, depth: usize, comptime field: u8) ![]u8 
     return out;
 }
 
-test "malformed input: unknown groups nest at most recursion_limit deep" {
+test "malformed input: unknown groups nest at most default_recursion_limit deep" {
     const gpa = testing.allocator;
     // Deep enough to overflow any stack if each level recursed.
     const deep = try gpa.alloc(u8, 2_000_000);
@@ -111,10 +120,10 @@ test "malformed input: unknown groups nest at most recursion_limit deep" {
     try testing.expectError(error.InvalidInput, decodeCapped(ext.Extendable, deep_ext));
 
     // Within the limit, the groups are skipped as before.
-    const ok = try nestedGroups(gpa, protobuf.wire.recursion_limit - 1, 2);
+    const ok = try nestedGroups(gpa, protobuf.wire.default_recursion_limit, 2);
     defer gpa.free(ok);
     try decodeCapped(tests.WithStrings, ok);
-    const too_deep = try nestedGroups(gpa, protobuf.wire.recursion_limit + 1, 2);
+    const too_deep = try nestedGroups(gpa, protobuf.wire.default_recursion_limit + 1, 2);
     defer gpa.free(too_deep);
     try testing.expectError(error.InvalidInput, decodeCapped(tests.WithStrings, too_deep));
 }
@@ -134,15 +143,144 @@ fn nestedNodes(gpa: std.mem.Allocator, depth: usize) ![]u8 {
     return bytes.toOwnedSlice(gpa);
 }
 
-test "malformed input: recursive messages nest at most recursion_limit deep" {
+test "malformed input: recursive messages nest at most default_recursion_limit deep" {
     const gpa = testing.allocator;
-    const ok = try nestedNodes(gpa, protobuf.wire.recursion_limit);
+    const ok = try nestedNodes(gpa, protobuf.wire.default_recursion_limit);
     defer gpa.free(ok);
     try decodeCapped(selfref.SelfRefNode, ok);
 
-    const too_deep = try nestedNodes(gpa, protobuf.wire.recursion_limit + 1);
+    const too_deep = try nestedNodes(gpa, protobuf.wire.default_recursion_limit + 1);
     defer gpa.free(too_deep);
     try testing.expectError(error.InvalidInput, decodeCapped(selfref.SelfRefNode, too_deep));
+}
+
+test "malformed input: recursion_limit option bounds messages and groups" {
+    const gpa = testing.allocator;
+    const limit: protobuf.DecodeOptions = .{ .recursion_limit = 3 };
+
+    // Recursive messages.
+    const nodes_ok = try nestedNodes(gpa, 3);
+    defer gpa.free(nodes_ok);
+    try decodeCappedWith(selfref.SelfRefNode, nodes_ok, limit, 1 << 20);
+    const nodes_deep = try nestedNodes(gpa, 4);
+    defer gpa.free(nodes_deep);
+    try testing.expectError(error.InvalidInput, decodeCappedWith(selfref.SelfRefNode, nodes_deep, limit, 1 << 20));
+    // A limit of 0 allows the outermost message only.
+    const one = try nestedNodes(gpa, 1);
+    defer gpa.free(one);
+    try decodeCappedWith(selfref.SelfRefNode, one[2..], .{ .recursion_limit = 0 }, 1 << 20);
+    try testing.expectError(error.InvalidInput, decodeCappedWith(selfref.SelfRefNode, one, .{ .recursion_limit = 0 }, 1 << 20));
+
+    // Unknown groups, skipped.
+    const groups_ok = try nestedGroups(gpa, 3, 2);
+    defer gpa.free(groups_ok);
+    try decodeCappedWith(tests.WithStrings, groups_ok, limit, 1 << 20);
+    const groups_deep = try nestedGroups(gpa, 4, 2);
+    defer gpa.free(groups_deep);
+    try testing.expectError(error.InvalidInput, decodeCappedWith(tests.WithStrings, groups_deep, limit, 1 << 20));
+
+    // Groups in an extension range (field 100), kept as extension records.
+    const start_100 = "\xa3\x06";
+    const end_100 = "\xa4\x06";
+    try decodeCappedWith(ext.Extendable, start_100 ++ start_100 ++ start_100 ++ end_100 ++ end_100 ++ end_100, limit, 1 << 20);
+    try testing.expectError(error.InvalidInput, decodeCappedWith(ext.Extendable, start_100 ++ start_100 ++ start_100 ++ start_100 ++ end_100 ++ end_100 ++ end_100 ++ end_100, limit, 1 << 20));
+
+    // Unknown groups (field 4) in a MessageSet item, which is a group itself.
+    try decodeCappedWith(ext.MessageSet, "\x0b\x23\x23\x24\x24\x0c", limit, 1 << 20);
+    try testing.expectError(error.InvalidInput, decodeCappedWith(ext.MessageSet, "\x0b\x23\x23\x23\x24\x24\x24\x0c", limit, 1 << 20));
+}
+
+/// An extension of `Extendable` holding an `Extendable`, so that extensions
+/// nest without bound in the input.
+const nested_extension = protobuf.Extension(ext.Extendable, ?ext.Extendable, protobuf.fd(107, .submessage), "tests.malformed.nested", null, .{});
+
+/// An `Extendable` whose `nested_extension` is set `depth` deep, encoded.
+fn nestedExtensions(gpa: std.mem.Allocator, depth: usize) ![]u8 {
+    var bytes: std.ArrayList(u8) = .empty;
+    errdefer bytes.deinit(gpa);
+    try bytes.appendSlice(gpa, "\x08\x01"); // regular = 1
+    for (0..depth) |_| {
+        var prefix: [12]u8 = undefined;
+        var w: std.Io.Writer = .fixed(&prefix);
+        w.writeAll("\xda\x06") catch unreachable; // field 107, length-delimited
+        w.writeUleb128(bytes.items.len) catch unreachable;
+        try bytes.insertSlice(gpa, 0, w.buffered());
+    }
+    return bytes.toOwnedSlice(gpa);
+}
+
+test "malformed input: known extensions count toward the recursion limit" {
+    const gpa = testing.allocator;
+    const registry: protobuf.ExtensionRegistry = .init(.{nested_extension});
+
+    const ok = try nestedExtensions(gpa, 3);
+    defer gpa.free(ok);
+    try decodeCappedWith(ext.Extendable, ok, .{ .extensions = &registry, .recursion_limit = 3 }, 1 << 20);
+    const too_deep = try nestedExtensions(gpa, 4);
+    defer gpa.free(too_deep);
+    try testing.expectError(error.InvalidInput, decodeCappedWith(ext.Extendable, too_deep, .{ .extensions = &registry, .recursion_limit = 3 }, 1 << 20));
+    // Without a registry the extensions stay raw records.
+    try decodeCappedWith(ext.Extendable, too_deep, .{ .recursion_limit = 3 }, 1 << 20);
+
+    // With the default limit.
+    const default_ok = try nestedExtensions(gpa, protobuf.wire.default_recursion_limit);
+    defer gpa.free(default_ok);
+    try decodeCappedWith(ext.Extendable, default_ok, .{ .extensions = &registry }, 1 << 20);
+    const default_deep = try nestedExtensions(gpa, protobuf.wire.default_recursion_limit + 1);
+    defer gpa.free(default_deep);
+    try testing.expectError(error.InvalidInput, decodeCappedWith(ext.Extendable, default_deep, .{ .extensions = &registry }, 1 << 20));
+}
+
+test "malformed input: recursion_limit option bounds JSON Values" {
+    const gpa = testing.allocator;
+    const Value = protobuf.wkt.Value;
+    const parsed = try protobuf.json.decodeWithOptions(Value, "[[1]]", .{}, .{ .recursion_limit = 3 }, gpa);
+    parsed.deinit();
+    try testing.expectError(error.SyntaxError, protobuf.json.decodeWithOptions(Value, "[[[1]]]", .{}, .{ .recursion_limit = 3 }, gpa));
+    // The limit applies only within the call.
+    const again = try Value.jsonDecode("[[[1]]]", .{}, gpa);
+    again.deinit();
+}
+
+test "malformed input: read_chunk option" {
+    const gpa = testing.allocator;
+    const small: protobuf.DecodeOptions = .{ .read_chunk = 16 };
+
+    // A length prefix larger than the input fails before much more than a
+    // chunk is allocated (the list may round its first allocation up).
+    const huge = "\x0a\xff\xff\xff\xff\x07";
+    const cap = 1024;
+    try testing.expectError(error.EndOfStream, decodeCappedWith(tests.WithStrings, huge, small, cap));
+    try testing.expectError(error.EndOfStream, decodeCappedWith(tests.WithRepeatedBytes, huge, small, cap));
+    try testing.expectError(error.EndOfStream, decodeCappedWith(ext.MessageSet, "\x0b\x1a\xff\xff\xff\xff\x07", small, cap));
+    try testing.expectError(error.EndOfStream, decodeCappedWith(ext.Extendable, "\xa2\x06\xff\xff\xff\xff\x07", small, cap));
+    // The default chunk is larger than that cap.
+    try testing.expectError(error.OutOfMemory, decodeCappedWith(tests.WithStrings, huge, .{}, cap));
+    // A prefix just past the input: everything that arrived is read first.
+    try testing.expectError(error.EndOfStream, decodeCappedWith(tests.WithBytes, "\x0a\x40" ++ @as([63]u8, @splat('y')), small, 1 << 20));
+
+    // Long values still decode, chunk by chunk, also from a reader that holds
+    // little at a time and with a chunk of 0 (taken as 1).
+    const text = try gpa.alloc(u8, 100_000);
+    defer gpa.free(text);
+    for (text, 0..) |*c, i| c.* = 'a' + @as(u8, @intCast(i % 26));
+    const original: tests.WithBytes = .{ .byte_field = text };
+    var w: std.Io.Writer.Allocating = .init(gpa);
+    defer w.deinit();
+    try original.encode(&w.writer, gpa);
+
+    for ([_]usize{ 16, 0 }) |chunk| {
+        var buffer: [16]u8 = undefined;
+        var stream: testing.Reader = .init(&buffer, &.{.{ .buffer = w.written() }});
+        stream.artificial_limit = .limited(7);
+        var decoded = try protobuf.decodeWithOptions(tests.WithBytes, &stream.interface, gpa, .{ .read_chunk = chunk });
+        defer decoded.deinit(gpa);
+        try testing.expectEqualSlices(u8, text, decoded.byte_field);
+    }
+    var reader: std.Io.Reader = .fixed(w.written());
+    var decoded = try protobuf.decodeWithOptions(tests.WithBytes, &reader, gpa, small);
+    defer decoded.deinit(gpa);
+    try testing.expectEqualSlices(u8, text, decoded.byte_field);
 }
 
 test "malformed input: varints of unknown fields are at most 10 bytes" {

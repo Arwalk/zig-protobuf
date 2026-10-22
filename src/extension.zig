@@ -153,17 +153,27 @@ pub fn Extension(
             allocator: std.mem.Allocator,
             registry: ?*const ExtensionRegistry,
         ) DecodeError!Value_ {
+            return decodeValueWithOptions(records, allocator, .{ .extensions = registry });
+        }
+
+        /// `decode_options` are those of the holder, which stands in for the
+        /// extended message.
+        fn decodeValueWithOptions(
+            records: []const u8,
+            allocator: std.mem.Allocator,
+            decode_options: wire.SubmessageOptions,
+        ) DecodeError!Value_ {
             // The holder only knows this extension, so the other records
             // are skipped.
             var holder: Holder = .{};
             errdefer protobuf.deinit(allocator, &holder);
             var reader: std.Io.Reader = .fixed(records);
-            _ = try wire.decodeMessage(&holder, allocator, &reader, .{ .extensions = registry });
+            _ = try wire.decodeMessage(&holder, allocator, &reader, decode_options);
             return holder.value;
         }
 
-        fn validate(records: []const u8, allocator: std.mem.Allocator, registry: *const ExtensionRegistry) DecodeError!void {
-            var value = try decodeValue(records, allocator, registry);
+        fn validate(records: []const u8, allocator: std.mem.Allocator, decode_options: wire.SubmessageOptions) DecodeError!void {
+            var value = try decodeValueWithOptions(records, allocator, decode_options);
             deinitValue(&value, allocator);
         }
 
@@ -213,8 +223,9 @@ pub const ExtensionRegistry = struct {
         extendee: []const u8,
         field_number: u29,
         full_name: []const u8,
-        /// Decodes the extension from the extension records of a message.
-        validate: *const fn (records: []const u8, allocator: std.mem.Allocator, registry: *const ExtensionRegistry) DecodeError!void,
+        /// Decodes the extension from the extension records of a message
+        /// decoded with `options`.
+        validate: *const fn (records: []const u8, allocator: std.mem.Allocator, options: wire.SubmessageOptions) DecodeError!void,
         /// Returns the JSON value of the extension, which must be set, or
         /// null when it has no value to write (an empty repeated extension).
         to_json: *const fn (records: []const u8, allocator: std.mem.Allocator, options: json.Options) anyerror!?[]const u8,
@@ -280,6 +291,18 @@ pub const ExtensionRegistry = struct {
 
     /// Validates the known extensions of a decoded message of type `Extendee`.
     pub fn validate(self: *const ExtensionRegistry, comptime Extendee: type, records: []const u8, allocator: std.mem.Allocator) DecodeError!void {
+        return self.validateWithOptions(Extendee, records, allocator, .{});
+    }
+
+    /// `validate` for a message decoded with `options`: the extensions are
+    /// decoded as if nested in it, with its limits.
+    pub fn validateWithOptions(
+        self: *const ExtensionRegistry,
+        comptime Extendee: type,
+        records: []const u8,
+        allocator: std.mem.Allocator,
+        options: wire.SubmessageOptions,
+    ) DecodeError!void {
         if (records.len == 0) return;
         const known = self.of(Extendee);
         if (known.len == 0) return;
@@ -290,7 +313,13 @@ pub const ExtensionRegistry = struct {
         var present = try presentEntries(bits_allocator, known, records);
         defer present.deinit(bits_allocator);
         var it = present.iterator(.{});
-        while (it.next()) |index| try known[index].validate(records, allocator, self);
+        const value_options: wire.SubmessageOptions = .{
+            .extensions = self,
+            .depth = options.depth,
+            .recursion_limit = options.recursion_limit,
+            .read_chunk = options.read_chunk,
+        };
+        while (it.next()) |index| try known[index].validate(records, allocator, value_options);
     }
 };
 
@@ -417,6 +446,16 @@ pub fn readMessageSetItem(
     reader: *std.Io.Reader,
     records: *std.ArrayList(u8),
 ) DecodeError!usize {
+    return readMessageSetItemWithOptions(allocator, reader, records, .{});
+}
+
+/// `readMessageSetItem` in a MessageSet decoded with `options`.
+pub fn readMessageSetItemWithOptions(
+    allocator: std.mem.Allocator,
+    reader: *std.Io.Reader,
+    records: *std.ArrayList(u8),
+    options: wire.SubmessageOptions,
+) DecodeError!usize {
     var consumed: usize = 0;
     var type_id: ?u64 = null;
     var message: ?[]u8 = null;
@@ -437,12 +476,13 @@ pub fn readMessageSetItem(
             const len, const c = try wire.decodeScalar(.int32, reader);
             consumed += c;
             if (len < 0) return error.InvalidInput;
-            const bytes = try wire.readBytesAlloc(allocator, reader, @intCast(len));
+            const bytes = try wire.readBytesAlloc(allocator, reader, @intCast(len), options.read_chunk);
             consumed += bytes.len;
             if (message) |m| allocator.free(m);
             message = bytes;
         } else {
-            consumed += try wire.skipField(reader, tag);
+            // The item is a group, so its fields are one level deeper.
+            consumed += try wire.skipFieldAt(reader, tag, options.depth + 1, options.recursion_limit);
         }
     }
 

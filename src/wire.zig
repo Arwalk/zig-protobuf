@@ -426,6 +426,10 @@ pub fn decodeRepeated(
         extensions: ?*const ExtensionRegistry = null,
         /// Nesting depth of submessage elements (see `SubmessageOptions.depth`).
         depth: u32 = 0,
+        /// See `SubmessageOptions.recursion_limit`.
+        recursion_limit: u32 = default_recursion_limit,
+        /// See `SubmessageOptions.read_chunk`.
+        read_chunk: usize = default_read_chunk,
     },
 ) (std.Io.Reader.Error || std.mem.Allocator.Error || protobuf.DecodingError)!usize {
     comptime std.debug.assert(@typeInfo(@TypeOf(result)) == .pointer);
@@ -444,7 +448,7 @@ pub fn decodeRepeated(
                 // string/bytes are length-delimited, and cannot be packed.
                 std.debug.assert(options.bytes != null);
 
-                const bytes = try readBytesAlloc(allocator, reader, options.bytes.?);
+                const bytes = try readBytesAlloc(allocator, reader, options.bytes.?, options.read_chunk);
                 errdefer allocator.free(bytes);
                 if (options.verify_utf8 and !std.unicode.utf8ValidateSlice(bytes)) {
                     @branchHint(.cold);
@@ -520,7 +524,14 @@ pub fn decodeRepeated(
                 msg,
                 allocator,
                 reader,
-                .{ .bytes = options.bytes, .group = options.group, .extensions = options.extensions, .depth = options.depth },
+                .{
+                    .bytes = options.bytes,
+                    .group = options.group,
+                    .extensions = options.extensions,
+                    .depth = options.depth,
+                    .recursion_limit = options.recursion_limit,
+                    .read_chunk = options.read_chunk,
+                },
             );
             if (options.bytes) |bytes| if (consumed > bytes) {
                 @branchHint(.cold);
@@ -604,25 +615,30 @@ pub const SubmessageOptions = struct {
     /// the outermost). Decoding fails with `error.InvalidInput` once
     /// messages or groups nest deeper than `recursion_limit`.
     depth: u32 = 0,
+    /// How deeply messages and groups may nest below the outermost message.
+    /// Bounds the recursion, so hostile input cannot exhaust the stack.
+    recursion_limit: u32 = default_recursion_limit,
+    /// Bytes read at a time when a length-delimited value is longer than
+    /// what the reader holds (see `readBytesAlloc`).
+    read_chunk: usize = default_read_chunk,
 };
 
-/// How deeply messages and groups may nest in decoded input, as in the
-/// reference implementations. Bounds the recursion, so hostile input cannot
-/// exhaust the stack.
-pub const recursion_limit = 100;
+/// Default `recursion_limit` of decoding: how deeply messages and groups may
+/// nest, as in the reference implementations.
+pub const default_recursion_limit: u32 = 100;
 
-/// Bytes read at a time when a length-delimited value is longer than what
-/// the reader holds.
-const read_chunk = 64 * 1024;
+/// Default `read_chunk` of decoding.
+pub const default_read_chunk: usize = 64 * 1024;
 
 /// Reads `len` bytes into a new allocation. The memory grows with the bytes
 /// that actually arrive (at most `read_chunk` ahead of them), so a length
 /// prefix larger than the input fails with `error.EndOfStream` before
-/// anything near that size is allocated.
+/// anything near that size is allocated. A `read_chunk` of 0 counts as 1.
 pub fn readBytesAlloc(
     allocator: std.mem.Allocator,
     reader: *std.Io.Reader,
     len: usize,
+    read_chunk: usize,
 ) (std.Io.Reader.Error || std.mem.Allocator.Error)![]u8 {
     if (len == 0) return &.{};
     if (len <= reader.bufferedLen()) {
@@ -632,7 +648,7 @@ pub fn readBytesAlloc(
     }
     var list: std.ArrayList(u8) = .empty;
     errdefer list.deinit(allocator);
-    try appendBytes(allocator, reader, &list, len);
+    try appendBytes(allocator, reader, &list, len, read_chunk);
     return list.toOwnedSlice(allocator);
 }
 
@@ -643,10 +659,12 @@ fn appendBytes(
     reader: *std.Io.Reader,
     list: *std.ArrayList(u8),
     len: usize,
+    read_chunk: usize,
 ) (std.Io.Reader.Error || std.mem.Allocator.Error)!void {
+    const chunk = @max(read_chunk, 1);
     var remaining = len;
     while (remaining > 0) {
-        const n = @min(remaining, @max(reader.bufferedLen(), read_chunk));
+        const n = @min(remaining, @max(reader.bufferedLen(), chunk));
         try list.ensureUnusedCapacity(allocator, n);
         try reader.readSliceAll(list.unusedCapacitySlice()[0..n]);
         list.items.len += n;
@@ -686,7 +704,7 @@ pub fn decodeMessage(
     comptime std.debug.assert(@TypeOf(result) == *Result);
     const desc_table = Result._desc_table;
 
-    if (options.depth > recursion_limit) {
+    if (options.depth > options.recursion_limit) {
         @branchHint(.cold);
         return error.InvalidInput;
     }
@@ -731,7 +749,7 @@ pub fn decodeMessage(
         // their type id and message.
         if (comptime extension.isMessageSet(Result)) {
             if (tag.field == 1 and tag.wire_type == .sgroup) {
-                consumed += try extension.readMessageSetItem(allocator, reader, &extension_buf);
+                consumed += try extension.readMessageSetItemWithOptions(allocator, reader, &extension_buf, options);
                 continue :main_loop;
             }
         }
@@ -794,7 +812,7 @@ pub fn decodeMessage(
                             return error.InvalidInput;
                         }
 
-                        const new = try readBytesAlloc(allocator, reader, @intCast(len));
+                        const new = try readBytesAlloc(allocator, reader, @intCast(len), options.read_chunk);
                         errdefer if (len > 0) allocator.free(new);
                         consumed += @intCast(len);
                         if (comptime field_desc.verifiesUtf8()) {
@@ -898,6 +916,8 @@ pub fn decodeMessage(
                                 .field_number = tag.field,
                                 .extensions = options.extensions,
                                 .depth = options.depth + 1,
+                                .recursion_limit = options.recursion_limit,
+                                .read_chunk = options.read_chunk,
                             },
                         );
                     }
@@ -916,6 +936,8 @@ pub fn decodeMessage(
                                 .field_number = tag.field,
                                 .extensions = options.extensions,
                                 .depth = options.depth + 1,
+                                .recursion_limit = options.recursion_limit,
+                                .read_chunk = options.read_chunk,
                             },
                         );
                     }
@@ -955,6 +977,8 @@ pub fn decodeMessage(
                             .field_number = tag.field,
                             .extensions = options.extensions,
                             .depth = options.depth + 1,
+                            .recursion_limit = options.recursion_limit,
+                            .read_chunk = options.read_chunk,
                         },
                     );
                 },
@@ -973,10 +997,14 @@ pub fn decodeMessage(
                         }
                         break :b len;
                     };
-                    const sub_options: SubmessageOptions = if (delimited)
-                        .{ .group = tag.field, .extensions = options.extensions, .depth = options.depth + 1 }
-                    else
-                        .{ .bytes = @intCast(len), .extensions = options.extensions, .depth = options.depth + 1 };
+                    const sub_options: SubmessageOptions = .{
+                        .bytes = if (delimited) null else @intCast(len),
+                        .group = if (delimited) tag.field else null,
+                        .extensions = options.extensions,
+                        .depth = options.depth + 1,
+                        .recursion_limit = options.recursion_limit,
+                        .read_chunk = options.read_chunk,
+                    };
 
                     // All submessages must be optional; submessages always
                     // have an explicit field presence, which means the
@@ -1098,7 +1126,7 @@ pub fn decodeMessage(
                                         return error.InvalidInput;
                                     }
 
-                                    const new = try readBytesAlloc(allocator, reader, @intCast(len));
+                                    const new = try readBytesAlloc(allocator, reader, @intCast(len), options.read_chunk);
                                     errdefer if (len > 0) allocator.free(new);
                                     consumed += @intCast(len);
                                     if (comptime inner_desc.verifiesUtf8()) {
@@ -1177,10 +1205,14 @@ pub fn decodeMessage(
                                     }
                                     break :b len;
                                 };
-                                const sub_options: SubmessageOptions = if (delimited)
-                                    .{ .group = tag.field, .extensions = options.extensions, .depth = options.depth + 1 }
-                                else
-                                    .{ .bytes = @intCast(len), .extensions = options.extensions, .depth = options.depth + 1 };
+                                const sub_options: SubmessageOptions = .{
+                                    .bytes = if (delimited) null else @intCast(len),
+                                    .group = if (delimited) tag.field else null,
+                                    .extensions = options.extensions,
+                                    .depth = options.depth + 1,
+                                    .recursion_limit = options.recursion_limit,
+                                    .read_chunk = options.read_chunk,
+                                };
 
                                 // Submessages are non-optional, as `oneof`s
                                 // also have explicit presence.
@@ -1317,7 +1349,7 @@ pub fn decodeMessage(
                 allocator,
                 reader,
                 tag,
-                options.depth,
+                options,
                 if (comptime has_unknown_fields) &unknown_buf else null,
                 if (comptime has_extensions) &extension_buf else null,
             );
@@ -1329,7 +1361,7 @@ pub fn decodeMessage(
     if (comptime has_extensions) {
         try appendOwned(allocator, &result._extensions.records, &extension_buf);
         if (options.extensions) |registry| {
-            try registry.validate(Result, result._extensions.records, allocator);
+            try registry.validateWithOptions(Result, result._extensions.records, allocator, options);
         }
     }
     return consumed;
@@ -1343,7 +1375,7 @@ fn captureUnmatched(
     allocator: std.mem.Allocator,
     reader: *std.Io.Reader,
     tag: Tag,
-    depth: u32,
+    options: SubmessageOptions,
     unknown: ?*std.ArrayList(u8),
     extensions: ?*std.ArrayList(u8),
 ) (std.Io.Reader.Error || std.mem.Allocator.Error || protobuf.DecodingError)!usize {
@@ -1351,13 +1383,13 @@ fn captureUnmatched(
         if (extensions) |buf| {
             inline for (Result._extensions_info.ranges) |range| {
                 if (tag.field >= range[0] and tag.field < range[1]) {
-                    return captureField(allocator, reader, tag, buf, depth);
+                    return captureField(allocator, reader, tag, buf, options);
                 }
             }
         }
     }
-    if (unknown) |buf| return captureField(allocator, reader, tag, buf, depth);
-    return skipFieldAt(reader, tag, depth);
+    if (unknown) |buf| return captureField(allocator, reader, tag, buf, options);
+    return skipFieldAt(reader, tag, options.depth, options.recursion_limit);
 }
 
 /// Appends the bytes of `buf` to the owned slice `dest`. Messages may be
@@ -1376,11 +1408,12 @@ fn appendOwned(allocator: std.mem.Allocator, dest: *[]const u8, buf: *std.ArrayL
 /// Skips the value of a field whose tag was just read. Returns the number of
 /// bytes consumed after the tag.
 pub fn skipField(reader: *std.Io.Reader, tag: Tag) (std.Io.Reader.Error || protobuf.DecodingError)!usize {
-    return skipFieldAt(reader, tag, 0);
+    return skipFieldAt(reader, tag, 0, default_recursion_limit);
 }
 
-/// `skipField` for a field of a message nested `depth` deep.
-fn skipFieldAt(reader: *std.Io.Reader, tag: Tag, depth: u32) (std.Io.Reader.Error || protobuf.DecodingError)!usize {
+/// `skipField` for a field of a message nested `depth` deep, with groups
+/// nesting at most `recursion_limit` deep (see `SubmessageOptions`).
+pub fn skipFieldAt(reader: *std.Io.Reader, tag: Tag, depth: u32, recursion_limit: u32) (std.Io.Reader.Error || protobuf.DecodingError)!usize {
     var consumed: usize = 0;
 
     // If field number was not found, skip unknown field.
@@ -1426,7 +1459,7 @@ fn skipFieldAt(reader: *std.Io.Reader, tag: Tag, depth: u32) (std.Io.Reader.Erro
                         return error.InvalidInput;
                     break;
                 }
-                consumed += try skipFieldAt(reader, inner_tag, depth + 1);
+                consumed += try skipFieldAt(reader, inner_tag, depth + 1, recursion_limit);
             }
         },
         .egroup => {
@@ -1454,13 +1487,13 @@ fn encodeTagBytes(tag: Tag, buf: *[10]u8) usize {
 }
 
 // Capture an unknown field's tag+data bytes into buf, return total bytes
-// consumed (after tag). `depth` is that of the message holding the field.
+// consumed (after tag). `options` are those of the message holding the field.
 fn captureField(
     allocator: std.mem.Allocator,
     reader: *std.Io.Reader,
     tag: Tag,
     buf: *std.ArrayList(u8),
-    depth: u32,
+    options: SubmessageOptions,
 ) (std.Io.Reader.Error || std.mem.Allocator.Error || protobuf.DecodingError)!usize {
     var tag_bytes: [10]u8 = undefined;
     const tag_len = encodeTagBytes(tag, &tag_bytes);
@@ -1494,12 +1527,12 @@ fn captureField(
             };
             try buf.appendSlice(allocator, len_buf[0..len_i]);
             data_consumed += len_i;
-            try appendBytes(allocator, reader, buf, len);
+            try appendBytes(allocator, reader, buf, len, options.read_chunk);
             data_consumed += len;
         },
         .sgroup => {
             // A group nests like a submessage.
-            if (depth >= recursion_limit) {
+            if (options.depth >= options.recursion_limit) {
                 @branchHint(.cold);
                 return error.InvalidInput;
             }
@@ -1517,7 +1550,9 @@ fn captureField(
                     try buf.appendSlice(allocator, tag_bytes[0..end_len]);
                     break;
                 }
-                data_consumed += try captureField(allocator, reader, inner_tag, buf, depth + 1);
+                var inner = options;
+                inner.depth += 1;
+                data_consumed += try captureField(allocator, reader, inner_tag, buf, inner);
             }
         },
         .egroup => {
