@@ -691,10 +691,11 @@ pub const Timestamp = struct {
         if (str[16] != ':') return error.UnexpectedToken;
         const second = digits(str[17..19]) orelse return error.UnexpectedToken;
         // Every field in range before any arithmetic (RFC 3339, section
-        // 5.6; a leap second, 60, counts as the next second).
+        // 5.6). Leap seconds (60) are refused, as by the reference
+        // implementations: protobuf timestamps smear them instead.
         if (month < 1 or month > 12) return error.UnexpectedToken;
         if (day < 1 or day > daysInMonth(year, month)) return error.UnexpectedToken;
-        if (hour > 23 or minute > 59 or second > 60) return error.UnexpectedToken;
+        if (hour > 23 or minute > 59 or second > 59) return error.UnexpectedToken;
         var pos: usize = 19;
         var nanos: i32 = 0;
         if (pos < str.len and str[pos] == '.') {
