@@ -630,6 +630,24 @@ pub const default_recursion_limit: u32 = 100;
 /// Default `read_chunk` of decoding.
 pub const default_read_chunk: usize = 64 * 1024;
 
+/// Checks a length prefix: it must fit a non-negative int32, as in the
+/// reference implementations. Longer lengths are refused rather than
+/// truncated.
+fn checkLen(value: u64) protobuf.DecodingError!usize {
+    if (value > std.math.maxInt(i32)) {
+        @branchHint(.cold);
+        return error.InvalidInput;
+    }
+    return @intCast(value);
+}
+
+/// Decodes the length prefix of a length-delimited value (see `checkLen`).
+/// Returns the length and the number of bytes consumed.
+pub fn decodeLen(reader: *std.Io.Reader) (std.Io.Reader.Error || protobuf.DecodingError)!struct { usize, usize } {
+    const value, const consumed = try decodeScalar(.uint64, reader);
+    return .{ try checkLen(value), consumed };
+}
+
 /// Reads `len` bytes into a new allocation. The memory grows with the bytes
 /// that actually arrive (at most `read_chunk` ahead of them), so a length
 /// prefix larger than the input fails with `error.EndOfStream` before
@@ -804,17 +822,12 @@ pub fn decodeMessage(
                             return error.InvalidInput;
                         }
                         std.debug.assert(tag.wire_type == .len);
-                        const len, const len_c =
-                            try decodeScalar(.int32, reader);
+                        const len, const len_c = try decodeLen(reader);
                         consumed += len_c;
-                        if (len < 0) {
-                            @branchHint(.cold);
-                            return error.InvalidInput;
-                        }
 
-                        const new = try readBytesAlloc(allocator, reader, @intCast(len), options.read_chunk);
+                        const new = try readBytesAlloc(allocator, reader, len, options.read_chunk);
                         errdefer if (len > 0) allocator.free(new);
-                        consumed += @intCast(len);
+                        consumed += len;
                         if (comptime field_desc.verifiesUtf8()) {
                             if (!std.unicode.utf8ValidateSlice(new)) {
                                 @branchHint(.cold);
@@ -895,12 +908,8 @@ pub fn decodeMessage(
 
                     // Packed encoding.
                     if (tag.wire_type == .len) {
-                        const len, const c = try decodeScalar(.int32, reader);
+                        const len, const c = try decodeLen(reader);
                         consumed += c;
-                        if (len < 0) {
-                            @branchHint(.cold);
-                            return error.InvalidInput;
-                        }
 
                         consumed += try decodeRepeated(
                             if (comptime field_ti == .optional)
@@ -911,7 +920,7 @@ pub fn decodeMessage(
                             repeated,
                             reader,
                             .{
-                                .bytes = @intCast(len),
+                                .bytes = len,
                                 .unknown_fields = if (comptime has_unknown_fields) &unknown_buf else null,
                                 .field_number = tag.field,
                                 .extensions = options.extensions,
@@ -956,13 +965,9 @@ pub fn decodeMessage(
                         }
                     };
                     const len: ?usize = if (tag.wire_type == .len) b: {
-                        const len, const c = try decodeScalar(.int32, reader);
+                        const len, const c = try decodeLen(reader);
                         consumed += c;
-                        if (len < 0) {
-                            @branchHint(.cold);
-                            return error.InvalidInput;
-                        }
-                        break :b @intCast(len);
+                        break :b len;
                     } else null;
                     consumed += try decodeRepeated(
                         &@field(result, field_name),
@@ -988,17 +993,13 @@ pub fn decodeMessage(
 
                     // Delimited submessages have no length prefix; they end
                     // at the matching EGROUP tag instead.
-                    const len: i32 = if (delimited) -1 else b: {
-                        const len, const c = try decodeScalar(.int32, reader);
+                    const len: ?usize = if (delimited) null else b: {
+                        const len, const c = try decodeLen(reader);
                         consumed += c;
-                        if (len < 0) {
-                            @branchHint(.cold);
-                            return error.InvalidInput;
-                        }
                         break :b len;
                     };
                     const sub_options: SubmessageOptions = .{
-                        .bytes = if (delimited) null else @intCast(len),
+                        .bytes = len,
                         .group = if (delimited) tag.field else null,
                         .extensions = options.extensions,
                         .depth = options.depth + 1,
@@ -1036,14 +1037,14 @@ pub fn decodeMessage(
                             @field(result, field_name) = null;
                         };
 
-                        if (delimited or len > 0) {
+                        if (delimited or len.? > 0) {
                             const message_consumed = try decodeMessage(
                                 @field(result, field_name).?,
                                 allocator,
                                 reader,
                                 sub_options,
                             );
-                            if (!delimited and message_consumed > len) {
+                            if (!delimited and message_consumed > len.?) {
                                 @branchHint(.cold);
                                 return error.InvalidInput;
                             }
@@ -1064,14 +1065,14 @@ pub fn decodeMessage(
                             @field(result, field_name) = null;
                         };
 
-                        if (delimited or len > 0) {
+                        if (delimited or len.? > 0) {
                             const message_consumed = try decodeMessage(
                                 &@field(result, field_name).?,
                                 allocator,
                                 reader,
                                 sub_options,
                             );
-                            if (!delimited and message_consumed > len) {
+                            if (!delimited and message_consumed > len.?) {
                                 @branchHint(.cold);
                                 return error.InvalidInput;
                             }
@@ -1117,18 +1118,12 @@ pub fn decodeMessage(
                                     );
 
                                     std.debug.assert(tag.wire_type == .len);
-                                    const len, const len_c =
-                                        try decodeScalar(.int32, reader);
+                                    const len, const len_c = try decodeLen(reader);
                                     consumed += len_c;
 
-                                    if (len < 0) {
-                                        @branchHint(.cold);
-                                        return error.InvalidInput;
-                                    }
-
-                                    const new = try readBytesAlloc(allocator, reader, @intCast(len), options.read_chunk);
+                                    const new = try readBytesAlloc(allocator, reader, len, options.read_chunk);
                                     errdefer if (len > 0) allocator.free(new);
-                                    consumed += @intCast(len);
+                                    consumed += len;
                                     if (comptime inner_desc.verifiesUtf8()) {
                                         if (!std.unicode.utf8ValidateSlice(new)) {
                                             @branchHint(.cold);
@@ -1194,19 +1189,13 @@ pub fn decodeMessage(
 
                                 // Delimited submessages have no length prefix;
                                 // they end at the matching EGROUP tag instead.
-                                const len: i32 = if (delimited) -1 else b: {
-                                    const len, const c =
-                                        try decodeScalar(.int32, reader);
+                                const len: ?usize = if (delimited) null else b: {
+                                    const len, const c = try decodeLen(reader);
                                     consumed += c;
-
-                                    if (len < 0) {
-                                        @branchHint(.cold);
-                                        return error.InvalidInput;
-                                    }
                                     break :b len;
                                 };
                                 const sub_options: SubmessageOptions = .{
-                                    .bytes = if (delimited) null else @intCast(len),
+                                    .bytes = len,
                                     .group = if (delimited) tag.field else null,
                                     .extensions = options.extensions,
                                     .depth = options.depth + 1,
@@ -1275,7 +1264,7 @@ pub fn decodeMessage(
                                         @field(result, field_name) = null;
                                     };
 
-                                    if (delimited or len > 0) {
+                                    if (delimited or len.? > 0) {
                                         const m_consumed = try decodeMessage(
                                             @field(
                                                 @field(result, field_name).?,
@@ -1285,7 +1274,7 @@ pub fn decodeMessage(
                                             reader,
                                             sub_options,
                                         );
-                                        if (!delimited and m_consumed > len) {
+                                        if (!delimited and m_consumed > len.?) {
                                             @branchHint(.cold);
                                             return error.InvalidInput;
                                         }
@@ -1311,7 +1300,7 @@ pub fn decodeMessage(
                                         @field(result, field_name) = null;
                                     };
 
-                                    if (delimited or len > 0) {
+                                    if (delimited or len.? > 0) {
                                         const m_consumed = try decodeMessage(
                                             &@field(
                                                 @field(result, field_name).?,
@@ -1321,7 +1310,7 @@ pub fn decodeMessage(
                                             reader,
                                             sub_options,
                                         );
-                                        if (!delimited and m_consumed > len) {
+                                        if (!delimited and m_consumed > len.?) {
                                             @branchHint(.cold);
                                             return error.InvalidInput;
                                         }
@@ -1431,14 +1420,10 @@ pub fn skipFieldAt(reader: *std.Io.Reader, tag: Tag, depth: u32, recursion_limit
             consumed += 8;
         },
         .len => {
-            const skip, const c = try decodeScalar(.int32, reader);
+            const skip, const c = try decodeLen(reader);
             consumed += c;
-            if (skip < 0) {
-                @branchHint(.cold);
-                return error.InvalidInput;
-            }
-            try reader.discardAll(@intCast(skip));
-            consumed += @intCast(skip);
+            try reader.discardAll(skip);
+            consumed += skip;
         },
         .varint => {
             _, const c = try decodeScalar(.uint64, reader);
@@ -1521,10 +1506,8 @@ fn captureField(
             var len_buf: [10]u8 = undefined;
             const varint = try takeVarintBytes(reader, &len_buf);
             const len_i = varint.len;
-            const len = std.math.cast(usize, varint.value) orelse {
-                @branchHint(.cold);
-                return error.InvalidInput;
-            };
+            // The same rule as where the records are read back (`skipField`).
+            const len = try checkLen(varint.value);
             try buf.appendSlice(allocator, len_buf[0..len_i]);
             data_consumed += len_i;
             try appendBytes(allocator, reader, buf, len, options.read_chunk);
