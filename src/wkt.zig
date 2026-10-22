@@ -694,7 +694,9 @@ pub const Timestamp = struct {
         // 5.6). Leap seconds (60) are refused, as by the reference
         // implementations: protobuf timestamps smear them instead.
         if (month < 1 or month > 12) return error.UnexpectedToken;
-        if (day < 1 or day > daysInMonth(year, month)) return error.UnexpectedToken;
+        // The year has 4 digits, so it fits a `Year`.
+        const month_days = std.time.epoch.getDaysInMonth(@intCast(year), @fromBackingInt(@as(u4, @intCast(month))));
+        if (day < 1 or day > month_days) return error.UnexpectedToken;
         if (hour > 23 or minute > 59 or second > 59) return error.UnexpectedToken;
         var pos: usize = 19;
         var nanos: i32 = 0;
@@ -803,15 +805,6 @@ pub const Timestamp = struct {
         const doy: i64 = @divFloor(month_cycle_days * (if (m > 2) m - 3 else m + 9) + 2, month_cycle_years) + d - 1;
         const doe: i64 = yoe * 365 + @divFloor(yoe, 4) - @divFloor(yoe, 100) + doy;
         return era * days_per_era + doe - days_to_unix_epoch;
-    }
-
-    /// The days of `month` (1-12) in `year`, proleptic Gregorian.
-    fn daysInMonth(year: i64, month: i64) i64 {
-        return switch (month) {
-            2 => if (@mod(year, 4) == 0 and (@mod(year, 100) != 0 or @mod(year, 400) == 0)) 29 else 28,
-            4, 6, 9, 11 => 30,
-            else => 31,
-        };
     }
 
     /// The value of a run of ASCII digits; null for anything else (no
