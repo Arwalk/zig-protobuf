@@ -1470,7 +1470,7 @@ fn captureField(
     switch (tag.wire_type) {
         .varint => {
             var varint_buf: [10]u8 = undefined;
-            const n = try takeVarintBytes(reader, &varint_buf);
+            const n = (try takeVarintBytes(reader, &varint_buf)).len;
             try buf.appendSlice(allocator, varint_buf[0..n]);
             data_consumed += n;
         },
@@ -1486,10 +1486,9 @@ fn captureField(
         },
         .len => {
             var len_buf: [10]u8 = undefined;
-            const len_i = try takeVarintBytes(reader, &len_buf);
-            var len_val: u64 = 0;
-            for (len_buf[0..len_i], 0..) |b, i| len_val |= @as(u64, b & 0x7F) << @intCast(7 * i);
-            const len = std.math.cast(usize, len_val) orelse {
+            const varint = try takeVarintBytes(reader, &len_buf);
+            const len_i = varint.len;
+            const len = std.math.cast(usize, varint.value) orelse {
                 @branchHint(.cold);
                 return error.InvalidInput;
             };
@@ -1530,13 +1529,16 @@ fn captureField(
     return data_consumed;
 }
 
-/// Reads the bytes of one varint into `out`. A varint is at most 10 bytes
-/// long; a longer one is invalid. Returns the number of bytes read.
-fn takeVarintBytes(reader: *std.Io.Reader, out: *[10]u8) (std.Io.Reader.Error || protobuf.DecodingError)!usize {
+/// Reads the bytes of one varint into `out` and decodes it in the same pass.
+/// A varint is at most 10 bytes long; a longer one is invalid. Returns the
+/// number of bytes read and the value.
+fn takeVarintBytes(reader: *std.Io.Reader, out: *[10]u8) (std.Io.Reader.Error || protobuf.DecodingError)!struct { len: usize, value: u64 } {
+    var value: u64 = 0;
     for (out, 0..) |*slot, i| {
         const b = try reader.takeByte();
         slot.* = b;
-        if (b & 0x80 == 0) return i + 1;
+        value |= @as(u64, b & 0x7F) << @intCast(7 * i);
+        if (b & 0x80 == 0) return .{ .len = i + 1, .value = value };
     }
     return error.InvalidInput;
 }
