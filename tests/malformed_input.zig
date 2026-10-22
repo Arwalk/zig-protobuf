@@ -497,3 +497,41 @@ test "malformed input: JSON messages nest at most recursion_limit deep" {
     defer gpa.free(deep_message);
     try testing.expectError(error.SyntaxError, decodeJson(Msg, deep_message, .{ .recursion_limit = 3 }));
 }
+
+test "malformed input: Duration JSON is digits only" {
+    const gpa = testing.allocator;
+    const Duration = protobuf.wkt.Duration;
+    for ([_][]const u8{
+        "\"0.+5s\"",
+        "\"1_000s\"",
+        "\"1.0_5s\"",
+        "\"+5s\"",
+        "\"+0.5s\"",
+        "\"-.5s\"",
+        "\".5s\"",
+        "\"--1s\"",
+        "\"1.-5s\"",
+        "\"1.s\"",
+        "\"s\"",
+    }) |text| {
+        if (Duration.jsonDecode(text, .{}, gpa)) |parsed| {
+            parsed.deinit();
+            std.debug.print("accepted {s}\n", .{text});
+            return error.TestUnexpectedResult;
+        } else |_| {}
+    }
+    for ([_]struct { []const u8, i64, i32 }{
+        .{ "\"3s\"", 3, 0 },
+        .{ "\"-1.5s\"", -1, -500_000_000 },
+        .{ "\"1.000000005s\"", 1, 5 },
+        .{ "\"-0.5s\"", 0, -500_000_000 },
+        .{ "\"315576000000s\"", 315576000000, 0 },
+    }) |case| {
+        const parsed = try Duration.jsonDecode(case[0], .{}, gpa);
+        defer parsed.deinit();
+        try testing.expectEqual(case[1], parsed.value.seconds);
+        try testing.expectEqual(case[2], parsed.value.nanos);
+    }
+    // Seconds too long for an i64 fail rather than overflow.
+    try testing.expectError(error.UnexpectedToken, Duration.jsonDecode("\"99999999999999999999999s\"", .{}, gpa));
+}
