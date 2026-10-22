@@ -1037,19 +1037,17 @@ pub fn decodeMessage(
                             @field(result, field_name) = null;
                         };
 
-                        if (delimited or len.? > 0) {
-                            const message_consumed = try decodeMessage(
-                                @field(result, field_name).?,
-                                allocator,
-                                reader,
-                                sub_options,
-                            );
-                            if (!delimited and message_consumed > len.?) {
-                                @branchHint(.cold);
-                                return error.InvalidInput;
-                            }
-                            consumed += message_consumed;
-                        }
+                        const message_consumed = try decodeMessage(
+                            @field(result, field_name).?,
+                            allocator,
+                            reader,
+                            sub_options,
+                        );
+                        if (len) |l| if (message_consumed > l) {
+                            @branchHint(.cold);
+                            return error.InvalidInput;
+                        };
+                        consumed += message_consumed;
                     } else {
                         const SubMessage = field_ti.optional.child;
                         const is_null = b: {
@@ -1065,19 +1063,17 @@ pub fn decodeMessage(
                             @field(result, field_name) = null;
                         };
 
-                        if (delimited or len.? > 0) {
-                            const message_consumed = try decodeMessage(
-                                &@field(result, field_name).?,
-                                allocator,
-                                reader,
-                                sub_options,
-                            );
-                            if (!delimited and message_consumed > len.?) {
-                                @branchHint(.cold);
-                                return error.InvalidInput;
-                            }
-                            consumed += message_consumed;
-                        }
+                        const message_consumed = try decodeMessage(
+                            &@field(result, field_name).?,
+                            allocator,
+                            reader,
+                            sub_options,
+                        );
+                        if (len) |l| if (message_consumed > l) {
+                            @branchHint(.cold);
+                            return error.InvalidInput;
+                        };
+                        consumed += message_consumed;
                     }
                 },
                 .oneof => |OneOf| {
@@ -1264,22 +1260,20 @@ pub fn decodeMessage(
                                         @field(result, field_name) = null;
                                     };
 
-                                    if (delimited or len.? > 0) {
-                                        const m_consumed = try decodeMessage(
-                                            @field(
-                                                @field(result, field_name).?,
-                                                oo_field_name,
-                                            ),
-                                            allocator,
-                                            reader,
-                                            sub_options,
-                                        );
-                                        if (!delimited and m_consumed > len.?) {
-                                            @branchHint(.cold);
-                                            return error.InvalidInput;
-                                        }
-                                        consumed += m_consumed;
-                                    }
+                                    const m_consumed = try decodeMessage(
+                                        @field(
+                                            @field(result, field_name).?,
+                                            oo_field_name,
+                                        ),
+                                        allocator,
+                                        reader,
+                                        sub_options,
+                                    );
+                                    if (len) |l| if (m_consumed > l) {
+                                        @branchHint(.cold);
+                                        return error.InvalidInput;
+                                    };
+                                    consumed += m_consumed;
                                 } else {
                                     if (is_null) {
                                         @field(result, field_name) =
@@ -1300,22 +1294,20 @@ pub fn decodeMessage(
                                         @field(result, field_name) = null;
                                     };
 
-                                    if (delimited or len.? > 0) {
-                                        const m_consumed = try decodeMessage(
-                                            &@field(
-                                                @field(result, field_name).?,
-                                                oo_field_name,
-                                            ),
-                                            allocator,
-                                            reader,
-                                            sub_options,
-                                        );
-                                        if (!delimited and m_consumed > len.?) {
-                                            @branchHint(.cold);
-                                            return error.InvalidInput;
-                                        }
-                                        consumed += m_consumed;
-                                    }
+                                    const m_consumed = try decodeMessage(
+                                        &@field(
+                                            @field(result, field_name).?,
+                                            oo_field_name,
+                                        ),
+                                        allocator,
+                                        reader,
+                                        sub_options,
+                                    );
+                                    if (len) |l| if (m_consumed > l) {
+                                        @branchHint(.cold);
+                                        return error.InvalidInput;
+                                    };
+                                    consumed += m_consumed;
                                 }
                             },
                             .oneof,
