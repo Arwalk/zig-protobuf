@@ -621,6 +621,11 @@ pub const SubmessageOptions = struct {
     /// Bytes read at a time when a length-delimited value is longer than
     /// what the reader holds (see `readBytesAlloc`).
     read_chunk: usize = default_read_chunk,
+    /// The decoding of the message holding this one as a singular (or oneof)
+    /// field, and the field number, so that merges of this message can be
+    /// accumulated (see `MergeFrame`). Set by `decodeMessage` only.
+    merge_parent: ?*MergeFrame = null,
+    merge_field: u32 = 0,
 };
 
 /// Default `recursion_limit` of decoding: how deeply messages and groups may
@@ -726,6 +731,21 @@ pub fn decodeMessage(
         @branchHint(.cold);
         return error.InvalidInput;
     }
+
+    // Only messages that may keep records track merges (see `MergeFrame`).
+    const tracks_merges = comptime tracksMerges(Result);
+    var frame: if (tracks_merges) MergeFrame else void = if (comptime tracks_merges) .{
+        .parent = options.merge_parent,
+        .field = options.merge_field,
+        .node = if (options.merge_parent) |parent| parent.childNode(options.merge_field) else null,
+        .msg = result,
+        .depth = options.depth,
+        .flush = flushMerged(Result),
+    } else {};
+    // The outermost decoding owns the accumulated merges.
+    defer if (comptime tracks_merges) {
+        if (frame.parent == null) if (frame.node) |node| node.destroy(allocator);
+    };
 
     var consumed: usize = 0;
     // Accumulate unknown fields if the struct declares _unknown_fields.
@@ -1005,6 +1025,8 @@ pub fn decodeMessage(
                         .depth = options.depth + 1,
                         .recursion_limit = options.recursion_limit,
                         .read_chunk = options.read_chunk,
+                        .merge_parent = if (comptime tracks_merges) &frame else null,
+                        .merge_field = tag.field,
                     };
 
                     // All submessages must be optional; submessages always
@@ -1129,8 +1151,10 @@ pub fn decodeMessage(
 
                                     // Free potentially existing union field
                                     // just before replacing.
-                                    protobuf.deinitOneof(
+                                    deinitOneof(
+                                        OneOf,
                                         &@field(result, field_name),
+                                        if (comptime tracks_merges) &frame else null,
                                         allocator,
                                     );
 
@@ -1146,8 +1170,10 @@ pub fn decodeMessage(
 
                                     // Free potentially existing union field
                                     // just before replacing.
-                                    protobuf.deinitOneof(
+                                    deinitOneof(
+                                        OneOf,
                                         &@field(result, field_name),
+                                        if (comptime tracks_merges) &frame else null,
                                         allocator,
                                     );
 
@@ -1176,8 +1202,10 @@ pub fn decodeMessage(
 
                                 // Free potentially existing union field just
                                 // before replacing.
-                                protobuf.deinitOneof(
+                                deinitOneof(
+                                    OneOf,
                                     &@field(result, field_name),
+                                    if (comptime tracks_merges) &frame else null,
                                     allocator,
                                 );
 
@@ -1205,6 +1233,8 @@ pub fn decodeMessage(
                                     .depth = options.depth + 1,
                                     .recursion_limit = options.recursion_limit,
                                     .read_chunk = options.read_chunk,
+                                    .merge_parent = if (comptime tracks_merges) &frame else null,
+                                    .merge_field = tag.field,
                                 };
 
                                 // Submessages are non-optional, as `oneof`s
@@ -1232,8 +1262,10 @@ pub fn decodeMessage(
                                     if (std.meta.activeTag(
                                         @field(result, field_name).?,
                                     ) != incoming_tag) {
-                                        protobuf.deinitOneof(
+                                        deinitOneof(
+                                            OneOf,
                                             &@field(result, field_name),
+                                            if (comptime tracks_merges) &frame else null,
                                             allocator,
                                         );
 
@@ -1343,17 +1375,300 @@ pub fn decodeMessage(
         }
     }
     if (comptime has_unknown_fields) {
-        try appendOwned(allocator, &result._unknown_fields, &unknown_buf);
+        if (frame.merges(result._unknown_fields)) {
+            try frame.append(allocator, .unknown, result._unknown_fields, unknown_buf.items);
+        } else {
+            try appendOwned(allocator, &result._unknown_fields, &unknown_buf);
+        }
     }
     if (comptime has_extensions) {
-        try appendOwned(allocator, &result._extensions.records, &extension_buf);
-        if (options.extensions) |registry| {
-            try registry.validateWithOptions(Result, result._extensions.records, allocator, options);
+        if (frame.merges(result._extensions.records)) {
+            // Validated once merged (see `flushMerged`).
+            try frame.append(allocator, .extensions, result._extensions.records, extension_buf.items);
+        } else {
+            try appendOwned(allocator, &result._extensions.records, &extension_buf);
+            if (options.extensions) |registry| {
+                try registry.validateWithOptions(Result, result._extensions.records, allocator, options);
+            }
         }
+    }
+    if (comptime tracks_merges) {
+        if (frame.parent == null) if (frame.node) |node| try node.flushAll(allocator, options);
     }
     return consumed;
 }
 
+/// Deinitializes the oneof `field`, and drops the merges accumulated for its
+/// submessages, which are freed with it.
+fn deinitOneof(
+    comptime OneOf: type,
+    field: *?OneOf,
+    frame: ?*MergeFrame,
+    allocator: std.mem.Allocator,
+) void {
+    if (frame) |f| if (f.node != null) {
+        inline for (@typeInfo(@TypeOf(OneOf._desc_table)).@"struct".field_names) |name| {
+            const desc: protobuf.FieldDescriptor = comptime @field(OneOf._desc_table, name);
+            if (comptime desc.ftype == .submessage) f.dropChild(desc.field_number.?, allocator);
+        }
+    };
+    protobuf.deinitOneof(field, allocator);
+}
+
+/// Whether decoding a `T` tracks merges (see `MergeFrame`): whether it keeps
+/// unknown fields or extensions, or holds a message that does in a singular
+/// or oneof field, however deep. Repeated fields do not count, as their
+/// elements are never merged.
+fn tracksMerges(comptime T: type) bool {
+    return comptime reachesRecords(T);
+}
+
+fn reachesRecords(comptime T: type) bool {
+    @setEvalBranchQuota(protobuf.evalBranchQuotaFor(T));
+    // The messages reachable from `T`, each once.
+    var reached: []const type = &.{T};
+    var i: usize = 0;
+    while (i < reached.len) : (i += 1) {
+        const M = reached[i];
+        if (@hasField(M, "_unknown_fields") or @hasField(M, "_extensions")) return true;
+        for (submessageTypes(M)) |Sub| {
+            for (reached) |R| {
+                if (R == Sub) break;
+            } else reached = reached ++ .{Sub};
+        }
+    }
+    return false;
+}
+
+/// The message types of the singular and oneof submessage fields of `T`.
+fn submessageTypes(comptime T: type) []const type {
+    comptime {
+        var types: []const type = &.{};
+        const desc_table = T._desc_table;
+        for (@typeInfo(@TypeOf(desc_table)).@"struct".field_names) |name| {
+            const desc: protobuf.FieldDescriptor = @field(desc_table, name);
+            switch (desc.ftype) {
+                .submessage => types = types ++ .{MessageOf(@FieldType(T, name))},
+                .oneof => |OneOf| for (@typeInfo(@TypeOf(OneOf._desc_table)).@"struct".field_names) |oo_name| {
+                    const oo_desc: protobuf.FieldDescriptor = @field(OneOf._desc_table, oo_name);
+                    if (oo_desc.ftype == .submessage) types = types ++ .{MessageOf(@FieldType(OneOf, oo_name))};
+                },
+                else => {},
+            }
+        }
+        return types;
+    }
+}
+
+test tracksMerges {
+    const fd = protobuf.fd;
+    const Plain = struct {
+        a: ?i32 = null,
+        pub const _desc_table = .{ .a = fd(1, .{ .scalar = .int32 }) };
+    };
+    const Keeps = struct {
+        _unknown_fields: []const u8 = &.{},
+        pub const _desc_table = .{};
+    };
+    const Holds = struct {
+        plain: ?Plain = null,
+        keeps: ?*Keeps = null,
+        pub const _desc_table = .{ .plain = fd(1, .submessage), .keeps = fd(2, .submessage) };
+    };
+    const Lists = struct {
+        keeps: std.ArrayList(Keeps) = .empty,
+        pub const _desc_table = .{ .keeps = fd(1, .{ .repeated = .submessage }) };
+    };
+    const SelfRef = struct {
+        next: ?*@This() = null,
+        plain: ?Plain = null,
+        pub const _desc_table = .{ .next = fd(1, .submessage), .plain = fd(2, .submessage) };
+    };
+    const Choice = union(enum) {
+        holds: Holds,
+        pub const _desc_table = .{ .holds = fd(1, .submessage) };
+    };
+    const InOneof = struct {
+        choice: ?Choice = null,
+        pub const _desc_table = .{ .choice = fd(null, .{ .oneof = Choice }) };
+    };
+    try std.testing.expect(!tracksMerges(Plain));
+    try std.testing.expect(tracksMerges(Keeps));
+    try std.testing.expect(tracksMerges(Holds));
+    // Elements of repeated fields are never merged.
+    try std.testing.expect(!tracksMerges(Lists));
+    try std.testing.expect(!tracksMerges(SelfRef));
+    try std.testing.expect(tracksMerges(InOneof));
+}
+
+/// The message type of a singular or oneof submessage field of type `F`.
+fn MessageOf(comptime F: type) type {
+    return switch (@typeInfo(F)) {
+        .optional => |o| MessageOf(o.child),
+        .pointer => |p| p.child,
+        else => F,
+    };
+}
+
+const FlushError = std.Io.Reader.Error || std.mem.Allocator.Error || protobuf.DecodingError;
+
+/// Writes the merged records of a `MergeNode` to its message.
+const FlushFn = fn (node: *MergeNode, allocator: std.mem.Allocator, options: SubmessageOptions) FlushError!void;
+
+/// The decoding of a message (one `decodeMessage` call), on its stack.
+///
+/// A singular submessage that repeats on the wire is merged: decoded again
+/// into the same message. Appending its unknown fields and extension records
+/// to those of the earlier occurrences each time would copy them over and
+/// over, quadratically. Instead, from the second time on, they accumulate in
+/// a `MergeNode`, and are written to the message once, when the outermost
+/// decoding (the frame without `parent`) ends.
+///
+/// Only singular and oneof submessages pass their frame down. Elements of
+/// repeated fields are decoded once each and start over, so the messages that
+/// nodes point to never move while the nodes exist; oneof members that are
+/// freed drop their nodes (see `deinitOneof`).
+pub const MergeFrame = struct {
+    parent: ?*MergeFrame,
+    /// The field number of the message in its parent.
+    field: u32,
+    /// Where the merges of the message accumulate, once there are some here
+    /// or below.
+    node: ?*MergeNode,
+    msg: *anyopaque,
+    depth: u32,
+    flush: *const FlushFn,
+
+    /// The node of the field `field` of this message, if any.
+    fn childNode(self: *const MergeFrame, field: u32) ?*MergeNode {
+        const node = self.node orelse return null;
+        for (node.children.items) |child| {
+            if (child.field == field) return child;
+        }
+        return null;
+    }
+
+    /// Drops the node of the field `field`, if any, with its merges.
+    fn dropChild(self: *MergeFrame, field: u32, allocator: std.mem.Allocator) void {
+        const node = self.node orelse return;
+        for (node.children.items, 0..) |child, i| {
+            if (child.field == field) {
+                _ = node.children.swapRemove(i);
+                child.destroy(allocator);
+                return;
+            }
+        }
+    }
+
+    /// Whether the records of the message go to its node: when it is a
+    /// submessage that has records already (a merge), or a node.
+    fn merges(self: *const MergeFrame, records: []const u8) bool {
+        return self.parent != null and (self.node != null or records.len > 0);
+    }
+
+    /// The node of the message, made with those of its parents as needed.
+    fn ensureNode(self: *MergeFrame, allocator: std.mem.Allocator) std.mem.Allocator.Error!*MergeNode {
+        if (self.node) |node| return node;
+        const node = try allocator.create(MergeNode);
+        node.* = .{ .field = self.field, .msg = self.msg, .depth = self.depth, .flush = self.flush };
+        if (self.parent) |parent| {
+            errdefer allocator.destroy(node);
+            const parent_node = try parent.ensureNode(allocator);
+            try parent_node.children.append(allocator, node);
+        }
+        self.node = node;
+        return node;
+    }
+
+    /// Appends the `new` records of the message, whose records are `records`
+    /// so far, to its node.
+    fn append(
+        self: *MergeFrame,
+        allocator: std.mem.Allocator,
+        comptime kind: MergeNode.Kind,
+        records: []const u8,
+        new: []const u8,
+    ) std.mem.Allocator.Error!void {
+        if (new.len == 0) return;
+        const node = try self.ensureNode(allocator);
+        const buf = &@field(node, @tagName(kind));
+        const taken = &@field(node, @tagName(kind) ++ "_taken");
+        if (!taken.*) {
+            try buf.ensureUnusedCapacity(allocator, records.len + new.len);
+            buf.appendSliceAssumeCapacity(records);
+            taken.* = true;
+        }
+        try buf.appendSlice(allocator, new);
+    }
+};
+
+/// The records of a message merged several times (see `MergeFrame`), and
+/// the nodes of its submessages.
+pub const MergeNode = struct {
+    field: u32,
+    msg: *anyopaque,
+    depth: u32,
+    flush: *const FlushFn,
+    /// All the unknown fields of the message, once `unknown_taken`.
+    unknown: std.ArrayList(u8) = .empty,
+    unknown_taken: bool = false,
+    /// All the extension records of the message, once `extensions_taken`.
+    extensions: std.ArrayList(u8) = .empty,
+    extensions_taken: bool = false,
+    children: std.ArrayList(*MergeNode) = .empty,
+
+    const Kind = enum { unknown, extensions };
+
+    /// Writes the records of this node and of its children to their
+    /// messages, children first.
+    fn flushAll(self: *MergeNode, allocator: std.mem.Allocator, options: SubmessageOptions) FlushError!void {
+        for (self.children.items) |child| try child.flushAll(allocator, options);
+        try self.flush(self, allocator, options);
+    }
+
+    /// Frees this node and its children, with any records left.
+    fn destroy(self: *MergeNode, allocator: std.mem.Allocator) void {
+        for (self.children.items) |child| child.destroy(allocator);
+        self.children.deinit(allocator);
+        self.unknown.deinit(allocator);
+        self.extensions.deinit(allocator);
+        allocator.destroy(self);
+    }
+};
+
+/// The `FlushFn` of messages of type `Result`: the records taken replace
+/// those of the message, and its extensions are validated.
+fn flushMerged(comptime Result: type) *const FlushFn {
+    return &struct {
+        fn flush(node: *MergeNode, allocator: std.mem.Allocator, options: SubmessageOptions) FlushError!void {
+            const result: *Result = @ptrCast(@alignCast(node.msg));
+            if (comptime @hasField(Result, "_unknown_fields")) {
+                if (node.unknown_taken) {
+                    try replaceOwned(allocator, &result._unknown_fields, &node.unknown);
+                    node.unknown_taken = false;
+                }
+            }
+            if (comptime @hasField(Result, "_extensions")) {
+                if (node.extensions_taken) {
+                    try replaceOwned(allocator, &result._extensions.records, &node.extensions);
+                    node.extensions_taken = false;
+                    if (options.extensions) |registry| {
+                        var validate_options = options;
+                        validate_options.depth = node.depth;
+                        try registry.validateWithOptions(Result, result._extensions.records, allocator, validate_options);
+                    }
+                }
+            }
+        }
+    }.flush;
+}
+
+/// Replaces the owned slice `dest` by the bytes of `buf`.
+fn replaceOwned(allocator: std.mem.Allocator, dest: *[]const u8, buf: *std.ArrayList(u8)) std.mem.Allocator.Error!void {
+    const new = try buf.toOwnedSlice(allocator);
+    if (dest.len > 0) allocator.free(dest.*);
+    dest.* = new;
+}
 /// Stores a field that matches no field of `Result`: in the extension records
 /// when it is in an extension range, else in the unknown fields if they are
 /// kept. Returns the number of bytes consumed after the tag.
