@@ -266,72 +266,41 @@ const base_eval_quota: usize = 10_000;
 const per_field_eval_quota: usize = 10_000;
 
 /// Computes an eval branch quota sufficient to process `T` at comptime, derived
-/// from the total number of fields reachable from `T` (its own fields plus those
-/// of every distinct submessage and oneof union it can reach). Self-referential
-/// messages are handled by the `seen` cycle guard. `@setEvalBranchQuota` only ever
-/// raises the limit, so calling this at the top of each comptime-heavy entry point
-/// is always safe — the outermost (largest) value wins.
+/// from its number of fields (those of its oneofs included). The messages it
+/// holds are processed by the instantiations for their own types, which set
+/// their own quota, so their fields do not count: counted along every path
+/// to every reachable message, they grow beyond any budget in large real
+/// schemas (see tests/large_schema.zig). `@setEvalBranchQuota` only ever
+/// raises the limit, so calling this at the top of each comptime-heavy entry
+/// point is always safe.
 pub fn evalBranchQuotaFor(comptime T: type) usize {
-    @setEvalBranchQuota(base_eval_quota); // need a base value high enough to calculate the initial need.
-
     comptime {
-        return base_eval_quota + countReachableFields(T, &.{}) * per_field_eval_quota;
+        return base_eval_quota + countFields(T) * per_field_eval_quota;
     }
 }
 
-/// Recursively counts the fields of `T` and of every distinct message/oneof type
-/// reachable from it. `seen` guards against cycles (e.g. self-referential messages).
-fn countReachableFields(comptime T: type, comptime seen: []const type) usize {
+/// Counts the fields of `T` and of its oneof unions. Not a message (a
+/// scalar, a slice, a pointer…): 0.
+fn countFields(comptime T: type) usize {
     comptime {
         switch (@typeInfo(T)) {
             .@"struct", .@"union" => {},
-            // Not a message container (scalar, slice, well-known type, …).
             else => return 0,
         }
         if (!@hasDecl(T, "_desc_table")) return 0;
-        for (seen) |s| {
-            if (s == T) return 0;
-        }
-        const seen2 = seen ++ &[_]type{T};
-
         var total: usize = 0;
         for (@typeInfo(@TypeOf(T._desc_table)).@"struct".field_names) |f_name| {
+            // The counting itself grows with the fields counted.
+            @setEvalBranchQuota(base_eval_quota + total * per_field_eval_quota);
             total += 1;
             const desc: FieldDescriptor = @field(T._desc_table, f_name);
             switch (desc.ftype) {
-                .submessage => total += countReachableFields(
-                    submessageChild(@FieldType(T, f_name)),
-                    seen2,
-                ),
-                .repeated, .packed_repeated => |inner| switch (inner) {
-                    .submessage => total += countReachableFields(
-                        arrayListChild(@FieldType(T, f_name)),
-                        seen2,
-                    ),
-                    else => {},
-                },
-                .oneof => |OneOf| total += countReachableFields(OneOf, seen2),
+                .oneof => |OneOf| total += countFields(OneOf),
                 else => {},
             }
         }
         return total;
     }
-}
-
-/// Unwraps the message type behind a `.submessage` field, whose declared type is
-/// `?Child`, `*Child` (self-referential), or `Child`.
-fn submessageChild(comptime FieldT: type) type {
-    return switch (@typeInfo(FieldT)) {
-        .optional => |o| submessageChild(o.child),
-        .pointer => |p| submessageChild(p.child),
-        else => FieldT,
-    };
-}
-
-/// Unwraps the element type of a repeated submessage field, whose declared type is
-/// `std.ArrayList(Child)`.
-fn arrayListChild(comptime FieldT: type) type {
-    return @typeInfo(@FieldType(FieldT, "items")).pointer.child;
 }
 
 // encoding
