@@ -18,3 +18,9 @@ message SubNode {
   Node sub = 1;
   string another_string = 2;
 }
+message Tree {
+  oneof kind {
+    Tree branch = 1;
+    int32 leaf = 2;
+  }
+}

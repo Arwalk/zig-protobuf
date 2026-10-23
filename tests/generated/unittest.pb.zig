@@ -2570,8 +2570,8 @@ pub const TestRecursiveMessage = struct {
 
 /// Test that mutual recursion works.
 pub const TestMutualRecursionA = struct {
-    bb: ?TestMutualRecursionB = null,
-    sub_message: ?TestMutualRecursionA.SubMessage = null,
+    bb: ?*TestMutualRecursionB = null,
+    sub_message: ?*TestMutualRecursionA.SubMessage = null,
     not_in_this_scc: ?TestAllTypes = null,
 
     pub const _desc_table = .{
@@ -2581,7 +2581,7 @@ pub const TestMutualRecursionA = struct {
     };
 
     pub const SubMessage = struct {
-        b: ?TestMutualRecursionB = null,
+        b: ?*TestMutualRecursionB = null,
 
         pub const _desc_table = .{
             .b = fd(1, .submessage),
@@ -2714,7 +2714,7 @@ pub const TestMutualRecursionA = struct {
 };
 
 pub const TestMutualRecursionB = struct {
-    a: ?TestMutualRecursionA = null,
+    a: ?*TestMutualRecursionA = null,
     optional_int32: ?i32 = null,
 
     pub const _desc_table = .{
