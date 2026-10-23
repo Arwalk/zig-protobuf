@@ -181,6 +181,14 @@ pub fn build(b: *std.Build) !void {
             }),
         }),
         b.addTest(.{
+            .name = "large_schema",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/large_schema.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        }),
+        b.addTest(.{
             .name = "malformed_input",
             .root_module = b.createModule(.{
                 .root_source_file = b.path("tests/malformed_input.zig"),
@@ -220,6 +228,14 @@ pub fn build(b: *std.Build) !void {
         .preserve_unknown_fields = true,
     });
 
+    // The part of the Google Ads API reached by its search response, a large
+    // real schema (see tests/large_schema.zig).
+    const convertGoogleAds = RunProtocStep.createWithGenerator(b, exe, .{
+        .destination_directory = b.path("tests/.generated/googleads"),
+        .source_files = &.{b.path("tests/protos_for_test/googleads/google/ads/googleads/v26/services.proto")},
+        .include_directories = &.{b.path("tests/protos_for_test/googleads")},
+    });
+
     // Upstream protobuf test protos for options, see tests/protos_for_test/upstream.
     const convertUpstream = RunProtocStep.createWithGenerator(b, exe, .{
         .destination_directory = b.path("tests/generated/upstream"),
@@ -247,6 +263,7 @@ pub fn build(b: *std.Build) !void {
         test_item.step.dependOn(convertStep.step);
         test_item.step.dependOn(convertStep2.step);
         test_item.step.dependOn(convertUnknownFields.step);
+        test_item.step.dependOn(convertGoogleAds.step);
         test_item.step.dependOn(convertUpstream.step);
 
         test_step.dependOn(&run_main_tests.step);
