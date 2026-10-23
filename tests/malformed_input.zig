@@ -7,6 +7,7 @@ const tests = @import("./generated/tests.pb.zig");
 const tests_oneof = @import("./generated/tests/oneof.pb.zig");
 const selfref = @import("./generated/selfref.pb.zig");
 const ext = @import("./generated/tests/extensions.pb.zig");
+const proto3 = @import("./generated/protobuf_test_messages/proto3.pb.zig");
 
 /// Fails every single allocation larger than `max`, standing in for a
 /// memory-bounded process.
@@ -441,4 +442,58 @@ test "malformed input: empty submessages count toward the recursion limit" {
     // The same in a oneof (message_in_oneof is field 2).
     try decodeCappedWith(tests_oneof.OneofContainer, "\x12\x00", .{ .recursion_limit = 1 }, 1 << 20);
     try testing.expectError(error.InvalidInput, decodeCappedWith(tests_oneof.OneofContainer, "\x12\x00", .{ .recursion_limit = 0 }, 1 << 20));
+}
+
+/// `open` `depth` times, `inner`, then `close` `depth` times.
+fn nestedJson(gpa: std.mem.Allocator, depth: usize, open: []const u8, inner: []const u8, close: []const u8) ![]u8 {
+    var text: std.ArrayList(u8) = .empty;
+    errdefer text.deinit(gpa);
+    for (0..depth) |_| try text.appendSlice(gpa, open);
+    try text.appendSlice(gpa, inner);
+    for (0..depth) |_| try text.appendSlice(gpa, close);
+    return text.toOwnedSlice(gpa);
+}
+
+/// Decodes the JSON `text` as a `T` with `options`; the message is freed.
+fn decodeJson(comptime T: type, text: []const u8, options: protobuf.DecodeOptions) !void {
+    const parsed = try protobuf.json.decodeWithOptions(T, text, .{}, options, testing.allocator);
+    parsed.deinit();
+}
+
+test "malformed input: JSON messages nest at most recursion_limit deep" {
+    const gpa = testing.allocator;
+    const Node = selfref.SelfRefNode;
+    const limit = protobuf.wire.default_recursion_limit;
+
+    // As deep as the binary decoder allows, and one level deeper.
+    const ok = try nestedJson(gpa, limit, "{\"node\":", "{}", "}");
+    defer gpa.free(ok);
+    try decodeJson(Node, ok, .{});
+    for ([_]usize{ limit + 1, 250, 100_000 }) |depth| {
+        const too_deep = try nestedJson(gpa, depth, "{\"node\":", "{}", "}");
+        defer gpa.free(too_deep);
+        try testing.expectError(error.SyntaxError, decodeJson(Node, too_deep, .{}));
+    }
+    // The depth starts over after a failure.
+    try decodeJson(Node, ok, .{});
+
+    // A custom limit.
+    const three = try nestedJson(gpa, 3, "{\"node\":", "{}", "}");
+    defer gpa.free(three);
+    try decodeJson(Node, three, .{ .recursion_limit = 3 });
+    const four = try nestedJson(gpa, 4, "{\"node\":", "{}", "}");
+    defer gpa.free(four);
+    try testing.expectError(error.SyntaxError, decodeJson(Node, four, .{ .recursion_limit = 3 }));
+
+    // Messages around Values: each is bounded by the limit.
+    const Msg = proto3.TestAllTypesProto3;
+    const mixed_ok = try nestedJson(gpa, 3, "{\"recursiveMessage\":", "{\"optionalValue\":[[1]]}", "}");
+    defer gpa.free(mixed_ok);
+    try decodeJson(Msg, mixed_ok, .{ .recursion_limit = 3 });
+    const deep_value = try nestedJson(gpa, 3, "{\"recursiveMessage\":", "{\"optionalValue\":[[[1]]]}", "}");
+    defer gpa.free(deep_value);
+    try testing.expectError(error.SyntaxError, decodeJson(Msg, deep_value, .{ .recursion_limit = 3 }));
+    const deep_message = try nestedJson(gpa, 4, "{\"recursiveMessage\":", "{\"optionalValue\":[[1]]}", "}");
+    defer gpa.free(deep_message);
+    try testing.expectError(error.SyntaxError, decodeJson(Msg, deep_message, .{ .recursion_limit = 3 }));
 }
