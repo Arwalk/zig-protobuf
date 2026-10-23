@@ -212,6 +212,14 @@ pub fn build(b: *std.Build) !void {
         .include_directories = &.{b.path("tests/protos_for_test")},
     });
 
+    // Messages that keep their unknown fields.
+    const convertUnknownFields = RunProtocStep.createWithGenerator(b, exe, .{
+        .destination_directory = b.path("tests/generated"),
+        .source_files = &.{b.path("tests/protos_for_test/merge.proto")},
+        .include_directories = &.{b.path("tests/protos_for_test")},
+        .preserve_unknown_fields = true,
+    });
+
     // Upstream protobuf test protos for options, see tests/protos_for_test/upstream.
     const convertUpstream = RunProtocStep.createWithGenerator(b, exe, .{
         .destination_directory = b.path("tests/generated/upstream"),
@@ -238,6 +246,7 @@ pub fn build(b: *std.Build) !void {
 
         test_item.step.dependOn(convertStep.step);
         test_item.step.dependOn(convertStep2.step);
+        test_item.step.dependOn(convertUnknownFields.step);
         test_item.step.dependOn(convertUpstream.step);
 
         test_step.dependOn(&run_main_tests.step);
