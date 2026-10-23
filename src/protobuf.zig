@@ -1059,8 +1059,8 @@ pub fn deinitOneof(
             }
             // Non-string pointer field must be self-referential submessage.
             else if (comptime @typeInfo(Active) == .pointer) {
-                active.deinit(allocator);
-                allocator.destroy(active);
+                active.*.deinit(allocator);
+                allocator.destroy(active.*);
             }
             // Submessage field.
             else if (comptime @typeInfo(Active) == .@"struct") {

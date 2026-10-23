@@ -86,7 +86,7 @@ pub const Node = struct {
         some_string,
     };
     pub const node_union = union(_node_case) {
-        sub_node: SubNode,
+        sub_node: *SubNode,
         some_string: []const u8,
         pub const _desc_table = .{
             .sub_node = fd(1, .submessage),
@@ -162,7 +162,7 @@ pub const Node = struct {
 };
 
 pub const SubNode = struct {
-    sub: ?Node = null,
+    sub: ?*Node = null,
     another_string: []const u8 = &.{},
 
     pub const _desc_table = .{
@@ -241,7 +241,7 @@ pub const Tree = struct {
         leaf,
     };
     pub const kind_union = union(_kind_case) {
-        branch: Tree,
+        branch: *Tree,
         leaf: i32,
         pub const _desc_table = .{
             .branch = fd(1, .submessage),
