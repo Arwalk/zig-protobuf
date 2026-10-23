@@ -1,0 +1,2508 @@
+// Extracted from googleapis (https://github.com/googleapis/googleapis),
+// google/ads/googleads/v26: the messages and enums that
+// google.ads.googleads.v26.services.SearchGoogleAdsResponse reaches, with their
+// packages, names, nesting, field numbers and types. Comments, options,
+// services and everything else are left out.
+//
+// Copyright Google LLC. Licensed under the Apache License, Version 2.0
+// (http://www.apache.org/licenses/LICENSE-2.0).
+
+syntax = "proto3";
+
+package google.ads.googleads.v26.common;
+
+import "google/ads/googleads/v26/enums.proto";
+
+message ActivityCityInfo {
+  optional string value = 1;
+}
+
+message ActivityCountryInfo {
+  optional string value = 1;
+}
+
+message ActivityIdInfo {
+  optional string value = 1;
+}
+
+message ActivityRatingInfo {
+  optional int64 value = 1;
+}
+
+message ActivityStateInfo {
+  optional string value = 1;
+}
+
+message AdAppDeepLinkAsset {
+  optional string asset = 1;
+}
+
+message AdAssetPolicySummary {
+  repeated .google.ads.googleads.v26.common.PolicyTopicEntry policy_topic_entries = 1;
+  .google.ads.googleads.v26.enums.PolicyReviewStatusEnum.PolicyReviewStatus review_status = 2;
+  .google.ads.googleads.v26.enums.PolicyApprovalStatusEnum.PolicyApprovalStatus approval_status = 3;
+}
+
+message AdCallToActionAsset {
+  optional string asset = 1;
+}
+
+message AdDemandGenCarouselCardAsset {
+  optional string asset = 1;
+}
+
+message AdImageAsset {
+  optional string asset = 2;
+}
+
+message AdMediaBundleAsset {
+  optional string asset = 2;
+}
+
+message AdScheduleInfo {
+  .google.ads.googleads.v26.enums.MinuteOfHourEnum.MinuteOfHour start_minute = 1;
+  .google.ads.googleads.v26.enums.MinuteOfHourEnum.MinuteOfHour end_minute = 2;
+  optional int32 start_hour = 6;
+  optional int32 end_hour = 7;
+  .google.ads.googleads.v26.enums.DayOfWeekEnum.DayOfWeek day_of_week = 5;
+}
+
+message AdTextAsset {
+  optional string text = 4;
+  .google.ads.googleads.v26.enums.ServedAssetFieldTypeEnum.ServedAssetFieldType pinned_field = 2;
+  .google.ads.googleads.v26.enums.AssetPerformanceLabelEnum.AssetPerformanceLabel asset_performance_label = 5;
+  .google.ads.googleads.v26.common.AdAssetPolicySummary policy_summary_info = 6;
+}
+
+message AdVideoAsset {
+  optional string asset = 2;
+  optional .google.ads.googleads.v26.common.AdVideoAssetInfo ad_video_asset_info = 4;
+}
+
+message AdVideoAssetInfo {
+  optional .google.ads.googleads.v26.common.AdVideoAssetInventoryPreferences ad_video_asset_inventory_preferences = 1;
+  optional .google.ads.googleads.v26.common.AdVideoAssetLinkFeatureControl ad_video_asset_feature_control = 2;
+}
+
+message AdVideoAssetInventoryPreferences {
+  optional bool in_feed_preference = 1;
+  optional bool in_stream_preference = 2;
+  optional bool shorts_preference = 3;
+}
+
+message AdVideoAssetLinkFeatureControl {
+  optional bool allow_youtube_comments = 1;
+}
+
+message AddressInfo {
+  optional string postal_code = 8;
+  optional string province_code = 9;
+  optional string country_code = 10;
+  optional string province_name = 11;
+  optional string street_address = 12;
+  optional string street_address2 = 13;
+  optional string city_name = 14;
+}
+
+message AdvanceBookingWindowInfo {
+  optional int64 min_days = 1;
+  optional int64 max_days = 2;
+}
+
+message AgeDimension {
+  repeated .google.ads.googleads.v26.common.AgeSegment age_ranges = 1;
+  optional bool include_undetermined = 2;
+}
+
+message AgeRangeInfo {
+  .google.ads.googleads.v26.enums.AgeRangeTypeEnum.AgeRangeType type = 1;
+}
+
+message AgeSegment {
+  optional int32 min_age = 1;
+  optional int32 max_age = 2;
+}
+
+message AppAdInfo {
+  .google.ads.googleads.v26.common.AdTextAsset mandatory_ad_text = 1;
+  repeated .google.ads.googleads.v26.common.AdTextAsset headlines = 2;
+  repeated .google.ads.googleads.v26.common.AdTextAsset descriptions = 3;
+  repeated .google.ads.googleads.v26.common.AdImageAsset images = 4;
+  repeated .google.ads.googleads.v26.common.AdVideoAsset youtube_videos = 5;
+  repeated .google.ads.googleads.v26.common.AdMediaBundleAsset html5_media_bundles = 6;
+  .google.ads.googleads.v26.common.AdAppDeepLinkAsset app_deep_link = 7;
+}
+
+message AppDeepLinkAsset {
+  string app_deep_link_uri = 1;
+}
+
+message AppEngagementAdInfo {
+  repeated .google.ads.googleads.v26.common.AdTextAsset headlines = 1;
+  repeated .google.ads.googleads.v26.common.AdTextAsset descriptions = 2;
+  repeated .google.ads.googleads.v26.common.AdImageAsset images = 3;
+  repeated .google.ads.googleads.v26.common.AdVideoAsset videos = 4;
+}
+
+message AppPaymentModelInfo {
+  .google.ads.googleads.v26.enums.AppPaymentModelTypeEnum.AppPaymentModelType type = 1;
+}
+
+message AppPreRegistrationAdInfo {
+  repeated .google.ads.googleads.v26.common.AdTextAsset headlines = 1;
+  repeated .google.ads.googleads.v26.common.AdTextAsset descriptions = 2;
+  repeated .google.ads.googleads.v26.common.AdImageAsset images = 3;
+  repeated .google.ads.googleads.v26.common.AdVideoAsset youtube_videos = 4;
+}
+
+message AssetDisapproved {
+  repeated .google.ads.googleads.v26.enums.AssetOfflineEvaluationErrorReasonsEnum.AssetOfflineEvaluationErrorReasons offline_evaluation_error_reasons = 1;
+}
+
+message AssetInteractionTarget {
+  string asset = 1;
+  bool interaction_on_this_asset = 2;
+}
+
+message AssetLinkPrimaryStatusDetails {
+  optional .google.ads.googleads.v26.enums.AssetLinkPrimaryStatusReasonEnum.AssetLinkPrimaryStatusReason reason = 1;
+  optional .google.ads.googleads.v26.enums.AssetLinkPrimaryStatusEnum.AssetLinkPrimaryStatus status = 2;
+  oneof details {
+    .google.ads.googleads.v26.common.AssetDisapproved asset_disapproved = 3;
+  }
+}
+
+message AssetUsage {
+  string asset = 1;
+  .google.ads.googleads.v26.enums.ServedAssetFieldTypeEnum.ServedAssetFieldType served_asset_field_type = 2;
+}
+
+message AudienceDimension {
+  oneof dimension {
+    .google.ads.googleads.v26.common.AgeDimension age = 1;
+    .google.ads.googleads.v26.common.GenderDimension gender = 2;
+    .google.ads.googleads.v26.common.HouseholdIncomeDimension household_income = 3;
+    .google.ads.googleads.v26.common.ParentalStatusDimension parental_status = 4;
+    .google.ads.googleads.v26.common.AudienceSegmentDimension audience_segments = 5;
+  }
+}
+
+message AudienceExclusionDimension {
+  repeated .google.ads.googleads.v26.common.ExclusionSegment exclusions = 1;
+}
+
+message AudienceInfo {
+  string audience = 1;
+}
+
+message AudienceSegment {
+  oneof segment {
+    .google.ads.googleads.v26.common.UserListSegment user_list = 1;
+    .google.ads.googleads.v26.common.UserInterestSegment user_interest = 2;
+    .google.ads.googleads.v26.common.LifeEventSegment life_event = 3;
+    .google.ads.googleads.v26.common.DetailedDemographicSegment detailed_demographic = 4;
+    .google.ads.googleads.v26.common.CustomAudienceSegment custom_audience = 5;
+  }
+}
+
+message AudienceSegmentDimension {
+  repeated .google.ads.googleads.v26.common.AudienceSegment segments = 1;
+}
+
+message BasicUserListInfo {
+  repeated .google.ads.googleads.v26.common.UserListActionInfo actions = 1;
+}
+
+message BookOnGoogleAsset {
+}
+
+message BrandInfo {
+  optional string display_name = 2;
+  optional string entity_id = 1;
+  optional string primary_url = 3;
+  optional .google.ads.googleads.v26.enums.BrandRequestRejectionReasonEnum.BrandRequestRejectionReason rejection_reason = 4;
+  optional .google.ads.googleads.v26.enums.BrandStateEnum.BrandState status = 5;
+}
+
+message BrandListInfo {
+  optional string shared_set = 1;
+}
+
+message BudgetCampaignAssociationStatus {
+  optional string campaign = 1;
+  .google.ads.googleads.v26.enums.BudgetCampaignAssociationStatusEnum.BudgetCampaignAssociationStatus status = 2;
+}
+
+message BudgetSimulationPoint {
+  int64 budget_amount_micros = 1;
+  int64 required_cpc_bid_ceiling_micros = 2;
+  double biddable_conversions = 3;
+  double biddable_conversions_value = 4;
+  int64 clicks = 5;
+  int64 cost_micros = 6;
+  int64 impressions = 7;
+  int64 top_slot_impressions = 8;
+  int64 interactions = 9;
+}
+
+message BudgetSimulationPointList {
+  repeated .google.ads.googleads.v26.common.BudgetSimulationPoint points = 1;
+}
+
+message BusinessMessageAsset {
+  .google.ads.googleads.v26.enums.BusinessMessageProviderEnum.BusinessMessageProvider message_provider = 1;
+  string starter_message = 2;
+  optional .google.ads.googleads.v26.common.BusinessMessageCallToActionInfo call_to_action = 3;
+  oneof message_provider_data {
+    .google.ads.googleads.v26.common.WhatsappBusinessMessageInfo whatsapp_info = 5;
+    .google.ads.googleads.v26.common.FacebookMessengerBusinessMessageInfo facebook_messenger_info = 6;
+    .google.ads.googleads.v26.common.ZaloBusinessMessageInfo zalo_info = 7;
+    .google.ads.googleads.v26.common.LineBusinessMessageInfo line_info = 8;
+    .google.ads.googleads.v26.common.SmsBusinessMessageInfo sms_info = 9;
+  }
+}
+
+message BusinessMessageCallToActionInfo {
+  .google.ads.googleads.v26.enums.BusinessMessageCallToActionTypeEnum.BusinessMessageCallToActionType call_to_action_selection = 1;
+  string call_to_action_description = 2;
+}
+
+message BusinessProfileBusinessNameFilter {
+  string business_name = 1;
+  .google.ads.googleads.v26.enums.LocationStringFilterTypeEnum.LocationStringFilterType filter_type = 2;
+}
+
+message BusinessProfileLocation {
+  repeated string labels = 1;
+  string store_code = 2;
+  int64 listing_id = 3;
+}
+
+message BusinessProfileLocationGroup {
+  .google.ads.googleads.v26.common.DynamicBusinessProfileLocationGroupFilter dynamic_business_profile_location_group_filter = 1;
+}
+
+message BusinessProfileLocationSet {
+  string http_authorization_token = 1;
+  string email_address = 2;
+  string business_name_filter = 3;
+  repeated string label_filters = 4;
+  repeated int64 listing_id_filters = 5;
+  string business_account_id = 6;
+}
+
+message CallAsset {
+  string country_code = 1;
+  string phone_number = 2;
+  .google.ads.googleads.v26.enums.CallConversionReportingStateEnum.CallConversionReportingState call_conversion_reporting_state = 3;
+  string call_conversion_action = 4;
+  repeated .google.ads.googleads.v26.common.AdScheduleInfo ad_schedule_targets = 5;
+}
+
+message CallToActionAsset {
+  .google.ads.googleads.v26.enums.CallToActionTypeEnum.CallToActionType call_to_action = 1;
+}
+
+message CalloutAsset {
+  string callout_text = 1;
+  string start_date = 2;
+  string end_date = 3;
+  repeated .google.ads.googleads.v26.common.AdScheduleInfo ad_schedule_targets = 4;
+}
+
+message CampaignGoalSettings {
+  message CampaignRetentionGoalSettings {
+    .google.ads.googleads.v26.common.CustomerLifecycleOptimizationValueSettings value_settings_override = 1;
+    .google.ads.googleads.v26.enums.CustomerLifecycleOptimizationModeEnum.CustomerLifecycleOptimizationMode target_option = 2;
+  }
+  message CampaignNewCustomerAcquisitionGoalSettings {
+    .google.ads.googleads.v26.common.CustomerLifecycleOptimizationValueSettings value_settings_override = 1;
+    .google.ads.googleads.v26.enums.CustomerLifecycleOptimizationModeEnum.CustomerLifecycleOptimizationMode target_option = 2;
+  }
+  message CampaignLoyaltyRetentionGoalSettings {
+    .google.ads.googleads.v26.common.CustomerLifecycleOptimizationValueSettings value_settings_override = 1;
+    bool enable_bid_adjustments_for_loyalty_members = 2;
+    bool show_targeted_loyalty_member_benefits_in_pla = 3;
+  }
+}
+
+message CampaignThirdPartyBrandLiftIntegrationPartner {
+  .google.ads.googleads.v26.enums.ThirdPartyBrandLiftIntegrationPartnerEnum.ThirdPartyBrandLiftIntegrationPartner brand_lift_integration_partner = 1;
+  .google.ads.googleads.v26.common.ThirdPartyIntegrationPartnerData brand_lift_integration_partner_data = 2;
+  bool share_cost = 3;
+}
+
+message CampaignThirdPartyBrandSafetyIntegrationPartner {
+  .google.ads.googleads.v26.enums.ThirdPartyBrandSafetyIntegrationPartnerEnum.ThirdPartyBrandSafetyIntegrationPartner brand_safety_integration_partner = 1;
+  .google.ads.googleads.v26.common.ThirdPartyIntegrationPartnerData brand_safety_integration_partner_data = 2;
+}
+
+message CampaignThirdPartyConversionAttributionIntegrationPartner {
+  .google.ads.googleads.v26.enums.ThirdPartyConversionAttributionIntegrationPartnerEnum.ThirdPartyConversionAttributionIntegrationPartner conversion_attribution_integration_partner = 1;
+  .google.ads.googleads.v26.common.ThirdPartyIntegrationPartnerData conversion_attribution_integration_partner_data = 2;
+}
+
+message CampaignThirdPartyIntegrationPartners {
+  repeated .google.ads.googleads.v26.common.CampaignThirdPartyViewabilityIntegrationPartner viewability_integration_partners = 1;
+  repeated .google.ads.googleads.v26.common.CampaignThirdPartyBrandLiftIntegrationPartner brand_lift_integration_partners = 2;
+  repeated .google.ads.googleads.v26.common.CampaignThirdPartyBrandSafetyIntegrationPartner brand_safety_integration_partners = 3;
+  repeated .google.ads.googleads.v26.common.CampaignThirdPartyReachIntegrationPartner reach_integration_partners = 4;
+  repeated .google.ads.googleads.v26.common.CampaignThirdPartyConversionAttributionIntegrationPartner conversion_attribution_integration_partners = 5;
+}
+
+message CampaignThirdPartyReachIntegrationPartner {
+  .google.ads.googleads.v26.enums.ThirdPartyReachIntegrationPartnerEnum.ThirdPartyReachIntegrationPartner reach_integration_partner = 1;
+  .google.ads.googleads.v26.common.ThirdPartyIntegrationPartnerData reach_integration_partner_data = 2;
+  bool share_cost = 3;
+}
+
+message CampaignThirdPartyViewabilityIntegrationPartner {
+  .google.ads.googleads.v26.enums.ThirdPartyViewabilityIntegrationPartnerEnum.ThirdPartyViewabilityIntegrationPartner viewability_integration_partner = 1;
+  .google.ads.googleads.v26.common.ThirdPartyIntegrationPartnerData viewability_integration_partner_data = 2;
+  bool share_cost = 3;
+}
+
+message CarrierInfo {
+  optional string carrier_constant = 2;
+}
+
+message ChainFilter {
+  int64 chain_id = 1;
+  repeated string location_attributes = 2;
+}
+
+message ChainLocationGroup {
+  repeated .google.ads.googleads.v26.common.ChainFilter dynamic_chain_location_group_filters = 1;
+}
+
+message ChainSet {
+  .google.ads.googleads.v26.enums.ChainRelationshipTypeEnum.ChainRelationshipType relationship_type = 1;
+  repeated .google.ads.googleads.v26.common.ChainFilter chains = 2;
+}
+
+message ClickLocation {
+  optional string city = 6;
+  optional string country = 7;
+  optional string metro = 8;
+  optional string most_specific = 9;
+  optional string region = 10;
+}
+
+message CombinedAudienceInfo {
+  string combined_audience = 1;
+}
+
+message Commission {
+  optional int64 commission_rate_micros = 2;
+}
+
+message Consent {
+  .google.ads.googleads.v26.enums.ConsentStatusEnum.ConsentStatus ad_user_data = 1;
+  .google.ads.googleads.v26.enums.ConsentStatusEnum.ConsentStatus ad_personalization = 2;
+}
+
+message ContentLabelInfo {
+  .google.ads.googleads.v26.enums.ContentLabelTypeEnum.ContentLabelType type = 1;
+}
+
+message CpcBidSimulationPoint {
+  int64 required_budget_amount_micros = 17;
+  optional double biddable_conversions = 9;
+  optional double biddable_conversions_value = 10;
+  optional int64 clicks = 11;
+  optional int64 cost_micros = 12;
+  optional int64 impressions = 13;
+  optional int64 top_slot_impressions = 14;
+  oneof cpc_simulation_key_value {
+    int64 cpc_bid_micros = 15;
+    double cpc_bid_scaling_modifier = 16;
+  }
+}
+
+message CpcBidSimulationPointList {
+  repeated .google.ads.googleads.v26.common.CpcBidSimulationPoint points = 1;
+}
+
+message CpvBidSimulationPoint {
+  optional int64 cpv_bid_micros = 5;
+  optional int64 cost_micros = 6;
+  optional int64 impressions = 7;
+  optional int64 views = 8;
+}
+
+message CpvBidSimulationPointList {
+  repeated .google.ads.googleads.v26.common.CpvBidSimulationPoint points = 1;
+}
+
+message CriterionCategoryAvailability {
+  .google.ads.googleads.v26.common.CriterionCategoryChannelAvailability channel = 1;
+  repeated .google.ads.googleads.v26.common.CriterionCategoryLocaleAvailability locale = 2;
+}
+
+message CriterionCategoryChannelAvailability {
+  .google.ads.googleads.v26.enums.CriterionCategoryChannelAvailabilityModeEnum.CriterionCategoryChannelAvailabilityMode availability_mode = 1;
+  .google.ads.googleads.v26.enums.AdvertisingChannelTypeEnum.AdvertisingChannelType advertising_channel_type = 2;
+  repeated .google.ads.googleads.v26.enums.AdvertisingChannelSubTypeEnum.AdvertisingChannelSubType advertising_channel_sub_type = 3;
+  optional bool include_default_channel_sub_type = 5;
+}
+
+message CriterionCategoryLocaleAvailability {
+  .google.ads.googleads.v26.enums.CriterionCategoryLocaleAvailabilityModeEnum.CriterionCategoryLocaleAvailabilityMode availability_mode = 1;
+  optional string country_code = 4;
+  optional string language_code = 5;
+}
+
+message CrmBasedUserListInfo {
+  optional string app_id = 4;
+  .google.ads.googleads.v26.enums.CustomerMatchUploadKeyTypeEnum.CustomerMatchUploadKeyType upload_key_type = 2;
+  .google.ads.googleads.v26.enums.UserListCrmDataSourceTypeEnum.UserListCrmDataSourceType data_source_type = 3;
+}
+
+message CustomAffinityInfo {
+  optional string custom_affinity = 2;
+}
+
+message CustomAudienceInfo {
+  string custom_audience = 1;
+}
+
+message CustomAudienceSegment {
+  optional string custom_audience = 1;
+}
+
+message CustomIntentInfo {
+  optional string custom_intent = 2;
+}
+
+message CustomParameter {
+  optional string key = 3;
+  optional string value = 4;
+}
+
+message CustomerLifecycleOptimizationValueSettings {
+  oneof value_adjustment {
+    double additional_value = 3;
+    double value_multiplier = 4;
+  }
+  oneof high_lifetime_value_adjustment {
+    double additional_high_lifetime_value = 5;
+    double high_lifetime_value_multiplier = 6;
+  }
+}
+
+message CustomerMatchUserListMetadata {
+  optional string user_list = 2;
+  optional .google.ads.googleads.v26.common.Consent consent = 3;
+}
+
+message CustomerThirdPartyBrandLiftIntegrationPartner {
+  .google.ads.googleads.v26.enums.ThirdPartyBrandLiftIntegrationPartnerEnum.ThirdPartyBrandLiftIntegrationPartner brand_lift_integration_partner = 1;
+  bool allow_share_cost = 2;
+}
+
+message CustomerThirdPartyBrandSafetyIntegrationPartner {
+  .google.ads.googleads.v26.enums.ThirdPartyBrandSafetyIntegrationPartnerEnum.ThirdPartyBrandSafetyIntegrationPartner brand_safety_integration_partner = 1;
+}
+
+message CustomerThirdPartyConversionAttributionIntegrationPartner {
+  .google.ads.googleads.v26.enums.ThirdPartyConversionAttributionIntegrationPartnerEnum.ThirdPartyConversionAttributionIntegrationPartner conversion_attribution_integration_partner = 1;
+}
+
+message CustomerThirdPartyIntegrationPartners {
+  repeated .google.ads.googleads.v26.common.CustomerThirdPartyViewabilityIntegrationPartner viewability_integration_partners = 1;
+  repeated .google.ads.googleads.v26.common.CustomerThirdPartyBrandLiftIntegrationPartner brand_lift_integration_partners = 2;
+  repeated .google.ads.googleads.v26.common.CustomerThirdPartyBrandSafetyIntegrationPartner brand_safety_integration_partners = 3;
+  repeated .google.ads.googleads.v26.common.CustomerThirdPartyReachIntegrationPartner reach_integration_partners = 4;
+  repeated .google.ads.googleads.v26.common.CustomerThirdPartyConversionAttributionIntegrationPartner conversion_attribution_integration_partners = 5;
+}
+
+message CustomerThirdPartyReachIntegrationPartner {
+  .google.ads.googleads.v26.enums.ThirdPartyReachIntegrationPartnerEnum.ThirdPartyReachIntegrationPartner reach_integration_partner = 1;
+  bool allow_share_cost = 2;
+}
+
+message CustomerThirdPartyViewabilityIntegrationPartner {
+  .google.ads.googleads.v26.enums.ThirdPartyViewabilityIntegrationPartnerEnum.ThirdPartyViewabilityIntegrationPartner viewability_integration_partner = 1;
+  bool allow_share_cost = 2;
+}
+
+message CustomizerValue {
+  .google.ads.googleads.v26.enums.CustomizerAttributeTypeEnum.CustomizerAttributeType type = 1;
+  string string_value = 2;
+}
+
+message DateRange {
+  optional string start_date = 3;
+  optional string end_date = 4;
+}
+
+message DemandGenCarouselAdInfo {
+  string business_name = 1;
+  .google.ads.googleads.v26.common.AdImageAsset logo_image = 2;
+  .google.ads.googleads.v26.common.AdTextAsset headline = 3;
+  .google.ads.googleads.v26.common.AdTextAsset description = 4;
+  string call_to_action_text = 5;
+  repeated .google.ads.googleads.v26.common.AdDemandGenCarouselCardAsset carousel_cards = 6;
+}
+
+message DemandGenCarouselCardAsset {
+  string marketing_image_asset = 1;
+  string square_marketing_image_asset = 2;
+  string portrait_marketing_image_asset = 3;
+  string headline = 4;
+  string call_to_action_text = 5;
+}
+
+message DemandGenMultiAssetAdInfo {
+  repeated .google.ads.googleads.v26.common.AdImageAsset marketing_images = 1;
+  repeated .google.ads.googleads.v26.common.AdImageAsset square_marketing_images = 2;
+  repeated .google.ads.googleads.v26.common.AdImageAsset portrait_marketing_images = 3;
+  repeated .google.ads.googleads.v26.common.AdImageAsset tall_portrait_marketing_images = 10;
+  repeated .google.ads.googleads.v26.common.AdImageAsset logo_images = 4;
+  repeated .google.ads.googleads.v26.common.AdImageAsset classic_display_images = 11;
+  repeated .google.ads.googleads.v26.common.AdTextAsset headlines = 5;
+  repeated .google.ads.googleads.v26.common.AdTextAsset descriptions = 6;
+  optional string business_name = 7;
+  optional string call_to_action_text = 8;
+}
+
+message DemandGenProductAdInfo {
+  optional .google.ads.googleads.v26.common.AdTextAsset headline = 1;
+  optional .google.ads.googleads.v26.common.AdTextAsset description = 2;
+  optional .google.ads.googleads.v26.common.AdImageAsset logo_image = 3;
+  string breadcrumb1 = 4;
+  string breadcrumb2 = 5;
+  .google.ads.googleads.v26.common.AdTextAsset business_name = 6;
+  optional .google.ads.googleads.v26.common.AdCallToActionAsset call_to_action = 7;
+}
+
+message DemandGenVideoResponsiveAdInfo {
+  repeated .google.ads.googleads.v26.common.AdTextAsset headlines = 1;
+  repeated .google.ads.googleads.v26.common.AdTextAsset long_headlines = 2;
+  repeated .google.ads.googleads.v26.common.AdTextAsset descriptions = 3;
+  repeated .google.ads.googleads.v26.common.AdVideoAsset videos = 4;
+  repeated .google.ads.googleads.v26.common.AdImageAsset logo_images = 5;
+  repeated .google.ads.googleads.v26.common.AdImageAsset companion_banners = 10;
+  string breadcrumb1 = 6;
+  string breadcrumb2 = 7;
+  .google.ads.googleads.v26.common.AdTextAsset business_name = 8;
+  repeated .google.ads.googleads.v26.common.AdCallToActionAsset call_to_actions = 9;
+}
+
+message DetailedDemographicSegment {
+  optional string detailed_demographic = 1;
+}
+
+message DeviceInfo {
+  .google.ads.googleads.v26.enums.DeviceEnum.Device type = 1;
+}
+
+message DisplayUploadAdInfo {
+  .google.ads.googleads.v26.enums.DisplayUploadProductTypeEnum.DisplayUploadProductType display_upload_product_type = 1;
+  oneof media_asset {
+    .google.ads.googleads.v26.common.AdMediaBundleAsset media_bundle = 2;
+  }
+}
+
+message DynamicBusinessProfileLocationGroupFilter {
+  repeated string label_filters = 1;
+  optional .google.ads.googleads.v26.common.BusinessProfileBusinessNameFilter business_name_filter = 2;
+  repeated int64 listing_id_filters = 3;
+}
+
+message DynamicCustomAsset {
+  string id = 1;
+  string id2 = 2;
+  string item_title = 3;
+  string item_subtitle = 4;
+  string item_description = 5;
+  string item_address = 6;
+  string item_category = 7;
+  string price = 8;
+  string sale_price = 9;
+  string formatted_price = 10;
+  string formatted_sale_price = 11;
+  string image_url = 12;
+  repeated string contextual_keywords = 13;
+  string android_app_link = 14;
+  string ios_app_link = 16;
+  int64 ios_app_store_id = 17;
+  repeated string similar_ids = 15;
+}
+
+message DynamicEducationAsset {
+  string program_id = 1;
+  string location_id = 2;
+  string program_name = 3;
+  string subject = 4;
+  string program_description = 5;
+  string school_name = 6;
+  string address = 7;
+  repeated string contextual_keywords = 8;
+  string android_app_link = 9;
+  repeated string similar_program_ids = 10;
+  string ios_app_link = 11;
+  int64 ios_app_store_id = 12;
+  string thumbnail_image_url = 13;
+  string image_url = 14;
+}
+
+message DynamicFlightsAsset {
+  string destination_id = 1;
+  string origin_id = 2;
+  string flight_description = 3;
+  string image_url = 4;
+  string destination_name = 5;
+  string origin_name = 6;
+  string flight_price = 7;
+  string flight_sale_price = 8;
+  string formatted_price = 9;
+  string formatted_sale_price = 10;
+  string android_app_link = 11;
+  string ios_app_link = 12;
+  int64 ios_app_store_id = 13;
+  repeated string similar_destination_ids = 14;
+  string custom_mapping = 15;
+}
+
+message DynamicHotelsAndRentalsAsset {
+  string property_id = 1;
+  string property_name = 2;
+  string image_url = 3;
+  string destination_name = 4;
+  string description = 5;
+  string price = 6;
+  string sale_price = 7;
+  int64 star_rating = 8;
+  string category = 9;
+  repeated string contextual_keywords = 10;
+  string address = 11;
+  string android_app_link = 12;
+  string ios_app_link = 13;
+  int64 ios_app_store_id = 14;
+  string formatted_price = 15;
+  string formatted_sale_price = 16;
+  repeated string similar_property_ids = 17;
+}
+
+message DynamicJobsAsset {
+  string job_id = 1;
+  string location_id = 2;
+  string job_title = 3;
+  string job_subtitle = 4;
+  string description = 5;
+  string image_url = 6;
+  string job_category = 7;
+  repeated string contextual_keywords = 8;
+  string address = 9;
+  string salary = 10;
+  string android_app_link = 11;
+  repeated string similar_job_ids = 12;
+  string ios_app_link = 13;
+  int64 ios_app_store_id = 14;
+}
+
+message DynamicLocalAsset {
+  string deal_id = 1;
+  string deal_name = 2;
+  string subtitle = 3;
+  string description = 4;
+  string price = 5;
+  string sale_price = 6;
+  string image_url = 7;
+  string address = 8;
+  string category = 9;
+  repeated string contextual_keywords = 10;
+  string formatted_price = 11;
+  string formatted_sale_price = 12;
+  string android_app_link = 13;
+  repeated string similar_deal_ids = 14;
+  string ios_app_link = 15;
+  int64 ios_app_store_id = 16;
+}
+
+message DynamicRealEstateAsset {
+  string listing_id = 1;
+  string listing_name = 2;
+  string city_name = 3;
+  string description = 4;
+  string address = 5;
+  string price = 6;
+  string image_url = 7;
+  string property_type = 8;
+  string listing_type = 9;
+  repeated string contextual_keywords = 10;
+  string formatted_price = 11;
+  string android_app_link = 12;
+  string ios_app_link = 13;
+  int64 ios_app_store_id = 14;
+  repeated string similar_listing_ids = 15;
+}
+
+message DynamicTravelAsset {
+  string destination_id = 1;
+  string origin_id = 2;
+  string title = 3;
+  string destination_name = 4;
+  string destination_address = 5;
+  string origin_name = 6;
+  string price = 7;
+  string sale_price = 8;
+  string formatted_price = 9;
+  string formatted_sale_price = 10;
+  string category = 11;
+  repeated string contextual_keywords = 12;
+  repeated string similar_destination_ids = 13;
+  string image_url = 14;
+  string android_app_link = 15;
+  string ios_app_link = 16;
+  int64 ios_app_store_id = 17;
+}
+
+message EffectiveAutomaticGoal {
+  .google.ads.googleads.v26.enums.ConversionActionCategoryEnum.ConversionActionCategory category = 1;
+  .google.ads.googleads.v26.enums.ConversionOriginEnum.ConversionOrigin origin = 2;
+}
+
+message EnhancedCpc {
+}
+
+message EntityBid {
+  optional string item_code = 1;
+}
+
+message ExclusionSegment {
+  oneof segment {
+    .google.ads.googleads.v26.common.UserListSegment user_list = 1;
+  }
+}
+
+message ExpandedDynamicSearchAdInfo {
+  optional string description = 3;
+  optional string description2 = 4;
+}
+
+message ExpandedTextAdInfo {
+  optional string headline_part1 = 8;
+  optional string headline_part2 = 9;
+  optional string headline_part3 = 10;
+  optional string description = 11;
+  optional string description2 = 12;
+  optional string path1 = 13;
+  optional string path2 = 14;
+}
+
+message ExtendedDemographicInfo {
+  optional int64 extended_demographic_id = 1;
+}
+
+message FacebookMessengerBusinessMessageInfo {
+  string page_name = 1;
+}
+
+message FinalAppUrl {
+  .google.ads.googleads.v26.enums.AppUrlOperatingSystemTypeEnum.AppUrlOperatingSystemType os_type = 1;
+  optional string url = 3;
+}
+
+message FixedCpm {
+  .google.ads.googleads.v26.enums.FixedCpmGoalEnum.FixedCpmGoal goal = 1;
+  oneof goal_info {
+    .google.ads.googleads.v26.common.FixedCpmTargetFrequencyGoalInfo target_frequency_info = 2;
+  }
+}
+
+message FixedCpmTargetFrequencyGoalInfo {
+  int64 target_count = 1;
+  .google.ads.googleads.v26.enums.FixedCpmTargetFrequencyTimeUnitEnum.FixedCpmTargetFrequencyTimeUnit time_unit = 2;
+}
+
+message FlexibleRuleOperandInfo {
+  .google.ads.googleads.v26.common.UserListRuleInfo rule = 1;
+  optional int64 lookback_window_days = 2;
+}
+
+message FlexibleRuleUserListInfo {
+  .google.ads.googleads.v26.enums.UserListFlexibleRuleOperatorEnum.UserListFlexibleRuleOperator inclusive_rule_operator = 1;
+  repeated .google.ads.googleads.v26.common.FlexibleRuleOperandInfo inclusive_operands = 2;
+  repeated .google.ads.googleads.v26.common.FlexibleRuleOperandInfo exclusive_operands = 3;
+}
+
+message FrequencyCapEntry {
+  .google.ads.googleads.v26.common.FrequencyCapKey key = 1;
+  optional int32 cap = 3;
+}
+
+message FrequencyCapKey {
+  .google.ads.googleads.v26.enums.FrequencyCapLevelEnum.FrequencyCapLevel level = 1;
+  .google.ads.googleads.v26.enums.FrequencyCapEventTypeEnum.FrequencyCapEventType event_type = 3;
+  .google.ads.googleads.v26.enums.FrequencyCapTimeUnitEnum.FrequencyCapTimeUnit time_unit = 2;
+  optional int32 time_length = 5;
+}
+
+message GenderDimension {
+  repeated .google.ads.googleads.v26.enums.GenderTypeEnum.GenderType genders = 1;
+  optional bool include_undetermined = 2;
+}
+
+message GenderInfo {
+  .google.ads.googleads.v26.enums.GenderTypeEnum.GenderType type = 1;
+}
+
+message GeoPointInfo {
+  optional int32 longitude_in_micro_degrees = 3;
+  optional int32 latitude_in_micro_degrees = 4;
+}
+
+message GoalSetting {
+  message RetentionGoal {
+    .google.ads.googleads.v26.common.CustomerLifecycleOptimizationValueSettings value_settings = 1;
+  }
+  message NewCustomerAcquisitionGoal {
+    .google.ads.googleads.v26.common.CustomerLifecycleOptimizationValueSettings value_settings = 1;
+  }
+  message LoyaltyRetentionGoal {
+    .google.ads.googleads.v26.common.CustomerLifecycleOptimizationValueSettings value_settings = 1;
+  }
+}
+
+message HotelAdInfo {
+}
+
+message HotelCalloutAsset {
+  string text = 1;
+  string language_code = 2;
+}
+
+message HotelCityInfo {
+  optional string city_criterion = 2;
+}
+
+message HotelClassInfo {
+  optional int64 value = 2;
+}
+
+message HotelCountryRegionInfo {
+  optional string country_region_criterion = 2;
+}
+
+message HotelIdInfo {
+  optional string value = 2;
+}
+
+message HotelPropertyAsset {
+  string place_id = 1;
+  string hotel_address = 2;
+  string hotel_name = 3;
+}
+
+message HotelStateInfo {
+  optional string state_criterion = 2;
+}
+
+message HouseholdIncomeDimension {
+  repeated .google.ads.googleads.v26.enums.IncomeRangeTypeEnum.IncomeRangeType income_ranges = 1;
+  optional bool include_undetermined = 2;
+}
+
+message ImageAdInfo {
+  optional int64 pixel_width = 15;
+  optional int64 pixel_height = 16;
+  optional string image_url = 17;
+  optional int64 preview_pixel_width = 18;
+  optional int64 preview_pixel_height = 19;
+  optional string preview_image_url = 20;
+  .google.ads.googleads.v26.enums.MimeTypeEnum.MimeType mime_type = 10;
+  optional string name = 21;
+  oneof image {
+    .google.ads.googleads.v26.common.AdImageAsset image_asset = 22;
+    bytes data = 13;
+    int64 ad_id_to_copy_image_from = 14;
+  }
+}
+
+message ImageAsset {
+  optional bytes data = 5;
+  optional int64 file_size = 6;
+  .google.ads.googleads.v26.enums.MimeTypeEnum.MimeType mime_type = 3;
+  .google.ads.googleads.v26.common.ImageDimension full_size = 4;
+}
+
+message ImageDimension {
+  optional int64 height_pixels = 4;
+  optional int64 width_pixels = 5;
+  optional string url = 6;
+}
+
+message InFeedVideoAdInfo {
+  string headline = 1;
+  string description1 = 2;
+  string description2 = 3;
+  .google.ads.googleads.v26.enums.VideoThumbnailEnum.VideoThumbnail thumbnail = 4;
+}
+
+message IncomeRangeInfo {
+  .google.ads.googleads.v26.enums.IncomeRangeTypeEnum.IncomeRangeType type = 1;
+}
+
+message InteractionTypeInfo {
+  .google.ads.googleads.v26.enums.InteractionTypeEnum.InteractionType type = 1;
+}
+
+message IpBlockInfo {
+  optional string ip_address = 2;
+}
+
+message Keyword {
+  optional string ad_group_criterion = 3;
+  .google.ads.googleads.v26.common.KeywordInfo info = 2;
+}
+
+message KeywordInfo {
+  optional string text = 3;
+  .google.ads.googleads.v26.enums.KeywordMatchTypeEnum.KeywordMatchType match_type = 2;
+}
+
+message KeywordThemeInfo {
+  oneof keyword_theme {
+    string keyword_theme_constant = 1;
+    string free_form_keyword_theme = 2;
+  }
+}
+
+message LanguageInfo {
+  optional string language_constant = 2;
+}
+
+message LeadFormAsset {
+  string business_name = 10;
+  .google.ads.googleads.v26.enums.LeadFormCallToActionTypeEnum.LeadFormCallToActionType call_to_action_type = 17;
+  string call_to_action_description = 18;
+  string headline = 12;
+  string description = 13;
+  string privacy_policy_url = 14;
+  optional string post_submit_headline = 15;
+  optional string post_submit_description = 16;
+  repeated .google.ads.googleads.v26.common.LeadFormField fields = 8;
+  repeated .google.ads.googleads.v26.common.LeadFormCustomQuestionField custom_question_fields = 23;
+  repeated .google.ads.googleads.v26.common.LeadFormDeliveryMethod delivery_methods = 9;
+  .google.ads.googleads.v26.enums.LeadFormPostSubmitCallToActionTypeEnum.LeadFormPostSubmitCallToActionType post_submit_call_to_action_type = 19;
+  optional string background_image_asset = 20;
+  .google.ads.googleads.v26.enums.LeadFormDesiredIntentEnum.LeadFormDesiredIntent desired_intent = 21;
+  optional string custom_disclosure = 22;
+}
+
+message LeadFormCustomQuestionField {
+  string custom_question_text = 1;
+  oneof answers {
+    .google.ads.googleads.v26.common.LeadFormSingleChoiceAnswers single_choice_answers = 2;
+    bool has_location_answer = 3;
+  }
+}
+
+message LeadFormDeliveryMethod {
+  oneof delivery_details {
+    .google.ads.googleads.v26.common.WebhookDelivery webhook = 1;
+  }
+}
+
+message LeadFormField {
+  .google.ads.googleads.v26.enums.LeadFormFieldUserInputTypeEnum.LeadFormFieldUserInputType input_type = 1;
+  oneof answers {
+    .google.ads.googleads.v26.common.LeadFormSingleChoiceAnswers single_choice_answers = 2;
+    bool has_location_answer = 3;
+  }
+}
+
+message LeadFormSingleChoiceAnswers {
+  repeated string answers = 1;
+}
+
+message LegacyAppInstallAdInfo {
+  optional string app_id = 6;
+  .google.ads.googleads.v26.enums.LegacyAppInstallAdAppStoreEnum.LegacyAppInstallAdAppStore app_store = 2;
+  optional string headline = 7;
+  optional string description1 = 8;
+  optional string description2 = 9;
+}
+
+message LegacyResponsiveDisplayAdInfo {
+  optional string short_headline = 16;
+  optional string long_headline = 17;
+  optional string description = 18;
+  optional string business_name = 19;
+  optional bool allow_flexible_color = 20;
+  optional string accent_color = 21;
+  optional string main_color = 22;
+  optional string call_to_action_text = 23;
+  optional string logo_image = 24;
+  optional string square_logo_image = 25;
+  optional string marketing_image = 26;
+  optional string square_marketing_image = 27;
+  .google.ads.googleads.v26.enums.DisplayAdFormatSettingEnum.DisplayAdFormatSetting format_setting = 13;
+  optional string price_prefix = 28;
+  optional string promo_text = 29;
+}
+
+message LengthOfBookingInfo {
+  optional int64 min_days = 1;
+  optional int64 max_days = 2;
+}
+
+message LifeEventInfo {
+  optional int64 life_event_id = 1;
+}
+
+message LifeEventSegment {
+  optional string life_event = 1;
+}
+
+message LineBusinessMessageInfo {
+  string line_id = 1;
+}
+
+message ListingDimensionInfo {
+  oneof dimension {
+    .google.ads.googleads.v26.common.HotelIdInfo hotel_id = 2;
+    .google.ads.googleads.v26.common.HotelClassInfo hotel_class = 3;
+    .google.ads.googleads.v26.common.HotelCountryRegionInfo hotel_country_region = 4;
+    .google.ads.googleads.v26.common.HotelStateInfo hotel_state = 5;
+    .google.ads.googleads.v26.common.HotelCityInfo hotel_city = 6;
+    .google.ads.googleads.v26.common.ProductCategoryInfo product_category = 24;
+    .google.ads.googleads.v26.common.ProductBrandInfo product_brand = 15;
+    .google.ads.googleads.v26.common.ProductChannelInfo product_channel = 8;
+    .google.ads.googleads.v26.common.ProductChannelExclusivityInfo product_channel_exclusivity = 9;
+    .google.ads.googleads.v26.common.ProductConditionInfo product_condition = 10;
+    .google.ads.googleads.v26.common.ProductCustomAttributeInfo product_custom_attribute = 16;
+    .google.ads.googleads.v26.common.ProductItemIdInfo product_item_id = 11;
+    .google.ads.googleads.v26.common.ProductTypeInfo product_type = 12;
+    .google.ads.googleads.v26.common.ProductGroupingInfo product_grouping = 17;
+    .google.ads.googleads.v26.common.ProductLabelsInfo product_labels = 18;
+    .google.ads.googleads.v26.common.ProductLegacyConditionInfo product_legacy_condition = 19;
+    .google.ads.googleads.v26.common.ProductTypeFullInfo product_type_full = 20;
+    .google.ads.googleads.v26.common.ActivityIdInfo activity_id = 21;
+    .google.ads.googleads.v26.common.ActivityRatingInfo activity_rating = 22;
+    .google.ads.googleads.v26.common.ActivityCountryInfo activity_country = 23;
+    .google.ads.googleads.v26.common.ActivityStateInfo activity_state = 25;
+    .google.ads.googleads.v26.common.ActivityCityInfo activity_city = 26;
+    .google.ads.googleads.v26.common.UnknownListingDimensionInfo unknown_listing_dimension = 14;
+  }
+}
+
+message ListingDimensionPath {
+  repeated .google.ads.googleads.v26.common.ListingDimensionInfo dimensions = 1;
+}
+
+message ListingGroupInfo {
+  .google.ads.googleads.v26.enums.ListingGroupTypeEnum.ListingGroupType type = 1;
+  .google.ads.googleads.v26.common.ListingDimensionInfo case_value = 2;
+  optional string parent_ad_group_criterion = 4;
+  optional .google.ads.googleads.v26.common.ListingDimensionPath path = 5;
+}
+
+message ListingScopeInfo {
+  repeated .google.ads.googleads.v26.common.ListingDimensionInfo dimensions = 2;
+}
+
+message LocalAdInfo {
+  repeated .google.ads.googleads.v26.common.AdTextAsset headlines = 1;
+  repeated .google.ads.googleads.v26.common.AdTextAsset descriptions = 2;
+  repeated .google.ads.googleads.v26.common.AdTextAsset call_to_actions = 3;
+  repeated .google.ads.googleads.v26.common.AdImageAsset marketing_images = 4;
+  repeated .google.ads.googleads.v26.common.AdImageAsset logo_images = 5;
+  repeated .google.ads.googleads.v26.common.AdVideoAsset videos = 6;
+  optional string path1 = 9;
+  optional string path2 = 10;
+}
+
+message LocalServiceIdInfo {
+  string service_id = 1;
+}
+
+message LocalServicesDocumentReadOnly {
+  optional string document_url = 1;
+}
+
+message LocalServicesPhoneNumber {
+  optional string phone_number = 1;
+  optional string country_code = 2;
+  optional .google.ads.googleads.v26.enums.GlsPhoneNumberTypeEnum.GlsPhoneNumberType phone_number_type = 3;
+}
+
+message LocationAsset {
+  string place_id = 1;
+  repeated .google.ads.googleads.v26.common.BusinessProfileLocation business_profile_locations = 2;
+  .google.ads.googleads.v26.enums.LocationOwnershipTypeEnum.LocationOwnershipType location_ownership_type = 3;
+}
+
+message LocationGroupInfo {
+  repeated string geo_target_constants = 6;
+  optional int64 radius = 7;
+  .google.ads.googleads.v26.enums.LocationGroupRadiusUnitsEnum.LocationGroupRadiusUnits radius_units = 4;
+  repeated string feed_item_sets = 8;
+  optional bool enable_customer_level_location_asset_set = 9;
+  repeated string location_group_asset_sets = 10;
+}
+
+message LocationInfo {
+  optional string geo_target_constant = 2;
+}
+
+message LocationSet {
+  .google.ads.googleads.v26.enums.LocationOwnershipTypeEnum.LocationOwnershipType location_ownership_type = 3;
+  oneof source {
+    .google.ads.googleads.v26.common.BusinessProfileLocationSet business_profile_location_set = 1;
+    .google.ads.googleads.v26.common.ChainSet chain_location_set = 2;
+    .google.ads.googleads.v26.common.MapsLocationSet maps_location_set = 5;
+  }
+}
+
+message LogicalUserListInfo {
+  repeated .google.ads.googleads.v26.common.UserListLogicalRuleInfo rules = 1;
+}
+
+message LogicalUserListOperandInfo {
+  optional string user_list = 2;
+}
+
+message LookalikeUserListInfo {
+  repeated int64 seed_user_list_ids = 1;
+  .google.ads.googleads.v26.enums.LookalikeExpansionLevelEnum.LookalikeExpansionLevel expansion_level = 2;
+  repeated string country_codes = 3;
+}
+
+message ManualCpa {
+}
+
+message ManualCpc {
+  optional bool enhanced_cpc_enabled = 2;
+}
+
+message ManualCpm {
+}
+
+message ManualCpv {
+}
+
+message MapsLocationInfo {
+  string place_id = 1;
+}
+
+message MapsLocationSet {
+  repeated .google.ads.googleads.v26.common.MapsLocationInfo maps_locations = 1;
+}
+
+message MaximizeConversionValue {
+  double target_roas = 2;
+  int64 cpc_bid_ceiling_micros = 3;
+  int64 cpc_bid_floor_micros = 4;
+  optional int64 target_roas_tolerance_percent_millis = 5;
+}
+
+message MaximizeConversions {
+  int64 cpc_bid_ceiling_micros = 2;
+  int64 cpc_bid_floor_micros = 3;
+  int64 target_cpa_micros = 4;
+}
+
+message MediaBundleAsset {
+  optional bytes data = 2;
+}
+
+message MetricGoal {
+  .google.ads.googleads.v26.enums.ExperimentMetricEnum.ExperimentMetric metric = 1;
+  .google.ads.googleads.v26.enums.ExperimentMetricDirectionEnum.ExperimentMetricDirection direction = 2;
+}
+
+message Metrics {
+  optional double absolute_top_impression_percentage = 183;
+  optional double active_view_cpm = 184;
+  optional double active_view_ctr = 185;
+  optional int64 active_view_impressions = 186;
+  optional double active_view_measurability = 187;
+  optional int64 active_view_measurable_cost_micros = 188;
+  optional int64 active_view_measurable_impressions = 189;
+  optional double active_view_viewability = 190;
+  optional double all_conversions_from_interactions_rate = 191;
+  optional double all_conversions_value = 192;
+  optional double all_conversions_value_by_conversion_date = 240;
+  optional double all_new_customer_lifetime_value = 294;
+  optional double all_conversions = 193;
+  optional double all_conversions_by_conversion_date = 241;
+  optional double all_conversions_value_per_cost = 194;
+  optional double all_conversions_from_click_to_call = 195;
+  optional double all_conversions_from_directions = 196;
+  optional double all_conversions_from_interactions_value_per_interaction = 197;
+  optional double all_conversions_from_menu = 198;
+  optional double all_conversions_from_order = 199;
+  optional double all_conversions_from_other_engagement = 200;
+  optional double all_conversions_from_store_visit = 201;
+  optional double all_conversions_from_store_website = 202;
+  optional double auction_insight_search_absolute_top_impression_percentage = 258;
+  optional double auction_insight_search_impression_share = 259;
+  optional double auction_insight_search_outranking_share = 260;
+  optional double auction_insight_search_overlap_rate = 261;
+  optional double auction_insight_search_position_above_rate = 262;
+  optional double auction_insight_search_top_impression_percentage = 263;
+  optional double average_cost = 203;
+  optional double average_cpc = 204;
+  optional double average_cpe = 205;
+  optional double average_cpm = 206;
+  optional double trueview_average_cpv = 405;
+  optional double average_page_views = 208;
+  optional double average_time_on_site = 209;
+  optional double benchmark_average_max_cpc = 210;
+  optional double biddable_app_install_conversions = 254;
+  optional double biddable_app_post_install_conversions = 255;
+  optional double biddable_cohort_app_post_install_conversions = 378;
+  optional double benchmark_ctr = 211;
+  optional double bounce_rate = 212;
+  optional int64 clicks = 131;
+  optional int64 control_clicks = 443;
+  optional int64 combined_clicks = 156;
+  optional double combined_clicks_per_query = 157;
+  optional int64 combined_queries = 158;
+  optional double content_budget_lost_impression_share = 159;
+  optional double content_impression_share = 160;
+  optional string conversion_last_received_request_date_time = 161;
+  optional string conversion_last_conversion_date = 162;
+  optional double content_rank_lost_impression_share = 163;
+  optional double conversions_from_interactions_rate = 164;
+  optional double conversions_value = 165;
+  optional double conversions_value_by_conversion_date = 242;
+  optional double new_customer_lifetime_value = 293;
+  optional double conversions_value_per_cost = 166;
+  optional double conversions_from_interactions_value_per_interaction = 167;
+  optional double conversions = 168;
+  optional double conversions_by_conversion_date = 243;
+  optional int64 cost_micros = 169;
+  optional double cost_per_all_conversions = 170;
+  optional double cost_per_conversion = 171;
+  optional double cost_per_current_model_attributed_conversion = 172;
+  optional double cross_device_conversions = 173;
+  optional double cross_device_conversions_by_conversion_date = 372;
+  optional double cross_device_conversions_value = 253;
+  optional int64 cross_device_conversions_value_micros = 312;
+  optional double cross_device_conversions_value_by_conversion_date = 373;
+  optional double ctr = 174;
+  optional double current_model_attributed_conversions = 175;
+  optional double current_model_attributed_conversions_from_interactions_rate = 176;
+  optional double current_model_attributed_conversions_from_interactions_value_per_interaction = 177;
+  optional double current_model_attributed_conversions_value = 178;
+  optional double current_model_attributed_conversions_value_per_cost = 179;
+  optional double engagement_rate = 180;
+  optional int64 engagements = 181;
+  optional double hotel_average_lead_value_micros = 213;
+  optional int64 hotel_commission_rate_micros = 256;
+  optional double hotel_expected_commission_cost = 257;
+  optional double hotel_price_difference_percentage = 214;
+  optional int64 hotel_eligible_impressions = 215;
+  .google.ads.googleads.v26.enums.QualityScoreBucketEnum.QualityScoreBucket historical_creative_quality_score = 80;
+  .google.ads.googleads.v26.enums.QualityScoreBucketEnum.QualityScoreBucket historical_landing_page_quality_score = 81;
+  optional int64 historical_quality_score = 216;
+  .google.ads.googleads.v26.enums.QualityScoreBucketEnum.QualityScoreBucket historical_search_predicted_ctr = 83;
+  optional int64 gmail_forwards = 217;
+  optional int64 gmail_saves = 218;
+  optional int64 gmail_secondary_clicks = 219;
+  optional int64 impressions_from_store_reach = 220;
+  optional int64 impressions = 221;
+  optional double interaction_rate = 222;
+  optional int64 interactions = 223;
+  repeated .google.ads.googleads.v26.enums.InteractionEventTypeEnum.InteractionEventType interaction_event_types = 100;
+  optional double invalid_click_rate = 224;
+  optional int64 invalid_clicks = 225;
+  optional double general_invalid_click_rate = 370;
+  optional int64 general_invalid_clicks = 371;
+  optional int64 message_chats = 226;
+  optional int64 message_impressions = 227;
+  optional double message_chat_rate = 228;
+  optional double mobile_friendly_clicks_percentage = 229;
+  optional double optimization_score_uplift = 247;
+  optional string optimization_score_url = 248;
+  optional int64 organic_clicks = 230;
+  optional double organic_clicks_per_query = 231;
+  optional int64 organic_impressions = 232;
+  optional double organic_impressions_per_query = 233;
+  optional int64 organic_queries = 234;
+  optional double percent_new_visitors = 235;
+  optional int64 phone_calls = 236;
+  optional int64 phone_impressions = 237;
+  optional double phone_through_rate = 238;
+  optional double relative_ctr = 239;
+  optional double search_absolute_top_impression_share = 136;
+  optional double search_budget_lost_absolute_top_impression_share = 137;
+  optional double search_budget_lost_impression_share = 138;
+  optional double search_budget_lost_top_impression_share = 139;
+  optional double search_click_share = 140;
+  optional double search_exact_match_impression_share = 141;
+  optional double search_impression_share = 142;
+  optional double search_rank_lost_absolute_top_impression_share = 143;
+  optional double search_rank_lost_impression_share = 144;
+  optional double search_rank_lost_top_impression_share = 145;
+  optional double search_top_impression_share = 146;
+  optional .google.ads.googleads.v26.common.SearchVolumeRange search_volume = 295;
+  optional int64 speed_score = 147;
+  optional int64 average_target_cpa_micros = 290;
+  optional double average_target_roas = 250;
+  optional double top_impression_percentage = 148;
+  optional double valid_accelerated_mobile_pages_clicks_percentage = 149;
+  optional double value_per_all_conversions = 150;
+  optional double value_per_all_conversions_by_conversion_date = 244;
+  optional double value_per_conversion = 151;
+  optional double value_per_conversions_by_conversion_date = 245;
+  optional double value_per_current_model_attributed_conversion = 152;
+  optional double video_quartile_p100_rate = 132;
+  optional double video_quartile_p25_rate = 133;
+  optional double video_quartile_p50_rate = 134;
+  optional double video_quartile_p75_rate = 135;
+  optional double video_trueview_view_rate = 406;
+  optional int64 video_trueview_views = 407;
+  optional int64 view_through_conversions = 155;
+  int64 sk_ad_network_installs = 246;
+  int64 sk_ad_network_total_conversions = 292;
+  int64 publisher_purchased_clicks = 264;
+  int64 publisher_organic_clicks = 265;
+  int64 publisher_unknown_clicks = 266;
+  optional double all_conversions_from_location_asset_click_to_call = 267;
+  optional double all_conversions_from_location_asset_directions = 268;
+  optional double all_conversions_from_location_asset_menu = 269;
+  optional double all_conversions_from_location_asset_order = 270;
+  optional double all_conversions_from_location_asset_other_engagement = 271;
+  optional double all_conversions_from_location_asset_store_visits = 272;
+  optional double all_conversions_from_location_asset_website = 273;
+  optional int64 eligible_impressions_from_location_asset_store_reach = 274;
+  optional double view_through_conversions_from_location_asset_click_to_call = 275;
+  optional double view_through_conversions_from_location_asset_directions = 276;
+  optional double view_through_conversions_from_location_asset_menu = 277;
+  optional double view_through_conversions_from_location_asset_order = 278;
+  optional double view_through_conversions_from_location_asset_other_engagement = 279;
+  optional double view_through_conversions_from_location_asset_store_visits = 280;
+  optional double view_through_conversions_from_location_asset_website = 281;
+  optional double orders = 296;
+  optional int64 average_order_value_micros = 297;
+  optional double average_cart_size = 298;
+  optional int64 cost_of_goods_sold_micros = 299;
+  optional int64 gross_profit_micros = 300;
+  optional double gross_profit_margin = 301;
+  optional int64 revenue_micros = 302;
+  optional double units_sold = 303;
+  optional int64 cross_sell_cost_of_goods_sold_micros = 304;
+  optional int64 cross_sell_gross_profit_micros = 305;
+  optional int64 cross_sell_revenue_micros = 306;
+  optional double cross_sell_units_sold = 307;
+  optional int64 lead_cost_of_goods_sold_micros = 308;
+  optional int64 lead_gross_profit_micros = 309;
+  optional int64 lead_revenue_micros = 310;
+  optional double lead_units_sold = 311;
+  optional int64 unique_users = 319;
+  optional double average_impression_frequency_per_user = 320;
+  optional int64 linked_entities_count = 341;
+  repeated string linked_sample_entities = 342;
+  optional int64 asset_pinned_total_count = 348;
+  optional int64 asset_pinned_as_headline_position_one_count = 349;
+  optional int64 asset_pinned_as_headline_position_two_count = 350;
+  optional int64 asset_pinned_as_headline_position_three_count = 351;
+  optional int64 asset_pinned_as_description_position_one_count = 352;
+  optional int64 asset_pinned_as_description_position_two_count = 353;
+  optional double store_visits_last_click_model_attributed_conversions = 365;
+  optional double results_conversions_purchase = 366;
+  optional double video_trueview_view_rate_in_feed = 408;
+  optional double video_trueview_view_rate_in_stream = 409;
+  optional double video_trueview_view_rate_shorts = 410;
+  optional int64 coviewed_impressions = 380;
+  optional int64 primary_impressions = 381;
+  optional double platform_comparable_conversions_from_interactions_rate = 382;
+  optional double platform_comparable_conversions = 383;
+  optional double platform_comparable_conversions_value = 384;
+  optional double platform_comparable_conversions_value_per_cost = 385;
+  optional double platform_comparable_conversions_by_conversion_date = 386;
+  optional double platform_comparable_conversions_value_by_conversion_date = 387;
+  optional double platform_comparable_conversions_from_interactions_value_per_interaction = 388;
+  optional double cost_per_platform_comparable_conversion = 389;
+  optional double value_per_platform_comparable_conversion = 390;
+  optional double value_per_platform_comparable_conversions_by_conversion_date = 391;
+  optional double cost_converted_currency_per_platform_comparable_conversion = 392;
+  optional int64 unique_users_two_plus = 393;
+  optional int64 unique_users_three_plus = 394;
+  optional int64 unique_users_four_plus = 395;
+  optional int64 unique_users_five_plus = 396;
+  optional int64 unique_users_ten_plus = 397;
+  optional double value_adjustment = 398;
+  optional double all_value_adjustment = 399;
+  optional int64 clicks_unique_query_clusters = 400;
+  optional int64 conversions_unique_query_clusters = 401;
+  optional int64 impressions_unique_query_clusters = 402;
+  optional int64 video_watch_time_duration_millis = 403;
+  optional int64 average_video_watch_time_duration_millis = 404;
+  optional int64 svr = 411;
+  optional int64 active_view_audibility_measurable_impressions = 412;
+  optional double active_view_audibility_measurable_impressions_rate = 413;
+  optional double active_view_audibility_invalid_measurable_impressions_rate = 414;
+  optional double active_view_audibility_invalid_givt_measurable_impressions_rate = 415;
+  optional int64 active_view_audible_impressions = 416;
+  optional double active_view_audible_impressions_rate = 417;
+  optional int64 active_view_audible_two_seconds_impressions = 418;
+  optional double active_view_audible_two_seconds_impressions_rate = 419;
+  optional int64 active_view_audible_thirty_seconds_impressions = 420;
+  optional double active_view_audible_thirty_seconds_impressions_rate = 421;
+  optional double active_view_audible_quartile_p25_rate = 422;
+  optional double active_view_audible_quartile_p50_rate = 423;
+  optional double active_view_audible_quartile_p75_rate = 424;
+  optional double active_view_audible_quartile_p100_rate = 425;
+  optional int64 biddable_indirect_install_first_in_app_conversion_micros = 426;
+  optional double all_average_cart_size = 427;
+  optional int64 all_average_order_value_micros = 428;
+  optional int64 all_cost_of_goods_sold_micros = 429;
+  optional int64 all_cross_sell_cost_of_goods_sold_micros = 430;
+  optional int64 all_cross_sell_gross_profit_micros = 431;
+  optional int64 all_cross_sell_revenue_micros = 432;
+  optional double all_cross_sell_units_sold = 433;
+  optional double all_gross_profit_margin = 434;
+  optional int64 all_gross_profit_micros = 435;
+  optional int64 all_lead_cost_of_goods_sold_micros = 436;
+  optional int64 all_lead_gross_profit_micros = 437;
+  optional int64 all_lead_revenue_micros = 438;
+  optional double all_lead_units_sold = 439;
+  optional double all_orders = 440;
+  optional int64 all_revenue_micros = 441;
+  optional double all_units_sold = 442;
+  optional double control_cost_per_conversion = 446;
+  optional double cost_per_conversion_margin_of_error = 447;
+  optional double cost_per_conversion_p_value = 448;
+  optional double cost_per_conversion_change_point_estimate = 449;
+  optional double control_conversions = 450;
+  optional double conversions_absolute_change_margin_of_error = 451;
+  optional double conversions_absolute_change_p_value = 452;
+  optional double conversions_absolute_change_point_estimate = 453;
+  optional double control_conversion_value_per_cost = 454;
+  optional double conversion_value_per_cost_margin_of_error = 455;
+  optional double conversion_value_per_cost_p_value = 456;
+  optional double conversion_value_per_cost_change_point_estimate = 457;
+  optional int64 control_cost_micros = 458;
+  optional double cost_micros_margin_of_error = 459;
+  optional double cost_micros_p_value = 460;
+  optional double cost_micros_change_point_estimate = 461;
+  optional int64 control_impressions = 462;
+  optional double impressions_margin_of_error = 463;
+  optional double impressions_p_value = 464;
+  optional double impressions_point_estimate = 465;
+  optional double clicks_margin_of_error = 466;
+  optional double clicks_p_value = 467;
+  optional double clicks_point_estimate = 468;
+  optional double control_conversion_value = 469;
+  optional double conversion_value_margin_of_error = 470;
+  optional double conversion_value_p_value = 471;
+  optional double conversion_value_change_point_estimate = 472;
+  optional double incremental_conversions = 473;
+  optional double incremental_conversions_winner_score = 601;
+  optional double incremental_conversion_value = 474;
+  optional double incremental_conversion_value_winner_score = 602;
+  optional double conversion_lift_baseline_conversions = 475;
+  optional double conversion_lift_baseline_conversion_value = 476;
+  optional double conversion_lift_exposed_conversions = 477;
+  optional double conversion_lift_exposed_conversion_value = 478;
+  optional double cost_per_incremental_conversion = 479;
+  optional double cost_per_incremental_conversion_winner_score = 603;
+  optional double cost_per_incremental_conversion_p90_lower_bound = 480;
+  optional double cost_per_incremental_conversion_p90_upper_bound = 481;
+  optional double incremental_conversions_p90_lower_bound = 482;
+  optional double incremental_conversions_p90_upper_bound = 483;
+  optional double incremental_conversions_p_value = 484;
+  optional double incremental_conversion_value_p90_lower_bound = 485;
+  optional double incremental_conversion_value_p90_upper_bound = 486;
+  optional double incremental_conversion_value_p_value = 487;
+  optional double incremental_conversion_value_per_cost = 488;
+  optional double incremental_conversion_value_per_cost_winner_score = 604;
+  optional double incremental_conversion_value_per_cost_p90_lower_bound = 489;
+  optional double incremental_conversion_value_per_cost_p90_upper_bound = 490;
+  optional double relative_conversion_lift = 491;
+  optional double relative_conversion_lift_p90_lower_bound = 492;
+  optional double relative_conversion_lift_p90_upper_bound = 493;
+  optional double relative_conversion_value_lift = 494;
+  optional double relative_conversion_value_lift_p90_lower_bound = 495;
+  optional double relative_conversion_value_lift_p90_upper_bound = 496;
+  optional double absolute_brand_lift = 497;
+  optional double absolute_brand_lift_p90_lower_bound = 498;
+  optional double absolute_brand_lift_p90_upper_bound = 499;
+  optional double absolute_brand_lift_p_value = 500;
+  optional double brand_lift_baseline_positive_response_rate = 501;
+  optional double brand_lift_baseline_positive_response_rate_p90_lower_bound = 502;
+  optional double brand_lift_baseline_positive_response_rate_p90_upper_bound = 503;
+  optional double brand_lift_exposed_positive_responder_fractional_cookies = 504;
+  optional double brand_lift_exposed_positive_responder_fractional_cookies_p90_lower_bound = 505;
+  optional double brand_lift_exposed_positive_responder_fractional_cookies_p90_upper_bound = 506;
+  optional double brand_lift_exposed_positive_response_rate = 507;
+  optional double brand_lift_exposed_positive_response_rate_p90_lower_bound = 508;
+  optional double brand_lift_exposed_positive_response_rate_p90_upper_bound = 509;
+  optional double brand_lift_responses_exposed = 510;
+  optional double brand_lift_responses_suppressed = 511;
+  optional double brand_lift_suppressed_positive_responder_fractional_cookies = 512;
+  optional double brand_lift_suppressed_positive_responder_fractional_cookies_p90_lower_bound = 513;
+  optional double brand_lift_suppressed_positive_responder_fractional_cookies_p90_upper_bound = 514;
+  optional double brand_lift_total_responses = 515;
+  optional double cost_per_lifted_cookie = 516;
+  optional double cost_per_lifted_cookie_p90_lower_bound = 517;
+  optional double cost_per_lifted_cookie_p90_upper_bound = 518;
+  optional double fractional_lifted_cookies = 519;
+  optional double fractional_lifted_cookies_p90_lower_bound = 520;
+  optional double fractional_lifted_cookies_p90_upper_bound = 521;
+  optional double headroom_brand_lift = 522;
+  optional double headroom_brand_lift_p90_lower_bound = 523;
+  optional double headroom_brand_lift_p90_upper_bound = 524;
+  optional double relative_brand_lift = 525;
+  optional double relative_brand_lift_p90_lower_bound = 526;
+  optional double relative_brand_lift_p90_upper_bound = 527;
+  optional int64 youtube_comments = 528;
+  optional int64 youtube_likes = 529;
+  optional int64 youtube_shares = 530;
+  optional double original_conversion_value = 531;
+  optional int64 vertical_ads_potential_impressions = 532;
+  optional int64 vertical_ads_average_booking_value_micros = 533;
+  optional double vertical_ads_price_difference_percentage = 534;
+  optional double relative_search_lift = 535;
+  optional double relative_search_lift_p90_lower_bound = 536;
+  optional double relative_search_lift_p90_upper_bound = 537;
+  optional double incremental_searches_p_value = 538;
+  optional int64 search_lift_cost_micros = 539;
+  optional int64 search_lift_impressions = 540;
+  optional double normalized_incremental_searches = 541;
+  optional double normalized_incremental_searches_p90_lower_bound = 542;
+  optional double normalized_incremental_searches_p90_upper_bound = 543;
+  optional double normalized_incremental_searches_per_cost = 544;
+  optional double normalized_incremental_searches_per_cost_p90_lower_bound = 545;
+  optional double normalized_incremental_searches_per_cost_p90_upper_bound = 546;
+  optional double normalized_incremental_searches_per_impression = 547;
+  optional double normalized_incremental_searches_per_impression_p90_lower_bound = 548;
+  optional double normalized_incremental_searches_per_impression_p90_upper_bound = 549;
+}
+
+message MobileAppAsset {
+  string app_id = 1;
+  .google.ads.googleads.v26.enums.MobileAppVendorEnum.MobileAppVendor app_store = 2;
+  string link_text = 3;
+  string start_date = 4;
+  string end_date = 5;
+}
+
+message MobileAppCategoryInfo {
+  optional string mobile_app_category_constant = 2;
+}
+
+message MobileApplicationInfo {
+  optional string app_id = 4;
+  optional string name = 5;
+}
+
+message MobileDeviceInfo {
+  optional string mobile_device_constant = 2;
+}
+
+message Money {
+  optional string currency_code = 3;
+  optional int64 amount_micros = 4;
+}
+
+message NegativeKeywordListInfo {
+  optional string shared_set = 1;
+}
+
+message OperatingSystemVersionInfo {
+  optional string operating_system_version_constant = 2;
+}
+
+message OptimizeAssetsExperimentInfo {
+  .google.ads.googleads.v26.enums.OptimizeAssetsExperimentSubtypeEnum.OptimizeAssetsExperimentSubtype optimize_assets_experiment_subtype = 1;
+}
+
+message PageFeedAsset {
+  string page_url = 1;
+  repeated string labels = 2;
+}
+
+message ParentalStatusDimension {
+  repeated .google.ads.googleads.v26.enums.ParentalStatusTypeEnum.ParentalStatusType parental_statuses = 1;
+  optional bool include_undetermined = 2;
+}
+
+message ParentalStatusInfo {
+  .google.ads.googleads.v26.enums.ParentalStatusTypeEnum.ParentalStatusType type = 1;
+}
+
+message PercentCpc {
+  optional int64 cpc_bid_ceiling_micros = 3;
+  optional bool enhanced_cpc_enabled = 4;
+}
+
+message PercentCpcBidSimulationPoint {
+  optional int64 percent_cpc_bid_micros = 1;
+  optional double biddable_conversions = 2;
+  optional double biddable_conversions_value = 3;
+  optional int64 clicks = 4;
+  optional int64 cost_micros = 5;
+  optional int64 impressions = 6;
+  optional int64 top_slot_impressions = 7;
+}
+
+message PercentCpcBidSimulationPointList {
+  repeated .google.ads.googleads.v26.common.PercentCpcBidSimulationPoint points = 1;
+}
+
+message PlacementInfo {
+  optional string url = 2;
+}
+
+message PlacementListInfo {
+  optional string shared_set = 1;
+}
+
+message PolicySummary {
+  repeated .google.ads.googleads.v26.common.PolicyTopicEntry policy_topic_entries = 1;
+  .google.ads.googleads.v26.enums.PolicyReviewStatusEnum.PolicyReviewStatus review_status = 2;
+  .google.ads.googleads.v26.enums.PolicyApprovalStatusEnum.PolicyApprovalStatus approval_status = 3;
+}
+
+message PolicyTopicConstraint {
+  oneof value {
+    .google.ads.googleads.v26.common.PolicyTopicConstraint.CountryConstraintList country_constraint_list = 1;
+    .google.ads.googleads.v26.common.PolicyTopicConstraint.ResellerConstraint reseller_constraint = 2;
+    .google.ads.googleads.v26.common.PolicyTopicConstraint.CountryConstraintList certificate_missing_in_country_list = 3;
+    .google.ads.googleads.v26.common.PolicyTopicConstraint.CountryConstraintList certificate_domain_mismatch_in_country_list = 4;
+  }
+  message CountryConstraintList {
+    optional int32 total_targeted_countries = 3;
+    repeated .google.ads.googleads.v26.common.PolicyTopicConstraint.CountryConstraint countries = 2;
+  }
+  message ResellerConstraint {
+  }
+  message CountryConstraint {
+    optional string country_criterion = 2;
+  }
+}
+
+message PolicyTopicEntry {
+  optional string topic = 5;
+  .google.ads.googleads.v26.enums.PolicyTopicEntryTypeEnum.PolicyTopicEntryType type = 2;
+  repeated .google.ads.googleads.v26.common.PolicyTopicEvidence evidences = 3;
+  repeated .google.ads.googleads.v26.common.PolicyTopicConstraint constraints = 4;
+}
+
+message PolicyTopicEvidence {
+  oneof value {
+    .google.ads.googleads.v26.common.PolicyTopicEvidence.WebsiteList website_list = 3;
+    .google.ads.googleads.v26.common.PolicyTopicEvidence.TextList text_list = 4;
+    string language_code = 9;
+    .google.ads.googleads.v26.common.PolicyTopicEvidence.DestinationTextList destination_text_list = 6;
+    .google.ads.googleads.v26.common.PolicyTopicEvidence.DestinationMismatch destination_mismatch = 7;
+    .google.ads.googleads.v26.common.PolicyTopicEvidence.DestinationNotWorking destination_not_working = 8;
+  }
+  message TextList {
+    repeated string texts = 2;
+  }
+  message WebsiteList {
+    repeated string websites = 2;
+  }
+  message DestinationTextList {
+    repeated string destination_texts = 2;
+  }
+  message DestinationMismatch {
+    repeated .google.ads.googleads.v26.enums.PolicyTopicEvidenceDestinationMismatchUrlTypeEnum.PolicyTopicEvidenceDestinationMismatchUrlType url_types = 1;
+  }
+  message DestinationNotWorking {
+    optional string expanded_url = 7;
+    .google.ads.googleads.v26.enums.PolicyTopicEvidenceDestinationNotWorkingDeviceEnum.PolicyTopicEvidenceDestinationNotWorkingDevice device = 4;
+    optional string last_checked_date_time = 8;
+    oneof reason {
+      .google.ads.googleads.v26.enums.PolicyTopicEvidenceDestinationNotWorkingDnsErrorTypeEnum.PolicyTopicEvidenceDestinationNotWorkingDnsErrorType dns_error_type = 1;
+      int64 http_error_code = 6;
+    }
+  }
+}
+
+message PriceAsset {
+  .google.ads.googleads.v26.enums.PriceExtensionTypeEnum.PriceExtensionType type = 1;
+  .google.ads.googleads.v26.enums.PriceExtensionPriceQualifierEnum.PriceExtensionPriceQualifier price_qualifier = 2;
+  string language_code = 3;
+  repeated .google.ads.googleads.v26.common.PriceOffering price_offerings = 4;
+}
+
+message PriceOffering {
+  string header = 1;
+  string description = 2;
+  .google.ads.googleads.v26.common.Money price = 3;
+  .google.ads.googleads.v26.enums.PriceExtensionPriceUnitEnum.PriceExtensionPriceUnit unit = 4;
+  string final_url = 5;
+  string final_mobile_url = 6;
+}
+
+message ProductBrandInfo {
+  optional string value = 2;
+}
+
+message ProductCategoryInfo {
+  optional int64 category_id = 1;
+  .google.ads.googleads.v26.enums.ProductCategoryLevelEnum.ProductCategoryLevel level = 2;
+}
+
+message ProductChannelExclusivityInfo {
+  .google.ads.googleads.v26.enums.ProductChannelExclusivityEnum.ProductChannelExclusivity channel_exclusivity = 1;
+}
+
+message ProductChannelInfo {
+  .google.ads.googleads.v26.enums.ProductChannelEnum.ProductChannel channel = 1;
+}
+
+message ProductConditionInfo {
+  .google.ads.googleads.v26.enums.ProductConditionEnum.ProductCondition condition = 1;
+}
+
+message ProductCustomAttributeInfo {
+  optional string value = 3;
+  .google.ads.googleads.v26.enums.ProductCustomAttributeIndexEnum.ProductCustomAttributeIndex index = 2;
+}
+
+message ProductGroupingInfo {
+  optional string value = 1;
+}
+
+message ProductItemIdInfo {
+  optional string value = 2;
+}
+
+message ProductLabelsInfo {
+  optional string value = 1;
+}
+
+message ProductLegacyConditionInfo {
+  optional string value = 1;
+}
+
+message ProductTypeFullInfo {
+  optional string value = 1;
+}
+
+message ProductTypeInfo {
+  optional string value = 3;
+  .google.ads.googleads.v26.enums.ProductTypeLevelEnum.ProductTypeLevel level = 2;
+}
+
+message PromotionAsset {
+  string promotion_target = 1;
+  .google.ads.googleads.v26.enums.PromotionExtensionDiscountModifierEnum.PromotionExtensionDiscountModifier discount_modifier = 2;
+  string redemption_start_date = 7;
+  string redemption_end_date = 8;
+  .google.ads.googleads.v26.enums.PromotionExtensionOccasionEnum.PromotionExtensionOccasion occasion = 9;
+  string language_code = 10;
+  string start_date = 11;
+  string end_date = 12;
+  repeated .google.ads.googleads.v26.common.AdScheduleInfo ad_schedule_targets = 13;
+  string terms_and_conditions_text = 14;
+  string terms_and_conditions_uri = 15;
+  oneof discount_type {
+    int64 percent_off = 3;
+    .google.ads.googleads.v26.common.Money money_amount_off = 4;
+  }
+  oneof promotion_trigger {
+    string promotion_code = 5;
+    .google.ads.googleads.v26.common.Money orders_over_amount = 6;
+    .google.ads.googleads.v26.common.PromotionBarcodeInfo promotion_barcode_info = 16;
+    .google.ads.googleads.v26.common.PromotionQrCodeInfo promotion_qr_code_info = 17;
+  }
+}
+
+message PromotionBarcodeInfo {
+  .google.ads.googleads.v26.enums.PromotionBarcodeTypeEnum.PromotionBarcodeType type = 1;
+  string barcode_content = 2;
+}
+
+message PromotionQrCodeInfo {
+  string qr_code_content = 1;
+}
+
+message ProximityInfo {
+  .google.ads.googleads.v26.common.GeoPointInfo geo_point = 1;
+  optional double radius = 5;
+  .google.ads.googleads.v26.enums.ProximityRadiusUnitsEnum.ProximityRadiusUnits radius_units = 3;
+  .google.ads.googleads.v26.common.AddressInfo address = 4;
+}
+
+message RealTimeBiddingSetting {
+  optional bool opt_in = 2;
+}
+
+message ResponsiveDisplayAdControlSpec {
+  bool enable_asset_enhancements = 1;
+  bool enable_autogen_video = 2;
+}
+
+message ResponsiveDisplayAdInfo {
+  repeated .google.ads.googleads.v26.common.AdImageAsset marketing_images = 1;
+  repeated .google.ads.googleads.v26.common.AdImageAsset square_marketing_images = 2;
+  repeated .google.ads.googleads.v26.common.AdImageAsset logo_images = 3;
+  repeated .google.ads.googleads.v26.common.AdImageAsset square_logo_images = 4;
+  repeated .google.ads.googleads.v26.common.AdTextAsset headlines = 5;
+  .google.ads.googleads.v26.common.AdTextAsset long_headline = 6;
+  repeated .google.ads.googleads.v26.common.AdTextAsset descriptions = 7;
+  repeated .google.ads.googleads.v26.common.AdVideoAsset youtube_videos = 8;
+  optional string business_name = 17;
+  optional string main_color = 18;
+  optional string accent_color = 19;
+  optional bool allow_flexible_color = 20;
+  optional string call_to_action_text = 21;
+  optional string price_prefix = 22;
+  optional string promo_text = 23;
+  .google.ads.googleads.v26.enums.DisplayAdFormatSettingEnum.DisplayAdFormatSetting format_setting = 16;
+  .google.ads.googleads.v26.common.ResponsiveDisplayAdControlSpec control_spec = 24;
+}
+
+message ResponsiveSearchAdInfo {
+  repeated .google.ads.googleads.v26.common.AdTextAsset headlines = 1;
+  repeated .google.ads.googleads.v26.common.AdTextAsset descriptions = 2;
+  optional string path1 = 5;
+  optional string path2 = 6;
+}
+
+message RetailFilter {
+  oneof node {
+    .google.ads.googleads.v26.common.RetailFilterExpression expression = 1;
+    .google.ads.googleads.v26.common.RetailTag tag = 2;
+  }
+}
+
+message RetailFilterBundle {
+  optional string shared_set = 1;
+}
+
+message RetailFilterExpression {
+  optional string name = 1;
+}
+
+message RetailTag {
+  optional string value = 1;
+  optional string expression_name = 2;
+}
+
+message RuleBasedUserListInfo {
+  .google.ads.googleads.v26.enums.UserListPrepopulationStatusEnum.UserListPrepopulationStatus prepopulation_status = 1;
+  .google.ads.googleads.v26.common.FlexibleRuleUserListInfo flexible_rule_user_list = 5;
+}
+
+message SearchThemeInfo {
+  string text = 1;
+}
+
+message SearchVolumeRange {
+  optional int64 min = 1;
+  optional int64 max = 2;
+}
+
+message Segments {
+  optional int64 activity_account_id = 148;
+  optional string activity_city = 185;
+  optional string activity_country = 186;
+  optional int64 activity_rating = 149;
+  optional string activity_state = 187;
+  optional string external_activity_id = 150;
+  .google.ads.googleads.v26.enums.AdDestinationTypeEnum.AdDestinationType ad_destination_type = 136;
+  .google.ads.googleads.v26.enums.AdFormatTypeEnum.AdFormatType ad_format_type = 191;
+  .google.ads.googleads.v26.enums.AdNetworkTypeEnum.AdNetworkType ad_network_type = 3;
+  optional string ad_group = 158;
+  .google.ads.googleads.v26.enums.AdSubFormatTypeEnum.AdSubFormatType ad_sub_format_type = 232;
+  .google.ads.googleads.v26.enums.AdSubNetworkTypeEnum.AdSubNetworkType ad_sub_network_type = 204;
+  optional int64 advance_booking_window = 238;
+  .google.ads.googleads.v26.enums.AgeRangeTypeEnum.AgeRangeType age_range = 225;
+  optional string asset_group = 159;
+  optional string auction_insight_domain = 145;
+  .google.ads.googleads.v26.common.BudgetCampaignAssociationStatus budget_campaign_association_status = 134;
+  .google.ads.googleads.v26.enums.BrandLiftMeasurementTypeEnum.BrandLiftMeasurementType brand_lift_measurement_type = 230;
+  optional string campaign = 157;
+  .google.ads.googleads.v26.enums.ClickTypeEnum.ClickType click_type = 26;
+  optional string conversion_action = 113;
+  .google.ads.googleads.v26.enums.ConversionActionCategoryEnum.ConversionActionCategory conversion_action_category = 53;
+  optional string conversion_action_name = 114;
+  optional bool conversion_adjustment = 115;
+  .google.ads.googleads.v26.enums.ConversionAttributionEventTypeEnum.ConversionAttributionEventType conversion_attribution_event_type = 2;
+  .google.ads.googleads.v26.enums.ConversionLagBucketEnum.ConversionLagBucket conversion_lag_bucket = 50;
+  .google.ads.googleads.v26.enums.ConversionActionCategoryEnum.ConversionActionCategory conversion_lift_conversion_category = 229;
+  int64 conversion_lift_end_date = 223;
+  .google.ads.googleads.v26.enums.ConversionLiftIncludedConversionActionTypesEnum.ConversionLiftIncludedConversionActionTypes conversion_lift_included_conversion_action_types = 224;
+  int64 conversion_lift_start_date = 222;
+  .google.ads.googleads.v26.enums.ConversionOrAdjustmentLagBucketEnum.ConversionOrAdjustmentLagBucket conversion_or_adjustment_lag_bucket = 51;
+  optional string country = 227;
+  optional string country_localized_name = 228;
+  optional string date = 79;
+  .google.ads.googleads.v26.enums.DayOfWeekEnum.DayOfWeek day_of_week = 5;
+  .google.ads.googleads.v26.enums.DeviceEnum.Device device = 1;
+  .google.ads.googleads.v26.enums.MobileDevicePlatformEnum.MobileDevicePlatform mobile_device_platform = 219;
+  optional string experiment_arm = 231;
+  .google.ads.googleads.v26.enums.ExternalConversionSourceEnum.ExternalConversionSource external_conversion_source = 55;
+  .google.ads.googleads.v26.enums.GenderTypeEnum.GenderType gender = 226;
+  optional string geo_target_airport = 116;
+  optional string geo_target_canton = 117;
+  optional string geo_target_city = 118;
+  optional string geo_target_country = 119;
+  optional string geo_target_county = 120;
+  optional string geo_target_district = 121;
+  optional string geo_target_metro = 122;
+  optional string geo_target_most_specific_location = 123;
+  optional string geo_target_postal_code = 124;
+  optional string geo_target_province = 125;
+  optional string geo_target_region = 126;
+  optional string geo_target_state = 127;
+  optional int64 hotel_booking_window_days = 135;
+  optional int64 hotel_center_id = 80;
+  optional string hotel_check_in_date = 81;
+  .google.ads.googleads.v26.enums.DayOfWeekEnum.DayOfWeek hotel_check_in_day_of_week = 9;
+  optional string hotel_city = 82;
+  optional int32 hotel_class = 83;
+  optional string hotel_country = 84;
+  .google.ads.googleads.v26.enums.HotelDateSelectionTypeEnum.HotelDateSelectionType hotel_date_selection_type = 13;
+  optional int32 hotel_length_of_stay = 85;
+  optional string hotel_rate_rule_id = 86;
+  .google.ads.googleads.v26.enums.HotelRateTypeEnum.HotelRateType hotel_rate_type = 74;
+  .google.ads.googleads.v26.enums.HotelPriceBucketEnum.HotelPriceBucket hotel_price_bucket = 78;
+  optional string hotel_state = 87;
+  optional int32 hour = 88;
+  optional bool interaction_on_this_extension = 89;
+  .google.ads.googleads.v26.common.Keyword keyword = 61;
+  .google.ads.googleads.v26.enums.LandingPageSourceEnum.LandingPageSource landing_page_source = 200;
+  optional int64 length_of_booking = 237;
+  .google.ads.googleads.v26.enums.LoyaltyMembershipEnum.LoyaltyMembership loyalty_membership = 233;
+  optional string month = 90;
+  .google.ads.googleads.v26.enums.MonthOfYearEnum.MonthOfYear month_of_year = 18;
+  optional string partner_hotel_id = 91;
+  optional int64 product_aggregator_id = 132;
+  optional string product_category_level1 = 161;
+  optional string product_category_level2 = 162;
+  optional string product_category_level3 = 163;
+  optional string product_category_level4 = 164;
+  optional string product_category_level5 = 165;
+  optional string product_brand = 97;
+  .google.ads.googleads.v26.enums.ProductChannelEnum.ProductChannel product_channel = 30;
+  .google.ads.googleads.v26.enums.ProductChannelExclusivityEnum.ProductChannelExclusivity product_channel_exclusivity = 31;
+  .google.ads.googleads.v26.enums.ProductConditionEnum.ProductCondition product_condition = 32;
+  optional string product_country = 98;
+  optional string product_custom_attribute0 = 99;
+  optional string product_custom_attribute1 = 100;
+  optional string product_custom_attribute2 = 101;
+  optional string product_custom_attribute3 = 102;
+  optional string product_custom_attribute4 = 103;
+  optional string product_feed_label = 147;
+  optional string product_item_id = 104;
+  optional string product_language = 105;
+  optional int64 product_merchant_id = 133;
+  optional string product_sold_category_level1 = 214;
+  optional string product_sold_category_level2 = 215;
+  optional string product_sold_category_level3 = 216;
+  optional string product_sold_category_level4 = 217;
+  optional string product_sold_category_level5 = 218;
+  optional string product_sold_brand = 171;
+  .google.ads.googleads.v26.enums.ProductConditionEnum.ProductCondition product_sold_condition = 172;
+  optional string product_sold_custom_attribute0 = 173;
+  optional string product_sold_custom_attribute1 = 174;
+  optional string product_sold_custom_attribute2 = 175;
+  optional string product_sold_custom_attribute3 = 176;
+  optional string product_sold_custom_attribute4 = 177;
+  optional string product_sold_item_id = 178;
+  optional string product_sold_title = 179;
+  optional string product_sold_type_l1 = 180;
+  optional string product_sold_type_l2 = 181;
+  optional string product_sold_type_l3 = 182;
+  optional string product_sold_type_l4 = 183;
+  optional string product_sold_type_l5 = 184;
+  optional string product_store_id = 106;
+  optional string product_title = 107;
+  optional string product_type_l1 = 108;
+  optional string product_type_l2 = 109;
+  optional string product_type_l3 = 110;
+  optional string product_type_l4 = 111;
+  optional string product_type_l5 = 112;
+  optional string quarter = 128;
+  optional string travel_destination_city = 193;
+  optional string travel_destination_country = 194;
+  optional string travel_destination_region = 195;
+  .google.ads.googleads.v26.enums.DateSelectionTypeEnum.DateSelectionType user_set_dates = 244;
+  optional string vertical_ads_event_participant_display_names = 205;
+  optional int64 vertical_ads_hotel_class = 206;
+  optional string vertical_ads_listing = 207;
+  optional string vertical_ads_listing_brand = 208;
+  optional string vertical_ads_listing_city = 209;
+  optional string vertical_ads_listing_country = 210;
+  optional string vertical_ads_listing_region = 211;
+  optional int64 vertical_ads_listing_user_rating = 220;
+  optional string vertical_ads_listing_venue = 221;
+  optional int64 vertical_ads_partner_account = 212;
+  .google.ads.googleads.v26.enums.HotelPriceBucketEnum.HotelPriceBucket vertical_ads_price_tier = 239;
+  optional string vertical_ads_rate_rule_id = 240;
+  .google.ads.googleads.v26.enums.HotelRateTypeEnum.HotelRateType vertical_ads_rate_type = 241;
+  optional .google.ads.googleads.v26.enums.VerticalAdsItemVerticalTypeEnum.VerticalAdsItemVerticalType vertical_ads_vertical = 213;
+  .google.ads.googleads.v26.enums.RecommendationTypeEnum.RecommendationType recommendation_type = 140;
+  .google.ads.googleads.v26.enums.SearchEngineResultsPageTypeEnum.SearchEngineResultsPageType search_engine_results_page_type = 70;
+  optional string search_lift_keyword_bundle = 242;
+  .google.ads.googleads.v26.enums.SearchLiftSearchPropertyEnum.SearchLiftSearchProperty search_property = 243;
+  optional string search_subcategory = 155;
+  optional string search_term = 156;
+  .google.ads.googleads.v26.enums.SearchTermMatchTypeEnum.SearchTermMatchType search_term_match_type = 22;
+  .google.ads.googleads.v26.enums.MatchTypeEnum.MatchType match_type = 199;
+  .google.ads.googleads.v26.enums.SlotEnum.Slot slot = 23;
+  optional string start_date = 234;
+  .google.ads.googleads.v26.enums.DayOfWeekEnum.DayOfWeek start_day_of_week = 235;
+  .google.ads.googleads.v26.enums.ConversionValueRulePrimaryDimensionEnum.ConversionValueRulePrimaryDimension conversion_value_rule_primary_dimension = 138;
+  optional string webpage = 129;
+  optional string week = 130;
+  optional int32 year = 131;
+  optional int64 sk_ad_network_fine_conversion_value = 137;
+  optional int64 sk_ad_network_redistributed_fine_conversion_value = 190;
+  .google.ads.googleads.v26.enums.SkAdNetworkUserTypeEnum.SkAdNetworkUserType sk_ad_network_user_type = 141;
+  .google.ads.googleads.v26.enums.SkAdNetworkAdEventTypeEnum.SkAdNetworkAdEventType sk_ad_network_ad_event_type = 142;
+  optional .google.ads.googleads.v26.common.SkAdNetworkSourceApp sk_ad_network_source_app = 143;
+  .google.ads.googleads.v26.enums.SkAdNetworkAttributionCreditEnum.SkAdNetworkAttributionCredit sk_ad_network_attribution_credit = 144;
+  .google.ads.googleads.v26.enums.SkAdNetworkCoarseConversionValueEnum.SkAdNetworkCoarseConversionValue sk_ad_network_coarse_conversion_value = 151;
+  optional string sk_ad_network_source_domain = 152;
+  .google.ads.googleads.v26.enums.SkAdNetworkSourceTypeEnum.SkAdNetworkSourceType sk_ad_network_source_type = 153;
+  optional int64 sk_ad_network_postback_sequence_index = 154;
+  optional string sk_ad_network_version = 192;
+  optional .google.ads.googleads.v26.common.AssetInteractionTarget asset_interaction_target = 139;
+  .google.ads.googleads.v26.enums.ConvertingUserPriorEngagementTypeAndLtvBucketEnum.ConvertingUserPriorEngagementTypeAndLtvBucket new_versus_returning_customers = 160;
+  .google.ads.googleads.v26.enums.AgeRangeTypeEnum.AgeRangeType adjusted_age_range = 196;
+  .google.ads.googleads.v26.enums.GenderTypeEnum.GenderType adjusted_gender = 197;
+  .google.ads.googleads.v26.enums.SearchTermMatchSourceEnum.SearchTermMatchSource search_term_match_source = 198;
+  .google.ads.googleads.v26.enums.SearchTermTargetingStatusEnum.SearchTermTargetingStatus search_term_targeting_status = 201;
+  optional bool ad_using_product_data = 202;
+  optional bool ad_using_video = 203;
+}
+
+message ShoppingComparisonListingAdInfo {
+  optional string headline = 2;
+}
+
+message ShoppingProductAdInfo {
+}
+
+message ShoppingSmartAdInfo {
+}
+
+message SimilarUserListInfo {
+  optional string seed_user_list = 2;
+}
+
+message SitelinkAsset {
+  string link_text = 1;
+  string description1 = 2;
+  string description2 = 3;
+  string start_date = 4;
+  string end_date = 5;
+  repeated .google.ads.googleads.v26.common.AdScheduleInfo ad_schedule_targets = 6;
+}
+
+message SkAdNetworkSourceApp {
+  optional string sk_ad_network_source_app_id = 1;
+}
+
+message SmartCampaignAdInfo {
+  repeated .google.ads.googleads.v26.common.AdTextAsset headlines = 1;
+  repeated .google.ads.googleads.v26.common.AdTextAsset descriptions = 2;
+}
+
+message SmsBusinessMessageInfo {
+  string country_code = 1;
+  string phone_number = 2;
+}
+
+message StartDateRangeInfo {
+  string start_date = 1;
+  string end_date = 2;
+}
+
+message StartDayOfWeekInfo {
+  .google.ads.googleads.v26.enums.DayOfWeekEnum.DayOfWeek day_of_week = 1;
+}
+
+message StoreSalesMetadata {
+  optional double loyalty_fraction = 5;
+  optional double transaction_upload_fraction = 6;
+  optional string custom_key = 7;
+  .google.ads.googleads.v26.common.StoreSalesThirdPartyMetadata third_party_metadata = 3;
+}
+
+message StoreSalesThirdPartyMetadata {
+  optional string advertiser_upload_date_time = 7;
+  optional double valid_transaction_fraction = 8;
+  optional double partner_match_fraction = 9;
+  optional double partner_upload_fraction = 10;
+  optional string bridge_map_version_id = 11;
+  optional int64 partner_id = 12;
+}
+
+message StructuredSnippetAsset {
+  string header = 1;
+  repeated string values = 2;
+}
+
+message SyntheticContentAttestation {
+  .google.ads.googleads.v26.enums.SyntheticContentAttestationStatusEnum.SyntheticContentAttestationStatus status = 1;
+  .google.ads.googleads.v26.enums.SyntheticContentSourceEnum.SyntheticContentSource source = 2;
+}
+
+message SyntheticContentInfo {
+  .google.ads.googleads.v26.common.SyntheticContentAttestation advertiser_attestation = 1;
+  .google.ads.googleads.v26.common.SyntheticContentAttestation system_attestation = 2;
+}
+
+message TagSnippet {
+  .google.ads.googleads.v26.enums.TrackingCodeTypeEnum.TrackingCodeType type = 1;
+  .google.ads.googleads.v26.enums.TrackingCodePageFormatEnum.TrackingCodePageFormat page_format = 2;
+  optional string global_site_tag = 5;
+  optional string event_snippet = 6;
+}
+
+message TargetCpa {
+  optional int64 target_cpa_micros = 4;
+  optional int64 cpc_bid_ceiling_micros = 5;
+  optional int64 cpc_bid_floor_micros = 6;
+}
+
+message TargetCpaSimulationPoint {
+  int64 required_budget_amount_micros = 19;
+  optional double biddable_conversions = 9;
+  optional double biddable_conversions_value = 10;
+  double app_installs = 15;
+  double in_app_actions = 16;
+  optional int64 clicks = 11;
+  optional int64 cost_micros = 12;
+  optional int64 impressions = 13;
+  optional int64 top_slot_impressions = 14;
+  optional int64 interactions = 20;
+  oneof target_cpa_simulation_key_value {
+    int64 target_cpa_micros = 17;
+    double target_cpa_scaling_modifier = 18;
+  }
+}
+
+message TargetCpaSimulationPointList {
+  repeated .google.ads.googleads.v26.common.TargetCpaSimulationPoint points = 1;
+}
+
+message TargetCpc {
+  int64 target_cpc_micros = 1;
+}
+
+message TargetCpm {
+  oneof goal {
+    .google.ads.googleads.v26.common.TargetCpmTargetFrequencyGoal target_frequency_goal = 1;
+  }
+}
+
+message TargetCpmTargetFrequencyGoal {
+  int64 target_count = 1;
+  .google.ads.googleads.v26.enums.TargetFrequencyTimeUnitEnum.TargetFrequencyTimeUnit time_unit = 2;
+}
+
+message TargetCpv {
+}
+
+message TargetImpressionShare {
+  .google.ads.googleads.v26.enums.TargetImpressionShareLocationEnum.TargetImpressionShareLocation location = 1;
+  optional int64 location_fraction_micros = 4;
+  optional int64 cpc_bid_ceiling_micros = 5;
+}
+
+message TargetImpressionShareSimulationPoint {
+  int64 target_impression_share_micros = 1;
+  int64 required_cpc_bid_ceiling_micros = 2;
+  int64 required_budget_amount_micros = 3;
+  double biddable_conversions = 4;
+  double biddable_conversions_value = 5;
+  int64 clicks = 6;
+  int64 cost_micros = 7;
+  int64 impressions = 8;
+  int64 top_slot_impressions = 9;
+  int64 absolute_top_impressions = 10;
+}
+
+message TargetImpressionShareSimulationPointList {
+  repeated .google.ads.googleads.v26.common.TargetImpressionShareSimulationPoint points = 1;
+}
+
+message TargetRestriction {
+  .google.ads.googleads.v26.enums.TargetingDimensionEnum.TargetingDimension targeting_dimension = 1;
+  optional bool bid_only = 3;
+}
+
+message TargetRestrictionOperation {
+  .google.ads.googleads.v26.common.TargetRestrictionOperation.Operator operator = 1;
+  .google.ads.googleads.v26.common.TargetRestriction value = 2;
+  enum Operator {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ADD = 2;
+    REMOVE = 3;
+  }
+}
+
+message TargetRoas {
+  optional double target_roas = 4;
+  optional int64 cpc_bid_ceiling_micros = 5;
+  optional int64 cpc_bid_floor_micros = 6;
+  optional int64 target_roas_tolerance_percent_millis = 7;
+}
+
+message TargetRoasSimulationPoint {
+  optional double target_roas = 8;
+  int64 required_budget_amount_micros = 15;
+  optional double biddable_conversions = 9;
+  optional double biddable_conversions_value = 10;
+  optional int64 clicks = 11;
+  optional int64 cost_micros = 12;
+  optional int64 impressions = 13;
+  optional int64 top_slot_impressions = 14;
+}
+
+message TargetRoasSimulationPointList {
+  repeated .google.ads.googleads.v26.common.TargetRoasSimulationPoint points = 1;
+}
+
+message TargetSpend {
+  optional int64 target_spend_micros = 3;
+  optional int64 cpc_bid_ceiling_micros = 4;
+}
+
+message TargetingSetting {
+  repeated .google.ads.googleads.v26.common.TargetRestriction target_restrictions = 1;
+  repeated .google.ads.googleads.v26.common.TargetRestrictionOperation target_restriction_operations = 2;
+}
+
+message TextAdInfo {
+  optional string headline = 4;
+  optional string description1 = 5;
+  optional string description2 = 6;
+}
+
+message TextAsset {
+  optional string text = 2;
+}
+
+message TextLabel {
+  optional string background_color = 3;
+  optional string description = 4;
+}
+
+message ThirdPartyIntegrationPartnerData {
+  string client_id = 1;
+  string third_party_placement_id = 2;
+}
+
+message TopicInfo {
+  optional string topic_constant = 3;
+  repeated string path = 4;
+}
+
+message TravelAdInfo {
+}
+
+message UnknownListingDimensionInfo {
+}
+
+message UrlCollection {
+  optional string url_collection_id = 5;
+  repeated string final_urls = 6;
+  repeated string final_mobile_urls = 7;
+  optional string tracking_url_template = 8;
+}
+
+message UserInterestInfo {
+  optional string user_interest_category = 2;
+}
+
+message UserInterestSegment {
+  optional string user_interest_category = 1;
+}
+
+message UserListActionInfo {
+  oneof user_list_action {
+    string conversion_action = 3;
+    string remarketing_action = 4;
+  }
+}
+
+message UserListDateRuleItemInfo {
+  .google.ads.googleads.v26.enums.UserListDateRuleItemOperatorEnum.UserListDateRuleItemOperator operator = 1;
+  optional string value = 4;
+  optional int64 offset_in_days = 5;
+}
+
+message UserListInfo {
+  optional string user_list = 2;
+}
+
+message UserListLogicalRuleInfo {
+  .google.ads.googleads.v26.enums.UserListLogicalRuleOperatorEnum.UserListLogicalRuleOperator operator = 1;
+  repeated .google.ads.googleads.v26.common.LogicalUserListOperandInfo rule_operands = 2;
+}
+
+message UserListNumberRuleItemInfo {
+  .google.ads.googleads.v26.enums.UserListNumberRuleItemOperatorEnum.UserListNumberRuleItemOperator operator = 1;
+  optional double value = 3;
+}
+
+message UserListRuleInfo {
+  .google.ads.googleads.v26.enums.UserListRuleTypeEnum.UserListRuleType rule_type = 1;
+  repeated .google.ads.googleads.v26.common.UserListRuleItemGroupInfo rule_item_groups = 2;
+}
+
+message UserListRuleItemGroupInfo {
+  repeated .google.ads.googleads.v26.common.UserListRuleItemInfo rule_items = 1;
+}
+
+message UserListRuleItemInfo {
+  optional string name = 5;
+  oneof rule_item {
+    .google.ads.googleads.v26.common.UserListNumberRuleItemInfo number_rule_item = 2;
+    .google.ads.googleads.v26.common.UserListStringRuleItemInfo string_rule_item = 3;
+    .google.ads.googleads.v26.common.UserListDateRuleItemInfo date_rule_item = 4;
+  }
+}
+
+message UserListSegment {
+  optional string user_list = 1;
+}
+
+message UserListStringRuleItemInfo {
+  .google.ads.googleads.v26.enums.UserListStringRuleItemOperatorEnum.UserListStringRuleItemOperator operator = 1;
+  optional string value = 3;
+}
+
+message UserSetDatesInfo {
+  .google.ads.googleads.v26.enums.DateSelectionTypeEnum.DateSelectionType type = 1;
+}
+
+message VerticalAdsItemGroupRuleInfo {
+  oneof dimension {
+    string item_code = 1;
+    string country_criterion_id = 2;
+    string region_criterion_id = 3;
+    string city_criterion_id = 4;
+    int64 hotel_class = 6;
+    int64 user_rating = 7;
+    string venue = 8;
+    string event_participant_display_name = 9;
+  }
+}
+
+message VerticalAdsItemGroupRuleListInfo {
+  optional string shared_set = 1;
+}
+
+message VideoAdInfo {
+  .google.ads.googleads.v26.common.AdVideoAsset video = 8;
+  oneof format {
+    .google.ads.googleads.v26.common.VideoTrueViewInStreamAdInfo in_stream = 2;
+    .google.ads.googleads.v26.common.VideoBumperInStreamAdInfo bumper = 3;
+    .google.ads.googleads.v26.common.VideoOutstreamAdInfo out_stream = 4;
+    .google.ads.googleads.v26.common.VideoNonSkippableInStreamAdInfo non_skippable = 5;
+    .google.ads.googleads.v26.common.InFeedVideoAdInfo in_feed = 9;
+    .google.ads.googleads.v26.common.YouTubeAudioAdInfo audio = 10;
+  }
+}
+
+message VideoBumperInStreamAdInfo {
+  .google.ads.googleads.v26.common.AdImageAsset companion_banner = 3;
+  string action_button_label = 4;
+  string action_headline = 5;
+}
+
+message VideoExperimentInfo {
+  .google.ads.googleads.v26.enums.VideoExperimentSubtypeEnum.VideoExperimentSubtype video_experiment_subtype = 1;
+}
+
+message VideoLineupInfo {
+  optional int64 video_lineup_id = 1;
+}
+
+message VideoNonSkippableInStreamAdInfo {
+  .google.ads.googleads.v26.common.AdImageAsset companion_banner = 5;
+  string action_button_label = 3;
+  string action_headline = 4;
+}
+
+message VideoOutstreamAdInfo {
+  string headline = 3;
+  string description = 4;
+}
+
+message VideoResponsiveAdInfo {
+  repeated .google.ads.googleads.v26.common.AdTextAsset headlines = 1;
+  repeated .google.ads.googleads.v26.common.AdTextAsset long_headlines = 2;
+  repeated .google.ads.googleads.v26.common.AdTextAsset descriptions = 3;
+  repeated .google.ads.googleads.v26.common.AdTextAsset call_to_actions = 4;
+  repeated .google.ads.googleads.v26.common.AdVideoAsset videos = 5;
+  .google.ads.googleads.v26.common.AdTextAsset business_name = 9;
+  repeated .google.ads.googleads.v26.common.AdImageAsset logo_images = 10;
+  repeated .google.ads.googleads.v26.common.AdImageAsset companion_banners = 6;
+  string breadcrumb1 = 7;
+  string breadcrumb2 = 8;
+}
+
+message VideoTrueViewInStreamAdInfo {
+  string action_button_label = 4;
+  string action_headline = 5;
+  .google.ads.googleads.v26.common.AdImageAsset companion_banner = 7;
+}
+
+message WebhookDelivery {
+  optional string advertiser_webhook_url = 4;
+  optional string google_secret = 5;
+  optional int64 payload_schema_version = 6;
+}
+
+message WebpageConditionInfo {
+  .google.ads.googleads.v26.enums.WebpageConditionOperandEnum.WebpageConditionOperand operand = 1;
+  .google.ads.googleads.v26.enums.WebpageConditionOperatorEnum.WebpageConditionOperator operator = 2;
+  optional string argument = 4;
+}
+
+message WebpageInfo {
+  optional string criterion_name = 3;
+  repeated .google.ads.googleads.v26.common.WebpageConditionInfo conditions = 2;
+  double coverage_percentage = 4;
+  .google.ads.googleads.v26.common.WebpageSampleInfo sample = 5;
+}
+
+message WebpageListInfo {
+  optional string shared_set = 1;
+}
+
+message WebpageSampleInfo {
+  repeated string sample_urls = 1;
+}
+
+message WhatsappBusinessMessageInfo {
+  string country_code = 1;
+  string phone_number = 2;
+}
+
+message YouTubeAudioAdInfo {
+}
+
+message YouTubeChannelInfo {
+  optional string channel_id = 2;
+}
+
+message YouTubeVideoInfo {
+  optional string video_id = 2;
+}
+
+message YouTubeVideoListAsset {
+  repeated .google.ads.googleads.v26.common.AdVideoAsset youtube_videos = 1;
+}
+
+message YoutubeVideoAsset {
+  optional string youtube_video_id = 2;
+  string youtube_video_title = 3;
+}
+
+message ZaloBusinessMessageInfo {
+  oneof zalo_id {
+    int64 oa_id = 1;
+    string custom_name = 2;
+  }
+}

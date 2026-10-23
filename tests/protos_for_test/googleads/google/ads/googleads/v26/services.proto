@@ -1,0 +1,229 @@
+// Extracted from googleapis (https://github.com/googleapis/googleapis),
+// google/ads/googleads/v26: the messages and enums that
+// google.ads.googleads.v26.services.SearchGoogleAdsResponse reaches, with their
+// packages, names, nesting, field numbers and types. Comments, options,
+// services and everything else are left out.
+//
+// Copyright Google LLC. Licensed under the Apache License, Version 2.0
+// (http://www.apache.org/licenses/LICENSE-2.0).
+
+syntax = "proto3";
+
+package google.ads.googleads.v26.services;
+
+import "google/ads/googleads/v26/common.proto";
+import "google/ads/googleads/v26/resources.proto";
+import "google/protobuf/field_mask.proto";
+
+message GoogleAdsRow {
+  .google.ads.googleads.v26.resources.AccountBudget account_budget = 42;
+  .google.ads.googleads.v26.resources.AccountBudgetProposal account_budget_proposal = 43;
+  .google.ads.googleads.v26.resources.AccountLink account_link = 143;
+  .google.ads.googleads.v26.resources.Ad ad = 227;
+  .google.ads.googleads.v26.resources.AdGroup ad_group = 3;
+  .google.ads.googleads.v26.resources.AdGroupAd ad_group_ad = 16;
+  .google.ads.googleads.v26.resources.AdGroupAdAssetCombinationView ad_group_ad_asset_combination_view = 193;
+  .google.ads.googleads.v26.resources.AppTopCombinationView app_top_combination_view = 247;
+  .google.ads.googleads.v26.resources.AdGroupAdAssetView ad_group_ad_asset_view = 131;
+  .google.ads.googleads.v26.resources.AdGroupAdLabel ad_group_ad_label = 120;
+  .google.ads.googleads.v26.resources.AdGroupAsset ad_group_asset = 154;
+  .google.ads.googleads.v26.resources.AdGroupAssetSet ad_group_asset_set = 196;
+  .google.ads.googleads.v26.resources.AdGroupAudienceView ad_group_audience_view = 57;
+  .google.ads.googleads.v26.resources.AdGroupBidModifier ad_group_bid_modifier = 24;
+  .google.ads.googleads.v26.resources.AdGroupCriterion ad_group_criterion = 17;
+  .google.ads.googleads.v26.resources.AdGroupCriterionCustomizer ad_group_criterion_customizer = 187;
+  .google.ads.googleads.v26.resources.AdGroupCriterionLabel ad_group_criterion_label = 121;
+  .google.ads.googleads.v26.resources.AdGroupCriterionSimulation ad_group_criterion_simulation = 110;
+  .google.ads.googleads.v26.resources.AdGroupCustomizer ad_group_customizer = 185;
+  .google.ads.googleads.v26.resources.AdGroupLabel ad_group_label = 115;
+  .google.ads.googleads.v26.resources.AdGroupSimulation ad_group_simulation = 107;
+  .google.ads.googleads.v26.resources.AdParameter ad_parameter = 130;
+  .google.ads.googleads.v26.resources.AgeRangeView age_range_view = 48;
+  .google.ads.googleads.v26.resources.AdScheduleView ad_schedule_view = 89;
+  .google.ads.googleads.v26.resources.AiMaxSearchTermAdCombinationView ai_max_search_term_ad_combination_view = 242;
+  .google.ads.googleads.v26.resources.DomainCategory domain_category = 91;
+  .google.ads.googleads.v26.resources.Asset asset = 105;
+  .google.ads.googleads.v26.resources.AssetFieldTypeView asset_field_type_view = 168;
+  .google.ads.googleads.v26.resources.ChannelAggregateAssetView channel_aggregate_asset_view = 222;
+  .google.ads.googleads.v26.resources.CampaignAggregateAssetView campaign_aggregate_asset_view = 224;
+  .google.ads.googleads.v26.resources.AssetGroupAsset asset_group_asset = 173;
+  .google.ads.googleads.v26.resources.AssetGroupSignal asset_group_signal = 191;
+  .google.ads.googleads.v26.resources.AssetGroupListingGroupFilter asset_group_listing_group_filter = 182;
+  .google.ads.googleads.v26.resources.AssetGroupProductGroupView asset_group_product_group_view = 189;
+  .google.ads.googleads.v26.resources.AssetGroupTopCombinationView asset_group_top_combination_view = 199;
+  .google.ads.googleads.v26.resources.AssetGroup asset_group = 172;
+  .google.ads.googleads.v26.resources.AssetSetAsset asset_set_asset = 180;
+  .google.ads.googleads.v26.resources.AssetSet asset_set = 179;
+  .google.ads.googleads.v26.resources.AssetSetTypeView asset_set_type_view = 197;
+  .google.ads.googleads.v26.resources.BatchJob batch_job = 139;
+  .google.ads.googleads.v26.resources.BiddingDataExclusion bidding_data_exclusion = 159;
+  .google.ads.googleads.v26.resources.BiddingSeasonalityAdjustment bidding_seasonality_adjustment = 160;
+  .google.ads.googleads.v26.resources.BiddingStrategy bidding_strategy = 18;
+  .google.ads.googleads.v26.resources.BiddingStrategySimulation bidding_strategy_simulation = 158;
+  .google.ads.googleads.v26.resources.BillingSetup billing_setup = 41;
+  .google.ads.googleads.v26.resources.CallView call_view = 152;
+  .google.ads.googleads.v26.resources.CampaignBudget campaign_budget = 19;
+  .google.ads.googleads.v26.resources.Campaign campaign = 2;
+  .google.ads.googleads.v26.resources.CampaignAsset campaign_asset = 142;
+  .google.ads.googleads.v26.resources.CampaignAssetSet campaign_asset_set = 181;
+  .google.ads.googleads.v26.resources.CampaignAudienceView campaign_audience_view = 69;
+  .google.ads.googleads.v26.resources.CampaignBidModifier campaign_bid_modifier = 26;
+  .google.ads.googleads.v26.resources.CampaignConversionGoal campaign_conversion_goal = 175;
+  .google.ads.googleads.v26.resources.CampaignCriterion campaign_criterion = 20;
+  .google.ads.googleads.v26.resources.CampaignCustomizer campaign_customizer = 186;
+  .google.ads.googleads.v26.resources.CampaignDraft campaign_draft = 49;
+  .google.ads.googleads.v26.resources.CampaignGroup campaign_group = 25;
+  .google.ads.googleads.v26.resources.CampaignGoalConfig campaign_goal_config = 236;
+  .google.ads.googleads.v26.resources.CampaignLabel campaign_label = 108;
+  .google.ads.googleads.v26.resources.CampaignSearchTermInsight campaign_search_term_insight = 204;
+  .google.ads.googleads.v26.resources.CampaignSearchTermView campaign_search_term_view = 243;
+  .google.ads.googleads.v26.resources.CampaignSharedSet campaign_shared_set = 30;
+  .google.ads.googleads.v26.resources.CampaignSimulation campaign_simulation = 157;
+  .google.ads.googleads.v26.resources.CarrierConstant carrier_constant = 66;
+  .google.ads.googleads.v26.resources.CartDataSalesView cart_data_sales_view = 221;
+  .google.ads.googleads.v26.resources.ChangeEvent change_event = 145;
+  .google.ads.googleads.v26.resources.ChangeStatus change_status = 37;
+  .google.ads.googleads.v26.resources.CombinedAudience combined_audience = 148;
+  .google.ads.googleads.v26.resources.Audience audience = 190;
+  .google.ads.googleads.v26.resources.ConversionAction conversion_action = 103;
+  .google.ads.googleads.v26.resources.ConversionCustomVariable conversion_custom_variable = 153;
+  .google.ads.googleads.v26.resources.ConversionGoalCampaignConfig conversion_goal_campaign_config = 177;
+  .google.ads.googleads.v26.resources.ConversionValueRule conversion_value_rule = 164;
+  .google.ads.googleads.v26.resources.ConversionValueRuleSet conversion_value_rule_set = 165;
+  .google.ads.googleads.v26.resources.ClickView click_view = 122;
+  .google.ads.googleads.v26.resources.CurrencyConstant currency_constant = 134;
+  .google.ads.googleads.v26.resources.CustomAudience custom_audience = 147;
+  .google.ads.googleads.v26.resources.CustomConversionGoal custom_conversion_goal = 176;
+  .google.ads.googleads.v26.resources.CustomInterest custom_interest = 104;
+  .google.ads.googleads.v26.resources.Customer customer = 1;
+  .google.ads.googleads.v26.resources.CustomerAsset customer_asset = 155;
+  .google.ads.googleads.v26.resources.CustomerAssetSet customer_asset_set = 195;
+  .google.ads.googleads.v26.resources.AccessibleBiddingStrategy accessible_bidding_strategy = 169;
+  .google.ads.googleads.v26.resources.CustomerCustomizer customer_customizer = 184;
+  .google.ads.googleads.v26.resources.CustomerManagerLink customer_manager_link = 61;
+  .google.ads.googleads.v26.resources.CustomerClientLink customer_client_link = 62;
+  .google.ads.googleads.v26.resources.CustomerClient customer_client = 70;
+  .google.ads.googleads.v26.resources.CustomerConversionGoal customer_conversion_goal = 174;
+  .google.ads.googleads.v26.resources.CustomerLabel customer_label = 124;
+  .google.ads.googleads.v26.resources.CustomerNegativeCriterion customer_negative_criterion = 88;
+  .google.ads.googleads.v26.resources.CustomerSearchTermInsight customer_search_term_insight = 205;
+  .google.ads.googleads.v26.resources.CustomerUserAccess customer_user_access = 146;
+  .google.ads.googleads.v26.resources.CustomerUserAccessInvitation customer_user_access_invitation = 150;
+  .google.ads.googleads.v26.resources.CustomizerAttribute customizer_attribute = 178;
+  .google.ads.googleads.v26.resources.DataLink data_link = 230;
+  .google.ads.googleads.v26.resources.DetailContentSuitabilityPlacementView detail_content_suitability_placement_view = 238;
+  .google.ads.googleads.v26.resources.DetailPlacementView detail_placement_view = 118;
+  .google.ads.googleads.v26.resources.DetailedDemographic detailed_demographic = 166;
+  .google.ads.googleads.v26.resources.DisplayKeywordView display_keyword_view = 47;
+  .google.ads.googleads.v26.resources.DistanceView distance_view = 132;
+  .google.ads.googleads.v26.resources.DynamicSearchAdsSearchTermView dynamic_search_ads_search_term_view = 106;
+  .google.ads.googleads.v26.resources.ExpandedLandingPageView expanded_landing_page_view = 128;
+  .google.ads.googleads.v26.resources.FinalUrlExpansionAssetView final_url_expansion_asset_view = 240;
+  .google.ads.googleads.v26.resources.GenderView gender_view = 40;
+  .google.ads.googleads.v26.resources.GeoTargetConstant geo_target_constant = 23;
+  .google.ads.googleads.v26.resources.GeographicView geographic_view = 125;
+  .google.ads.googleads.v26.resources.Goal goal = 237;
+  .google.ads.googleads.v26.resources.GroupContentSuitabilityPlacementView group_content_suitability_placement_view = 239;
+  .google.ads.googleads.v26.resources.GroupPlacementView group_placement_view = 119;
+  .google.ads.googleads.v26.resources.HotelGroupView hotel_group_view = 51;
+  .google.ads.googleads.v26.resources.HotelPerformanceView hotel_performance_view = 71;
+  .google.ads.googleads.v26.resources.HotelReconciliation hotel_reconciliation = 188;
+  .google.ads.googleads.v26.resources.IncomeRangeView income_range_view = 138;
+  .google.ads.googleads.v26.resources.KeywordView keyword_view = 21;
+  .google.ads.googleads.v26.resources.KeywordPlan keyword_plan = 32;
+  .google.ads.googleads.v26.resources.KeywordPlanCampaign keyword_plan_campaign = 33;
+  .google.ads.googleads.v26.resources.KeywordPlanCampaignKeyword keyword_plan_campaign_keyword = 140;
+  .google.ads.googleads.v26.resources.KeywordPlanAdGroup keyword_plan_ad_group = 35;
+  .google.ads.googleads.v26.resources.KeywordPlanAdGroupKeyword keyword_plan_ad_group_keyword = 141;
+  .google.ads.googleads.v26.resources.KeywordThemeConstant keyword_theme_constant = 163;
+  .google.ads.googleads.v26.resources.Label label = 52;
+  .google.ads.googleads.v26.resources.LandingPageView landing_page_view = 126;
+  .google.ads.googleads.v26.resources.LanguageConstant language_constant = 55;
+  .google.ads.googleads.v26.resources.LocationView location_view = 123;
+  .google.ads.googleads.v26.resources.LocationInterestView location_interest_view = 241;
+  .google.ads.googleads.v26.resources.ManagedPlacementView managed_placement_view = 53;
+  .google.ads.googleads.v26.resources.MatchedLocationInterestView matched_location_interest_view = 248;
+  .google.ads.googleads.v26.resources.ContentCriterionView content_criterion_view = 232;
+  .google.ads.googleads.v26.resources.MediaFile media_file = 90;
+  .google.ads.googleads.v26.resources.LocalServicesEmployee local_services_employee = 223;
+  .google.ads.googleads.v26.resources.LocalServicesVerificationArtifact local_services_verification_artifact = 211;
+  .google.ads.googleads.v26.resources.MobileAppCategoryConstant mobile_app_category_constant = 87;
+  .google.ads.googleads.v26.resources.MobileDeviceConstant mobile_device_constant = 98;
+  .google.ads.googleads.v26.resources.MultiPartyAuthReview multi_party_auth_review = 265;
+  .google.ads.googleads.v26.resources.OfflineConversionUploadClientSummary offline_conversion_upload_client_summary = 216;
+  .google.ads.googleads.v26.resources.OfflineConversionUploadConversionActionSummary offline_conversion_upload_conversion_action_summary = 228;
+  .google.ads.googleads.v26.resources.OfflineUserDataJob offline_user_data_job = 137;
+  .google.ads.googleads.v26.resources.OperatingSystemVersionConstant operating_system_version_constant = 86;
+  .google.ads.googleads.v26.resources.PaidOrganicSearchTermView paid_organic_search_term_view = 129;
+  .google.ads.googleads.v26.resources.QualifyingQuestion qualifying_question = 202;
+  .google.ads.googleads.v26.resources.ParentalStatusView parental_status_view = 45;
+  .google.ads.googleads.v26.resources.PerStoreView per_store_view = 198;
+  .google.ads.googleads.v26.resources.PerformanceMaxPlacementView performance_max_placement_view = 233;
+  .google.ads.googleads.v26.resources.ProductCategoryConstant product_category_constant = 208;
+  .google.ads.googleads.v26.resources.ProductGroupView product_group_view = 54;
+  .google.ads.googleads.v26.resources.ProductLink product_link = 194;
+  .google.ads.googleads.v26.resources.ProductLinkInvitation product_link_invitation = 209;
+  .google.ads.googleads.v26.resources.Recommendation recommendation = 22;
+  .google.ads.googleads.v26.resources.RecommendationSubscription recommendation_subscription = 220;
+  .google.ads.googleads.v26.resources.SearchTermView search_term_view = 68;
+  .google.ads.googleads.v26.resources.SharedCriterion shared_criterion = 29;
+  .google.ads.googleads.v26.resources.SharedSet shared_set = 27;
+  .google.ads.googleads.v26.resources.SmartCampaignSetting smart_campaign_setting = 167;
+  .google.ads.googleads.v26.resources.ShoppingPerformanceView shopping_performance_view = 117;
+  .google.ads.googleads.v26.resources.ShoppingProduct shopping_product = 226;
+  .google.ads.googleads.v26.resources.SmartCampaignSearchTermView smart_campaign_search_term_view = 170;
+  .google.ads.googleads.v26.resources.TargetingExpansionView targeting_expansion_view = 244;
+  .google.ads.googleads.v26.resources.ThirdPartyAppAnalyticsLink third_party_app_analytics_link = 144;
+  .google.ads.googleads.v26.resources.TopicView topic_view = 44;
+  .google.ads.googleads.v26.resources.TravelActivityGroupView travel_activity_group_view = 201;
+  .google.ads.googleads.v26.resources.TravelActivityPerformanceView travel_activity_performance_view = 200;
+  .google.ads.googleads.v26.resources.Experiment experiment = 133;
+  .google.ads.googleads.v26.resources.ExperimentArm experiment_arm = 183;
+  .google.ads.googleads.v26.resources.UserInterest user_interest = 59;
+  .google.ads.googleads.v26.resources.LifeEvent life_event = 161;
+  .google.ads.googleads.v26.resources.UserList user_list = 38;
+  .google.ads.googleads.v26.resources.UserListCustomerType user_list_customer_type = 225;
+  .google.ads.googleads.v26.resources.UserLocationView user_location_view = 135;
+  .google.ads.googleads.v26.resources.RemarketingAction remarketing_action = 60;
+  .google.ads.googleads.v26.resources.TopicConstant topic_constant = 31;
+  .google.ads.googleads.v26.resources.Video video = 39;
+  .google.ads.googleads.v26.resources.VideoEnhancement video_enhancement = 250;
+  .google.ads.googleads.v26.resources.WebpageView webpage_view = 162;
+  .google.ads.googleads.v26.resources.LeadFormSubmissionData lead_form_submission_data = 192;
+  .google.ads.googleads.v26.resources.LocalServicesLead local_services_lead = 210;
+  .google.ads.googleads.v26.resources.LocalServicesLeadConversation local_services_lead_conversation = 214;
+  .google.ads.googleads.v26.resources.LiftMeasurementConfig lift_measurement_config = 251;
+  .google.ads.googleads.v26.resources.LiftMeasurementAgeRange lift_measurement_age_range = 260;
+  .google.ads.googleads.v26.resources.LiftMeasurementGender lift_measurement_gender = 261;
+  .google.ads.googleads.v26.resources.LiftMeasurementDevice lift_measurement_device = 262;
+  .google.ads.googleads.v26.resources.LiftMeasurementCampaign lift_measurement_campaign = 263;
+  .google.ads.googleads.v26.resources.LiftMeasurementVideo lift_measurement_video = 264;
+  .google.ads.googleads.v26.resources.LiftMeasurementFlight lift_measurement_flight = 266;
+  .google.ads.googleads.v26.resources.SearchLiftKeywordBundle search_lift_keyword_bundle = 267;
+  .google.ads.googleads.v26.resources.AndroidPrivacySharedKeyGoogleAdGroup android_privacy_shared_key_google_ad_group = 217;
+  .google.ads.googleads.v26.resources.AndroidPrivacySharedKeyGoogleCampaign android_privacy_shared_key_google_campaign = 218;
+  .google.ads.googleads.v26.resources.AndroidPrivacySharedKeyGoogleNetworkType android_privacy_shared_key_google_network_type = 219;
+  .google.ads.googleads.v26.resources.YouTubeVideoUpload you_tube_video_upload = 245;
+  .google.ads.googleads.v26.resources.AppliedIncentive applied_incentive = 246;
+  .google.ads.googleads.v26.common.Metrics metrics = 4;
+  .google.ads.googleads.v26.common.Segments segments = 102;
+}
+
+message MetricAttributes {
+  string name = 1;
+  repeated .google.ads.googleads.v26.services.MetricAttributes.Attribute attributes = 2;
+  message Attribute {
+    string key = 1;
+    string value = 2;
+  }
+}
+
+message SearchGoogleAdsResponse {
+  repeated .google.ads.googleads.v26.services.GoogleAdsRow results = 1;
+  string next_page_token = 2;
+  int64 total_results_count = 3;
+  .google.protobuf.FieldMask field_mask = 5;
+  .google.ads.googleads.v26.services.GoogleAdsRow summary_row = 6;
+  int64 query_resource_consumption = 8;
+  repeated .google.ads.googleads.v26.services.MetricAttributes metric_attributes = 13;
+}
