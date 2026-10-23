@@ -40,9 +40,6 @@ const GenerationContext = struct {
     /// map of "package.fully.qualified.names" to output string lines
     fqn_lines: std.StringHashMap(std.ArrayList([]const u8)),
 
-    /// map of message names to their dependencies
-    message_deps: std.StringHashMap(std.ArrayList([]const u8)),
-
     /// map of package names to the references of the extensions they declare
     package_extensions: std.StringHashMap(std.ArrayList([]const u8)),
 
@@ -122,7 +119,6 @@ const GenerationContext = struct {
             .res = .{},
             .known_packages = .init(allocator),
             .fqn_lines = .init(allocator),
-            .message_deps = .init(allocator),
             .package_extensions = .init(allocator),
             .package_file_options = .init(allocator),
             .messages = .init(allocator),
@@ -185,15 +181,6 @@ const GenerationContext = struct {
 
     pub fn processRequest(self: *GenerationContext, io: std.Io, allocator: std.mem.Allocator) !void {
         if (self.res.@"error" != null) return;
-
-        defer {
-            // Clean up message dependencies
-            var it = self.message_deps.iterator();
-            while (it.next()) |entry| {
-                entry.value_ptr.deinit(allocator);
-            }
-            self.message_deps.deinit();
-        }
 
         for (self.req.proto_file.items) |file| {
             const t: descriptor.FileDescriptorProto = file;
@@ -666,6 +653,56 @@ const GenerationContext = struct {
         @panic("field has no type");
     }
 
+    /// How the type of a field is used in the generated code.
+    const TypeUse = enum {
+        /// A field of a message struct, optional when it has presence.
+        field,
+        /// A member of a oneof union, present when active.
+        oneof_member,
+        /// A value stored apart from any message: an extension value or a
+        /// default.
+        value,
+    };
+
+    /// Whether the singular message field `field` of the message `fqn` must
+    /// hold its message through a pointer, so that the message does not
+    /// contain itself: when its type is the message itself or encloses it,
+    /// or holds it in turn through singular or oneof fields, however deep.
+    /// Repeated fields and maps store their elements apart, and fields of
+    /// the first kind are pointers already, so they do not count.
+    fn needsPointer(
+        self: *GenerationContext,
+        allocator: std.mem.Allocator,
+        fqn: FullName,
+        field: descriptor.FieldDescriptorProto,
+    ) !bool {
+        const type_name = field.type_name orelse return false;
+        const dep_name = type_name[1..]; // Remove leading dot
+        if (std.mem.eql(u8, dep_name, fqn.buf) or isAncestorFqn(dep_name, fqn.buf)) return true;
+
+        // The messages held inline from `type_name`, each searched once.
+        var reached: std.StringHashMapUnmanaged(void) = .empty;
+        defer reached.deinit(allocator);
+        var pending: std.ArrayList([]const u8) = .empty;
+        defer pending.deinit(allocator);
+        try reached.put(allocator, type_name, {});
+        try pending.append(allocator, type_name);
+        while (pending.pop()) |name| {
+            const message = self.messages.get(name) orelse continue;
+            for (message.field.items) |f| {
+                if (isRepeated(f)) continue;
+                const ft = f.type orelse continue;
+                if (ft != .TYPE_MESSAGE and ft != .TYPE_GROUP) continue;
+                const held = f.type_name orelse continue;
+                if (std.mem.eql(u8, held, name) or isAncestorFqn(held[1..], name[1..])) continue;
+                if (std.mem.eql(u8, held[1..], fqn.buf)) return true;
+                const entry = try reached.getOrPut(allocator, held);
+                if (!entry.found_existing) try pending.append(allocator, held);
+            }
+        }
+        return false;
+    }
+
     fn getFieldType(
         self: *GenerationContext,
         allocator: std.mem.Allocator,
@@ -673,7 +710,7 @@ const GenerationContext = struct {
         file: descriptor.FileDescriptorProto,
         field: descriptor.FieldDescriptorProto,
         features: Features,
-        is_union: bool,
+        use: TypeUse,
     ) ![]const u8 {
         var prefix: []const u8 = "";
         var postfix: []const u8 = "";
@@ -681,26 +718,18 @@ const GenerationContext = struct {
         const t = field.type.?;
 
         if (!repeated) {
-            if (!is_union) {
+            const is_message = t == .TYPE_MESSAGE or t == .TYPE_GROUP;
+            switch (use) {
                 // look for optional types
-                switch (t) {
-                    .TYPE_MESSAGE, .TYPE_GROUP => {
-                        // Check if the field type is self-referential
-                        if (field.type_name) |type_name| {
-                            const dep_name = type_name[1..]; // Remove leading dot
-                            if (std.mem.eql(u8, dep_name, fqn.buf) or isAncestorFqn(dep_name, fqn.buf)) {
-                                prefix = "?*";
-                            } else {
-                                prefix = "?";
-                            }
-                        } else {
-                            prefix = "?";
-                        }
-                    },
-                    else => if (hasExplicitPresence(field, features)) {
-                        prefix = "?";
-                    },
-                }
+                .field => if (is_message) {
+                    prefix = if (try self.needsPointer(allocator, fqn, field)) "?*" else "?";
+                } else if (hasExplicitPresence(field, features)) {
+                    prefix = "?";
+                },
+                .oneof_member => if (is_message and try self.needsPointer(allocator, fqn, field)) {
+                    prefix = "*";
+                },
+                .value => {},
             }
         } else {
             prefix = "std.ArrayList(";
@@ -908,7 +937,7 @@ const GenerationContext = struct {
         field: descriptor.FieldDescriptorProto,
         features: Features,
     ) !void {
-        const type_str = try self.getFieldType(allocator, fqn, file, field, features, false);
+        const type_str = try self.getFieldType(allocator, fqn, file, field, features, .field);
         const field_name = try escapeName(allocator, field.name.?);
         const nullable = type_str[0] == '?';
 
@@ -1086,7 +1115,7 @@ const GenerationContext = struct {
                         const f: descriptor.FieldDescriptorProto = field;
                         if (f.oneof_index orelse -1 == @as(i32, @intCast(i))) {
                             const name = try escapeName(allocator, f.name.?);
-                            const typeStr = try self.getFieldType(allocator, messageFqn, file, f, message_features.forField(file, m, f), true);
+                            const typeStr = try self.getFieldType(allocator, messageFqn, file, f, message_features.forField(file, m, f), .oneof_member);
                             try lines.append(allocator, try std.fmt.allocPrint(
                                 allocator,
                                 "      {s}: {s},\n",
@@ -1766,7 +1795,7 @@ const GenerationContext = struct {
                 emitted = true;
             }
             // Non-optional type of the field, as used within unions.
-            const type_str = try self.getFieldType(allocator, fqn, file, f, features, true);
+            const type_str = try self.getFieldType(allocator, fqn, file, f, features, .value);
             try lines.append(allocator, try std.fmt.allocPrint(
                 allocator,
                 // Unlike fields, declarations may not shadow primitives.
@@ -1801,7 +1830,7 @@ const GenerationContext = struct {
             const extendee = try self.fieldTypeFqn(allocator, scope_fqn, file, extendee_field);
             // The value is stored apart from its scope, so a message type is
             // never self-referential and needs no pointer.
-            const element_type = try self.getFieldType(allocator, scope_fqn, file, ext, features, true);
+            const element_type = try self.getFieldType(allocator, scope_fqn, file, ext, features, .value);
             const value_type = if (isRepeated(ext))
                 element_type
             else
@@ -1813,7 +1842,7 @@ const GenerationContext = struct {
                 try std.fmt.allocPrint(allocator, "fd({?d}, {s})", .{ ext.number, ftype });
             const default = if (isRepeated(ext)) "null" else if (try formatDefaultValue(allocator, ext)) |value|
                 try std.fmt.allocPrint(allocator, "@as({s}, {s})", .{
-                    try self.getFieldType(allocator, scope_fqn, file, ext, features, true),
+                    try self.getFieldType(allocator, scope_fqn, file, ext, features, .value),
                     value,
                 })
             else
@@ -1919,81 +1948,6 @@ const GenerationContext = struct {
         for (message.nested_type.items) |m| if (std.mem.eql(u8, m.name.?, "defaults")) return true;
         for (message.enum_type.items) |e| if (std.mem.eql(u8, e.name.?, "defaults")) return true;
         for (message.extension.items) |x| if (std.mem.eql(u8, x.name.?, "defaults")) return true;
-        return false;
-    }
-
-    /// Analyzes message dependencies to detect self-referential messages
-    fn analyzeMessageDependencies(
-        self: *GenerationContext,
-        allocator: std.mem.Allocator,
-        fqn: FullName,
-        message: descriptor.DescriptorProto,
-    ) !bool {
-        const message_name = message.name.?;
-        const full_message_name = fqn.buf; // Use package name directly
-        var deps: std.ArrayList([]const u8) = .empty;
-
-        // Check fields for message types
-        for (message.field.items) |field| {
-            if (field.type) |t| {
-                if (t == .TYPE_MESSAGE) {
-                    if (field.type_name) |type_name| {
-                        const raw_type = type_name;
-                        const dep_name = raw_type[1..]; // Remove leading dot
-                        try deps.append(allocator, dep_name);
-
-                        // Check for direct self-reference by comparing the last part of the type name
-                        const last_dot = std.mem.lastIndexOf(u8, dep_name, ".");
-                        const simple_name = if (last_dot) |idx| dep_name[idx + 1 ..] else dep_name;
-
-                        if (std.mem.eql(u8, simple_name, message_name)) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Store dependencies for this message
-        try self.message_deps.put(full_message_name, deps);
-
-        // Check if this message is self-referential (directly or indirectly)
-        var visited: std.StringHashMap(bool) = .init(allocator);
-        defer visited.deinit();
-        return self.isMessageSelfReferential(full_message_name, &visited);
-    }
-
-    /// Recursively checks if a message is self-referential
-    fn isMessageSelfReferential(
-        self: *GenerationContext,
-        message_name: []const u8,
-        visited: *std.StringHashMap(bool),
-    ) bool {
-        if (visited.get(message_name)) |_| {
-            return true; // Found a cycle
-        }
-
-        if (self.message_deps.get(message_name)) |deps| {
-            visited.put(message_name, true) catch return false;
-            defer _ = visited.remove(message_name);
-
-            for (deps.items) |dep| {
-                const last_dot = std.mem.lastIndexOf(u8, dep, ".");
-                const simple_name = if (last_dot) |idx| dep[idx + 1 ..] else dep;
-                const last_dot_msg = std.mem.lastIndexOf(u8, message_name, ".");
-                const msg_simple_name = if (last_dot_msg) |idx| message_name[idx + 1 ..] else message_name;
-
-                // Check for self-reference by comparing simple names
-                if (std.mem.eql(u8, simple_name, msg_simple_name)) {
-                    return true;
-                }
-                // Also check for indirect cycles
-                if (self.isMessageSelfReferential(dep, visited)) {
-                    return true;
-                }
-            }
-        }
-
         return false;
     }
 
@@ -2415,9 +2369,4 @@ pub fn formatSliceEscapeImpl(allocator: std.mem.Allocator, str: []const u8) ![]c
     try w.writeByte('"');
 
     return try writer.toOwnedSlice();
-}
-
-test "self referential" {
-    _ = &GenerationContext.isMessageSelfReferential;
-    _ = &GenerationContext.analyzeMessageDependencies;
 }
