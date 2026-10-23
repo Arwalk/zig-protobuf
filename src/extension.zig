@@ -473,10 +473,9 @@ pub fn readMessageSetItemWithOptions(
             consumed += c;
             type_id = id;
         } else if (tag.field == 3 and tag.wire_type == .len) {
-            const len, const c = try wire.decodeScalar(.int32, reader);
+            const len, const c = try wire.decodeLen(reader);
             consumed += c;
-            if (len < 0) return error.InvalidInput;
-            const bytes = try wire.readBytesAlloc(allocator, reader, @intCast(len), options.read_chunk);
+            const bytes = try wire.readBytesAlloc(allocator, reader, len, options.read_chunk);
             consumed += bytes.len;
             if (message) |m| allocator.free(m);
             message = bytes;
