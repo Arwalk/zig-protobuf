@@ -1070,7 +1070,7 @@ const GenerationContext = struct {
 
                     for (m.field.items) |field| {
                         const f: descriptor.FieldDescriptorProto = field;
-                        if (f.oneof_index orelse -1 == @as(i32, @intCast(i))) {
+                        if ((f.oneof_index orelse -1) == @as(i32, @intCast(i))) {
                             const name = try escapeName(allocator, f.name.?);
                             try lines.append(allocator, try std.fmt.allocPrint(allocator, "      {s},\n", .{name}));
                         }
@@ -1084,7 +1084,7 @@ const GenerationContext = struct {
 
                     for (m.field.items) |field| {
                         const f: descriptor.FieldDescriptorProto = field;
-                        if (f.oneof_index orelse -1 == @as(i32, @intCast(i))) {
+                        if ((f.oneof_index orelse -1) == @as(i32, @intCast(i))) {
                             const name = try escapeName(allocator, f.name.?);
                             const typeStr = try self.getFieldType(allocator, messageFqn, file, f, message_features.forField(file, m, f), true);
                             try lines.append(allocator, try std.fmt.allocPrint(
@@ -1102,7 +1102,7 @@ const GenerationContext = struct {
 
                     for (m.field.items) |field| {
                         const f: descriptor.FieldDescriptorProto = field;
-                        if (f.oneof_index orelse -1 == @as(i32, @intCast(i))) {
+                        if ((f.oneof_index orelse -1) == @as(i32, @intCast(i))) {
                             try self.generateFieldDescriptor(allocator, lines, m, f, message_features.forField(file, m, f));
                         }
                     }
