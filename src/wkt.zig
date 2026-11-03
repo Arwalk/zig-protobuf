@@ -156,20 +156,35 @@ pub const Duration = struct {
         if (dot_pos) |dp| {
             const sec_str = body[0..dp];
             const frac_str = body[dp + 1 ..];
-            const negative = sec_str.len > 0 and sec_str[0] == '-';
+            // parseInt also takes '+' and '_', which proto3 JSON does not.
+            if (!isSignedDigits(sec_str) or !isDigits(frac_str)) return error.UnexpectedToken;
+            const negative = sec_str[0] == '-';
             seconds = std.fmt.parseInt(i64, sec_str, 10) catch return error.UnexpectedToken;
-            if (frac_str.len == 0 or frac_str.len > 9) return error.UnexpectedToken;
+            if (frac_str.len > 9) return error.UnexpectedToken;
             var frac_buf: [9]u8 = @splat('0');
             @memcpy(frac_buf[0..frac_str.len], frac_str);
             const frac_val = std.fmt.parseInt(u32, &frac_buf, 10) catch return error.UnexpectedToken;
             nanos = @intCast(frac_val);
             if (negative) nanos = -nanos;
         } else {
+            if (!isSignedDigits(body)) return error.UnexpectedToken;
             seconds = std.fmt.parseInt(i64, body, 10) catch return error.UnexpectedToken;
         }
         // Proto3 JSON: duration must be in the range [-315576000000s, +315576000000s].
         if (seconds < -315576000000 or seconds > 315576000000) return error.UnexpectedToken;
         return @This(){ .seconds = seconds, .nanos = nanos };
+    }
+
+    /// Whether `text` is a non-empty run of ASCII digits.
+    fn isDigits(text: []const u8) bool {
+        if (text.len == 0) return false;
+        for (text) |ch| if (ch < '0' or ch > '9') return false;
+        return true;
+    }
+
+    /// Whether `text` is a non-empty run of ASCII digits after an optional '-'.
+    fn isSignedDigits(text: []const u8) bool {
+        return isDigits(if (text.len > 0 and text[0] == '-') text[1..] else text);
     }
 
     pub fn jsonStringify(self: @This(), jws: anytype) @TypeOf(jws.*).Error!void {
