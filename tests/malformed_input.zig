@@ -312,6 +312,10 @@ test "malformed input: Timestamp fields out of range are refused" {
         "\"2024-01-01T24:00:00Z\"",
         "\"2024-01-01T00:60:00Z\"",
         "\"2024-01-01T00:00:61Z\"",
+        // Leap seconds are refused, as by the reference implementations.
+        "\"2024-01-01T12:34:60Z\"",
+        "\"2016-12-31T23:59:60Z\"",
+        "\"2016-12-31T23:59:60.5Z\"",
         "\"2024-01-01T00:00:00+24:00\"",
         "\"2024-01-01T00:00:00+00:60\"",
         "\"2024-+1-01T00:00:00Z\"",
@@ -330,6 +334,7 @@ test "malformed input: Timestamp fields out of range are refused" {
         .{ "\"2000-02-29T12:30:45Z\"", 951827445 },
         .{ "\"0001-01-01T00:00:00Z\"", -62135596800 },
         .{ "\"9999-12-31T23:59:59Z\"", 253402300799 },
+        .{ "\"2016-12-31T23:59:59Z\"", 1483228799 },
         .{ "\"1970-01-01T01:00:00+01:00\"", 0 },
     }) |case| {
         const parsed = try Timestamp.jsonDecode(case[0], .{}, gpa);
