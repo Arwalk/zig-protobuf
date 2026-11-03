@@ -540,3 +540,20 @@ test "malformed input: Duration JSON is digits only" {
     // Seconds too long for an i64 fail rather than overflow.
     try testing.expectError(error.UnexpectedToken, Duration.jsonDecode("\"99999999999999999999999s\"", .{}, gpa));
 }
+
+test "malformed input: a scalar oneof member frees the member it replaces" {
+    const gpa = testing.allocator;
+    for ([_][]const u8{
+        "\x0a\x01A", // string_in_oneof = "A"
+        "\x12\x03\x12\x01x", // message_in_oneof = { str: "x" }
+    }) |previous| {
+        var buffer: [16]u8 = undefined;
+        var w: std.Io.Writer = .fixed(&buffer);
+        try w.writeAll(previous);
+        try w.writeAll("\x18\x05"); // a_number = 5
+        var reader: std.Io.Reader = .fixed(w.buffered());
+        var msg = try tests_oneof.OneofContainer.decode(&reader, gpa);
+        defer msg.deinit(gpa);
+        try testing.expectEqual(5, msg.some_oneof.?.a_number);
+    }
+}

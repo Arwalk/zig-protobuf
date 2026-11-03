@@ -1143,6 +1143,14 @@ pub fn decodeMessage(
                                     const val, const c =
                                         try decodeScalar(scalar, reader);
                                     consumed += c;
+
+                                    // Free potentially existing union field
+                                    // just before replacing.
+                                    protobuf.deinitOneof(
+                                        &@field(result, field_name),
+                                        allocator,
+                                    );
+
                                     @field(result, field_name) = @unionInit(
                                         OneOf,
                                         oo_field_name,
