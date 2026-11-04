@@ -8,6 +8,7 @@ const tests_oneof = @import("./generated/tests/oneof.pb.zig");
 const selfref = @import("./generated/selfref.pb.zig");
 const ext = @import("./generated/tests/extensions.pb.zig");
 const proto3 = @import("./generated/protobuf_test_messages/proto3.pb.zig");
+const merge = @import("./generated/tests/merge.pb.zig");
 
 /// Fails every single allocation larger than `max`, standing in for a
 /// memory-bounded process.
@@ -555,5 +556,163 @@ test "malformed input: a scalar oneof member frees the member it replaces" {
         var msg = try tests_oneof.OneofContainer.decode(&reader, gpa);
         defer msg.deinit(gpa);
         try testing.expectEqual(5, msg.some_oneof.?.a_number);
+    }
+}
+
+/// Counts the bytes requested from `child`, freed or not.
+const CountingAllocator = struct {
+    child: std.mem.Allocator = testing.allocator,
+    total: usize = 0,
+
+    fn allocator(self: *CountingAllocator) std.mem.Allocator {
+        return .{ .ptr = self, .vtable = &.{ .alloc = alloc, .resize = resize, .remap = remap, .free = free } };
+    }
+
+    fn alloc(ctx: *anyopaque, len: usize, alignment: std.mem.Alignment, ret_addr: usize) ?[*]u8 {
+        const self: *CountingAllocator = @ptrCast(@alignCast(ctx));
+        self.total += len;
+        return self.child.rawAlloc(len, alignment, ret_addr);
+    }
+
+    fn resize(ctx: *anyopaque, memory: []u8, alignment: std.mem.Alignment, new_len: usize, ret_addr: usize) bool {
+        const self: *CountingAllocator = @ptrCast(@alignCast(ctx));
+        if (new_len > memory.len) self.total += new_len - memory.len;
+        return self.child.rawResize(memory, alignment, new_len, ret_addr);
+    }
+
+    fn remap(ctx: *anyopaque, memory: []u8, alignment: std.mem.Alignment, new_len: usize, ret_addr: usize) ?[*]u8 {
+        const self: *CountingAllocator = @ptrCast(@alignCast(ctx));
+        if (new_len > memory.len) self.total += new_len - memory.len;
+        return self.child.rawRemap(memory, alignment, new_len, ret_addr);
+    }
+
+    fn free(ctx: *anyopaque, memory: []u8, alignment: std.mem.Alignment, ret_addr: usize) void {
+        const self: *CountingAllocator = @ptrCast(@alignCast(ctx));
+        self.child.rawFree(memory, alignment, ret_addr);
+    }
+};
+
+/// Extension 100 of `merge.Node`.
+const merge_number = protobuf.Extension(merge.Node, ?i32, protobuf.fd(100, .{ .scalar = .int32 }), "tests.malformed.merge_number", null, .{});
+
+/// Extension record 100 (a varint) and unknown field 50 (a varint) of value `v`.
+inline fn rec(comptime v: u8) []const u8 {
+    return "\xa0\x06" ++ .{v};
+}
+inline fn unk(comptime v: u8) []const u8 {
+    return "\x90\x03" ++ .{v};
+}
+/// Field `tag` holding the message `fields`.
+inline fn sub(comptime tag: u8, comptime fields: []const u8) []const u8 {
+    return .{ tag, fields.len } ++ fields;
+}
+
+fn decodeNode(bytes: []const u8, options: protobuf.DecodeOptions) !merge.Node {
+    var reader: std.Io.Reader = .fixed(bytes);
+    return protobuf.decodeWithOptions(merge.Node, &reader, testing.allocator, options);
+}
+
+fn expectRecords(msg: anytype, extensions: []const u8, unknown: []const u8) !void {
+    try testing.expectEqualSlices(u8, extensions, msg._extensions.records);
+    try testing.expectEqualSlices(u8, unknown, msg._unknown_fields);
+}
+
+test "malformed input: repeated submessages merge their records in order" {
+    const gpa = testing.allocator;
+    // Node fields: child 1, member 2 (oneof), number 3 (oneof), items 5,
+    // leaf 7, leaf_member 8 (oneof).
+
+    // A singular submessage, with records of the parent in between.
+    {
+        var msg = try decodeNode(sub(0x0a, rec(1) ++ unk(1)) ++ rec(9) ++ sub(0x0a, rec(2)) ++ unk(9) ++ sub(0x0a, unk(2) ++ rec(3)), .{});
+        defer msg.deinit(gpa);
+        try expectRecords(msg, rec(9), unk(9));
+        try expectRecords(msg.child.?.*, rec(1) ++ rec(2) ++ rec(3), unk(1) ++ unk(2));
+    }
+    // Grandchildren merged across merges of their parent.
+    {
+        var msg = try decodeNode(sub(0x0a, sub(0x0a, rec(1))) ++ sub(0x0a, rec(7)) ++ sub(0x0a, sub(0x0a, rec(2) ++ unk(2))) ++ sub(0x0a, sub(0x0a, rec(3))), .{});
+        defer msg.deinit(gpa);
+        try expectRecords(msg.child.?.*, rec(7), "");
+        try expectRecords(msg.child.?.child.?.*, rec(1) ++ rec(2) ++ rec(3), unk(2));
+    }
+    // An inline submessage.
+    {
+        var msg = try decodeNode(sub(0x3a, rec(1)) ++ sub(0x3a, rec(2) ++ unk(1)), .{});
+        defer msg.deinit(gpa);
+        try expectRecords(msg.leaf.?, rec(1) ++ rec(2), unk(1));
+    }
+    // Oneof members: a switch to another member starts over.
+    {
+        var msg = try decodeNode(sub(0x12, rec(1)) ++ sub(0x12, sub(0x0a, rec(2))) ++ "\x18\x05" ++ sub(0x12, rec(3)) ++ sub(0x12, sub(0x0a, rec(4))) ++ sub(0x12, rec(5)), .{});
+        defer msg.deinit(gpa);
+        try expectRecords(msg.choice.?.member.*, rec(3) ++ rec(5), "");
+        try expectRecords(msg.choice.?.member.child.?.*, rec(4), "");
+    }
+    {
+        var msg = try decodeNode(sub(0x42, rec(1)) ++ sub(0x42, rec(2)) ++ sub(0x12, sub(0x0a, rec(3))) ++ sub(0x42, rec(4)) ++ sub(0x42, unk(5)), .{});
+        defer msg.deinit(gpa);
+        try expectRecords(msg.choice.?.leaf_member, rec(4), unk(5));
+    }
+    // Elements of a repeated field stay apart, and merge within themselves.
+    {
+        var msg = try decodeNode(sub(0x2a, rec(1)) ++ sub(0x2a, sub(0x0a, rec(2)) ++ sub(0x0a, rec(3))) ++ sub(0x2a, rec(4)), .{});
+        defer msg.deinit(gpa);
+        try testing.expectEqual(3, msg.items.items.len);
+        try expectRecords(msg.items.items[0], rec(1), "");
+        try expectRecords(msg.items.items[1].child.?.*, rec(2) ++ rec(3), "");
+        try expectRecords(msg.items.items[2], rec(4), "");
+    }
+    // Records from an earlier decode into the same message come first.
+    {
+        var msg = try decodeNode(sub(0x0a, rec(1)), .{});
+        defer msg.deinit(gpa);
+        const more = sub(0x0a, rec(2)) ++ sub(0x0a, rec(3));
+        var reader: std.Io.Reader = .fixed(more);
+        _ = try protobuf.wire.decodeMessage(&msg, gpa, &reader, .{});
+        try expectRecords(msg.child.?.*, rec(1) ++ rec(2) ++ rec(3), "");
+    }
+    // Known extensions are validated once merged.
+    {
+        const registry: protobuf.ExtensionRegistry = .init(.{merge_number});
+        var msg = try decodeNode(sub(0x0a, rec(1)) ++ sub(0x0a, rec(2)) ++ sub(0x0a, sub(0x0a, rec(3))) ++ sub(0x0a, sub(0x0a, rec(4))), .{ .extensions = &registry });
+        defer msg.deinit(gpa);
+        try testing.expectEqual(2, try merge_number.get(msg.child.?.*, gpa));
+        try testing.expectEqual(4, try merge_number.get(msg.child.?.child.?.*, gpa));
+        // Extension 100 holds a varint, not a length-delimited value.
+        try testing.expectError(error.InvalidInput, decodeNode(sub(0x0a, rec(1)) ++ sub(0x0a, "\xa2\x06\x01A"), .{ .extensions = &registry }));
+        try testing.expectError(error.InvalidInput, decodeNode(sub(0x0a, sub(0x0a, rec(1))) ++ sub(0x0a, sub(0x0a, "\xa2\x06\x01A")), .{ .extensions = &registry }));
+    }
+    // Failures past merges free everything.
+    try testing.expectError(error.EndOfStream, decodeNode(sub(0x0a, rec(1)) ++ sub(0x0a, sub(0x0a, rec(2))) ++ sub(0x0a, sub(0x0a, rec(3))) ++ sub(0x12, rec(4)) ++ sub(0x12, rec(5)) ++ "\x0a\x05\xa0", .{}));
+    try testing.expectError(error.InvalidInput, decodeNode(sub(0x0a, rec(1)) ++ sub(0x0a, sub(0x0a, rec(2))) ++ sub(0x0a, sub(0x0a, rec(3))) ++ "\x0a\x02\x0c\x00", .{}));
+}
+
+test "malformed input: repeated submessages merge in linear time" {
+    const gpa = testing.allocator;
+    const registry: protobuf.ExtensionRegistry = .init(.{merge_number});
+    const reps = 20_000;
+    inline for (.{
+        .{ sub(0x0a, rec(0)), protobuf.DecodeOptions{} }, // child
+        .{ sub(0x0a, rec(0)), protobuf.DecodeOptions{ .extensions = &registry } },
+        .{ sub(0x0a, unk(0)), protobuf.DecodeOptions{} },
+        .{ sub(0x0a, sub(0x0a, rec(0))), protobuf.DecodeOptions{} }, // grandchild
+        .{ sub(0x3a, rec(0)), protobuf.DecodeOptions{} }, // inline leaf
+        .{ sub(0x12, rec(0)), protobuf.DecodeOptions{} }, // oneof member
+        .{ sub(0x12, sub(0x0a, rec(0))), protobuf.DecodeOptions{} },
+    }) |case| {
+        const input = try gpa.alloc(u8, reps * case[0].len);
+        defer gpa.free(input);
+        for (0..reps) |i| @memcpy(input[i * case[0].len ..][0..case[0].len], case[0]);
+
+        var counting: CountingAllocator = .{};
+        const allocator = counting.allocator();
+        var reader: std.Io.Reader = .fixed(input);
+        var msg = try protobuf.decodeWithOptions(merge.Node, &reader, allocator, case[1]);
+        defer msg.deinit(allocator);
+        if (counting.total > 32 * input.len) {
+            std.debug.print("{d} bytes allocated for {d} bytes of input ({x})\n", .{ counting.total, input.len, case[0] });
+            return error.TestUnexpectedResult;
+        }
     }
 }
