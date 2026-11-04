@@ -1424,14 +1424,21 @@ fn tracksMerges(comptime T: type) bool {
 }
 
 fn reachesRecords(comptime T: type) bool {
-    @setEvalBranchQuota(protobuf.evalBranchQuotaFor(T));
-    // The messages reachable from `T`, each once.
+    // The messages reachable from `T`, each once. Each message reached is
+    // compared with those reached before it, so the work grows with their
+    // number, and the quota with the work.
     var reached: []const type = &.{T};
+    var quota: usize = 0;
     var i: usize = 0;
     while (i < reached.len) : (i += 1) {
         const M = reached[i];
         if (@hasField(M, "_unknown_fields") or @hasField(M, "_extensions")) return true;
-        for (submessageTypes(M)) |Sub| {
+        quota += protobuf.evalBranchQuotaFor(M);
+        @setEvalBranchQuota(quota);
+        const subs = submessageTypes(M);
+        quota += subs.len * (reached.len + subs.len);
+        @setEvalBranchQuota(quota);
+        for (subs) |Sub| {
             for (reached) |R| {
                 if (R == Sub) break;
             } else reached = reached ++ .{Sub};
