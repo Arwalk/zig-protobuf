@@ -1247,24 +1247,22 @@ pub fn decodeMessage(
                                     @field(result, field_name) == null;
                                 if (comptime oo_field_ti == .pointer) {
                                     if (is_null) {
+                                        const sub = try allocator.create(SubMessage);
+                                        errdefer allocator.destroy(sub);
+                                        sub.* = try protobuf.init(SubMessage, allocator);
                                         @field(result, field_name) = @unionInit(
                                             OneOf,
                                             oo_field_name,
-                                            try allocator.create(SubMessage),
+                                            sub,
                                         );
-                                        @field(
-                                            @field(result, field_name).?,
-                                            oo_field_name,
-                                        ) = try .init(allocator);
                                     }
                                     errdefer if (is_null) {
-                                        @field(@field(
-                                            result,
-                                            field_name,
-                                        ).?, oo_field_name).deinit(allocator);
-                                        allocator.destroy(
+                                        const sub = @field(
                                             @field(result, field_name).?,
+                                            oo_field_name,
                                         );
+                                        sub.deinit(allocator);
+                                        allocator.destroy(sub);
                                         @field(result, field_name) = null;
                                     };
 

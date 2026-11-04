@@ -1493,7 +1493,7 @@ pub const TestMessageWithOneof = struct {
         rtwo,
     };
     pub const recursive_oneof_union = union(_recursive_oneof_case) {
-        rone: TestMessageWithOneof,
+        rone: *TestMessageWithOneof,
         rtwo: []const u8,
         pub const _desc_table = .{
             .rone = fd(6, .submessage),
