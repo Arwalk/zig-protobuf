@@ -89,6 +89,7 @@ const asbeil_sources: []const []const u8 = &.{
     "debugging/internal/decode_rust_punycode.cc",
     "debugging/internal/utf8_for_code_point.cc",
 
+    "hash/internal/city.cc",
     "hash/internal/hash.cc",
 
     "log/die_if_null.cc",

@@ -7,6 +7,8 @@
     .minimum_zig_version = "0.17.0",
 
     .dependencies = .{
+        // Only reads a manifest: the sources of protoc behind it are lazy.
+        .protoc_source = .{ .path = "pkg/protoc" },
         .@"protoc-linux-x86_64" = .{
             .url = "https://github.com/protocolbuffers/protobuf/releases/download/v36.2/protoc-36.2-linux-x86_64.zip",
             .hash = "N-V-__8AAMtRpADAGtPCqgS57gPLl02TIK7HbJ1MkIm4Eq8F",
@@ -53,6 +55,7 @@
         ".devcontainer",
         ".github",
         "bootstrapped-generator",
+        "pkg",
         "src",
         "tests",
     },

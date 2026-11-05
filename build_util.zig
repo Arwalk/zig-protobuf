@@ -44,6 +44,20 @@ pub fn getProtocBin(b: *std.Build) !?std.Build.LazyPath {
     return null;
 }
 
+/// Builds protoc from its sources with the Zig toolchain, for the host, and returns the path of
+/// the executable. Use it as `RunProtocStep.Options.protoc` instead of Google's binary release.
+///
+/// `b` is the builder of the zig-protobuf dependency. The sources of protoc are only fetched by
+/// a call to this function, so only call it when this protoc is the one in use.
+pub fn protocFromSource(b: *std.Build) std.Build.LazyPath {
+    const host = b.graph.host;
+    const dep = b.dependency("protoc_source", .{ .target = host, .optimize = .ReleaseFast });
+    return dep.namedWriteFiles("protoc").getDirectory().path(
+        b,
+        b.fmt("bin/protoc{s}", .{host.result.exeFileExt()}),
+    );
+}
+
 fn dupeLazyPaths(b: *std.Build, paths: []const std.Build.LazyPath) []std.Build.LazyPath {
     const array = b.allocator.alloc(std.Build.LazyPath, paths.len) catch @panic("OOM");
     for (array, paths) |*dest, source|
@@ -72,8 +86,8 @@ pub const RunProtocStep = struct {
         /// protoc step can be owned by a consumer builder while the generator
         /// stays owned by the zig-protobuf dependency builder.
         generator: ?*std.Build.Step.Compile = null,
-        /// Optional pre-built protoc binary. When provided, overrides the
-        /// built-in protoc download mechanism.
+        /// Optional protoc binary. When provided, overrides the built-in protoc
+        /// download mechanism. Use `protocFromSource` to build it from source.
         protoc: ?std.Build.LazyPath = null,
         /// When true, every generated message preserves unknown fields during
         /// binary decode/encode round trips. Defaults to false.
