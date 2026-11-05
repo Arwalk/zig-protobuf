@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package source_protoc;
+
+// Well-known types, which protoc has to find next to its executable.
+import "google/protobuf/descriptor.proto";
+import "google/protobuf/timestamp.proto";
+
+extend google.protobuf.MessageOptions {
+  string note = 50000;
+}
+
+message Event {
+  option (note) = "built from source";
+
+  string name = 1;
+  google.protobuf.Timestamp at = 2;
+}

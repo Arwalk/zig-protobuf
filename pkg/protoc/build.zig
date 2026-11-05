@@ -9,10 +9,6 @@ pub fn build(b: *std.Build) void {
         "abseil",
         .{ .target = target, .optimize = optimize },
     );
-    const jsoncpp_dep = b.dependency(
-        "jsoncpp",
-        .{ .target = target, .optimize = optimize },
-    );
 
     const upb = b.addLibrary(.{
         .name = "upb",
@@ -140,78 +136,51 @@ pub fn build(b: *std.Build) void {
     });
     b.installArtifact(protoc);
 
-    // Generate .pb.cc/.pb.h files needed for conformance_test_runner.
-    // Order: -I src first so test_messages_proto3.proto resolves as
-    //        "google/protobuf/test_messages_proto3.proto" (not "src/google/...").
-    const gen = b.addRunArtifact(protoc);
-    gen.addPrefixedDirectoryArg("-I", upstream.path("src"));
-    gen.addPrefixedDirectoryArg("-I", upstream.path(""));
-    const gen_out = gen.addPrefixedOutputDirectoryArg("--cpp_out=", "conformance_pb_gen");
-    gen.addFileArg(upstream.path("conformance/conformance.proto"));
-    gen.addFileArg(upstream.path("conformance/test_protos/test_messages_edition2023.proto"));
-    gen.addFileArg(upstream.path("conformance/test_protos/test_messages_edition_unstable.proto"));
-    gen.addFileArg(upstream.path("editions/golden/test_messages_proto2_editions.proto"));
-    gen.addFileArg(upstream.path("editions/golden/test_messages_proto3_editions.proto"));
-    gen.addFileArg(upstream.path("src/google/protobuf/test_messages_proto2.proto"));
-    gen.addFileArg(upstream.path("src/google/protobuf/test_messages_proto3.proto"));
-
-    // Build the conformance_test_runner binary.
-    const runner = b.addExecutable(.{
-        .name = "conformance_test_runner",
-        .root_module = b.createModule(.{
-            .target = target,
-            .optimize = optimize,
-            .link_libc = true,
-            .link_libcpp = true,
-        }),
-    });
-    runner.root_module.linkLibrary(libprotoc);
-    runner.root_module.linkLibrary(libprotobuf);
-    runner.root_module.linkLibrary(utf8_range);
-    runner.root_module.linkLibrary(upb);
-    runner.root_module.linkLibrary(abseil_dep.artifact("abseil"));
-    runner.root_module.linkLibrary(jsoncpp_dep.artifact("jsoncpp"));
-    // Headers from conformance/ directory (not installed, accessed directly).
-    runner.root_module.addIncludePath(upstream.path("conformance"));
-    // Generated pb.h files (conformance/conformance.pb.h etc.).
-    runner.root_module.addIncludePath(gen_out);
-    // conformance runner C++ sources
-    runner.root_module.addCSourceFiles(.{
-        .root = upstream.path("conformance"),
-        .files = conformance_runner_srcs,
-        .language = .cpp,
-    });
-    // Generated pb.cc files
-    runner.root_module.addCSourceFile(.{
-        .file = gen_out.path(b, "conformance/conformance.pb.cc"),
-        .language = .cpp,
-    });
-    runner.root_module.addCSourceFile(.{
-        .file = gen_out.path(b, "conformance/test_protos/test_messages_edition2023.pb.cc"),
-        .language = .cpp,
-    });
-    runner.root_module.addCSourceFile(.{
-        .file = gen_out.path(b, "conformance/test_protos/test_messages_edition_unstable.pb.cc"),
-        .language = .cpp,
-    });
-    runner.root_module.addCSourceFile(.{
-        .file = gen_out.path(b, "editions/golden/test_messages_proto2_editions.pb.cc"),
-        .language = .cpp,
-    });
-    runner.root_module.addCSourceFile(.{
-        .file = gen_out.path(b, "editions/golden/test_messages_proto3_editions.pb.cc"),
-        .language = .cpp,
-    });
-    runner.root_module.addCSourceFile(.{
-        .file = gen_out.path(b, "google/protobuf/test_messages_proto2.pb.cc"),
-        .language = .cpp,
-    });
-    runner.root_module.addCSourceFile(.{
-        .file = gen_out.path(b, "google/protobuf/test_messages_proto3.pb.cc"),
-        .language = .cpp,
-    });
-    b.installArtifact(runner);
+    // The same layout as Google's release archives. protoc looks for the well-known
+    // types relative to its own executable, here in `../include`, so they do not have
+    // to be given with `-I`.
+    const release = b.addNamedWriteFiles("protoc");
+    _ = release.addCopyFile(
+        protoc.getEmittedBin(),
+        b.fmt("bin/protoc{s}", .{target.result.exeFileExt()}),
+    );
+    for (well_known_protos) |proto| {
+        _ = release.addCopyFile(
+            upstream.path(b.pathJoin(&.{ proto.root, proto.file })),
+            b.pathJoin(&.{ "include", proto.file }),
+        );
+    }
 }
+
+const WellKnownProto = struct {
+    /// The directory of the protobuf sources that holds `file`.
+    root: []const u8 = "src",
+    file: []const u8,
+};
+
+/// The files of the `include` directory of the release archives.
+const well_known_protos: []const WellKnownProto = &.{
+    .{ .file = "google/protobuf/any.proto" },
+    .{ .file = "google/protobuf/api.proto" },
+    .{ .root = "csharp", .file = "google/protobuf/c_sharp_features.proto" },
+    .{ .file = "google/protobuf/compiler/plugin.proto" },
+    .{ .file = "google/protobuf/cpp_features.proto" },
+    .{ .file = "google/protobuf/cpp_file_options.proto" },
+    .{ .file = "google/protobuf/cpp_options.proto" },
+    .{ .file = "google/protobuf/descriptor.proto" },
+    .{ .file = "google/protobuf/duration.proto" },
+    .{ .file = "google/protobuf/empty.proto" },
+    .{ .file = "google/protobuf/field_mask.proto" },
+    .{ .root = "go", .file = "google/protobuf/go_features.proto" },
+    .{ .root = "java/core/src/main/resources", .file = "google/protobuf/java_features.proto" },
+    .{ .file = "google/protobuf/json_enumvalue_options.proto" },
+    .{ .file = "google/protobuf/json_options.proto" },
+    .{ .file = "google/protobuf/source_context.proto" },
+    .{ .file = "google/protobuf/struct.proto" },
+    .{ .file = "google/protobuf/timestamp.proto" },
+    .{ .file = "google/protobuf/type.proto" },
+    .{ .file = "google/protobuf/wrappers.proto" },
+};
 
 const utf8_range_srcs: []const []const u8 = &.{
     "utf8_range.c",
@@ -508,17 +477,4 @@ const upb_srcs: []const []const u8 = &.{
     "upb/mini_table/generated_registry.c",
     "upb/mini_table/extension_registry.c",
     "upb/mini_table/internal/message.c",
-};
-
-const conformance_runner_srcs: []const []const u8 = &.{
-    "conformance_test_main.cc",
-    "conformance_test.cc",
-    "conformance_test_runner.cc",
-    "binary_json_conformance_suite.cc",
-    "binary_wireformat.cc",
-    "failure_list_trie_node.cc",
-    "fork_pipe_runner.cc",
-    "test_manager.cc",
-    "testee.cc",
-    "text_format_conformance_suite.cc",
 };

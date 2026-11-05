@@ -6,6 +6,7 @@
         .@"abseil-cpp" = .{
             .url = "https://github.com/abseil/abseil-cpp/releases/download/20250814.1/abseil-cpp-20250814.1.tar.gz",
             .hash = "N-V-__8AAB93oAAhnlSUqVkNHA2gdowdBZ0UVZ9rNp_RVkT0",
+            .lazy = true,
         },
     },
     .paths = .{""},

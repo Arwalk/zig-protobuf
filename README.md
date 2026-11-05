@@ -440,7 +440,7 @@ pub fn build(b: *std.Build) !void {
         // out directory for the generated zig files
         .destination_directory = b.path("src/proto"),
         // Optional LazyPath to `protoc`. If null, zig-protobuf will download Google's release of
-        // the compiler.
+        // the compiler. See "Building protoc from source" to avoid this binary.
         // .protoc = b.path("protoc"),
         .source_files = &.{
             b.path("protocol/all.proto"),
@@ -453,6 +453,37 @@ pub fn build(b: *std.Build) !void {
 
     gen_proto.dependOn(&protoc_step.step);
 }
+```
+
+### Building protoc from source
+
+If you do not want a binary downloaded into your build, `protocFromSource` builds `protoc` from its
+sources, with nothing but the Zig toolchain:
+
+```zig
+    const protoc_step = protobuf.RunProtocStep.create(protobuf_dep.builder, target, .{
+        .destination_directory = b.path("src/proto"),
+        .protoc = protobuf.protocFromSource(protobuf_dep.builder),
+        .source_files = &.{
+            b.path("protocol/all.proto"),
+        },
+    });
+```
+
+This is the same version of `protoc` as the download, and it finds the well-known types such as
+`google/protobuf/timestamp.proto` on its own. It is always built for the machine that runs the
+build, whatever your `target` is.
+
+The first build costs a download of about 12 MB of sources, close to 3 minutes of compilation on 16
+cores, and about 1 GB in `.zig-cache`. Later builds reuse the cache.
+
+The sources are only fetched by a call to `protocFromSource`, whatever step you run, and the Google
+release is then not downloaded. To make it a choice in your project, only call it when needed:
+
+```zig
+    const from_source = b.option(bool, "protoc-from-source", "Build protoc from source") orelse false;
+    ...
+        .protoc = if (from_source) protobuf.protocFromSource(protobuf_dep.builder) else null,
 ```
 
 ## Service Code Generation

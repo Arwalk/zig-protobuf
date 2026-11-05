@@ -7,6 +7,7 @@ const mem = std.mem;
 const LazyPath = std.Build.LazyPath;
 const build_util = @import("build_util.zig");
 pub const RunProtocStep = build_util.RunProtocStep;
+pub const protocFromSource = build_util.protocFromSource;
 
 const PROTOC_VERSION = build_util.PROTOC_VERSION;
 
@@ -55,6 +56,10 @@ pub fn build(b: *std.Build) !void {
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).
     b.installArtifact(exe);
+
+    // All that follows is for the development of this project, and it needs protoc. A project
+    // that depends on this one chooses its own protoc, or none, so it must not download it here.
+    if (b.dep_prefix.len != 0) return;
 
     const test_step = b.step("test", "Run library tests");
 

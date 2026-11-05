@@ -11,6 +11,7 @@ generator/protoc-gen-main
 dcl
 protocol
 tests/.generated
+tests/source_protoc/.generated
 debug
 .zig-cache
 .specstory/*
