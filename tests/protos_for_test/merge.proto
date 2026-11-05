@@ -1,0 +1,23 @@
+// Messages whose submessages merge when they repeat on the wire, keeping
+// unknown fields and extensions (generated with preserve_unknown_fields).
+syntax = "proto2";
+
+package tests.merge;
+
+message Leaf {
+  optional int32 v = 1;
+  extensions 100 to 199;
+}
+
+message Node {
+  optional Node child = 1;
+  oneof choice {
+    Node member = 2;
+    int32 number = 3;
+    Leaf leaf_member = 8;
+  }
+  repeated Node items = 5;
+  optional int32 value = 6;
+  optional Leaf leaf = 7;
+  extensions 100 to 199;
+}

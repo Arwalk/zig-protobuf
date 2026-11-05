@@ -1,0 +1,4981 @@
+// Extracted from googleapis (https://github.com/googleapis/googleapis),
+// google/ads/googleads/v26: the messages and enums that
+// google.ads.googleads.v26.services.SearchGoogleAdsResponse reaches, with their
+// packages, names, nesting, field numbers and types. Comments, options,
+// services and everything else are left out.
+//
+// Copyright Google LLC. Licensed under the Apache License, Version 2.0
+// (http://www.apache.org/licenses/LICENSE-2.0).
+
+syntax = "proto3";
+
+package google.ads.googleads.v26.enums;
+
+
+message AccessInvitationStatusEnum {
+  enum AccessInvitationStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PENDING = 2;
+    DECLINED = 3;
+    EXPIRED = 4;
+  }
+}
+
+message AccessReasonEnum {
+  enum AccessReason {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    OWNED = 2;
+    SHARED = 3;
+    LICENSED = 4;
+    SUBSCRIBED = 5;
+    AFFILIATED = 6;
+  }
+}
+
+message AccessRoleEnum {
+  enum AccessRole {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ADMIN = 2;
+    STANDARD = 3;
+    READ_ONLY = 4;
+    EMAIL_ONLY = 5;
+  }
+}
+
+message AccountBudgetProposalStatusEnum {
+  enum AccountBudgetProposalStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PENDING = 2;
+    APPROVED_HELD = 3;
+    APPROVED = 4;
+    CANCELLED = 5;
+    REJECTED = 6;
+  }
+}
+
+message AccountBudgetProposalTypeEnum {
+  enum AccountBudgetProposalType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CREATE = 2;
+    UPDATE = 3;
+    END = 4;
+    REMOVE = 5;
+  }
+}
+
+message AccountBudgetStatusEnum {
+  enum AccountBudgetStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PENDING = 2;
+    APPROVED = 3;
+    CANCELLED = 4;
+  }
+}
+
+message AccountLinkStatusEnum {
+  enum AccountLinkStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+    REQUESTED = 4;
+    PENDING_APPROVAL = 5;
+    REJECTED = 6;
+    REVOKED = 7;
+  }
+}
+
+message AdDestinationTypeEnum {
+  enum AdDestinationType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NOT_APPLICABLE = 2;
+    WEBSITE = 3;
+    APP_DEEP_LINK = 4;
+    APP_STORE = 5;
+    PHONE_CALL = 6;
+    MAP_DIRECTIONS = 7;
+    LOCATION_LISTING = 8;
+    MESSAGE = 9;
+    LEAD_FORM = 10;
+    YOUTUBE = 11;
+    UNMODELED_FOR_CONVERSIONS = 12;
+  }
+}
+
+message AdFormatTypeEnum {
+  enum AdFormatType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    OTHER = 2;
+    UNSEGMENTED = 3;
+    INSTREAM_SKIPPABLE = 4;
+    INSTREAM_NON_SKIPPABLE = 5;
+    INFEED = 6;
+    BUMPER = 7;
+    OUTSTREAM = 8;
+    MASTHEAD = 9;
+    AUDIO = 10;
+    SHORTS = 11;
+    PAUSE = 12;
+    VERTICAL_ADS_PROMOTION = 13;
+    VERTICAL_ADS_BOOKING_LINK = 14;
+    TEXT = 15;
+  }
+}
+
+message AdGroupAdPrimaryStatusEnum {
+  enum AdGroupAdPrimaryStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ELIGIBLE = 2;
+    PAUSED = 3;
+    REMOVED = 4;
+    PENDING = 5;
+    LIMITED = 6;
+    NOT_ELIGIBLE = 7;
+  }
+}
+
+message AdGroupAdPrimaryStatusReasonEnum {
+  enum AdGroupAdPrimaryStatusReason {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CAMPAIGN_REMOVED = 2;
+    CAMPAIGN_PAUSED = 3;
+    CAMPAIGN_PENDING = 4;
+    CAMPAIGN_ENDED = 5;
+    AD_GROUP_PAUSED = 6;
+    AD_GROUP_REMOVED = 7;
+    AD_GROUP_AD_PAUSED = 8;
+    AD_GROUP_AD_REMOVED = 9;
+    AD_GROUP_AD_DISAPPROVED = 10;
+    AD_GROUP_AD_UNDER_REVIEW = 11;
+    AD_GROUP_AD_POOR_QUALITY = 12;
+    AD_GROUP_AD_NO_ADS = 13;
+    AD_GROUP_AD_APPROVED_LABELED = 14;
+    AD_GROUP_AD_AREA_OF_INTEREST_ONLY = 15;
+    AD_GROUP_AD_UNDER_APPEAL = 16;
+  }
+}
+
+message AdGroupAdRotationModeEnum {
+  enum AdGroupAdRotationMode {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    OPTIMIZE = 2;
+    ROTATE_FOREVER = 3;
+  }
+}
+
+message AdGroupAdStatusEnum {
+  enum AdGroupAdStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    PAUSED = 3;
+    REMOVED = 4;
+  }
+}
+
+message AdGroupCriterionApprovalStatusEnum {
+  enum AdGroupCriterionApprovalStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    APPROVED = 2;
+    DISAPPROVED = 3;
+    PENDING_REVIEW = 4;
+    UNDER_REVIEW = 5;
+  }
+}
+
+message AdGroupCriterionPrimaryStatusEnum {
+  enum AdGroupCriterionPrimaryStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ELIGIBLE = 2;
+    PAUSED = 3;
+    REMOVED = 4;
+    PENDING = 5;
+    NOT_ELIGIBLE = 6;
+  }
+}
+
+message AdGroupCriterionPrimaryStatusReasonEnum {
+  enum AdGroupCriterionPrimaryStatusReason {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CAMPAIGN_PENDING = 2;
+    CAMPAIGN_CRITERION_NEGATIVE = 3;
+    CAMPAIGN_PAUSED = 4;
+    CAMPAIGN_REMOVED = 5;
+    CAMPAIGN_ENDED = 6;
+    AD_GROUP_PAUSED = 7;
+    AD_GROUP_REMOVED = 8;
+    AD_GROUP_CRITERION_DISAPPROVED = 9;
+    AD_GROUP_CRITERION_RARELY_SERVED = 10;
+    AD_GROUP_CRITERION_LOW_QUALITY = 11;
+    AD_GROUP_CRITERION_UNDER_REVIEW = 12;
+    AD_GROUP_CRITERION_PENDING_REVIEW = 13;
+    AD_GROUP_CRITERION_BELOW_FIRST_PAGE_BID = 14;
+    AD_GROUP_CRITERION_NEGATIVE = 15;
+    AD_GROUP_CRITERION_RESTRICTED = 16;
+    AD_GROUP_CRITERION_PAUSED = 17;
+    AD_GROUP_CRITERION_PAUSED_DUE_TO_LOW_ACTIVITY = 18;
+    AD_GROUP_CRITERION_REMOVED = 19;
+  }
+}
+
+message AdGroupCriterionStatusEnum {
+  enum AdGroupCriterionStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    PAUSED = 3;
+    REMOVED = 4;
+  }
+}
+
+message AdGroupPrimaryStatusEnum {
+  enum AdGroupPrimaryStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ELIGIBLE = 2;
+    PAUSED = 3;
+    REMOVED = 4;
+    PENDING = 5;
+    NOT_ELIGIBLE = 6;
+    LIMITED = 7;
+  }
+}
+
+message AdGroupPrimaryStatusReasonEnum {
+  enum AdGroupPrimaryStatusReason {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CAMPAIGN_REMOVED = 2;
+    CAMPAIGN_PAUSED = 3;
+    CAMPAIGN_PENDING = 4;
+    CAMPAIGN_ENDED = 5;
+    AD_GROUP_PAUSED = 6;
+    AD_GROUP_REMOVED = 7;
+    AD_GROUP_INCOMPLETE = 8;
+    KEYWORDS_PAUSED = 9;
+    NO_KEYWORDS = 10;
+    AD_GROUP_ADS_PAUSED = 11;
+    NO_AD_GROUP_ADS = 12;
+    HAS_ADS_DISAPPROVED = 13;
+    HAS_ADS_LIMITED_BY_POLICY = 14;
+    MOST_ADS_UNDER_REVIEW = 15;
+    CAMPAIGN_DRAFT = 16;
+    AD_GROUP_PAUSED_DUE_TO_LOW_ACTIVITY = 19;
+  }
+}
+
+message AdGroupStatusEnum {
+  enum AdGroupStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    PAUSED = 3;
+    REMOVED = 4;
+  }
+}
+
+message AdGroupTypeEnum {
+  enum AdGroupType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    SEARCH_STANDARD = 2;
+    DISPLAY_STANDARD = 3;
+    SHOPPING_PRODUCT_ADS = 4;
+    HOTEL_ADS = 6;
+    SHOPPING_SMART_ADS = 7;
+    VIDEO_BUMPER = 8;
+    VIDEO_TRUE_VIEW_IN_STREAM = 9;
+    VIDEO_TRUE_VIEW_IN_DISPLAY = 10;
+    VIDEO_NON_SKIPPABLE_IN_STREAM = 11;
+    SEARCH_DYNAMIC_ADS = 13;
+    SHOPPING_COMPARISON_LISTING_ADS = 14;
+    PROMOTED_HOTEL_ADS = 15;
+    VIDEO_RESPONSIVE = 16;
+    VIDEO_EFFICIENT_REACH = 17;
+    SMART_CAMPAIGN_ADS = 18;
+    TRAVEL_ADS = 19;
+    YOUTUBE_AUDIO = 20;
+  }
+}
+
+message AdNetworkTypeEnum {
+  enum AdNetworkType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    SEARCH = 2;
+    SEARCH_PARTNERS = 3;
+    CONTENT = 4;
+    MIXED = 7;
+    YOUTUBE = 8;
+    GOOGLE_TV = 9;
+    GOOGLE_OWNED_CHANNELS = 10;
+    GMAIL = 11;
+    DISCOVER = 12;
+    MAPS = 13;
+  }
+}
+
+message AdServingOptimizationStatusEnum {
+  enum AdServingOptimizationStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    OPTIMIZE = 2;
+    CONVERSION_OPTIMIZE = 3;
+    ROTATE = 4;
+    ROTATE_INDEFINITELY = 5;
+    UNAVAILABLE = 6;
+  }
+}
+
+message AdStrengthActionItemTypeEnum {
+  enum AdStrengthActionItemType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ADD_ASSET = 2;
+  }
+}
+
+message AdStrengthEnum {
+  enum AdStrength {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PENDING = 2;
+    NO_ADS = 3;
+    POOR = 4;
+    AVERAGE = 5;
+    GOOD = 6;
+    EXCELLENT = 7;
+  }
+}
+
+message AdSubFormatTypeEnum {
+  enum AdSubFormatType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    UNSEGMENTED = 2;
+    INSTREAM_NON_SKIPPABLE_STANDARD = 3;
+    INSTREAM_NON_SKIPPABLE_MAX30_SEC = 4;
+    INSTREAM_NON_SKIPPABLE_MAX60_SEC = 5;
+  }
+}
+
+message AdSubNetworkTypeEnum {
+  enum AdSubNetworkType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    UNSEGMENTED = 2;
+    YOUTUBE_INSTREAM = 3;
+    YOUTUBE_INFEED = 4;
+    YOUTUBE_SHORTS = 5;
+  }
+}
+
+message AdTypeEnum {
+  enum AdType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    TEXT_AD = 2;
+    EXPANDED_TEXT_AD = 3;
+    EXPANDED_DYNAMIC_SEARCH_AD = 7;
+    HOTEL_AD = 8;
+    SHOPPING_SMART_AD = 9;
+    SHOPPING_PRODUCT_AD = 10;
+    VIDEO_AD = 12;
+    IMAGE_AD = 14;
+    RESPONSIVE_SEARCH_AD = 15;
+    LEGACY_RESPONSIVE_DISPLAY_AD = 16;
+    APP_AD = 17;
+    LEGACY_APP_INSTALL_AD = 18;
+    RESPONSIVE_DISPLAY_AD = 19;
+    LOCAL_AD = 20;
+    HTML5_UPLOAD_AD = 21;
+    DYNAMIC_HTML5_AD = 22;
+    APP_ENGAGEMENT_AD = 23;
+    SHOPPING_COMPARISON_LISTING_AD = 24;
+    VIDEO_BUMPER_AD = 25;
+    VIDEO_NON_SKIPPABLE_IN_STREAM_AD = 26;
+    VIDEO_TRUEVIEW_IN_STREAM_AD = 29;
+    VIDEO_RESPONSIVE_AD = 30;
+    SMART_CAMPAIGN_AD = 31;
+    CALL_AD = 32;
+    APP_PRE_REGISTRATION_AD = 33;
+    IN_FEED_VIDEO_AD = 34;
+    DEMAND_GEN_MULTI_ASSET_AD = 40;
+    DEMAND_GEN_CAROUSEL_AD = 41;
+    TRAVEL_AD = 37;
+    DEMAND_GEN_VIDEO_RESPONSIVE_AD = 42;
+    DEMAND_GEN_PRODUCT_AD = 39;
+    YOUTUBE_AUDIO_AD = 44;
+  }
+}
+
+message AdvertisingChannelSubTypeEnum {
+  enum AdvertisingChannelSubType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    SEARCH_MOBILE_APP = 2;
+    DISPLAY_MOBILE_APP = 3;
+    SEARCH_EXPRESS = 4;
+    DISPLAY_EXPRESS = 5;
+    SHOPPING_SMART_ADS = 6;
+    DISPLAY_GMAIL_AD = 7;
+    DISPLAY_SMART_CAMPAIGN = 8;
+    VIDEO_ACTION = 10;
+    VIDEO_NON_SKIPPABLE = 11;
+    APP_CAMPAIGN = 12;
+    APP_CAMPAIGN_FOR_ENGAGEMENT = 13;
+    LOCAL_CAMPAIGN = 14;
+    SHOPPING_COMPARISON_LISTING_ADS = 15;
+    SMART_CAMPAIGN = 16;
+    VIDEO_SEQUENCE = 17;
+    APP_CAMPAIGN_FOR_PRE_REGISTRATION = 18;
+    VIDEO_REACH_TARGET_FREQUENCY = 19;
+    TRAVEL_ACTIVITIES = 20;
+    YOUTUBE_AUDIO = 22;
+  }
+}
+
+message AdvertisingChannelTypeEnum {
+  enum AdvertisingChannelType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    SEARCH = 2;
+    DISPLAY = 3;
+    SHOPPING = 4;
+    HOTEL = 5;
+    VIDEO = 6;
+    MULTI_CHANNEL = 7;
+    LOCAL = 8;
+    SMART = 9;
+    PERFORMANCE_MAX = 10;
+    LOCAL_SERVICES = 11;
+    TRAVEL = 13;
+    DEMAND_GEN = 14;
+  }
+}
+
+message AgeRangeTypeEnum {
+  enum AgeRangeType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    AGE_RANGE_18_24 = 503001;
+    AGE_RANGE_25_34 = 503002;
+    AGE_RANGE_35_44 = 503003;
+    AGE_RANGE_45_54 = 503004;
+    AGE_RANGE_55_64 = 503005;
+    AGE_RANGE_65_UP = 503006;
+    AGE_RANGE_UNDETERMINED = 503999;
+  }
+}
+
+message AndroidPrivacyInteractionTypeEnum {
+  enum AndroidPrivacyInteractionType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CLICK = 2;
+    ENGAGED_VIEW = 3;
+    VIEW = 4;
+  }
+}
+
+message AndroidPrivacyNetworkTypeEnum {
+  enum AndroidPrivacyNetworkType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    SEARCH = 2;
+    DISPLAY = 3;
+    YOUTUBE = 4;
+  }
+}
+
+message AppBiddingGoalEnum {
+  enum AppBiddingGoal {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    OPTIMIZE_FOR_INSTALL_CONVERSION_VOLUME = 2;
+    OPTIMIZE_FOR_IN_APP_CONVERSION_VOLUME = 3;
+    OPTIMIZE_FOR_TOTAL_CONVERSION_VALUE = 4;
+    OPTIMIZE_FOR_TARGET_IN_APP_CONVERSION = 5;
+    OPTIMIZE_FOR_RETURN_ON_ADVERTISING_SPEND = 6;
+    OPTIMIZE_FOR_INSTALL_CONVERSION_VOLUME_WITHOUT_TARGET_CPI = 7;
+    OPTIMIZE_FOR_PRE_REGISTRATION_CONVERSION_VOLUME = 8;
+  }
+}
+
+message AppCampaignAppStoreEnum {
+  enum AppCampaignAppStore {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    APPLE_APP_STORE = 2;
+    GOOGLE_APP_STORE = 3;
+  }
+}
+
+message AppCampaignBiddingStrategyGoalTypeEnum {
+  enum AppCampaignBiddingStrategyGoalType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    OPTIMIZE_INSTALLS_TARGET_INSTALL_COST = 2;
+    OPTIMIZE_IN_APP_CONVERSIONS_TARGET_INSTALL_COST = 3;
+    OPTIMIZE_IN_APP_CONVERSIONS_TARGET_CONVERSION_COST = 4;
+    OPTIMIZE_RETURN_ON_ADVERTISING_SPEND = 5;
+    OPTIMIZE_PRE_REGISTRATION_CONVERSION_VOLUME = 6;
+    OPTIMIZE_INSTALLS_WITHOUT_TARGET_INSTALL_COST = 7;
+    OPTIMIZE_IN_APP_CONVERSIONS_WITHOUT_TARGET_CPA = 8;
+    OPTIMIZE_TOTAL_VALUE_WITHOUT_TARGET_ROAS = 9;
+  }
+}
+
+message AppPaymentModelTypeEnum {
+  enum AppPaymentModelType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PAID = 30;
+  }
+}
+
+message AppUrlOperatingSystemTypeEnum {
+  enum AppUrlOperatingSystemType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    IOS = 2;
+    ANDROID = 3;
+  }
+}
+
+message AssetAutomationStatusEnum {
+  enum AssetAutomationStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    OPTED_IN = 2;
+    OPTED_OUT = 3;
+  }
+}
+
+message AssetAutomationTypeEnum {
+  enum AssetAutomationType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    TEXT_ASSET_AUTOMATION = 2;
+    GENERATE_VERTICAL_YOUTUBE_VIDEOS = 3;
+    GENERATE_SHORTER_YOUTUBE_VIDEOS = 4;
+    GENERATE_LANDING_PAGE_PREVIEW = 5;
+    GENERATE_LANDING_PAGE_TEXT = 14;
+    GENERATE_ENHANCED_YOUTUBE_VIDEOS = 6;
+    GENERATE_IMAGE_ENHANCEMENT = 7;
+    GENERATE_IMAGE_EXTRACTION = 9;
+    GENERATE_DESIGN_VERSIONS_FOR_IMAGES = 10;
+    FINAL_URL_EXPANSION_TEXT_ASSET_AUTOMATION = 11;
+    GENERATE_VIDEOS_FROM_OTHER_ASSETS = 12;
+    GENERATE_ANIMATED_IMAGES_FROM_OTHER_ASSETS = 13;
+    AUTOMATED_VIDEO_CRAWL = 15;
+  }
+}
+
+message AssetCoverageVideoAspectRatioRequirementEnum {
+  enum AssetCoverageVideoAspectRatioRequirement {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    HORIZONTAL = 2;
+    SQUARE = 3;
+    VERTICAL = 4;
+  }
+}
+
+message AssetFieldTypeEnum {
+  enum AssetFieldType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    HEADLINE = 2;
+    DESCRIPTION = 3;
+    MANDATORY_AD_TEXT = 4;
+    MARKETING_IMAGE = 5;
+    MEDIA_BUNDLE = 6;
+    YOUTUBE_VIDEO = 7;
+    BOOK_ON_GOOGLE = 8;
+    LEAD_FORM = 9;
+    PROMOTION = 10;
+    CALLOUT = 11;
+    STRUCTURED_SNIPPET = 12;
+    SITELINK = 13;
+    MOBILE_APP = 14;
+    HOTEL_CALLOUT = 15;
+    CALL = 16;
+    PRICE = 24;
+    LONG_HEADLINE = 17;
+    BUSINESS_NAME = 18;
+    SQUARE_MARKETING_IMAGE = 19;
+    PORTRAIT_MARKETING_IMAGE = 20;
+    LOGO = 21;
+    LANDSCAPE_LOGO = 22;
+    VIDEO = 23;
+    CALL_TO_ACTION_SELECTION = 25;
+    AD_IMAGE = 26;
+    BUSINESS_LOGO = 27;
+    HOTEL_PROPERTY = 28;
+    DEMAND_GEN_CAROUSEL_CARD = 30;
+    BUSINESS_MESSAGE = 31;
+    TALL_PORTRAIT_MARKETING_IMAGE = 32;
+    RELATED_YOUTUBE_VIDEOS = 33;
+    LANDING_PAGE_PREVIEW = 38;
+    LONG_DESCRIPTION = 39;
+    CALL_TO_ACTION = 40;
+    CLASSIC_DISPLAY_IMAGE = 47;
+    TEXT_DISCLAIMER = 48;
+  }
+}
+
+message AssetGroupPrimaryStatusEnum {
+  enum AssetGroupPrimaryStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ELIGIBLE = 2;
+    PAUSED = 3;
+    REMOVED = 4;
+    NOT_ELIGIBLE = 5;
+    LIMITED = 6;
+    PENDING = 7;
+  }
+}
+
+message AssetGroupPrimaryStatusReasonEnum {
+  enum AssetGroupPrimaryStatusReason {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ASSET_GROUP_PAUSED = 2;
+    ASSET_GROUP_REMOVED = 3;
+    CAMPAIGN_REMOVED = 4;
+    CAMPAIGN_PAUSED = 5;
+    CAMPAIGN_PENDING = 6;
+    CAMPAIGN_ENDED = 7;
+    ASSET_GROUP_LIMITED = 8;
+    ASSET_GROUP_DISAPPROVED = 9;
+    ASSET_GROUP_UNDER_REVIEW = 10;
+  }
+}
+
+message AssetGroupSignalApprovalStatusEnum {
+  enum AssetGroupSignalApprovalStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    APPROVED = 2;
+    LIMITED = 3;
+    DISAPPROVED = 4;
+    UNDER_REVIEW = 5;
+  }
+}
+
+message AssetGroupStatusEnum {
+  enum AssetGroupStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    PAUSED = 3;
+    REMOVED = 4;
+  }
+}
+
+message AssetLinkPrimaryStatusEnum {
+  enum AssetLinkPrimaryStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ELIGIBLE = 2;
+    PAUSED = 3;
+    REMOVED = 4;
+    PENDING = 5;
+    LIMITED = 6;
+    NOT_ELIGIBLE = 7;
+  }
+}
+
+message AssetLinkPrimaryStatusReasonEnum {
+  enum AssetLinkPrimaryStatusReason {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ASSET_LINK_PAUSED = 2;
+    ASSET_LINK_REMOVED = 3;
+    ASSET_DISAPPROVED = 4;
+    ASSET_UNDER_REVIEW = 5;
+    ASSET_APPROVED_LABELED = 6;
+  }
+}
+
+message AssetLinkStatusEnum {
+  enum AssetLinkStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+    PAUSED = 4;
+  }
+}
+
+message AssetOfflineEvaluationErrorReasonsEnum {
+  enum AssetOfflineEvaluationErrorReasons {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PRICE_ASSET_DESCRIPTION_REPEATS_ROW_HEADER = 2;
+    PRICE_ASSET_REPETITIVE_HEADERS = 3;
+    PRICE_ASSET_HEADER_INCOMPATIBLE_WITH_PRICE_TYPE = 4;
+    PRICE_ASSET_DESCRIPTION_INCOMPATIBLE_WITH_ITEM_HEADER = 5;
+    PRICE_ASSET_DESCRIPTION_HAS_PRICE_QUALIFIER = 6;
+    PRICE_ASSET_UNSUPPORTED_LANGUAGE = 7;
+    PRICE_ASSET_OTHER_ERROR = 8;
+  }
+}
+
+message AssetOrientationEnum {
+  enum AssetOrientation {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    LANDSCAPE = 2;
+    PORTRAIT = 3;
+    SQUARE = 4;
+  }
+}
+
+message AssetPerformanceLabelEnum {
+  enum AssetPerformanceLabel {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PENDING = 2;
+    LEARNING = 3;
+    LOW = 4;
+    GOOD = 5;
+    BEST = 6;
+    NOT_APPLICABLE = 7;
+  }
+}
+
+message AssetSetAssetStatusEnum {
+  enum AssetSetAssetStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+  }
+}
+
+message AssetSetLinkStatusEnum {
+  enum AssetSetLinkStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+  }
+}
+
+message AssetSetStatusEnum {
+  enum AssetSetStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+  }
+}
+
+message AssetSetTypeEnum {
+  enum AssetSetType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PAGE_FEED = 2;
+    DYNAMIC_EDUCATION = 3;
+    MERCHANT_CENTER_FEED = 4;
+    DYNAMIC_REAL_ESTATE = 5;
+    DYNAMIC_CUSTOM = 6;
+    DYNAMIC_HOTELS_AND_RENTALS = 7;
+    DYNAMIC_FLIGHTS = 8;
+    DYNAMIC_TRAVEL = 9;
+    DYNAMIC_LOCAL = 10;
+    DYNAMIC_JOBS = 11;
+    LOCATION_SYNC = 12;
+    BUSINESS_PROFILE_DYNAMIC_LOCATION_GROUP = 13;
+    CHAIN_DYNAMIC_LOCATION_GROUP = 14;
+    STATIC_LOCATION_GROUP = 15;
+    HOTEL_PROPERTY = 16;
+    TRAVEL_FEED = 17;
+  }
+}
+
+message AssetSourceEnum {
+  enum AssetSource {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ADVERTISER = 2;
+    AUTOMATICALLY_CREATED = 3;
+  }
+}
+
+message AssetTypeEnum {
+  enum AssetType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    YOUTUBE_VIDEO = 2;
+    MEDIA_BUNDLE = 3;
+    IMAGE = 4;
+    TEXT = 5;
+    LEAD_FORM = 6;
+    BOOK_ON_GOOGLE = 7;
+    PROMOTION = 8;
+    CALLOUT = 9;
+    STRUCTURED_SNIPPET = 10;
+    SITELINK = 11;
+    PAGE_FEED = 12;
+    DYNAMIC_EDUCATION = 13;
+    MOBILE_APP = 14;
+    HOTEL_CALLOUT = 15;
+    CALL = 16;
+    PRICE = 17;
+    CALL_TO_ACTION = 18;
+    DYNAMIC_REAL_ESTATE = 19;
+    DYNAMIC_CUSTOM = 20;
+    DYNAMIC_HOTELS_AND_RENTALS = 21;
+    DYNAMIC_FLIGHTS = 22;
+    DYNAMIC_TRAVEL = 24;
+    DYNAMIC_LOCAL = 25;
+    DYNAMIC_JOBS = 26;
+    LOCATION = 27;
+    HOTEL_PROPERTY = 28;
+    DEMAND_GEN_CAROUSEL_CARD = 29;
+    BUSINESS_MESSAGE = 30;
+    APP_DEEP_LINK = 31;
+    YOUTUBE_VIDEO_LIST = 32;
+  }
+}
+
+message AsyncActionStatusEnum {
+  enum AsyncActionStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NOT_STARTED = 2;
+    IN_PROGRESS = 3;
+    COMPLETED = 4;
+    FAILED = 5;
+    COMPLETED_WITH_WARNING = 6;
+  }
+}
+
+message AttributionModelEnum {
+  enum AttributionModel {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    EXTERNAL = 100;
+    GOOGLE_ADS_LAST_CLICK = 101;
+    GOOGLE_SEARCH_ATTRIBUTION_FIRST_CLICK = 102;
+    GOOGLE_SEARCH_ATTRIBUTION_LINEAR = 103;
+    GOOGLE_SEARCH_ATTRIBUTION_TIME_DECAY = 104;
+    GOOGLE_SEARCH_ATTRIBUTION_POSITION_BASED = 105;
+    GOOGLE_SEARCH_ATTRIBUTION_DATA_DRIVEN = 106;
+  }
+}
+
+message AudienceScopeEnum {
+  enum AudienceScope {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CUSTOMER = 2;
+    ASSET_GROUP = 3;
+  }
+}
+
+message AudienceStatusEnum {
+  enum AudienceStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+  }
+}
+
+message BatchJobStatusEnum {
+  enum BatchJobStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PENDING = 2;
+    RUNNING = 3;
+    DONE = 4;
+  }
+}
+
+message BidModifierSourceEnum {
+  enum BidModifierSource {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CAMPAIGN = 2;
+    AD_GROUP = 3;
+  }
+}
+
+message BiddingSourceEnum {
+  enum BiddingSource {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CAMPAIGN_BIDDING_STRATEGY = 5;
+    AD_GROUP = 6;
+    AD_GROUP_CRITERION = 7;
+  }
+}
+
+message BiddingStrategyStatusEnum {
+  enum BiddingStrategyStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 4;
+  }
+}
+
+message BiddingStrategySystemStatusEnum {
+  enum BiddingStrategySystemStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    LEARNING_NEW = 3;
+    LEARNING_SETTING_CHANGE = 4;
+    LEARNING_BUDGET_CHANGE = 5;
+    LEARNING_COMPOSITION_CHANGE = 6;
+    LEARNING_CONVERSION_TYPE_CHANGE = 7;
+    LEARNING_CONVERSION_SETTING_CHANGE = 8;
+    LIMITED_BY_CPC_BID_CEILING = 9;
+    LIMITED_BY_CPC_BID_FLOOR = 10;
+    LIMITED_BY_DATA = 11;
+    LIMITED_BY_BUDGET = 12;
+    LIMITED_BY_LOW_PRIORITY_SPEND = 13;
+    LIMITED_BY_LOW_QUALITY = 14;
+    LIMITED_BY_INVENTORY = 15;
+    MISCONFIGURED_ZERO_ELIGIBILITY = 16;
+    MISCONFIGURED_CONVERSION_TYPES = 17;
+    MISCONFIGURED_CONVERSION_SETTINGS = 18;
+    MISCONFIGURED_SHARED_BUDGET = 19;
+    MISCONFIGURED_STRATEGY_TYPE = 20;
+    PAUSED = 21;
+    UNAVAILABLE = 22;
+    MULTIPLE_LEARNING = 23;
+    MULTIPLE_LIMITED = 24;
+    MULTIPLE_MISCONFIGURED = 25;
+    MULTIPLE = 26;
+  }
+}
+
+message BiddingStrategyTypeEnum {
+  enum BiddingStrategyType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    COMMISSION = 16;
+    ENHANCED_CPC = 2;
+    FIXED_CPM = 19;
+    FIXED_SHARE_OF_VOICE = 22;
+    INVALID = 17;
+    MANUAL_CPA = 18;
+    MANUAL_CPC = 3;
+    MANUAL_CPM = 4;
+    MANUAL_CPV = 13;
+    MAXIMIZE_CONVERSIONS = 10;
+    MAXIMIZE_CONVERSION_VALUE = 11;
+    PAGE_ONE_PROMOTED = 5;
+    PERCENT_CPC = 12;
+    TARGET_CPA = 6;
+    TARGET_CPC = 21;
+    TARGET_CPM = 14;
+    TARGET_CPV = 20;
+    TARGET_IMPRESSION_SHARE = 15;
+    TARGET_OUTRANK_SHARE = 7;
+    TARGET_ROAS = 8;
+    TARGET_SPEND = 9;
+  }
+}
+
+message BillingSetupStatusEnum {
+  enum BillingSetupStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PENDING = 2;
+    APPROVED_HELD = 3;
+    APPROVED = 4;
+    CANCELLED = 5;
+  }
+}
+
+message BookingStatusEnum {
+  enum BookingStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    BOOKED = 2;
+    HELD = 3;
+    CAMPAIGN_ENDED = 4;
+    HOLD_EXPIRED = 5;
+    BOOKING_CANCELLED = 6;
+  }
+}
+
+message BrandLiftMeasurementTypeEnum {
+  enum BrandLiftMeasurementType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    RECALL = 2;
+    AWARENESS = 3;
+    CONSIDERATION = 4;
+    FAVORABILITY = 5;
+    PURCHASE_INTENT = 6;
+    CUSTOM = 7;
+    ASSOCIATION = 8;
+  }
+}
+
+message BrandRequestRejectionReasonEnum {
+  enum BrandRequestRejectionReason {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    EXISTING_BRAND = 2;
+    EXISTING_BRAND_VARIANT = 3;
+    INCORRECT_INFORMATION = 4;
+    NOT_A_BRAND = 5;
+  }
+}
+
+message BrandSafetySuitabilityEnum {
+  enum BrandSafetySuitability {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    EXPANDED_INVENTORY = 2;
+    STANDARD_INVENTORY = 3;
+    LIMITED_INVENTORY = 4;
+  }
+}
+
+message BrandStateEnum {
+  enum BrandState {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    DEPRECATED = 3;
+    UNVERIFIED = 4;
+    APPROVED = 5;
+    CANCELLED = 6;
+    REJECTED = 7;
+  }
+}
+
+message BudgetCampaignAssociationStatusEnum {
+  enum BudgetCampaignAssociationStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+  }
+}
+
+message BudgetDeliveryMethodEnum {
+  enum BudgetDeliveryMethod {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    STANDARD = 2;
+    ACCELERATED = 3;
+  }
+}
+
+message BudgetPeriodEnum {
+  enum BudgetPeriod {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    DAILY = 2;
+    CUSTOM_PERIOD = 5;
+  }
+}
+
+message BudgetStatusEnum {
+  enum BudgetStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+  }
+}
+
+message BudgetTypeEnum {
+  enum BudgetType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    STANDARD = 2;
+    FIXED_CPA = 4;
+    SMART_CAMPAIGN = 5;
+    LOCAL_SERVICES = 6;
+  }
+}
+
+message BusinessMessageCallToActionTypeEnum {
+  enum BusinessMessageCallToActionType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    APPLY_NOW = 2;
+    BOOK_NOW = 3;
+    CONTACT_US = 4;
+    GET_INFO = 5;
+    GET_OFFER = 6;
+    GET_QUOTE = 7;
+    GET_STARTED = 8;
+    LEARN_MORE = 9;
+  }
+}
+
+message BusinessMessageProviderEnum {
+  enum BusinessMessageProvider {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    WHATSAPP = 2;
+    FACEBOOK_MESSENGER = 3;
+    ZALO = 4;
+    LINE = 5;
+    SMS = 6;
+  }
+}
+
+message CallConversionReportingStateEnum {
+  enum CallConversionReportingState {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    DISABLED = 2;
+    USE_ACCOUNT_LEVEL_CALL_CONVERSION_ACTION = 3;
+    USE_RESOURCE_LEVEL_CALL_CONVERSION_ACTION = 4;
+  }
+}
+
+message CallToActionTypeEnum {
+  enum CallToActionType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    LEARN_MORE = 2;
+    GET_QUOTE = 3;
+    APPLY_NOW = 4;
+    SIGN_UP = 5;
+    CONTACT_US = 6;
+    SUBSCRIBE = 7;
+    DOWNLOAD = 8;
+    BOOK_NOW = 9;
+    SHOP_NOW = 10;
+    BUY_NOW = 11;
+    DONATE_NOW = 12;
+    ORDER_NOW = 13;
+    PLAY_NOW = 14;
+    SEE_MORE = 15;
+    START_NOW = 16;
+    VISIT_SITE = 17;
+    WATCH_NOW = 18;
+  }
+}
+
+message CallTrackingDisplayLocationEnum {
+  enum CallTrackingDisplayLocation {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    AD = 2;
+    LANDING_PAGE = 3;
+  }
+}
+
+message CallTypeEnum {
+  enum CallType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    MANUALLY_DIALED = 2;
+    HIGH_END_MOBILE_SEARCH = 3;
+  }
+}
+
+message CampaignCriterionStatusEnum {
+  enum CampaignCriterionStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    PAUSED = 3;
+    REMOVED = 4;
+  }
+}
+
+message CampaignDraftStatusEnum {
+  enum CampaignDraftStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PROPOSED = 2;
+    REMOVED = 3;
+    PROMOTING = 5;
+    PROMOTED = 4;
+    PROMOTE_FAILED = 6;
+  }
+}
+
+message CampaignExperimentTypeEnum {
+  enum CampaignExperimentType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    BASE = 2;
+    DRAFT = 3;
+    EXPERIMENT = 4;
+  }
+}
+
+message CampaignGroupStatusEnum {
+  enum CampaignGroupStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+  }
+}
+
+message CampaignKeywordMatchTypeEnum {
+  enum CampaignKeywordMatchType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    BROAD = 2;
+  }
+}
+
+message CampaignPrimaryStatusEnum {
+  enum CampaignPrimaryStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ELIGIBLE = 2;
+    PAUSED = 3;
+    REMOVED = 4;
+    ENDED = 5;
+    PENDING = 6;
+    MISCONFIGURED = 7;
+    LIMITED = 8;
+    LEARNING = 9;
+    NOT_ELIGIBLE = 10;
+  }
+}
+
+message CampaignPrimaryStatusReasonEnum {
+  enum CampaignPrimaryStatusReason {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CAMPAIGN_REMOVED = 2;
+    CAMPAIGN_PAUSED = 3;
+    CAMPAIGN_PENDING = 4;
+    CAMPAIGN_ENDED = 5;
+    CAMPAIGN_DRAFT = 6;
+    BIDDING_STRATEGY_MISCONFIGURED = 7;
+    BIDDING_STRATEGY_LIMITED = 8;
+    BIDDING_STRATEGY_LEARNING = 9;
+    BIDDING_STRATEGY_CONSTRAINED = 10;
+    BUDGET_CONSTRAINED = 11;
+    BUDGET_MISCONFIGURED = 12;
+    SEARCH_VOLUME_LIMITED = 13;
+    AD_GROUPS_PAUSED = 14;
+    NO_AD_GROUPS = 15;
+    KEYWORDS_PAUSED = 16;
+    NO_KEYWORDS = 17;
+    AD_GROUP_ADS_PAUSED = 18;
+    NO_AD_GROUP_ADS = 19;
+    HAS_ADS_LIMITED_BY_POLICY = 20;
+    HAS_ADS_DISAPPROVED = 21;
+    MOST_ADS_UNDER_REVIEW = 22;
+    MISSING_LEAD_FORM_EXTENSION = 23;
+    MISSING_CALL_EXTENSION = 24;
+    LEAD_FORM_EXTENSION_UNDER_REVIEW = 25;
+    LEAD_FORM_EXTENSION_DISAPPROVED = 26;
+    CALL_EXTENSION_UNDER_REVIEW = 27;
+    CALL_EXTENSION_DISAPPROVED = 28;
+    NO_MOBILE_APPLICATION_AD_GROUP_CRITERIA = 29;
+    CAMPAIGN_GROUP_PAUSED = 30;
+    CAMPAIGN_GROUP_ALL_GROUP_BUDGETS_ENDED = 31;
+    APP_NOT_RELEASED = 32;
+    APP_PARTIALLY_RELEASED = 33;
+    HAS_ASSET_GROUPS_DISAPPROVED = 34;
+    HAS_ASSET_GROUPS_LIMITED_BY_POLICY = 35;
+    MOST_ASSET_GROUPS_UNDER_REVIEW = 36;
+    NO_ASSET_GROUPS = 37;
+    ASSET_GROUPS_PAUSED = 38;
+    MISSING_LOCATION_TARGETING = 39;
+    CAMPAIGN_NOT_BOOKED = 40;
+    BOOKING_HOLD_EXPIRING = 41;
+    BOOKING_HOLD_EXPIRED = 42;
+    BOOKING_CANCELLED = 43;
+  }
+}
+
+message CampaignServingStatusEnum {
+  enum CampaignServingStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    SERVING = 2;
+    NONE = 3;
+    ENDED = 4;
+    PENDING = 5;
+    SUSPENDED = 6;
+  }
+}
+
+message CampaignSharedSetStatusEnum {
+  enum CampaignSharedSetStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+  }
+}
+
+message CampaignStatusEnum {
+  enum CampaignStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    PAUSED = 3;
+    REMOVED = 4;
+  }
+}
+
+message ChainRelationshipTypeEnum {
+  enum ChainRelationshipType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    AUTO_DEALERS = 2;
+    GENERAL_RETAILERS = 3;
+  }
+}
+
+message ChangeClientTypeEnum {
+  enum ChangeClientType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    GOOGLE_ADS_WEB_CLIENT = 2;
+    GOOGLE_ADS_AUTOMATED_RULE = 3;
+    GOOGLE_ADS_SCRIPTS = 4;
+    GOOGLE_ADS_BULK_UPLOAD = 5;
+    GOOGLE_ADS_API = 6;
+    GOOGLE_ADS_EDITOR = 7;
+    GOOGLE_ADS_MOBILE_APP = 8;
+    GOOGLE_ADS_RECOMMENDATIONS = 9;
+    SEARCH_ADS_360_SYNC = 10;
+    SEARCH_ADS_360_POST = 11;
+    INTERNAL_TOOL = 12;
+    OTHER = 13;
+    GOOGLE_ADS_RECOMMENDATIONS_SUBSCRIPTION = 14;
+  }
+}
+
+message ChangeEventResourceTypeEnum {
+  enum ChangeEventResourceType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    AD = 2;
+    AD_GROUP = 3;
+    AD_GROUP_CRITERION = 4;
+    CAMPAIGN = 5;
+    CAMPAIGN_BUDGET = 6;
+    AD_GROUP_BID_MODIFIER = 7;
+    CAMPAIGN_CRITERION = 8;
+    FEED = 9;
+    FEED_ITEM = 10;
+    CAMPAIGN_FEED = 11;
+    AD_GROUP_FEED = 12;
+    AD_GROUP_AD = 13;
+    ASSET = 14;
+    CUSTOMER_ASSET = 15;
+    CAMPAIGN_ASSET = 16;
+    AD_GROUP_ASSET = 17;
+    ASSET_SET = 18;
+    ASSET_SET_ASSET = 19;
+    CAMPAIGN_ASSET_SET = 20;
+  }
+}
+
+message ChangeStatusOperationEnum {
+  enum ChangeStatusOperation {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ADDED = 2;
+    CHANGED = 3;
+    REMOVED = 4;
+  }
+}
+
+message ChangeStatusResourceTypeEnum {
+  enum ChangeStatusResourceType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    AD_GROUP = 3;
+    AD_GROUP_AD = 4;
+    AD_GROUP_CRITERION = 5;
+    CAMPAIGN = 6;
+    CAMPAIGN_CRITERION = 7;
+    CAMPAIGN_BUDGET = 8;
+    FEED = 9;
+    FEED_ITEM = 10;
+    AD_GROUP_FEED = 11;
+    CAMPAIGN_FEED = 12;
+    AD_GROUP_BID_MODIFIER = 13;
+    SHARED_SET = 14;
+    CAMPAIGN_SHARED_SET = 15;
+    ASSET = 16;
+    CUSTOMER_ASSET = 17;
+    CAMPAIGN_ASSET = 18;
+    AD_GROUP_ASSET = 19;
+    COMBINED_AUDIENCE = 20;
+    ASSET_GROUP = 21;
+    ASSET_SET = 22;
+    CAMPAIGN_ASSET_SET = 23;
+  }
+}
+
+message ClickTypeEnum {
+  enum ClickType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    APP_DEEPLINK = 2;
+    BREADCRUMBS = 3;
+    BROADBAND_PLAN = 4;
+    CALL_TRACKING = 5;
+    CALLS = 6;
+    CLICK_ON_ENGAGEMENT_AD = 7;
+    GET_DIRECTIONS = 8;
+    LOCATION_EXPANSION = 9;
+    LOCATION_FORMAT_CALL = 10;
+    LOCATION_FORMAT_DIRECTIONS = 11;
+    LOCATION_FORMAT_IMAGE = 12;
+    LOCATION_FORMAT_LANDING_PAGE = 13;
+    LOCATION_FORMAT_MAP = 14;
+    LOCATION_FORMAT_STORE_INFO = 15;
+    LOCATION_FORMAT_TEXT = 16;
+    MOBILE_CALL_TRACKING = 17;
+    OFFER_PRINTS = 18;
+    OTHER = 19;
+    PRODUCT_EXTENSION_CLICKS = 20;
+    PRODUCT_LISTING_AD_CLICKS = 21;
+    SITELINKS = 22;
+    STORE_LOCATOR = 23;
+    URL_CLICKS = 25;
+    VIDEO_APP_STORE_CLICKS = 26;
+    VIDEO_CALL_TO_ACTION_CLICKS = 27;
+    VIDEO_CARD_ACTION_HEADLINE_CLICKS = 28;
+    VIDEO_END_CAP_CLICKS = 29;
+    VIDEO_WEBSITE_CLICKS = 30;
+    VISUAL_SITELINKS = 31;
+    WIRELESS_PLAN = 32;
+    PRODUCT_LISTING_AD_LOCAL = 33;
+    PRODUCT_LISTING_AD_MULTICHANNEL_LOCAL = 34;
+    PRODUCT_LISTING_AD_MULTICHANNEL_ONLINE = 35;
+    PRODUCT_LISTING_ADS_COUPON = 36;
+    PRODUCT_LISTING_AD_TRANSACTABLE = 37;
+    PRODUCT_AD_APP_DEEPLINK = 38;
+    SHOWCASE_AD_CATEGORY_LINK = 39;
+    SHOWCASE_AD_LOCAL_STOREFRONT_LINK = 40;
+    SHOWCASE_AD_ONLINE_PRODUCT_LINK = 42;
+    SHOWCASE_AD_LOCAL_PRODUCT_LINK = 43;
+    PROMOTION_EXTENSION = 44;
+    SWIPEABLE_GALLERY_AD_HEADLINE = 45;
+    SWIPEABLE_GALLERY_AD_SWIPES = 46;
+    SWIPEABLE_GALLERY_AD_SEE_MORE = 47;
+    SWIPEABLE_GALLERY_AD_SITELINK_ONE = 48;
+    SWIPEABLE_GALLERY_AD_SITELINK_TWO = 49;
+    SWIPEABLE_GALLERY_AD_SITELINK_THREE = 50;
+    SWIPEABLE_GALLERY_AD_SITELINK_FOUR = 51;
+    SWIPEABLE_GALLERY_AD_SITELINK_FIVE = 52;
+    HOTEL_PRICE = 53;
+    PRICE_EXTENSION = 54;
+    HOTEL_BOOK_ON_GOOGLE_ROOM_SELECTION = 55;
+    SHOPPING_COMPARISON_LISTING = 56;
+    CROSS_NETWORK = 57;
+    AD_IMAGE = 58;
+    TRAVEL_ASSETS = 59;
+    VEHICLE_ASSETS = 60;
+    PRODUCT_ASSETS = 61;
+    VIDEO_CHANNEL_CLICK = 62;
+    VIDEO_RELATED_VIDEOS_CLICK = 63;
+    CLICK_TO_MESSAGE_THIRD_PARTY_CLICK = 64;
+    CLICK_TO_MESSAGE_LANDING_PAGE_CLICK = 65;
+  }
+}
+
+message CombinedAudienceStatusEnum {
+  enum CombinedAudienceStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+  }
+}
+
+message ConsentStatusEnum {
+  enum ConsentStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    GRANTED = 2;
+    DENIED = 3;
+  }
+}
+
+message ContentLabelTypeEnum {
+  enum ContentLabelType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    SEXUALLY_SUGGESTIVE = 2;
+    BELOW_THE_FOLD = 3;
+    PARKED_DOMAIN = 4;
+    JUVENILE = 6;
+    PROFANITY = 7;
+    TRAGEDY = 8;
+    VIDEO = 9;
+    VIDEO_RATING_DV_G = 10;
+    VIDEO_RATING_DV_PG = 11;
+    VIDEO_RATING_DV_T = 12;
+    VIDEO_RATING_DV_MA = 13;
+    VIDEO_NOT_YET_RATED = 14;
+    EMBEDDED_VIDEO = 15;
+    LIVE_STREAMING_VIDEO = 16;
+    SOCIAL_ISSUES = 17;
+    BRAND_SUITABILITY_CONTENT_FOR_FAMILIES = 18;
+    BRAND_SUITABILITY_GAMES_FIGHTING = 19;
+    BRAND_SUITABILITY_GAMES_MATURE = 20;
+    BRAND_SUITABILITY_HEALTH_SENSITIVE = 21;
+    BRAND_SUITABILITY_HEALTH_SOURCE_UNDETERMINED = 22;
+    BRAND_SUITABILITY_NEWS_RECENT = 23;
+    BRAND_SUITABILITY_NEWS_SENSITIVE = 24;
+    BRAND_SUITABILITY_NEWS_SOURCE_NOT_FEATURED = 25;
+    BRAND_SUITABILITY_POLITICS = 26;
+    BRAND_SUITABILITY_RELIGION = 27;
+  }
+}
+
+message ConversionActionCategoryEnum {
+  enum ConversionActionCategory {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    DEFAULT = 2;
+    PAGE_VIEW = 3;
+    PURCHASE = 4;
+    SIGNUP = 5;
+    DOWNLOAD = 7;
+    ADD_TO_CART = 8;
+    BEGIN_CHECKOUT = 9;
+    SUBSCRIBE_PAID = 10;
+    PHONE_CALL_LEAD = 11;
+    IMPORTED_LEAD = 12;
+    SUBMIT_LEAD_FORM = 13;
+    BOOK_APPOINTMENT = 14;
+    REQUEST_QUOTE = 15;
+    GET_DIRECTIONS = 16;
+    OUTBOUND_CLICK = 17;
+    CONTACT = 18;
+    ENGAGEMENT = 19;
+    STORE_VISIT = 20;
+    STORE_SALE = 21;
+    QUALIFIED_LEAD = 22;
+    CONVERTED_LEAD = 23;
+    YOUTUBE_FOLLOW_ON_VIEWS = 24;
+    MESSAGE_LEAD = 25;
+    IN_APP_AD_REVENUE = 26;
+  }
+}
+
+message ConversionActionCountingTypeEnum {
+  enum ConversionActionCountingType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ONE_PER_CLICK = 2;
+    MANY_PER_CLICK = 3;
+  }
+}
+
+message ConversionActionStatusEnum {
+  enum ConversionActionStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+    HIDDEN = 4;
+  }
+}
+
+message ConversionActionTypeEnum {
+  enum ConversionActionType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    AD_CALL = 2;
+    CLICK_TO_CALL = 3;
+    GOOGLE_PLAY_DOWNLOAD = 4;
+    GOOGLE_PLAY_IN_APP_PURCHASE = 5;
+    UPLOAD_CALLS = 6;
+    UPLOAD_CLICKS = 7;
+    WEBPAGE = 8;
+    WEBSITE_CALL = 9;
+    STORE_SALES_DIRECT_UPLOAD = 10;
+    STORE_SALES = 11;
+    FIREBASE_ANDROID_FIRST_OPEN = 12;
+    FIREBASE_ANDROID_IN_APP_PURCHASE = 13;
+    FIREBASE_ANDROID_CUSTOM = 14;
+    FIREBASE_IOS_FIRST_OPEN = 15;
+    FIREBASE_IOS_IN_APP_PURCHASE = 16;
+    FIREBASE_IOS_CUSTOM = 17;
+    THIRD_PARTY_APP_ANALYTICS_ANDROID_FIRST_OPEN = 18;
+    THIRD_PARTY_APP_ANALYTICS_ANDROID_IN_APP_PURCHASE = 19;
+    THIRD_PARTY_APP_ANALYTICS_ANDROID_CUSTOM = 20;
+    THIRD_PARTY_APP_ANALYTICS_IOS_FIRST_OPEN = 21;
+    THIRD_PARTY_APP_ANALYTICS_IOS_IN_APP_PURCHASE = 22;
+    THIRD_PARTY_APP_ANALYTICS_IOS_CUSTOM = 23;
+    ANDROID_APP_PRE_REGISTRATION = 24;
+    ANDROID_INSTALLS_ALL_OTHER_APPS = 25;
+    FLOODLIGHT_ACTION = 26;
+    FLOODLIGHT_TRANSACTION = 27;
+    GOOGLE_HOSTED = 28;
+    LEAD_FORM_SUBMIT = 29;
+    SALESFORCE = 30;
+    SEARCH_ADS_360 = 31;
+    SMART_CAMPAIGN_AD_CLICKS_TO_CALL = 32;
+    SMART_CAMPAIGN_MAP_CLICKS_TO_CALL = 33;
+    SMART_CAMPAIGN_MAP_DIRECTIONS = 34;
+    SMART_CAMPAIGN_TRACKED_CALLS = 35;
+    STORE_VISITS = 36;
+    WEBPAGE_CODELESS = 37;
+    UNIVERSAL_ANALYTICS_GOAL = 38;
+    UNIVERSAL_ANALYTICS_TRANSACTION = 39;
+    GOOGLE_ANALYTICS_4_CUSTOM = 40;
+    GOOGLE_ANALYTICS_4_PURCHASE = 41;
+    GOOGLE_ANALYTICS_4_GENERATE_LEAD = 42;
+    GOOGLE_ANALYTICS_4_QUALIFY_LEAD = 43;
+    GOOGLE_ANALYTICS_4_CLOSE_CONVERT_LEAD = 44;
+    FIREBASE_ANDROID_GENERATE_LEAD = 45;
+    FIREBASE_ANDROID_QUALIFY_LEAD = 46;
+    FIREBASE_ANDROID_CLOSE_CONVERT_LEAD = 47;
+    FIREBASE_IOS_GENERATE_LEAD = 48;
+    FIREBASE_IOS_QUALIFY_LEAD = 49;
+    FIREBASE_IOS_CLOSE_CONVERT_LEAD = 50;
+    LOCAL_SERVICES_ADS = 51;
+    FIREBASE_ANDROID_APP_AD_IMPRESSION = 52;
+    FIREBASE_IOS_APP_AD_IMPRESSION = 53;
+  }
+}
+
+message ConversionAttributionEventTypeEnum {
+  enum ConversionAttributionEventType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    IMPRESSION = 2;
+    INTERACTION = 3;
+    ENGAGED_VIEW = 4;
+    CLICK = 5;
+  }
+}
+
+message ConversionCustomVariableStatusEnum {
+  enum ConversionCustomVariableStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ACTIVATION_NEEDED = 2;
+    ENABLED = 3;
+    PAUSED = 4;
+  }
+}
+
+message ConversionLagBucketEnum {
+  enum ConversionLagBucket {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    LESS_THAN_ONE_DAY = 2;
+    ONE_TO_TWO_DAYS = 3;
+    TWO_TO_THREE_DAYS = 4;
+    THREE_TO_FOUR_DAYS = 5;
+    FOUR_TO_FIVE_DAYS = 6;
+    FIVE_TO_SIX_DAYS = 7;
+    SIX_TO_SEVEN_DAYS = 8;
+    SEVEN_TO_EIGHT_DAYS = 9;
+    EIGHT_TO_NINE_DAYS = 10;
+    NINE_TO_TEN_DAYS = 11;
+    TEN_TO_ELEVEN_DAYS = 12;
+    ELEVEN_TO_TWELVE_DAYS = 13;
+    TWELVE_TO_THIRTEEN_DAYS = 14;
+    THIRTEEN_TO_FOURTEEN_DAYS = 15;
+    FOURTEEN_TO_TWENTY_ONE_DAYS = 16;
+    TWENTY_ONE_TO_THIRTY_DAYS = 17;
+    THIRTY_TO_FORTY_FIVE_DAYS = 18;
+    FORTY_FIVE_TO_SIXTY_DAYS = 19;
+    SIXTY_TO_NINETY_DAYS = 20;
+  }
+}
+
+message ConversionLiftIncludedConversionActionTypesEnum {
+  enum ConversionLiftIncludedConversionActionTypes {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ALL = 2;
+    SELECTED = 3;
+  }
+}
+
+message ConversionOrAdjustmentLagBucketEnum {
+  enum ConversionOrAdjustmentLagBucket {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CONVERSION_LESS_THAN_ONE_DAY = 2;
+    CONVERSION_ONE_TO_TWO_DAYS = 3;
+    CONVERSION_TWO_TO_THREE_DAYS = 4;
+    CONVERSION_THREE_TO_FOUR_DAYS = 5;
+    CONVERSION_FOUR_TO_FIVE_DAYS = 6;
+    CONVERSION_FIVE_TO_SIX_DAYS = 7;
+    CONVERSION_SIX_TO_SEVEN_DAYS = 8;
+    CONVERSION_SEVEN_TO_EIGHT_DAYS = 9;
+    CONVERSION_EIGHT_TO_NINE_DAYS = 10;
+    CONVERSION_NINE_TO_TEN_DAYS = 11;
+    CONVERSION_TEN_TO_ELEVEN_DAYS = 12;
+    CONVERSION_ELEVEN_TO_TWELVE_DAYS = 13;
+    CONVERSION_TWELVE_TO_THIRTEEN_DAYS = 14;
+    CONVERSION_THIRTEEN_TO_FOURTEEN_DAYS = 15;
+    CONVERSION_FOURTEEN_TO_TWENTY_ONE_DAYS = 16;
+    CONVERSION_TWENTY_ONE_TO_THIRTY_DAYS = 17;
+    CONVERSION_THIRTY_TO_FORTY_FIVE_DAYS = 18;
+    CONVERSION_FORTY_FIVE_TO_SIXTY_DAYS = 19;
+    CONVERSION_SIXTY_TO_NINETY_DAYS = 20;
+    ADJUSTMENT_LESS_THAN_ONE_DAY = 21;
+    ADJUSTMENT_ONE_TO_TWO_DAYS = 22;
+    ADJUSTMENT_TWO_TO_THREE_DAYS = 23;
+    ADJUSTMENT_THREE_TO_FOUR_DAYS = 24;
+    ADJUSTMENT_FOUR_TO_FIVE_DAYS = 25;
+    ADJUSTMENT_FIVE_TO_SIX_DAYS = 26;
+    ADJUSTMENT_SIX_TO_SEVEN_DAYS = 27;
+    ADJUSTMENT_SEVEN_TO_EIGHT_DAYS = 28;
+    ADJUSTMENT_EIGHT_TO_NINE_DAYS = 29;
+    ADJUSTMENT_NINE_TO_TEN_DAYS = 30;
+    ADJUSTMENT_TEN_TO_ELEVEN_DAYS = 31;
+    ADJUSTMENT_ELEVEN_TO_TWELVE_DAYS = 32;
+    ADJUSTMENT_TWELVE_TO_THIRTEEN_DAYS = 33;
+    ADJUSTMENT_THIRTEEN_TO_FOURTEEN_DAYS = 34;
+    ADJUSTMENT_FOURTEEN_TO_TWENTY_ONE_DAYS = 35;
+    ADJUSTMENT_TWENTY_ONE_TO_THIRTY_DAYS = 36;
+    ADJUSTMENT_THIRTY_TO_FORTY_FIVE_DAYS = 37;
+    ADJUSTMENT_FORTY_FIVE_TO_SIXTY_DAYS = 38;
+    ADJUSTMENT_SIXTY_TO_NINETY_DAYS = 39;
+    ADJUSTMENT_NINETY_TO_ONE_HUNDRED_AND_FORTY_FIVE_DAYS = 40;
+    CONVERSION_UNKNOWN = 41;
+    ADJUSTMENT_UNKNOWN = 42;
+  }
+}
+
+message ConversionOriginEnum {
+  enum ConversionOrigin {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    WEBSITE = 2;
+    GOOGLE_HOSTED = 3;
+    APP = 4;
+    CALL_FROM_ADS = 5;
+    STORE = 6;
+    YOUTUBE_HOSTED = 7;
+    LOCAL_SERVICES_ADS = 8;
+  }
+}
+
+message ConversionTrackingStatusEnum {
+  enum ConversionTrackingStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NOT_CONVERSION_TRACKED = 2;
+    CONVERSION_TRACKING_MANAGED_BY_SELF = 3;
+    CONVERSION_TRACKING_MANAGED_BY_THIS_MANAGER = 4;
+    CONVERSION_TRACKING_MANAGED_BY_ANOTHER_MANAGER = 5;
+  }
+}
+
+message ConversionValueRulePrimaryDimensionEnum {
+  enum ConversionValueRulePrimaryDimension {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NO_RULE_APPLIED = 2;
+    ORIGINAL = 3;
+    NEW_VS_RETURNING_USER = 4;
+    GEO_LOCATION = 5;
+    DEVICE = 6;
+    AUDIENCE = 7;
+    MULTIPLE = 8;
+    ITINERARY = 9;
+    LOYALTY_MEMBERSHIP = 10;
+  }
+}
+
+message ConversionValueRuleSetStatusEnum {
+  enum ConversionValueRuleSetStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+    PAUSED = 4;
+  }
+}
+
+message ConversionValueRuleStatusEnum {
+  enum ConversionValueRuleStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+    PAUSED = 4;
+  }
+}
+
+message ConvertingUserPriorEngagementTypeAndLtvBucketEnum {
+  enum ConvertingUserPriorEngagementTypeAndLtvBucket {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NEW = 2;
+    RETURNING = 3;
+    NEW_AND_HIGH_LTV = 4;
+  }
+}
+
+message CriterionCategoryChannelAvailabilityModeEnum {
+  enum CriterionCategoryChannelAvailabilityMode {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ALL_CHANNELS = 2;
+    CHANNEL_TYPE_AND_ALL_SUBTYPES = 3;
+    CHANNEL_TYPE_AND_SUBSET_SUBTYPES = 4;
+  }
+}
+
+message CriterionCategoryLocaleAvailabilityModeEnum {
+  enum CriterionCategoryLocaleAvailabilityMode {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ALL_LOCALES = 2;
+    COUNTRY_AND_ALL_LANGUAGES = 3;
+    LANGUAGE_AND_ALL_COUNTRIES = 4;
+    COUNTRY_AND_LANGUAGE = 5;
+  }
+}
+
+message CriterionSystemServingStatusEnum {
+  enum CriterionSystemServingStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ELIGIBLE = 2;
+    RARELY_SERVED = 3;
+  }
+}
+
+message CriterionTypeEnum {
+  enum CriterionType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    KEYWORD = 2;
+    PLACEMENT = 3;
+    MOBILE_APP_CATEGORY = 4;
+    MOBILE_APPLICATION = 5;
+    DEVICE = 6;
+    LOCATION = 7;
+    LISTING_GROUP = 8;
+    AD_SCHEDULE = 9;
+    AGE_RANGE = 10;
+    GENDER = 11;
+    INCOME_RANGE = 12;
+    PARENTAL_STATUS = 13;
+    YOUTUBE_VIDEO = 14;
+    YOUTUBE_CHANNEL = 15;
+    USER_LIST = 16;
+    PROXIMITY = 17;
+    TOPIC = 18;
+    LISTING_SCOPE = 19;
+    LANGUAGE = 20;
+    IP_BLOCK = 21;
+    CONTENT_LABEL = 22;
+    CARRIER = 23;
+    USER_INTEREST = 24;
+    WEBPAGE = 25;
+    OPERATING_SYSTEM_VERSION = 26;
+    APP_PAYMENT_MODEL = 27;
+    MOBILE_DEVICE = 28;
+    CUSTOM_AFFINITY = 29;
+    CUSTOM_INTENT = 30;
+    LOCATION_GROUP = 31;
+    CUSTOM_AUDIENCE = 32;
+    COMBINED_AUDIENCE = 33;
+    KEYWORD_THEME = 34;
+    AUDIENCE = 35;
+    NEGATIVE_KEYWORD_LIST = 36;
+    LOCAL_SERVICE_ID = 37;
+    SEARCH_THEME = 38;
+    BRAND = 39;
+    BRAND_LIST = 40;
+    LIFE_EVENT = 41;
+    WEBPAGE_LIST = 42;
+    VIDEO_LINEUP = 43;
+    PLACEMENT_LIST = 44;
+    VERTICAL_ADS_ITEM_GROUP_RULE_LIST = 45;
+    VERTICAL_ADS_ITEM_GROUP_RULE = 46;
+    VERTICAL_ADS_ITEM_BID = 47;
+    RETAIL_FILTER_BUNDLE = 180;
+    RETAIL_FILTER = 181;
+  }
+}
+
+message CustomAudienceMemberTypeEnum {
+  enum CustomAudienceMemberType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    KEYWORD = 2;
+    URL = 3;
+    PLACE_CATEGORY = 4;
+    APP = 5;
+  }
+}
+
+message CustomAudienceStatusEnum {
+  enum CustomAudienceStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+  }
+}
+
+message CustomAudienceTypeEnum {
+  enum CustomAudienceType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    AUTO = 2;
+    INTEREST = 3;
+    PURCHASE_INTENT = 4;
+    SEARCH = 5;
+  }
+}
+
+message CustomConversionGoalStatusEnum {
+  enum CustomConversionGoalStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+  }
+}
+
+message CustomInterestMemberTypeEnum {
+  enum CustomInterestMemberType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    KEYWORD = 2;
+    URL = 3;
+  }
+}
+
+message CustomInterestStatusEnum {
+  enum CustomInterestStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+  }
+}
+
+message CustomInterestTypeEnum {
+  enum CustomInterestType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CUSTOM_AFFINITY = 2;
+    CUSTOM_INTENT = 3;
+  }
+}
+
+message CustomerLifecycleOptimizationModeEnum {
+  enum CustomerLifecycleOptimizationMode {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    TARGET_ALL = 2;
+    TARGET_SPECIFIC = 3;
+  }
+}
+
+message CustomerMatchUploadKeyTypeEnum {
+  enum CustomerMatchUploadKeyType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CONTACT_INFO = 2;
+    CRM_ID = 3;
+    MOBILE_ADVERTISING_ID = 4;
+  }
+}
+
+message CustomerPayPerConversionEligibilityFailureReasonEnum {
+  enum CustomerPayPerConversionEligibilityFailureReason {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NOT_ENOUGH_CONVERSIONS = 2;
+    CONVERSION_LAG_TOO_HIGH = 3;
+    HAS_CAMPAIGN_WITH_SHARED_BUDGET = 4;
+    HAS_UPLOAD_CLICKS_CONVERSION = 5;
+    AVERAGE_DAILY_SPEND_TOO_HIGH = 6;
+    ANALYSIS_NOT_COMPLETE = 7;
+    OTHER = 8;
+  }
+}
+
+message CustomerStatusEnum {
+  enum CustomerStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    CANCELED = 3;
+    SUSPENDED = 4;
+    CLOSED = 5;
+  }
+}
+
+message CustomizerAttributeStatusEnum {
+  enum CustomizerAttributeStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+  }
+}
+
+message CustomizerAttributeTypeEnum {
+  enum CustomizerAttributeType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    TEXT = 2;
+    NUMBER = 3;
+    PRICE = 4;
+    PERCENT = 5;
+  }
+}
+
+message CustomizerValueStatusEnum {
+  enum CustomizerValueStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+  }
+}
+
+message DataDrivenModelStatusEnum {
+  enum DataDrivenModelStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    AVAILABLE = 2;
+    STALE = 3;
+    EXPIRED = 4;
+    NEVER_GENERATED = 5;
+  }
+}
+
+message DataLinkStatusEnum {
+  enum DataLinkStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    REQUESTED = 2;
+    PENDING_APPROVAL = 3;
+    ENABLED = 4;
+    DISABLED = 5;
+    REVOKED = 6;
+    REJECTED = 7;
+  }
+}
+
+message DataLinkTypeEnum {
+  enum DataLinkType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    VIDEO = 2;
+  }
+}
+
+message DateSelectionTypeEnum {
+  enum DateSelectionType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    DEFAULT_SELECTION = 50;
+    USER_SELECTED = 51;
+  }
+}
+
+message DayOfWeekEnum {
+  enum DayOfWeek {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    MONDAY = 2;
+    TUESDAY = 3;
+    WEDNESDAY = 4;
+    THURSDAY = 5;
+    FRIDAY = 6;
+    SATURDAY = 7;
+    SUNDAY = 8;
+  }
+}
+
+message DemandGenChannelConfigEnum {
+  enum DemandGenChannelConfig {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CHANNEL_STRATEGY = 2;
+    SELECTED_CHANNELS = 3;
+  }
+}
+
+message DemandGenChannelStrategyEnum {
+  enum DemandGenChannelStrategy {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ALL_CHANNELS = 2;
+    ALL_OWNED_AND_OPERATED_CHANNELS = 3;
+  }
+}
+
+message DeviceEnum {
+  enum Device {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    MOBILE = 2;
+    TABLET = 3;
+    DESKTOP = 4;
+    CONNECTED_TV = 6;
+    OTHER = 5;
+  }
+}
+
+message DisplayAdFormatSettingEnum {
+  enum DisplayAdFormatSetting {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ALL_FORMATS = 2;
+    NON_NATIVE = 3;
+    NATIVE = 4;
+  }
+}
+
+message DisplayUploadProductTypeEnum {
+  enum DisplayUploadProductType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    HTML5_UPLOAD_AD = 2;
+    DYNAMIC_HTML5_EDUCATION_AD = 3;
+    DYNAMIC_HTML5_FLIGHT_AD = 4;
+    DYNAMIC_HTML5_HOTEL_RENTAL_AD = 5;
+    DYNAMIC_HTML5_JOB_AD = 6;
+    DYNAMIC_HTML5_LOCAL_AD = 7;
+    DYNAMIC_HTML5_REAL_ESTATE_AD = 8;
+    DYNAMIC_HTML5_CUSTOM_AD = 9;
+    DYNAMIC_HTML5_TRAVEL_AD = 10;
+    DYNAMIC_HTML5_HOTEL_AD = 11;
+  }
+}
+
+message DistanceBucketEnum {
+  enum DistanceBucket {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    WITHIN_700M = 2;
+    WITHIN_1KM = 3;
+    WITHIN_5KM = 4;
+    WITHIN_10KM = 5;
+    WITHIN_15KM = 6;
+    WITHIN_20KM = 7;
+    WITHIN_25KM = 8;
+    WITHIN_30KM = 9;
+    WITHIN_35KM = 10;
+    WITHIN_40KM = 11;
+    WITHIN_45KM = 12;
+    WITHIN_50KM = 13;
+    WITHIN_55KM = 14;
+    WITHIN_60KM = 15;
+    WITHIN_65KM = 16;
+    BEYOND_65KM = 17;
+    WITHIN_0_7MILES = 18;
+    WITHIN_1MILE = 19;
+    WITHIN_5MILES = 20;
+    WITHIN_10MILES = 21;
+    WITHIN_15MILES = 22;
+    WITHIN_20MILES = 23;
+    WITHIN_25MILES = 24;
+    WITHIN_30MILES = 25;
+    WITHIN_35MILES = 26;
+    WITHIN_40MILES = 27;
+    BEYOND_40MILES = 28;
+  }
+}
+
+message EnhancedConversionsConfigEnum {
+  enum EnhancedConversionsConfig {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    OFF = 2;
+    ON = 3;
+  }
+}
+
+message EuPoliticalAdvertisingStatusEnum {
+  enum EuPoliticalAdvertisingStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CONTAINS_EU_POLITICAL_ADVERTISING = 2;
+    DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING = 3;
+  }
+}
+
+message ExperimentAssetDetailOperationEnum {
+  enum ExperimentAssetDetailOperation {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ADD = 2;
+    REMOVE = 3;
+  }
+}
+
+message ExperimentMetricDirectionEnum {
+  enum ExperimentMetricDirection {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NO_CHANGE = 2;
+    INCREASE = 3;
+    DECREASE = 4;
+    NO_CHANGE_OR_INCREASE = 5;
+    NO_CHANGE_OR_DECREASE = 6;
+  }
+}
+
+message ExperimentMetricEnum {
+  enum ExperimentMetric {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CLICKS = 2;
+    IMPRESSIONS = 3;
+    COST = 4;
+    CONVERSIONS_PER_INTERACTION_RATE = 5;
+    COST_PER_CONVERSION = 6;
+    CONVERSIONS_VALUE_PER_COST = 7;
+    AVERAGE_CPC = 8;
+    CTR = 9;
+    INCREMENTAL_CONVERSIONS = 10;
+    COMPLETED_VIDEO_VIEWS = 11;
+    CUSTOM_ALGORITHMS = 12;
+    CONVERSIONS = 13;
+    CONVERSION_VALUE = 14;
+  }
+}
+
+message ExperimentStatusEnum {
+  enum ExperimentStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+    HALTED = 4;
+    PROMOTED = 5;
+    SETUP = 6;
+    INITIATED = 7;
+    GRADUATED = 8;
+  }
+}
+
+message ExperimentTypeEnum {
+  enum ExperimentType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    DISPLAY_AND_VIDEO_360 = 2;
+    AD_VARIATION = 3;
+    YOUTUBE_CUSTOM = 5;
+    DISPLAY_CUSTOM = 6;
+    SEARCH_CUSTOM = 7;
+    DISPLAY_AUTOMATED_BIDDING_STRATEGY = 8;
+    SEARCH_AUTOMATED_BIDDING_STRATEGY = 9;
+    SHOPPING_AUTOMATED_BIDDING_STRATEGY = 10;
+    SMART_MATCHING = 11;
+    HOTEL_CUSTOM = 12;
+    OPTIMIZE_ASSETS = 13;
+    ADOPT_AI_MAX = 14;
+    ADOPT_BROAD_MATCH_KEYWORDS = 15;
+    PMAX_REPLACEMENT_SHOPPING = 16;
+    COMPARE_CAMPAIGNS = 17;
+    PMAX_TEXT_CUSTOMIZATION_FINAL_URL_EXPANSION = 18;
+  }
+}
+
+message ExternalConversionSourceEnum {
+  enum ExternalConversionSource {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    WEBPAGE = 2;
+    ANALYTICS = 3;
+    UPLOAD = 4;
+    AD_CALL_METRICS = 5;
+    WEBSITE_CALL_METRICS = 6;
+    STORE_VISITS = 7;
+    ANDROID_IN_APP = 8;
+    IOS_IN_APP = 9;
+    IOS_FIRST_OPEN = 10;
+    APP_UNSPECIFIED = 11;
+    ANDROID_FIRST_OPEN = 12;
+    UPLOAD_CALLS = 13;
+    FIREBASE = 14;
+    CLICK_TO_CALL = 15;
+    SALESFORCE = 16;
+    STORE_SALES_CRM = 17;
+    STORE_SALES_PAYMENT_NETWORK = 18;
+    GOOGLE_PLAY = 19;
+    THIRD_PARTY_APP_ANALYTICS = 20;
+    GOOGLE_ATTRIBUTION = 21;
+    STORE_SALES_DIRECT_UPLOAD = 23;
+    STORE_SALES = 24;
+    SEARCH_ADS_360 = 25;
+    GOOGLE_HOSTED = 27;
+    FLOODLIGHT = 29;
+    ANALYTICS_SEARCH_ADS_360 = 31;
+    FIREBASE_SEARCH_ADS_360 = 33;
+    DISPLAY_AND_VIDEO_360_FLOODLIGHT = 34;
+  }
+}
+
+message FixedCpmGoalEnum {
+  enum FixedCpmGoal {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    REACH = 2;
+    TARGET_FREQUENCY = 3;
+  }
+}
+
+message FixedCpmTargetFrequencyTimeUnitEnum {
+  enum FixedCpmTargetFrequencyTimeUnit {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    MONTHLY = 2;
+  }
+}
+
+message FrequencyCapEventTypeEnum {
+  enum FrequencyCapEventType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    IMPRESSION = 2;
+    VIDEO_VIEW = 3;
+  }
+}
+
+message FrequencyCapLevelEnum {
+  enum FrequencyCapLevel {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    AD_GROUP_AD = 2;
+    AD_GROUP = 3;
+    CAMPAIGN = 4;
+  }
+}
+
+message FrequencyCapTimeUnitEnum {
+  enum FrequencyCapTimeUnit {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    DAY = 2;
+    WEEK = 3;
+    MONTH = 4;
+  }
+}
+
+message GenderTypeEnum {
+  enum GenderType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    MALE = 10;
+    FEMALE = 11;
+    UNDETERMINED = 20;
+  }
+}
+
+message GeoTargetConstantStatusEnum {
+  enum GeoTargetConstantStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVAL_PLANNED = 3;
+  }
+}
+
+message GeoTargetingTypeEnum {
+  enum GeoTargetingType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    AREA_OF_INTEREST = 2;
+    LOCATION_OF_PRESENCE = 3;
+  }
+}
+
+message GlsPhoneNumberTypeEnum {
+  enum GlsPhoneNumberType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    DESTINATION_PHONE_NUMBER_FOR_ADS = 2;
+    DESTINATION_PHONE_NUMBER_FOR_SMS_ONLY = 3;
+    DESTINATION_PHONE_NUMBER_FOR_WHATSAPP_ONLY = 4;
+  }
+}
+
+message GoalConfigLevelEnum {
+  enum GoalConfigLevel {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CUSTOMER = 2;
+    CAMPAIGN = 3;
+  }
+}
+
+message GoalOptimizationEligibilityEnum {
+  enum GoalOptimizationEligibility {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ELIGIBLE = 2;
+    INELIGIBLE = 3;
+  }
+}
+
+message GoalTypeEnum {
+  enum GoalType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CUSTOMER_RETENTION = 3;
+    NEW_CUSTOMER_ACQUISITION = 4;
+    LOYALTY_RETENTION = 5;
+  }
+}
+
+message GoogleVoiceCallStatusEnum {
+  enum GoogleVoiceCallStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    MISSED = 2;
+    RECEIVED = 3;
+  }
+}
+
+message HotelDateSelectionTypeEnum {
+  enum HotelDateSelectionType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    DEFAULT_SELECTION = 50;
+    USER_SELECTED = 51;
+  }
+}
+
+message HotelPriceBucketEnum {
+  enum HotelPriceBucket {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    LOWEST_UNIQUE = 2;
+    LOWEST_TIED = 3;
+    NOT_LOWEST = 4;
+    ONLY_PARTNER_SHOWN = 5;
+  }
+}
+
+message HotelRateTypeEnum {
+  enum HotelRateType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    UNAVAILABLE = 2;
+    PUBLIC_RATE = 3;
+    QUALIFIED_RATE = 4;
+    PRIVATE_RATE = 5;
+  }
+}
+
+message HotelReconciliationStatusEnum {
+  enum HotelReconciliationStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    RESERVATION_ENABLED = 2;
+    RECONCILIATION_NEEDED = 3;
+    RECONCILED = 4;
+    CANCELED = 5;
+  }
+}
+
+message IncentiveStateEnum {
+  enum IncentiveState {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    REDEEMED = 2;
+    FULFILLED = 3;
+    REWARD_GRANTED = 4;
+    EXPIRED = 5;
+    REWARD_EXPIRED = 6;
+    INVALIDATED = 7;
+    REWARD_EXHAUSTED = 8;
+  }
+}
+
+message IncomeRangeTypeEnum {
+  enum IncomeRangeType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    INCOME_RANGE_0_50 = 510001;
+    INCOME_RANGE_50_60 = 510002;
+    INCOME_RANGE_60_70 = 510003;
+    INCOME_RANGE_70_80 = 510004;
+    INCOME_RANGE_80_90 = 510005;
+    INCOME_RANGE_90_UP = 510006;
+    INCOME_RANGE_UNDETERMINED = 510000;
+  }
+}
+
+message InteractionEventTypeEnum {
+  enum InteractionEventType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CLICK = 2;
+    ENGAGEMENT = 3;
+    VIDEO_VIEW = 4;
+    NONE = 5;
+  }
+}
+
+message InteractionTypeEnum {
+  enum InteractionType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CALLS = 8000;
+  }
+}
+
+message KeywordMatchTypeEnum {
+  enum KeywordMatchType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    EXACT = 2;
+    PHRASE = 3;
+    BROAD = 4;
+  }
+}
+
+message KeywordPlanForecastIntervalEnum {
+  enum KeywordPlanForecastInterval {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NEXT_WEEK = 3;
+    NEXT_MONTH = 4;
+    NEXT_QUARTER = 5;
+  }
+}
+
+message KeywordPlanNetworkEnum {
+  enum KeywordPlanNetwork {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    GOOGLE_SEARCH = 2;
+    GOOGLE_SEARCH_AND_PARTNERS = 3;
+  }
+}
+
+message LabelStatusEnum {
+  enum LabelStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+  }
+}
+
+message LandingPageSourceEnum {
+  enum LandingPageSource {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ADVERTISER = 2;
+    AUTOMATIC = 3;
+  }
+}
+
+message LeadFormCallToActionTypeEnum {
+  enum LeadFormCallToActionType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    LEARN_MORE = 2;
+    GET_QUOTE = 3;
+    APPLY_NOW = 4;
+    SIGN_UP = 5;
+    CONTACT_US = 6;
+    SUBSCRIBE = 7;
+    DOWNLOAD = 8;
+    BOOK_NOW = 9;
+    GET_OFFER = 10;
+    REGISTER = 11;
+    GET_INFO = 12;
+    REQUEST_DEMO = 13;
+    JOIN_NOW = 14;
+    GET_STARTED = 15;
+  }
+}
+
+message LeadFormDesiredIntentEnum {
+  enum LeadFormDesiredIntent {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    LOW_INTENT = 2;
+    HIGH_INTENT = 3;
+  }
+}
+
+message LeadFormFieldUserInputTypeEnum {
+  enum LeadFormFieldUserInputType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    FULL_NAME = 2;
+    EMAIL = 3;
+    PHONE_NUMBER = 4;
+    POSTAL_CODE = 5;
+    STREET_ADDRESS = 8;
+    CITY = 9;
+    REGION = 10;
+    COUNTRY = 11;
+    WORK_EMAIL = 12;
+    COMPANY_NAME = 13;
+    WORK_PHONE = 14;
+    JOB_TITLE = 15;
+    GOVERNMENT_ISSUED_ID_CPF_BR = 16;
+    GOVERNMENT_ISSUED_ID_DNI_AR = 17;
+    GOVERNMENT_ISSUED_ID_DNI_PE = 18;
+    GOVERNMENT_ISSUED_ID_RUT_CL = 19;
+    GOVERNMENT_ISSUED_ID_CC_CO = 20;
+    GOVERNMENT_ISSUED_ID_CI_EC = 21;
+    GOVERNMENT_ISSUED_ID_RFC_MX = 22;
+    FIRST_NAME = 23;
+    LAST_NAME = 24;
+    VEHICLE_MODEL = 1001;
+    VEHICLE_TYPE = 1002;
+    PREFERRED_DEALERSHIP = 1003;
+    VEHICLE_PURCHASE_TIMELINE = 1004;
+    VEHICLE_OWNERSHIP = 1005;
+    VEHICLE_PAYMENT_TYPE = 1009;
+    VEHICLE_CONDITION = 1010;
+    COMPANY_SIZE = 1006;
+    ANNUAL_SALES = 1007;
+    YEARS_IN_BUSINESS = 1008;
+    JOB_DEPARTMENT = 1011;
+    JOB_ROLE = 1012;
+    OVER_18_AGE = 1078;
+    OVER_19_AGE = 1079;
+    OVER_20_AGE = 1080;
+    OVER_21_AGE = 1081;
+    OVER_22_AGE = 1082;
+    OVER_23_AGE = 1083;
+    OVER_24_AGE = 1084;
+    OVER_25_AGE = 1085;
+    OVER_26_AGE = 1086;
+    OVER_27_AGE = 1087;
+    OVER_28_AGE = 1088;
+    OVER_29_AGE = 1089;
+    OVER_30_AGE = 1090;
+    OVER_31_AGE = 1091;
+    OVER_32_AGE = 1092;
+    OVER_33_AGE = 1093;
+    OVER_34_AGE = 1094;
+    OVER_35_AGE = 1095;
+    OVER_36_AGE = 1096;
+    OVER_37_AGE = 1097;
+    OVER_38_AGE = 1098;
+    OVER_39_AGE = 1099;
+    OVER_40_AGE = 1100;
+    OVER_41_AGE = 1101;
+    OVER_42_AGE = 1102;
+    OVER_43_AGE = 1103;
+    OVER_44_AGE = 1104;
+    OVER_45_AGE = 1105;
+    OVER_46_AGE = 1106;
+    OVER_47_AGE = 1107;
+    OVER_48_AGE = 1108;
+    OVER_49_AGE = 1109;
+    OVER_50_AGE = 1110;
+    OVER_51_AGE = 1111;
+    OVER_52_AGE = 1112;
+    OVER_53_AGE = 1113;
+    OVER_54_AGE = 1114;
+    OVER_55_AGE = 1115;
+    OVER_56_AGE = 1116;
+    OVER_57_AGE = 1117;
+    OVER_58_AGE = 1118;
+    OVER_59_AGE = 1119;
+    OVER_60_AGE = 1120;
+    OVER_61_AGE = 1121;
+    OVER_62_AGE = 1122;
+    OVER_63_AGE = 1123;
+    OVER_64_AGE = 1124;
+    OVER_65_AGE = 1125;
+    EDUCATION_PROGRAM = 1013;
+    EDUCATION_COURSE = 1014;
+    PRODUCT = 1016;
+    SERVICE = 1017;
+    OFFER = 1018;
+    CATEGORY = 1019;
+    PREFERRED_CONTACT_METHOD = 1020;
+    PREFERRED_LOCATION = 1021;
+    PREFERRED_CONTACT_TIME = 1022;
+    PURCHASE_TIMELINE = 1023;
+    YEARS_OF_EXPERIENCE = 1048;
+    JOB_INDUSTRY = 1049;
+    LEVEL_OF_EDUCATION = 1050;
+    PROPERTY_TYPE = 1024;
+    REALTOR_HELP_GOAL = 1025;
+    PROPERTY_COMMUNITY = 1026;
+    PRICE_RANGE = 1027;
+    NUMBER_OF_BEDROOMS = 1028;
+    FURNISHED_PROPERTY = 1029;
+    PETS_ALLOWED_PROPERTY = 1030;
+    NEXT_PLANNED_PURCHASE = 1031;
+    EVENT_SIGNUP_INTEREST = 1033;
+    PREFERRED_SHOPPING_PLACES = 1034;
+    FAVORITE_BRAND = 1035;
+    TRANSPORTATION_COMMERCIAL_LICENSE_TYPE = 1036;
+    EVENT_BOOKING_INTEREST = 1038;
+    DESTINATION_COUNTRY = 1039;
+    DESTINATION_CITY = 1040;
+    DEPARTURE_COUNTRY = 1041;
+    DEPARTURE_CITY = 1042;
+    DEPARTURE_DATE = 1043;
+    RETURN_DATE = 1044;
+    NUMBER_OF_TRAVELERS = 1045;
+    TRAVEL_BUDGET = 1046;
+    TRAVEL_ACCOMMODATION = 1047;
+  }
+}
+
+message LeadFormPostSubmitCallToActionTypeEnum {
+  enum LeadFormPostSubmitCallToActionType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    VISIT_SITE = 2;
+    DOWNLOAD = 3;
+    LEARN_MORE = 4;
+    SHOP_NOW = 5;
+  }
+}
+
+message LegacyAppInstallAdAppStoreEnum {
+  enum LegacyAppInstallAdAppStore {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    APPLE_APP_STORE = 2;
+    GOOGLE_PLAY = 3;
+    WINDOWS_STORE = 4;
+    WINDOWS_PHONE_STORE = 5;
+    CN_APP_STORE = 6;
+  }
+}
+
+message LiftMeasurementFlightStatusEnum {
+  enum LiftMeasurementFlightStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    STOPPED = 3;
+  }
+}
+
+message LiftMetricTypeEnum {
+  enum LiftMetricType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CONVERSION = 2;
+    SEARCH = 3;
+    SURVEY = 4;
+  }
+}
+
+message LinkedAccountTypeEnum {
+  enum LinkedAccountType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    THIRD_PARTY_APP_ANALYTICS = 2;
+  }
+}
+
+message LinkedProductTypeEnum {
+  enum LinkedProductType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    DATA_PARTNER = 2;
+    GOOGLE_ADS = 3;
+    HOTEL_CENTER = 7;
+    MERCHANT_CENTER = 8;
+    ADVERTISING_PARTNER = 9;
+  }
+}
+
+message ListingGroupFilterCustomAttributeIndexEnum {
+  enum ListingGroupFilterCustomAttributeIndex {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    INDEX0 = 2;
+    INDEX1 = 3;
+    INDEX2 = 4;
+    INDEX3 = 5;
+    INDEX4 = 6;
+  }
+}
+
+message ListingGroupFilterListingSourceEnum {
+  enum ListingGroupFilterListingSource {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    SHOPPING = 2;
+    WEBPAGE = 3;
+    RETAIL = 4;
+  }
+}
+
+message ListingGroupFilterProductCategoryLevelEnum {
+  enum ListingGroupFilterProductCategoryLevel {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    LEVEL1 = 2;
+    LEVEL2 = 3;
+    LEVEL3 = 4;
+    LEVEL4 = 5;
+    LEVEL5 = 6;
+  }
+}
+
+message ListingGroupFilterProductChannelEnum {
+  enum ListingGroupFilterProductChannel {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ONLINE = 2;
+    LOCAL = 3;
+  }
+}
+
+message ListingGroupFilterProductConditionEnum {
+  enum ListingGroupFilterProductCondition {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NEW = 2;
+    REFURBISHED = 3;
+    USED = 4;
+  }
+}
+
+message ListingGroupFilterProductTypeLevelEnum {
+  enum ListingGroupFilterProductTypeLevel {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    LEVEL1 = 2;
+    LEVEL2 = 3;
+    LEVEL3 = 4;
+    LEVEL4 = 5;
+    LEVEL5 = 6;
+  }
+}
+
+message ListingGroupFilterTypeEnum {
+  enum ListingGroupFilterType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    SUBDIVISION = 2;
+    UNIT_INCLUDED = 3;
+    UNIT_EXCLUDED = 4;
+  }
+}
+
+message ListingGroupTypeEnum {
+  enum ListingGroupType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    SUBDIVISION = 2;
+    UNIT = 3;
+  }
+}
+
+message ListingTypeEnum {
+  enum ListingType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    VEHICLES = 2;
+  }
+}
+
+message LocalServicesBusinessRegistrationCheckRejectionReasonEnum {
+  enum LocalServicesBusinessRegistrationCheckRejectionReason {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    BUSINESS_NAME_MISMATCH = 2;
+    BUSINESS_DETAILS_MISMATCH = 3;
+    ID_NOT_FOUND = 4;
+    POOR_DOCUMENT_IMAGE_QUALITY = 5;
+    DOCUMENT_EXPIRED = 6;
+    DOCUMENT_INVALID = 7;
+    DOCUMENT_TYPE_MISMATCH = 8;
+    DOCUMENT_UNVERIFIABLE = 9;
+    OTHER = 10;
+  }
+}
+
+message LocalServicesBusinessRegistrationTypeEnum {
+  enum LocalServicesBusinessRegistrationType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NUMBER = 2;
+    DOCUMENT = 3;
+  }
+}
+
+message LocalServicesCreditStateEnum {
+  enum CreditState {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PENDING = 2;
+    CREDITED = 3;
+  }
+}
+
+message LocalServicesEmployeeStatusEnum {
+  enum LocalServicesEmployeeStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+  }
+}
+
+message LocalServicesEmployeeTypeEnum {
+  enum LocalServicesEmployeeType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    BUSINESS_OWNER = 2;
+    EMPLOYEE = 3;
+  }
+}
+
+message LocalServicesInsuranceRejectionReasonEnum {
+  enum LocalServicesInsuranceRejectionReason {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    BUSINESS_NAME_MISMATCH = 2;
+    INSURANCE_AMOUNT_INSUFFICIENT = 3;
+    EXPIRED = 4;
+    NO_SIGNATURE = 5;
+    NO_POLICY_NUMBER = 6;
+    NO_COMMERCIAL_GENERAL_LIABILITY = 7;
+    EDITABLE_FORMAT = 8;
+    CATEGORY_MISMATCH = 9;
+    MISSING_EXPIRATION_DATE = 10;
+    POOR_QUALITY = 11;
+    POTENTIALLY_EDITED = 12;
+    WRONG_DOCUMENT_TYPE = 13;
+    NON_FINAL = 14;
+    OTHER = 15;
+  }
+}
+
+message LocalServicesLeadConversationTypeEnum {
+  enum ConversationType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    EMAIL = 2;
+    MESSAGE = 3;
+    PHONE_CALL = 4;
+    SMS = 5;
+    BOOKING = 6;
+    WHATSAPP = 7;
+    ADS_API = 8;
+  }
+}
+
+message LocalServicesLeadStatusEnum {
+  enum LeadStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NEW = 2;
+    ACTIVE = 3;
+    BOOKED = 4;
+    DECLINED = 5;
+    EXPIRED = 6;
+    DISABLED = 7;
+    CONSUMER_DECLINED = 8;
+    WIPED_OUT = 9;
+  }
+}
+
+message LocalServicesLeadTypeEnum {
+  enum LeadType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    MESSAGE = 2;
+    PHONE_CALL = 3;
+    BOOKING = 4;
+    COUPON = 5;
+  }
+}
+
+message LocalServicesLicenseRejectionReasonEnum {
+  enum LocalServicesLicenseRejectionReason {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    BUSINESS_NAME_MISMATCH = 2;
+    UNAUTHORIZED = 3;
+    EXPIRED = 4;
+    POOR_QUALITY = 5;
+    UNVERIFIABLE = 6;
+    WRONG_DOCUMENT_OR_ID = 7;
+    OTHER = 8;
+  }
+}
+
+message LocalServicesParticipantTypeEnum {
+  enum ParticipantType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ADVERTISER = 2;
+    CONSUMER = 3;
+  }
+}
+
+message LocalServicesVerificationArtifactStatusEnum {
+  enum LocalServicesVerificationArtifactStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PASSED = 2;
+    FAILED = 3;
+    PENDING = 4;
+    NO_SUBMISSION = 5;
+    CANCELLED = 6;
+  }
+}
+
+message LocalServicesVerificationArtifactTypeEnum {
+  enum LocalServicesVerificationArtifactType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    BACKGROUND_CHECK = 2;
+    INSURANCE = 3;
+    LICENSE = 4;
+    BUSINESS_REGISTRATION_CHECK = 5;
+  }
+}
+
+message LocalServicesVerificationStatusEnum {
+  enum LocalServicesVerificationStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NEEDS_REVIEW = 2;
+    FAILED = 3;
+    PASSED = 4;
+    NOT_APPLICABLE = 5;
+    NO_SUBMISSION = 6;
+    PARTIAL_SUBMISSION = 7;
+    PENDING_ESCALATION = 8;
+  }
+}
+
+message LocationGroupRadiusUnitsEnum {
+  enum LocationGroupRadiusUnits {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    METERS = 2;
+    MILES = 3;
+    MILLI_MILES = 4;
+  }
+}
+
+message LocationOwnershipTypeEnum {
+  enum LocationOwnershipType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    BUSINESS_OWNER = 2;
+    AFFILIATE = 3;
+  }
+}
+
+message LocationSourceTypeEnum {
+  enum LocationSourceType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    GOOGLE_MY_BUSINESS = 2;
+    AFFILIATE = 3;
+  }
+}
+
+message LocationStringFilterTypeEnum {
+  enum LocationStringFilterType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    EXACT = 2;
+  }
+}
+
+message LookalikeExpansionLevelEnum {
+  enum LookalikeExpansionLevel {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NARROW = 2;
+    BALANCED = 3;
+    BROAD = 4;
+  }
+}
+
+message LoyaltyMembershipEnum {
+  enum LoyaltyMembership {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NONMEMBER = 2;
+    TIER1 = 3;
+    TIER2 = 4;
+    TIER3 = 5;
+    TIER4 = 6;
+    TIER5 = 7;
+    TIER6 = 8;
+    TIER7 = 9;
+  }
+}
+
+message ManagerLinkStatusEnum {
+  enum ManagerLinkStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ACTIVE = 2;
+    INACTIVE = 3;
+    PENDING = 4;
+    REFUSED = 5;
+    CANCELED = 6;
+  }
+}
+
+message MatchTypeEnum {
+  enum MatchType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    BROAD = 2;
+    EXACT = 3;
+    PHRASE = 4;
+    AI_MAX = 5;
+  }
+}
+
+message MediaTypeEnum {
+  enum MediaType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    IMAGE = 2;
+    ICON = 3;
+    MEDIA_BUNDLE = 4;
+    AUDIO = 5;
+    VIDEO = 6;
+    DYNAMIC_IMAGE = 7;
+  }
+}
+
+message MessagingRestrictionTypeEnum {
+  enum MessagingRestrictionType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    RESTRICTION_BASED_EXCLUSION = 2;
+  }
+}
+
+message MimeTypeEnum {
+  enum MimeType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    IMAGE_JPEG = 2;
+    IMAGE_GIF = 3;
+    IMAGE_PNG = 4;
+    FLASH = 5;
+    TEXT_HTML = 6;
+    PDF = 7;
+    MSWORD = 8;
+    MSEXCEL = 9;
+    RTF = 10;
+    AUDIO_WAV = 11;
+    AUDIO_MP3 = 12;
+    HTML5_AD_ZIP = 13;
+  }
+}
+
+message MinuteOfHourEnum {
+  enum MinuteOfHour {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ZERO = 2;
+    FIFTEEN = 3;
+    THIRTY = 4;
+    FORTY_FIVE = 5;
+  }
+}
+
+message MobileAppVendorEnum {
+  enum MobileAppVendor {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    APPLE_APP_STORE = 2;
+    GOOGLE_APP_STORE = 3;
+  }
+}
+
+message MobileDevicePlatformEnum {
+  enum MobileDevicePlatform {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ANDROID = 2;
+    IOS = 3;
+    OTHER_MOBILE = 4;
+    DESKTOP = 5;
+  }
+}
+
+message MobileDeviceTypeEnum {
+  enum MobileDeviceType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    MOBILE = 2;
+    TABLET = 3;
+  }
+}
+
+message MonthOfYearEnum {
+  enum MonthOfYear {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    JANUARY = 2;
+    FEBRUARY = 3;
+    MARCH = 4;
+    APRIL = 5;
+    MAY = 6;
+    JUNE = 7;
+    JULY = 8;
+    AUGUST = 9;
+    SEPTEMBER = 10;
+    OCTOBER = 11;
+    NOVEMBER = 12;
+    DECEMBER = 13;
+  }
+}
+
+message MultiPartyAuthOperationTypeEnum {
+  enum MultiPartyAuthOperationType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CREATE = 2;
+    UPDATE = 3;
+    REMOVE = 4;
+  }
+}
+
+message MultiPartyAuthReviewStatusEnum {
+  enum MultiPartyAuthReviewStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    APPROVED = 2;
+    PENDING = 3;
+    REVOKED = 4;
+    REJECTED = 5;
+    EXPIRED = 6;
+  }
+}
+
+message MultiPartyAuthReviewTargetResourceEnum {
+  enum MultiPartyAuthReviewTargetResource {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CUSTOMER_USER_ACCESS = 2;
+    CUSTOMER_USER_ACCESS_INVITATION = 3;
+  }
+}
+
+message NegativeGeoTargetTypeEnum {
+  enum NegativeGeoTargetType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PRESENCE_OR_INTEREST = 4;
+    PRESENCE = 5;
+  }
+}
+
+message NonSkippableMaxDurationEnum {
+  enum NonSkippableMaxDuration {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    MAX_DURATION_FIFTEEN_SECONDS = 2;
+    MAX_DURATION_THIRTY_SECONDS = 3;
+    MAX_DURATION_SIXTY_SECONDS = 4;
+  }
+}
+
+message NonSkippableMinDurationEnum {
+  enum NonSkippableMinDuration {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    MIN_DURATION_FIVE_SECONDS = 2;
+    MIN_DURATION_SEVEN_SECONDS = 3;
+    MIN_DURATION_SIXTEEN_SECONDS = 4;
+    MIN_DURATION_THIRTY_ONE_SECONDS = 5;
+  }
+}
+
+message OfflineConversionDiagnosticStatusEnum {
+  enum OfflineConversionDiagnosticStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    EXCELLENT = 2;
+    GOOD = 3;
+    NEEDS_ATTENTION = 4;
+    NO_RECENT_UPLOAD = 6;
+  }
+}
+
+message OfflineEventUploadClientEnum {
+  enum OfflineEventUploadClient {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    GOOGLE_ADS_API = 2;
+    GOOGLE_ADS_WEB_CLIENT = 3;
+    ADS_DATA_CONNECTOR = 4;
+  }
+}
+
+message OfflineUserDataJobFailureReasonEnum {
+  enum OfflineUserDataJobFailureReason {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    INSUFFICIENT_MATCHED_TRANSACTIONS = 2;
+    INSUFFICIENT_TRANSACTIONS = 3;
+    HIGH_AVERAGE_TRANSACTION_VALUE = 4;
+    LOW_AVERAGE_TRANSACTION_VALUE = 5;
+    NEWLY_OBSERVED_CURRENCY_CODE = 6;
+  }
+}
+
+message OfflineUserDataJobMatchRateRangeEnum {
+  enum OfflineUserDataJobMatchRateRange {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    MATCH_RANGE_LESS_THAN_20 = 2;
+    MATCH_RANGE_20_TO_30 = 3;
+    MATCH_RANGE_31_TO_40 = 4;
+    MATCH_RANGE_41_TO_50 = 5;
+    MATCH_RANGE_51_TO_60 = 6;
+    MATCH_RANGE_61_TO_70 = 7;
+    MATCH_RANGE_71_TO_80 = 8;
+    MATCH_RANGE_81_TO_90 = 9;
+    MATCH_RANGE_91_TO_100 = 10;
+  }
+}
+
+message OfflineUserDataJobStatusEnum {
+  enum OfflineUserDataJobStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PENDING = 2;
+    RUNNING = 3;
+    SUCCESS = 4;
+    FAILED = 5;
+  }
+}
+
+message OfflineUserDataJobTypeEnum {
+  enum OfflineUserDataJobType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    STORE_SALES_UPLOAD_FIRST_PARTY = 2;
+    STORE_SALES_UPLOAD_THIRD_PARTY = 3;
+    CUSTOMER_MATCH_USER_LIST = 4;
+    CUSTOMER_MATCH_WITH_ATTRIBUTES = 5;
+  }
+}
+
+message OperatingSystemVersionOperatorTypeEnum {
+  enum OperatingSystemVersionOperatorType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    EQUALS_TO = 2;
+    GREATER_THAN_EQUALS_TO = 4;
+  }
+}
+
+message OptimizationGoalTypeEnum {
+  enum OptimizationGoalType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CALL_CLICKS = 2;
+    DRIVING_DIRECTIONS = 3;
+    APP_PRE_REGISTRATION = 4;
+  }
+}
+
+message OptimizeAssetsExperimentSubtypeEnum {
+  enum OptimizeAssetsExperimentSubtype {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ADD_ASSETS_TO_ASSETLESS_RETAIL = 2;
+    ADD_VIDEO_ASSETS_TO_VIDEOLESS = 3;
+    COMPARE_ASSETS = 4;
+  }
+}
+
+message ParentalStatusTypeEnum {
+  enum ParentalStatusType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PARENT = 300;
+    NOT_A_PARENT = 301;
+    UNDETERMINED = 302;
+  }
+}
+
+message PaymentModeEnum {
+  enum PaymentMode {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CLICKS = 4;
+    CONVERSION_VALUE = 5;
+    CONVERSIONS = 6;
+    GUEST_STAY = 7;
+  }
+}
+
+message PerformanceMaxUpgradeStatusEnum {
+  enum PerformanceMaxUpgradeStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    UPGRADE_IN_PROGRESS = 3;
+    UPGRADE_COMPLETE = 4;
+    UPGRADE_FAILED = 5;
+    UPGRADE_ELIGIBLE = 6;
+  }
+}
+
+message PlacementTypeEnum {
+  enum PlacementType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    WEBSITE = 2;
+    MOBILE_APP_CATEGORY = 3;
+    MOBILE_APPLICATION = 4;
+    YOUTUBE_VIDEO = 5;
+    YOUTUBE_CHANNEL = 6;
+    GOOGLE_PRODUCTS = 7;
+  }
+}
+
+message PolicyApprovalStatusEnum {
+  enum PolicyApprovalStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    DISAPPROVED = 2;
+    APPROVED_LIMITED = 3;
+    APPROVED = 4;
+    AREA_OF_INTEREST_ONLY = 5;
+  }
+}
+
+message PolicyReviewStatusEnum {
+  enum PolicyReviewStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    REVIEW_IN_PROGRESS = 2;
+    REVIEWED = 3;
+    UNDER_APPEAL = 4;
+    ELIGIBLE_MAY_SERVE = 5;
+  }
+}
+
+message PolicyTopicEntryTypeEnum {
+  enum PolicyTopicEntryType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PROHIBITED = 2;
+    LIMITED = 4;
+    FULLY_LIMITED = 8;
+    DESCRIPTIVE = 5;
+    BROADENING = 6;
+    AREA_OF_INTEREST_ONLY = 7;
+  }
+}
+
+message PolicyTopicEvidenceDestinationMismatchUrlTypeEnum {
+  enum PolicyTopicEvidenceDestinationMismatchUrlType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    DISPLAY_URL = 2;
+    FINAL_URL = 3;
+    FINAL_MOBILE_URL = 4;
+    TRACKING_URL = 5;
+    MOBILE_TRACKING_URL = 6;
+  }
+}
+
+message PolicyTopicEvidenceDestinationNotWorkingDeviceEnum {
+  enum PolicyTopicEvidenceDestinationNotWorkingDevice {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    DESKTOP = 2;
+    ANDROID = 3;
+    IOS = 4;
+  }
+}
+
+message PolicyTopicEvidenceDestinationNotWorkingDnsErrorTypeEnum {
+  enum PolicyTopicEvidenceDestinationNotWorkingDnsErrorType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    HOSTNAME_NOT_FOUND = 2;
+    GOOGLE_CRAWLER_DNS_ISSUE = 3;
+  }
+}
+
+message PositiveGeoTargetTypeEnum {
+  enum PositiveGeoTargetType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PRESENCE_OR_INTEREST = 5;
+    SEARCH_INTEREST = 6;
+    PRESENCE = 7;
+  }
+}
+
+message PriceExtensionPriceQualifierEnum {
+  enum PriceExtensionPriceQualifier {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    FROM = 2;
+    UP_TO = 3;
+    AVERAGE = 4;
+  }
+}
+
+message PriceExtensionPriceUnitEnum {
+  enum PriceExtensionPriceUnit {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PER_HOUR = 2;
+    PER_DAY = 3;
+    PER_WEEK = 4;
+    PER_MONTH = 5;
+    PER_YEAR = 6;
+    PER_NIGHT = 7;
+  }
+}
+
+message PriceExtensionTypeEnum {
+  enum PriceExtensionType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    BRANDS = 2;
+    EVENTS = 3;
+    LOCATIONS = 4;
+    NEIGHBORHOODS = 5;
+    PRODUCT_CATEGORIES = 6;
+    PRODUCT_TIERS = 7;
+    SERVICES = 8;
+    SERVICE_CATEGORIES = 9;
+    SERVICE_TIERS = 10;
+  }
+}
+
+message ProductAvailabilityEnum {
+  enum ProductAvailability {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    IN_STOCK = 2;
+    OUT_OF_STOCK = 3;
+    PREORDER = 4;
+  }
+}
+
+message ProductCategoryLevelEnum {
+  enum ProductCategoryLevel {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    LEVEL1 = 2;
+    LEVEL2 = 3;
+    LEVEL3 = 4;
+    LEVEL4 = 5;
+    LEVEL5 = 6;
+  }
+}
+
+message ProductCategoryStateEnum {
+  enum ProductCategoryState {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    OBSOLETE = 3;
+  }
+}
+
+message ProductChannelEnum {
+  enum ProductChannel {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ONLINE = 2;
+    LOCAL = 3;
+  }
+}
+
+message ProductChannelExclusivityEnum {
+  enum ProductChannelExclusivity {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    SINGLE_CHANNEL = 2;
+    MULTI_CHANNEL = 3;
+  }
+}
+
+message ProductConditionEnum {
+  enum ProductCondition {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NEW = 3;
+    REFURBISHED = 4;
+    USED = 5;
+  }
+}
+
+message ProductCustomAttributeIndexEnum {
+  enum ProductCustomAttributeIndex {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    INDEX0 = 7;
+    INDEX1 = 8;
+    INDEX2 = 9;
+    INDEX3 = 10;
+    INDEX4 = 11;
+  }
+}
+
+message ProductIssueSeverityEnum {
+  enum ProductIssueSeverity {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    WARNING = 2;
+    ERROR = 3;
+  }
+}
+
+message ProductLinkInvitationStatusEnum {
+  enum ProductLinkInvitationStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ACCEPTED = 2;
+    REQUESTED = 3;
+    PENDING_APPROVAL = 4;
+    REVOKED = 5;
+    REJECTED = 6;
+    EXPIRED = 7;
+  }
+}
+
+message ProductStatusEnum {
+  enum ProductStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NOT_ELIGIBLE = 2;
+    ELIGIBLE_LIMITED = 3;
+    ELIGIBLE = 4;
+  }
+}
+
+message ProductTypeLevelEnum {
+  enum ProductTypeLevel {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    LEVEL1 = 7;
+    LEVEL2 = 8;
+    LEVEL3 = 9;
+    LEVEL4 = 10;
+    LEVEL5 = 11;
+  }
+}
+
+message PromotionBarcodeTypeEnum {
+  enum PromotionBarcodeType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    AZTEC = 2;
+    CODABAR = 3;
+    CODE39 = 4;
+    CODE128 = 5;
+    DATA_MATRIX = 6;
+    EAN8 = 7;
+    EAN13 = 8;
+    ITF = 9;
+    PDF417 = 10;
+    UPC_A = 11;
+  }
+}
+
+message PromotionExtensionDiscountModifierEnum {
+  enum PromotionExtensionDiscountModifier {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    UP_TO = 2;
+  }
+}
+
+message PromotionExtensionOccasionEnum {
+  enum PromotionExtensionOccasion {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NEW_YEARS = 2;
+    CHINESE_NEW_YEAR = 3;
+    VALENTINES_DAY = 4;
+    EASTER = 5;
+    MOTHERS_DAY = 6;
+    FATHERS_DAY = 7;
+    LABOR_DAY = 8;
+    BACK_TO_SCHOOL = 9;
+    HALLOWEEN = 10;
+    BLACK_FRIDAY = 11;
+    CYBER_MONDAY = 12;
+    CHRISTMAS = 13;
+    BOXING_DAY = 14;
+    INDEPENDENCE_DAY = 15;
+    NATIONAL_DAY = 16;
+    END_OF_SEASON = 17;
+    WINTER_SALE = 18;
+    SUMMER_SALE = 19;
+    FALL_SALE = 20;
+    SPRING_SALE = 21;
+    RAMADAN = 22;
+    EID_AL_FITR = 23;
+    EID_AL_ADHA = 24;
+    SINGLES_DAY = 25;
+    WOMENS_DAY = 26;
+    HOLI = 27;
+    PARENTS_DAY = 28;
+    ST_NICHOLAS_DAY = 29;
+    CARNIVAL = 30;
+    EPIPHANY = 31;
+    ROSH_HASHANAH = 32;
+    PASSOVER = 33;
+    HANUKKAH = 34;
+    DIWALI = 35;
+    NAVRATRI = 36;
+    SONGKRAN = 37;
+    YEAR_END_GIFT = 38;
+  }
+}
+
+message ProximityRadiusUnitsEnum {
+  enum ProximityRadiusUnits {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    MILES = 2;
+    KILOMETERS = 3;
+  }
+}
+
+message QualityScoreBucketEnum {
+  enum QualityScoreBucket {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    BELOW_AVERAGE = 2;
+    AVERAGE = 3;
+    ABOVE_AVERAGE = 4;
+  }
+}
+
+message RecommendationSubscriptionStatusEnum {
+  enum RecommendationSubscriptionStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    PAUSED = 3;
+  }
+}
+
+message RecommendationTypeEnum {
+  enum RecommendationType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CAMPAIGN_BUDGET = 2;
+    KEYWORD = 3;
+    TEXT_AD = 4;
+    TARGET_CPA_OPT_IN = 5;
+    MAXIMIZE_CONVERSIONS_OPT_IN = 6;
+    ENHANCED_CPC_OPT_IN = 7;
+    SEARCH_PARTNERS_OPT_IN = 8;
+    MAXIMIZE_CLICKS_OPT_IN = 9;
+    OPTIMIZE_AD_ROTATION = 10;
+    KEYWORD_MATCH_TYPE = 14;
+    MOVE_UNUSED_BUDGET = 15;
+    FORECASTING_CAMPAIGN_BUDGET = 16;
+    TARGET_ROAS_OPT_IN = 17;
+    RESPONSIVE_SEARCH_AD = 18;
+    MARGINAL_ROI_CAMPAIGN_BUDGET = 19;
+    USE_BROAD_MATCH_KEYWORD = 20;
+    RESPONSIVE_SEARCH_AD_ASSET = 21;
+    UPGRADE_SMART_SHOPPING_CAMPAIGN_TO_PERFORMANCE_MAX = 22;
+    RESPONSIVE_SEARCH_AD_IMPROVE_AD_STRENGTH = 23;
+    DISPLAY_EXPANSION_OPT_IN = 24;
+    UPGRADE_LOCAL_CAMPAIGN_TO_PERFORMANCE_MAX = 25;
+    RAISE_TARGET_CPA_BID_TOO_LOW = 26;
+    FORECASTING_SET_TARGET_ROAS = 27;
+    CALLOUT_ASSET = 28;
+    SITELINK_ASSET = 29;
+    CALL_ASSET = 30;
+    SHOPPING_ADD_AGE_GROUP = 31;
+    SHOPPING_ADD_COLOR = 32;
+    SHOPPING_ADD_GENDER = 33;
+    SHOPPING_ADD_GTIN = 34;
+    SHOPPING_ADD_MORE_IDENTIFIERS = 35;
+    SHOPPING_ADD_SIZE = 36;
+    SHOPPING_ADD_PRODUCTS_TO_CAMPAIGN = 37;
+    SHOPPING_FIX_DISAPPROVED_PRODUCTS = 38;
+    SHOPPING_TARGET_ALL_OFFERS = 39;
+    SHOPPING_FIX_SUSPENDED_MERCHANT_CENTER_ACCOUNT = 40;
+    SHOPPING_FIX_MERCHANT_CENTER_ACCOUNT_SUSPENSION_WARNING = 41;
+    SHOPPING_MIGRATE_REGULAR_SHOPPING_CAMPAIGN_OFFERS_TO_PERFORMANCE_MAX = 42;
+    DYNAMIC_IMAGE_EXTENSION_OPT_IN = 43;
+    RAISE_TARGET_CPA = 44;
+    LOWER_TARGET_ROAS = 45;
+    PERFORMANCE_MAX_OPT_IN = 46;
+    IMPROVE_PERFORMANCE_MAX_AD_STRENGTH = 47;
+    MIGRATE_DYNAMIC_SEARCH_ADS_CAMPAIGN_TO_PERFORMANCE_MAX = 48;
+    FORECASTING_SET_TARGET_CPA = 49;
+    SET_TARGET_CPA = 50;
+    SET_TARGET_ROAS = 51;
+    MAXIMIZE_CONVERSION_VALUE_OPT_IN = 52;
+    IMPROVE_GOOGLE_TAG_COVERAGE = 53;
+    PERFORMANCE_MAX_FINAL_URL_OPT_IN = 54;
+    REFRESH_CUSTOMER_MATCH_LIST = 55;
+    CUSTOM_AUDIENCE_OPT_IN = 56;
+    LEAD_FORM_ASSET = 57;
+    IMPROVE_DEMAND_GEN_AD_STRENGTH = 58;
+    CAMPAIGN_SPECIFIC_APP_GOAL = 59;
+    RAISE_TARGET_CPA_PERFORMANCE_BID_TOO_LOW = 61;
+    LOWER_TARGET_ROAS_PERFORMANCE_BID_TOO_LOW = 62;
+    RAISE_BUDGET_PERFORMANCE_TOO_LOW = 63;
+  }
+}
+
+message ResourceChangeOperationEnum {
+  enum ResourceChangeOperation {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CREATE = 2;
+    UPDATE = 3;
+    REMOVE = 4;
+  }
+}
+
+message SearchEngineResultsPageTypeEnum {
+  enum SearchEngineResultsPageType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ADS_ONLY = 2;
+    ORGANIC_ONLY = 3;
+    ADS_AND_ORGANIC = 4;
+  }
+}
+
+message SearchLiftKeywordBundleStatusEnum {
+  enum SearchLiftKeywordBundleStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+  }
+}
+
+message SearchLiftMatchingInfoSourceEnum {
+  enum SearchLiftMatchingInfoSource {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    SURVEY_PREFERRED_OPTION = 2;
+    SURVEY_COMPETITOR_OPTION = 3;
+    USER = 4;
+    SINGLE_KEYWORD = 5;
+    CONTROL = 6;
+  }
+}
+
+message SearchLiftSearchPropertyEnum {
+  enum SearchLiftSearchProperty {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    GOOGLE_SEARCH = 2;
+    YOUTUBE = 3;
+  }
+}
+
+message SearchTermMatchSourceEnum {
+  enum SearchTermMatchSource {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ADVERTISER_PROVIDED_KEYWORD = 2;
+    AI_MAX_KEYWORDLESS = 3;
+    AI_MAX_BROAD_MATCH = 4;
+    DYNAMIC_SEARCH_ADS = 5;
+    PERFORMANCE_MAX = 6;
+    VERTICAL_ADS_DATA_FEED = 7;
+  }
+}
+
+message SearchTermMatchTypeEnum {
+  enum SearchTermMatchType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    BROAD = 2;
+    EXACT = 3;
+    PHRASE = 4;
+    NEAR_EXACT = 5;
+    NEAR_PHRASE = 6;
+    AI_MAX = 7;
+    PERFORMANCE_MAX = 8;
+  }
+}
+
+message SearchTermTargetingStatusEnum {
+  enum SearchTermTargetingStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ADDED = 2;
+    EXCLUDED = 3;
+    ADDED_EXCLUDED = 4;
+    NONE = 5;
+  }
+}
+
+message SeasonalityEventScopeEnum {
+  enum SeasonalityEventScope {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CUSTOMER = 2;
+    CAMPAIGN = 4;
+    CHANNEL = 5;
+  }
+}
+
+message SeasonalityEventStatusEnum {
+  enum SeasonalityEventStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 4;
+  }
+}
+
+message ServedAssetFieldTypeEnum {
+  enum ServedAssetFieldType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    HEADLINE_1 = 2;
+    HEADLINE_2 = 3;
+    HEADLINE_3 = 4;
+    DESCRIPTION_1 = 5;
+    DESCRIPTION_2 = 6;
+    HEADLINE = 7;
+    HEADLINE_IN_PORTRAIT = 8;
+    LONG_HEADLINE = 9;
+    DESCRIPTION = 10;
+    DESCRIPTION_IN_PORTRAIT = 11;
+    BUSINESS_NAME_IN_PORTRAIT = 12;
+    BUSINESS_NAME = 13;
+    MARKETING_IMAGE = 14;
+    MARKETING_IMAGE_IN_PORTRAIT = 15;
+    SQUARE_MARKETING_IMAGE = 16;
+    PORTRAIT_MARKETING_IMAGE = 17;
+    LOGO = 18;
+    LANDSCAPE_LOGO = 19;
+    CALL_TO_ACTION = 20;
+    YOU_TUBE_VIDEO = 21;
+    SITELINK = 22;
+    CALL = 23;
+    MOBILE_APP = 24;
+    CALLOUT = 25;
+    STRUCTURED_SNIPPET = 26;
+    PRICE = 27;
+    PROMOTION = 28;
+    AD_IMAGE = 29;
+    LEAD_FORM = 30;
+    BUSINESS_LOGO = 31;
+    DESCRIPTION_PREFIX = 32;
+    HEADLINE_AS_SITELINK_POSITION_ONE = 39;
+    HEADLINE_AS_SITELINK_POSITION_TWO = 40;
+    DESCRIPTION_LINE_HEADLINE_AS_SITELINK_POSITION_ONE = 41;
+    DESCRIPTION_LINE_HEADLINE_AS_SITELINK_POSITION_TWO = 42;
+    TEXT_DISCLAIMER = 43;
+  }
+}
+
+message SharedSetStatusEnum {
+  enum SharedSetStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    REMOVED = 3;
+  }
+}
+
+message SharedSetTypeEnum {
+  enum SharedSetType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NEGATIVE_KEYWORDS = 2;
+    NEGATIVE_PLACEMENTS = 3;
+    ACCOUNT_LEVEL_NEGATIVE_KEYWORDS = 4;
+    BRANDS = 5;
+    WEBPAGES = 6;
+    VERTICAL_ADS_ITEM_GROUP_RULE_LIST = 7;
+    RETAIL_FILTER = 32;
+  }
+}
+
+message ShoppingAddProductsToCampaignRecommendationEnum {
+  enum Reason {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    MERCHANT_CENTER_ACCOUNT_HAS_NO_SUBMITTED_PRODUCTS = 2;
+    MERCHANT_CENTER_ACCOUNT_HAS_NO_SUBMITTED_PRODUCTS_IN_FEED = 3;
+    ADS_ACCOUNT_EXCLUDES_OFFERS_FROM_CAMPAIGN = 4;
+    ALL_PRODUCTS_ARE_EXCLUDED_FROM_CAMPAIGN = 5;
+  }
+}
+
+message SimulationModificationMethodEnum {
+  enum SimulationModificationMethod {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    UNIFORM = 2;
+    DEFAULT = 3;
+    SCALING = 4;
+  }
+}
+
+message SimulationTypeEnum {
+  enum SimulationType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CPC_BID = 2;
+    CPV_BID = 3;
+    TARGET_CPA = 4;
+    BID_MODIFIER = 5;
+    TARGET_ROAS = 6;
+    PERCENT_CPC_BID = 7;
+    TARGET_IMPRESSION_SHARE = 8;
+    BUDGET = 9;
+  }
+}
+
+message SkAdNetworkAdEventTypeEnum {
+  enum SkAdNetworkAdEventType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    UNAVAILABLE = 2;
+    INTERACTION = 3;
+    VIEW = 4;
+  }
+}
+
+message SkAdNetworkAttributionCreditEnum {
+  enum SkAdNetworkAttributionCredit {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    UNAVAILABLE = 2;
+    WON = 3;
+    CONTRIBUTED = 4;
+  }
+}
+
+message SkAdNetworkCoarseConversionValueEnum {
+  enum SkAdNetworkCoarseConversionValue {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    UNAVAILABLE = 2;
+    LOW = 3;
+    MEDIUM = 4;
+    HIGH = 5;
+    NONE = 6;
+  }
+}
+
+message SkAdNetworkSourceTypeEnum {
+  enum SkAdNetworkSourceType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    UNAVAILABLE = 2;
+    WEBSITE = 3;
+    MOBILE_APPLICATION = 4;
+  }
+}
+
+message SkAdNetworkUserTypeEnum {
+  enum SkAdNetworkUserType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    UNAVAILABLE = 2;
+    NEW_INSTALLER = 3;
+    REINSTALLER = 4;
+  }
+}
+
+message SlotEnum {
+  enum Slot {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    SEARCH_SIDE = 2;
+    SEARCH_TOP = 3;
+    SEARCH_OTHER = 4;
+    CONTENT = 5;
+    SEARCH_PARTNER_TOP = 6;
+    SEARCH_PARTNER_OTHER = 7;
+    MIXED = 8;
+  }
+}
+
+message SpendingLimitTypeEnum {
+  enum SpendingLimitType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    INFINITE = 2;
+  }
+}
+
+message SurveyIntendedActionEnum {
+  enum SurveyIntendedAction {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    APPLY_FOR = 2;
+    APPLY_TO_WORK_FOR = 3;
+    ATTEND = 4;
+    BOOK = 5;
+    BOOK_WITH = 6;
+    BUY = 7;
+    BUY_CONTENT_FROM = 8;
+    BUY_TICKETS_FOR = 9;
+    CARE_ABOUT = 10;
+    CHOOSE = 11;
+    DONATE_TO = 12;
+    DOWNLOAD = 13;
+    DOWNLOAD_FROM = 14;
+    EAT = 15;
+    EAT_AT = 16;
+    HAVE_UNFAVORABLE_OPINION_OF = 17;
+    JOIN = 18;
+    LEARN = 19;
+    LISTEN_TO = 20;
+    NONE = 21;
+    ORDER_FROM = 22;
+    PARTICIPATE_IN = 23;
+    PLAY = 24;
+    PLAY_AT = 25;
+    PLAY_ON = 26;
+    RENT = 27;
+    SEE = 28;
+    SEE_IN_THEATERS = 29;
+    SHOP = 30;
+    SIGN_UP_FOR = 31;
+    SUBSCRIBE_TO = 32;
+    TAKE_ACTION_ON = 33;
+    USE = 34;
+    VISIT = 35;
+    VOTE_FOR = 36;
+    WATCH = 37;
+    WATCH_IN_THEATERS = 38;
+  }
+}
+
+message SurveyLiftFlightTargetResponseModeEnum {
+  enum SurveyLiftFlightTargetResponseMode {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    STANDARD = 2;
+    BOOST = 3;
+  }
+}
+
+message SurveySubjectTypeEnum {
+  enum SurveySubjectType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    GENERIC_BRAND = 2;
+    GENERIC_PRODUCT = 3;
+    GENERIC_SERVICE = 4;
+    APP = 5;
+    APPS_DATING_SERVICES = 6;
+    APPS_PODCASTS = 7;
+    APPS_DIGITAL_COMICS = 8;
+    AUTOMOTIVE_BATTERY = 9;
+    AUTOMOTIVE_BRAND = 10;
+    AUTOMOTIVE_CAR_RENTAL = 11;
+    AUTOMOTIVE_CAR_SERVICE = 12;
+    AUTOMOTIVE_ELECTRIC_CAR_BRAND = 13;
+    AUTOMOTIVE_GAS_STATIONS = 14;
+    AUTOMOTIVE_MOTORCYCLE = 15;
+    AUTOMOTIVE_OIL = 16;
+    AUTOMOTIVE_PRODUCT = 17;
+    AUTOMOTIVE_TIRES_BRAND = 18;
+    BIM_COMPANY = 19;
+    BIM_ENTERPRISE_SERVICES_COMPANY = 20;
+    BIM_JOB = 21;
+    BIM_MARKETING_COMPANY = 22;
+    BIM_RECRUITING = 23;
+    BIM_SHIPPING = 24;
+    CPG_BABY_CARE_BRAND = 25;
+    CPG_BABY_CARE_PRODUCT = 26;
+    CPG_BEAUTY_BRAND = 27;
+    CPG_BEAUTY_PRODUCT = 28;
+    CPG_BEAUTY_AND_PERSONAL_CARE_BRAND = 29;
+    CPG_BEAUTY_AND_PERSONAL_CARE_PRODUCT = 30;
+    CPG_BODY_WASH_BRAND = 31;
+    CPG_BODY_WASH_PRODUCT = 32;
+    CPG_DRAIN_CLEANERS = 33;
+    CPG_FRAGRANCE_BRAND = 34;
+    CPG_FRAGRANCE_PRODUCT = 35;
+    CPG_HAIR_CARE_BRAND = 36;
+    CPG_HAIR_CARE_PRODUCT = 37;
+    CPG_HOUSEHOLD_CLEANING_BRAND = 38;
+    CPG_HOUSEHOLD_CLEANING_PRODUCT = 39;
+    CPG_LAUNDRY_BRAND = 40;
+    CPG_MAKE_UP_BRAND = 41;
+    CPG_MAKE_UP_PRODUCT = 42;
+    CPG_MOUTHWASH_BRAND = 43;
+    CPG_OFFICE_SUPPLIES_BRAND = 44;
+    CPG_OFFICE_SUPPLIES_PRODUCT = 45;
+    CPG_ORAL_CARE_BRAND = 46;
+    CPG_PERSONAL_CARE_BRAND = 47;
+    CPG_PERSONAL_CARE_PRODUCT = 48;
+    CPG_SKIN_CARE_BRAND = 49;
+    CPG_SKIN_CARE_PRODUCT = 50;
+    EDUCATION_BUSINESS_PROGRAMS = 51;
+    EDUCATION_MASTERS_PROGRAMS = 52;
+    EDUCATION_NURSING_PROGRAMS = 53;
+    EDUCATION_IT_PROGRAMS = 54;
+    EDUCATION_OFFLINE = 55;
+    EDUCATION_ONLINE = 56;
+    EDUCATION_PROGRAM = 57;
+    EDUCATION_TEST_PREPARATION = 58;
+    FBR_BEER_BRAND = 59;
+    FBR_BEVERAGE_BRAND = 60;
+    FBR_BEVERAGE_PRODUCT = 61;
+    FBR_BREAKFAST_FOOD_BRAND = 62;
+    FBR_BREAKFAST_FOOD_PRODUCT = 63;
+    FBR_CANDY = 64;
+    FBR_CHEESE = 65;
+    FBR_CHIPS_BRAND = 66;
+    FBR_CHIPS_PRODUCT = 67;
+    FBR_CHOCOLATE_BRAND = 68;
+    FBR_CHOCOLATE_PRODUCT = 69;
+    FBR_COFFEE_BRAND = 70;
+    FBR_COFFEE_PRODUCT = 71;
+    FBR_COLD_DRINK_BRAND = 72;
+    FBR_COLD_DRINK_PRODUCT = 73;
+    FBR_COOKIES = 74;
+    FBR_DOGFOOD_BRAND = 75;
+    FBR_DOGFOOD_PRODUCT = 76;
+    FBR_DOG_TREATS_BRAND = 77;
+    FBR_FOOD_BRAND = 78;
+    FBR_FOOD_DELIVERY_BRAND = 79;
+    FBR_FOOD_PRODUCT = 80;
+    FBR_ICE_CREAM_BRAND = 81;
+    FBR_ICE_CREAM_PRODUCT = 82;
+    FBR_PET_FOOD_BRAND = 83;
+    FBR_PET_FOOD_PRODUCT = 84;
+    FBR_PET_SUPPLY_BRAND = 85;
+    FBR_PET_SUPPLY_PRODUCT = 86;
+    FBR_RESTAURANT = 87;
+    FBR_RESTAURANT_DELIVERY_SERVICE_BRAND = 88;
+    FBR_RESTAURANT_DELIVERY_SERVICE_PRODUCT = 89;
+    FBR_SNACKS_BRAND = 90;
+    FBR_SNACKS_PRODUCT = 91;
+    FBR_SODA_BRAND = 92;
+    FBR_SODA_PRODUCT = 93;
+    FBR_SPIRIT_BRAND = 94;
+    FBR_SPIRIT_PRODUCT = 95;
+    FBR_WHEY_PROTEIN_BRAND = 96;
+    FBR_WINE = 97;
+    FINANCE_ACCOUNTING_BRAND = 98;
+    FINANCE_BANK = 99;
+    FINANCE_CREDIT_CARD_BRAND = 100;
+    FINANCE_CREDIT_CARD_PRODUCT = 101;
+    FINANCE_FINANCIAL_SERVICES = 102;
+    FINANCE_INSURANCE = 103;
+    FINANCE_INVESTMENT_SERVICES = 104;
+    FINANCE_LOAN_PROVIDER = 105;
+    FINANCE_MORTGAGE_COMPANY = 106;
+    FINANCE_PAYMENTS_PROCESSING = 107;
+    FINANCE_PAYMENTS_SYSTEMS = 108;
+    FINANCE_TAXES_BRAND = 109;
+    FINANCE_TAXES_PRODUCT = 110;
+    GAMBLING_CASINO = 111;
+    GAMBLING_DAILY_FANTASY_SPORT = 112;
+    GAMBLING_GAMBLING_SITE = 113;
+    GAMBLING_LOTTERY = 114;
+    GAMBLING_SPORTS_BETTING_SITE = 115;
+    GOVERNMENT_ANTI_SMOKING = 116;
+    GOVERNMENT_MILITARY = 117;
+    GOVERNMENT_ORGANIZATION = 118;
+    GOVERNMENT_PROGRAM = 119;
+    GOVERNMENT_PUBLIC_HEALTH_BEHAVIORS = 120;
+    GOVERNMENT_PUBLIC_HEALTH_ISSUE = 121;
+    GOVERNMENT_PUBLIC_HEALTH_TOPIC = 122;
+    GOVERNMENT_SERVICE = 123;
+    HEALTHCARE_GYMS = 124;
+    HEALTHCARE_HEALTH_INSURANCE_BRAND = 125;
+    HEALTHCARE_MULTIVITAMINS = 126;
+    HEALTHCARE_SPORTS_SUPPLEMENTS = 127;
+    HEALTHCARE_WEIGHT_LOSS_BRAND = 128;
+    HEALTHCARE_WEIGHT_LOSS_PRODUCT = 129;
+    HOME_SERVICES_CABLE_TV = 130;
+    HOME_SERVICES_ENERGY_BRAND = 131;
+    HOME_SERVICES_HOUSEHOLD_SERVICES_COMPANY = 132;
+    HOME_SERVICES_INTERNET_SERVICE = 133;
+    HOME_SERVICES_MOBILE_PHONE = 134;
+    HOME_SERVICES_PAY_TV_CHANNEL = 135;
+    HOME_SERVICES_PAY_TV_NETWORK = 136;
+    LOCAL_CHARITY = 137;
+    LOCAL_CLASSIFIEDS_SITE = 138;
+    LOCAL_FLOWER_BRAND = 139;
+    LOCAL_JOB_CLASSIFIEDS_SITE = 140;
+    LOCAL_LAW_FIRMS = 141;
+    LOCAL_REAL_ESTATE_SITE = 142;
+    MEDIA_AND_ENTERTAINMENT_DOWNLOAD_SITE = 143;
+    MEDIA_AND_ENTERTAINMENT_DVD = 144;
+    MEDIA_AND_ENTERTAINMENT_EVENT = 145;
+    MEDIA_AND_ENTERTAINMENT_GAME = 146;
+    MEDIA_AND_ENTERTAINMENT_GAMING_PRODUCTS = 147;
+    MEDIA_AND_ENTERTAINMENT_LIVE_EVENT = 148;
+    MEDIA_AND_ENTERTAINMENT_MOBILE_GAME = 149;
+    MEDIA_AND_ENTERTAINMENT_MOVIE = 150;
+    MEDIA_AND_ENTERTAINMENT_MOVIE_DIGITAL_DOWNLOAD = 151;
+    MEDIA_AND_ENTERTAINMENT_MUSIC_ARTIST = 152;
+    MEDIA_AND_ENTERTAINMENT_MUSIC_RELEASES = 153;
+    MEDIA_AND_ENTERTAINMENT_PLAYLISTS = 154;
+    MEDIA_AND_ENTERTAINMENT_SHOW = 155;
+    MEDIA_AND_ENTERTAINMENT_SHOW_DIGITAL_DOWNLOAD = 156;
+    MEDIA_AND_ENTERTAINMENT_SPORTS = 157;
+    MEDIA_AND_ENTERTAINMENT_STREAMING_SITE = 158;
+    MEDIA_AND_ENTERTAINMENT_TITLE_DIGITAL_DOWNLOAD = 159;
+    MEDIA_AND_ENTERTAINMENT_TV_CHANNEL = 160;
+    MEDIA_AND_ENTERTAINMENT_TV_SHOW = 161;
+    MEDIA_AND_ENTERTAINMENT_TV_SHOW_DIGITAL_DOWNLOAD = 162;
+    MEDIA_AND_ENTERTAINMENT_VIDEO_GAME = 163;
+    MEDIA_AND_ENTERTAINMENT_VIDEO_GAME_DLC = 164;
+    MEDIA_AND_ENTERTAINMENT_WEB_SERIES = 165;
+    OFFER = 166;
+    PHARMA_NON_MEDICAL_CONDITION_OTC_DRUG = 167;
+    POLITICS_CANDIDATE = 168;
+    POLITICS_GET_OUT_THE_VOTE_NOVEMBER_ELECTIONS = 169;
+    POLITICS_GET_OUT_THE_VOTE_PRIMARY_ELECTIONS = 170;
+    POLITICS_ISSUE = 171;
+    POLITICS_UNFAVORABLE_CANDIDATE = 172;
+    RETAIL_APPAREL = 173;
+    RETAIL_BRICK_AND_MORTAR = 174;
+    RETAIL_FURNITURE_BRAND = 175;
+    RETAIL_FURNITURE_PRODUCT = 176;
+    RETAIL_GIFTS_BRAND = 177;
+    RETAIL_GIFTS_PRODUCT = 178;
+    RETAIL_HOME_GOODS = 179;
+    RETAIL_JEWELRY_BRAND = 180;
+    RETAIL_ONLINE_RETAILERS = 181;
+    RETAIL_SHOE_BRAND = 182;
+    RETAIL_STORE = 183;
+    RETAIL_TOY_SHOP = 184;
+    TECHNOLOGY_ARTIFICIAL_INTELLIGENCE_BRAND = 185;
+    TECHNOLOGY_ARTIFICIAL_INTELLIGENCE_PRODUCT = 186;
+    TECHNOLOGY_BRAND = 187;
+    TECHNOLOGY_FEATURE = 188;
+    TECHNOLOGY_PRODUCT = 189;
+    TECHNOLOGY_CAMERA_BRAND = 190;
+    TECHNOLOGY_CAMERA_PRODUCT = 191;
+    TECHNOLOGY_CONTROL_PLANS = 192;
+    TECHNOLOGY_GAMING_BRAND = 193;
+    TECHNOLOGY_HOME_APPLIANCE_BRAND = 194;
+    TECHNOLOGY_HOME_APPLIANCE_PRODUCT = 195;
+    TECHNOLOGY_LAPTOP_BRAND = 196;
+    TECHNOLOGY_LAPTOP_PRODUCT = 197;
+    TECHNOLOGY_MOBILE_PHONE_PLANS = 198;
+    TECHNOLOGY_ONLINE_SAFETY_BRAND = 199;
+    TECHNOLOGY_ONLINE_SAFETY_PRODUCT = 200;
+    TECHNOLOGY_OPERATING_SYSTEM = 201;
+    TECHNOLOGY_POSTPAID_TELCO_PLAN = 202;
+    TECHNOLOGY_PREPAID_TELCO_PLAN = 203;
+    TECHNOLOGY_PRINTER_BRAND = 204;
+    TECHNOLOGY_SEARCH_ENGINE = 205;
+    TECHNOLOGY_SMALL_HOME_APPLIANCE_BRAND = 206;
+    TECHNOLOGY_SMALL_HOME_APPLIANCE_PRODUCT = 207;
+    TECHNOLOGY_SMART_HOME_DEVICE = 208;
+    TECHNOLOGY_SMARTPHONE_BRAND = 209;
+    TECHNOLOGY_SMARTPHONE_PRODUCT = 210;
+    TECHNOLOGY_SOCIAL_MEDIA = 211;
+    TECHNOLOGY_TABLET_BRAND = 212;
+    TECHNOLOGY_TABLET_PRODUCT = 213;
+    TECHNOLOGY_TELECOM_FIBER_OPTIC_INTERNET = 214;
+    TECHNOLOGY_TELECOM_SERVICE_PACK = 215;
+    TECHNOLOGY_TELCO_NETWORK = 216;
+    TECHNOLOGY_TV_BRAND = 217;
+    TECHNOLOGY_TV_PRODUCT = 218;
+    TECHNOLOGY_VIDEO_ON_DEMAND = 219;
+    TECHNOLOGY_WEARABLES_BRAND = 220;
+    TECHNOLOGY_WEBSITE = 221;
+    TRAVEL_ACCOMMODATIONS = 222;
+    TRAVEL_AIRLINE = 223;
+    TRAVEL_BOOKING_SERVICE = 224;
+    TRAVEL_CRUISES = 225;
+    TRAVEL_DESTINATION = 226;
+    TRAVEL_HOTEL = 227;
+    TRAVEL_OPTION = 228;
+    TRAVEL_VACATION_RENTAL_SERVICE = 229;
+  }
+}
+
+message SyntheticContentAttestationStatusEnum {
+  enum SyntheticContentAttestationStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NOT_SYNTHETIC = 2;
+    IS_SYNTHETIC = 3;
+  }
+}
+
+message SyntheticContentSourceEnum {
+  enum SyntheticContentSource {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ADVERTISER_ATTESTED = 2;
+    GOOGLE_GENERATED_ADVERTISER_REVIEWED = 3;
+    GOOGLE_GENERATED_FULLY_AUTOMATED = 4;
+  }
+}
+
+message SystemManagedResourceSourceEnum {
+  enum SystemManagedResourceSource {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    AD_VARIATIONS = 2;
+  }
+}
+
+message TargetCpaOptInRecommendationGoalEnum {
+  enum TargetCpaOptInRecommendationGoal {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    SAME_COST = 2;
+    SAME_CONVERSIONS = 3;
+    SAME_CPA = 4;
+    CLOSEST_CPA = 5;
+  }
+}
+
+message TargetFrequencyTimeUnitEnum {
+  enum TargetFrequencyTimeUnit {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    WEEKLY = 2;
+    MONTHLY = 3;
+  }
+}
+
+message TargetImpressionShareLocationEnum {
+  enum TargetImpressionShareLocation {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ANYWHERE_ON_PAGE = 2;
+    TOP_OF_PAGE = 3;
+    ABSOLUTE_TOP_OF_PAGE = 4;
+  }
+}
+
+message TargetingDimensionEnum {
+  enum TargetingDimension {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    KEYWORD = 2;
+    AUDIENCE = 3;
+    TOPIC = 4;
+    GENDER = 5;
+    AGE_RANGE = 6;
+    PLACEMENT = 7;
+    PARENTAL_STATUS = 8;
+    INCOME_RANGE = 9;
+  }
+}
+
+message ThirdPartyBrandLiftIntegrationPartnerEnum {
+  enum ThirdPartyBrandLiftIntegrationPartner {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    KANTAR_MILLWARD_BROWN = 2;
+    DYNATA = 3;
+    INTAGE = 4;
+    MACROMILL = 5;
+  }
+}
+
+message ThirdPartyBrandSafetyIntegrationPartnerEnum {
+  enum ThirdPartyBrandSafetyIntegrationPartner {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    DOUBLE_VERIFY = 2;
+    INTEGRAL_AD_SCIENCE = 3;
+    ZEFR = 4;
+  }
+}
+
+message ThirdPartyConversionAttributionIntegrationPartnerEnum {
+  enum ThirdPartyConversionAttributionIntegrationPartner {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    TRANSUNION = 2;
+  }
+}
+
+message ThirdPartyReachIntegrationPartnerEnum {
+  enum ThirdPartyReachIntegrationPartner {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NIELSEN = 2;
+    COMSCORE = 3;
+    KANTAR_MILLWARD_BROWN = 4;
+    VIDEO_RESEARCH = 5;
+    GEMIUS = 6;
+    MEDIA_SCOPE = 7;
+    AUDIENCE_PROJECT = 8;
+    VIDEO_AMP = 9;
+    ISPOT_TV = 10;
+  }
+}
+
+message ThirdPartyViewabilityIntegrationPartnerEnum {
+  enum ThirdPartyViewabilityIntegrationPartner {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    DOUBLE_VERIFY = 2;
+    INTEGRAL_AD_SCIENCE = 3;
+    ZEFR = 4;
+  }
+}
+
+message TimeTypeEnum {
+  enum TimeType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NOW = 2;
+    FOREVER = 3;
+  }
+}
+
+message TrackingCodePageFormatEnum {
+  enum TrackingCodePageFormat {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    HTML = 2;
+    AMP = 3;
+  }
+}
+
+message TrackingCodeTypeEnum {
+  enum TrackingCodeType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    WEBPAGE = 2;
+    WEBPAGE_ONCLICK = 3;
+    CLICK_TO_CALL = 4;
+    WEBSITE_CALL = 5;
+  }
+}
+
+message UserInterestTaxonomyTypeEnum {
+  enum UserInterestTaxonomyType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    AFFINITY = 2;
+    IN_MARKET = 3;
+    MOBILE_APP_INSTALL_USER = 4;
+    VERTICAL_GEO = 5;
+    NEW_SMART_PHONE_USER = 6;
+  }
+}
+
+message UserListAccessStatusEnum {
+  enum UserListAccessStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ENABLED = 2;
+    DISABLED = 3;
+  }
+}
+
+message UserListClosingReasonEnum {
+  enum UserListClosingReason {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    UNUSED = 2;
+  }
+}
+
+message UserListCrmDataSourceTypeEnum {
+  enum UserListCrmDataSourceType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    FIRST_PARTY = 2;
+    THIRD_PARTY_CREDIT_BUREAU = 3;
+    THIRD_PARTY_VOTER_FILE = 4;
+    THIRD_PARTY_PARTNER_DATA = 5;
+  }
+}
+
+message UserListCustomerTypeCategoryEnum {
+  enum UserListCustomerTypeCategory {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ALL_CUSTOMERS = 2;
+    PURCHASERS = 3;
+    HIGH_VALUE_CUSTOMERS = 4;
+    DISENGAGED_CUSTOMERS = 5;
+    QUALIFIED_LEADS = 6;
+    CONVERTED_LEADS = 7;
+    PAID_SUBSCRIBERS = 8;
+    CART_ABANDONERS = 10;
+    LOYALTY_TIER_1_MEMBERS = 11;
+    LOYALTY_TIER_2_MEMBERS = 12;
+    LOYALTY_TIER_3_MEMBERS = 13;
+    LOYALTY_TIER_4_MEMBERS = 14;
+    LOYALTY_TIER_5_MEMBERS = 15;
+    LOYALTY_TIER_6_MEMBERS = 16;
+    LOYALTY_TIER_7_MEMBERS = 17;
+  }
+}
+
+message UserListDateRuleItemOperatorEnum {
+  enum UserListDateRuleItemOperator {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    EQUALS = 2;
+    NOT_EQUALS = 3;
+    BEFORE = 4;
+    AFTER = 5;
+  }
+}
+
+message UserListFlexibleRuleOperatorEnum {
+  enum UserListFlexibleRuleOperator {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    AND = 2;
+    OR = 3;
+  }
+}
+
+message UserListLogicalRuleOperatorEnum {
+  enum UserListLogicalRuleOperator {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ALL = 2;
+    ANY = 3;
+    NONE = 4;
+  }
+}
+
+message UserListMembershipStatusEnum {
+  enum UserListMembershipStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    OPEN = 2;
+    CLOSED = 3;
+  }
+}
+
+message UserListNumberRuleItemOperatorEnum {
+  enum UserListNumberRuleItemOperator {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    GREATER_THAN = 2;
+    GREATER_THAN_OR_EQUAL = 3;
+    EQUALS = 4;
+    NOT_EQUALS = 5;
+    LESS_THAN = 6;
+    LESS_THAN_OR_EQUAL = 7;
+  }
+}
+
+message UserListPrepopulationStatusEnum {
+  enum UserListPrepopulationStatus {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    REQUESTED = 2;
+    FINISHED = 3;
+    FAILED = 4;
+  }
+}
+
+message UserListRuleTypeEnum {
+  enum UserListRuleType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    AND_OF_ORS = 2;
+    OR_OF_ANDS = 3;
+  }
+}
+
+message UserListSizeRangeEnum {
+  enum UserListSizeRange {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    LESS_THAN_FIVE_HUNDRED = 2;
+    LESS_THAN_ONE_THOUSAND = 3;
+    ONE_THOUSAND_TO_TEN_THOUSAND = 4;
+    TEN_THOUSAND_TO_FIFTY_THOUSAND = 5;
+    FIFTY_THOUSAND_TO_ONE_HUNDRED_THOUSAND = 6;
+    ONE_HUNDRED_THOUSAND_TO_THREE_HUNDRED_THOUSAND = 7;
+    THREE_HUNDRED_THOUSAND_TO_FIVE_HUNDRED_THOUSAND = 8;
+    FIVE_HUNDRED_THOUSAND_TO_ONE_MILLION = 9;
+    ONE_MILLION_TO_TWO_MILLION = 10;
+    TWO_MILLION_TO_THREE_MILLION = 11;
+    THREE_MILLION_TO_FIVE_MILLION = 12;
+    FIVE_MILLION_TO_TEN_MILLION = 13;
+    TEN_MILLION_TO_TWENTY_MILLION = 14;
+    TWENTY_MILLION_TO_THIRTY_MILLION = 15;
+    THIRTY_MILLION_TO_FIFTY_MILLION = 16;
+    OVER_FIFTY_MILLION = 17;
+  }
+}
+
+message UserListStringRuleItemOperatorEnum {
+  enum UserListStringRuleItemOperator {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CONTAINS = 2;
+    EQUALS = 3;
+    STARTS_WITH = 4;
+    ENDS_WITH = 5;
+    NOT_EQUALS = 6;
+    NOT_CONTAINS = 7;
+    NOT_STARTS_WITH = 8;
+    NOT_ENDS_WITH = 9;
+  }
+}
+
+message UserListTypeEnum {
+  enum UserListType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    REMARKETING = 2;
+    LOGICAL = 3;
+    EXTERNAL_REMARKETING = 4;
+    RULE_BASED = 5;
+    SIMILAR = 6;
+    CRM_BASED = 7;
+    LOOKALIKE = 9;
+  }
+}
+
+message ValueRuleDeviceTypeEnum {
+  enum ValueRuleDeviceType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    MOBILE = 2;
+    DESKTOP = 3;
+    TABLET = 4;
+  }
+}
+
+message ValueRuleGeoLocationMatchTypeEnum {
+  enum ValueRuleGeoLocationMatchType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ANY = 2;
+    LOCATION_OF_PRESENCE = 3;
+  }
+}
+
+message ValueRuleOperationEnum {
+  enum ValueRuleOperation {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ADD = 2;
+    MULTIPLY = 3;
+    SET = 4;
+  }
+}
+
+message ValueRuleSetAttachmentTypeEnum {
+  enum ValueRuleSetAttachmentType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    CUSTOMER = 2;
+    CAMPAIGN = 3;
+  }
+}
+
+message ValueRuleSetDimensionEnum {
+  enum ValueRuleSetDimension {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    GEO_LOCATION = 2;
+    DEVICE = 3;
+    AUDIENCE = 4;
+    NO_CONDITION = 5;
+    ITINERARY = 6;
+  }
+}
+
+message VanityPharmaDisplayUrlModeEnum {
+  enum VanityPharmaDisplayUrlMode {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    MANUFACTURER_WEBSITE_URL = 2;
+    WEBSITE_DESCRIPTION = 3;
+  }
+}
+
+message VanityPharmaTextEnum {
+  enum VanityPharmaText {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PRESCRIPTION_TREATMENT_WEBSITE_EN = 2;
+    PRESCRIPTION_TREATMENT_WEBSITE_ES = 3;
+    PRESCRIPTION_DEVICE_WEBSITE_EN = 4;
+    PRESCRIPTION_DEVICE_WEBSITE_ES = 5;
+    MEDICAL_DEVICE_WEBSITE_EN = 6;
+    MEDICAL_DEVICE_WEBSITE_ES = 7;
+    PREVENTATIVE_TREATMENT_WEBSITE_EN = 8;
+    PREVENTATIVE_TREATMENT_WEBSITE_ES = 9;
+    PRESCRIPTION_CONTRACEPTION_WEBSITE_EN = 10;
+    PRESCRIPTION_CONTRACEPTION_WEBSITE_ES = 11;
+    PRESCRIPTION_VACCINE_WEBSITE_EN = 12;
+    PRESCRIPTION_VACCINE_WEBSITE_ES = 13;
+  }
+}
+
+message VerticalAdsItemVerticalTypeEnum {
+  enum VerticalAdsItemVerticalType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    HOTELS = 2;
+    VACATION_RENTALS = 3;
+    RENTAL_CARS = 4;
+    EVENTS = 5;
+    THINGS_TO_DO = 6;
+    FLIGHTS = 7;
+  }
+}
+
+message VideoAdFormatRestrictionEnum {
+  enum VideoAdFormatRestriction {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NON_SKIPPABLE_IN_STREAM = 2;
+  }
+}
+
+message VideoAdSequenceInteractionTypeEnum {
+  enum VideoAdSequenceInteractionType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PAID_VIEW = 2;
+    SKIP = 3;
+    IMPRESSION = 4;
+    ENGAGED_IMPRESSION = 5;
+  }
+}
+
+message VideoAdSequenceMinimumDurationEnum {
+  enum VideoAdSequenceMinimumDuration {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    WEEK = 2;
+    MONTH = 3;
+  }
+}
+
+message VideoCrawlSourcePlatformEnum {
+  enum VideoCrawlSourcePlatform {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    LANDING_PAGE = 2;
+    SOCIAL = 3;
+    YOUTUBE = 4;
+  }
+}
+
+message VideoEnhancementSourceEnum {
+  enum VideoEnhancementSource {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    ADVERTISER = 2;
+    ENHANCED_BY_GOOGLE_ADS = 3;
+  }
+}
+
+message VideoExperimentSubtypeEnum {
+  enum VideoExperimentSubtype {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    DEMAND_GEN_ASSET = 2;
+    ASSET = 3;
+    ASSET_UPLIFT = 4;
+  }
+}
+
+message VideoThumbnailEnum {
+  enum VideoThumbnail {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    DEFAULT_THUMBNAIL = 2;
+    THUMBNAIL_1 = 3;
+    THUMBNAIL_2 = 4;
+    THUMBNAIL_3 = 5;
+  }
+}
+
+message WebpageConditionOperandEnum {
+  enum WebpageConditionOperand {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    URL = 2;
+    CATEGORY = 3;
+    PAGE_TITLE = 4;
+    PAGE_CONTENT = 5;
+    CUSTOM_LABEL = 6;
+  }
+}
+
+message WebpageConditionOperatorEnum {
+  enum WebpageConditionOperator {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    EQUALS = 2;
+    CONTAINS = 3;
+  }
+}
+
+message YouTubeVideoPrivacyEnum {
+  enum YouTubeVideoPrivacy {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PUBLIC = 2;
+    UNLISTED = 3;
+  }
+}
+
+message YouTubeVideoUploadGenerativeContentDisclosureEnum {
+  enum YouTubeVideoUploadGenerativeContentDisclosure {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NON_GENERATIVE_CONTENT = 2;
+    GENERATIVE_CONTENT = 3;
+  }
+}
+
+message YouTubeVideoUploadStateEnum {
+  enum YouTubeVideoUploadState {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    PENDING = 2;
+    UPLOADED = 3;
+    PROCESSED = 4;
+    FAILED = 5;
+    REJECTED = 6;
+    UNAVAILABLE = 7;
+  }
+}

@@ -1,0 +1,10 @@
+.{
+    .name = .source_protoc,
+    .version = "0.0.0",
+    .fingerprint = 0x896e5a7845ca6dfe,
+    .minimum_zig_version = "0.18.0-dev.861+1a0778dc2",
+    .dependencies = .{
+        .protobuf = .{ .path = "../.." },
+    },
+    .paths = .{""},
+}

@@ -238,18 +238,16 @@ pub fn StreamDecoder(comptime T: type) type {
         /// reader bounded to its bytes. The leftover is drained on the next
         /// `next` call.
         fn openLen(self: *Self) Error!*std.Io.Reader {
-            const len: i32, _ = try wire.decodeScalar(.int32, self.internals.source);
-            if (len < 0) return error.InvalidInput;
-            self.internals.limited = self.internals.source.limited(std.Io.Limit.limited(@intCast(len)), &self.internals.scratch);
+            const len, _ = try wire.decodeLen(self.internals.source);
+            self.internals.limited = self.internals.source.limited(std.Io.Limit.limited(len), &self.internals.scratch);
             self.internals.pending_limited = true;
             return &self.internals.limited.interface;
         }
 
         /// Start a packed repeated run, then emit its first element.
         fn beginPacked(self: *Self, tag: wire.Tag) Error!?Event {
-            const len: i32, _ = try wire.decodeScalar(.int32, self.internals.source);
-            if (len < 0) return error.InvalidInput;
-            self.internals.packed_remaining = @intCast(len);
+            const len, _ = try wire.decodeLen(self.internals.source);
+            self.internals.packed_remaining = len;
             if (self.internals.packed_remaining == 0) return null; // empty packed run, no event
             self.internals.packed_field = tag.field;
             return try self.continuePacked();

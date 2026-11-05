@@ -24,6 +24,13 @@ pub fn parse(
 ) !Self {
     @setEvalBranchQuota(comptime protobuf.evalBranchQuotaFor(Self));
 
+    // Messages nest by recursing through here. Input nested deeper than the
+    // recursion limit (see `recursionLimit`) is rejected, as by the binary
+    // decoder, so that it cannot exhaust the stack.
+    if (tl_parse_depth > recursionLimit()) return error.SyntaxError;
+    tl_parse_depth += 1;
+    defer tl_parse_depth -= 1;
+
     if (.object_begin != try source.next()) {
         return error.UnexpectedToken;
     }
@@ -258,6 +265,22 @@ pub fn parse(
 /// state, so `decodeWithOptions` sets them for the current thread.
 threadlocal var tl_extensions: ?*const protobuf.ExtensionRegistry = null;
 
+/// `DecodeOptions.recursion_limit` of the JSON being parsed on this thread,
+/// set by `decodeWithOptions` like `tl_extensions`.
+threadlocal var tl_recursion_limit: u32 = protobuf.wire.default_recursion_limit;
+
+/// How deeply messages, and separately values that nest by themselves
+/// (`google.protobuf.Value`), may nest in the JSON being parsed on this
+/// thread: the `recursion_limit` given to `decodeWithOptions`, else the
+/// default. Messages nest at most as deep as in the binary format; an
+/// extension parsed from JSON counts as two levels.
+pub fn recursionLimit() u32 {
+    return tl_recursion_limit;
+}
+
+/// Nesting of the message being parsed by `parse` on this thread.
+threadlocal var tl_parse_depth: u32 = 0;
+
 /// Parses the value of the key `name` as an extension of `Self`, if `name` is
 /// the `[full.name]` of a known extension. Returns whether it did.
 fn parseExtension(
@@ -343,6 +366,9 @@ pub fn decodeWithOptions(
     const previous = tl_extensions;
     tl_extensions = pb_options.extensions;
     defer tl_extensions = previous;
+    const previous_limit = tl_recursion_limit;
+    tl_recursion_limit = pb_options.recursion_limit;
+    defer tl_recursion_limit = previous_limit;
     return decode(T, input, options, allocator);
 }
 

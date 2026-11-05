@@ -4,7 +4,7 @@
     .fingerprint = 0xe81515e77c853519,
     .minimum_zig_version = "0.18.0-dev.861+1a0778dc2",
     .dependencies = .{
-        .protobuf_pkg = .{ .path = "pkg/protobuf" },
+        .jsoncpp = .{ .path = "pkg/jsoncpp" },
         .zig_protobuf = .{ .path = ".." },
     },
     .paths = .{""},

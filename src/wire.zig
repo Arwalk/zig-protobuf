@@ -424,6 +424,12 @@ pub fn decodeRepeated(
         field_number: u29 = 0,
         /// Known extensions, validated in decoded submessages.
         extensions: ?*const ExtensionRegistry = null,
+        /// Nesting depth of submessage elements (see `SubmessageOptions.depth`).
+        depth: u32 = 0,
+        /// See `SubmessageOptions.recursion_limit`.
+        recursion_limit: u32 = default_recursion_limit,
+        /// See `SubmessageOptions.read_chunk`.
+        read_chunk: usize = default_read_chunk,
     },
 ) (std.Io.Reader.Error || std.mem.Allocator.Error || protobuf.DecodingError)!usize {
     comptime std.debug.assert(@typeInfo(@TypeOf(result)) == .pointer);
@@ -442,7 +448,7 @@ pub fn decodeRepeated(
                 // string/bytes are length-delimited, and cannot be packed.
                 std.debug.assert(options.bytes != null);
 
-                const bytes = try reader.readAlloc(allocator, options.bytes.?);
+                const bytes = try readBytesAlloc(allocator, reader, options.bytes.?, options.read_chunk);
                 errdefer allocator.free(bytes);
                 if (options.verify_utf8 and !std.unicode.utf8ValidateSlice(bytes)) {
                     @branchHint(.cold);
@@ -518,7 +524,14 @@ pub fn decodeRepeated(
                 msg,
                 allocator,
                 reader,
-                .{ .bytes = options.bytes, .group = options.group, .extensions = options.extensions },
+                .{
+                    .bytes = options.bytes,
+                    .group = options.group,
+                    .extensions = options.extensions,
+                    .depth = options.depth,
+                    .recursion_limit = options.recursion_limit,
+                    .read_chunk = options.read_chunk,
+                },
             );
             if (options.bytes) |bytes| if (consumed > bytes) {
                 @branchHint(.cold);
@@ -598,7 +611,89 @@ pub const SubmessageOptions = struct {
     group: ?u32 = null,
     /// Known extensions, validated when decoding messages they extend.
     extensions: ?*const ExtensionRegistry = null,
+    /// How deeply this message is nested in the one being decoded (0 for
+    /// the outermost). Decoding fails with `error.InvalidInput` once
+    /// messages or groups nest deeper than `recursion_limit`.
+    depth: u32 = 0,
+    /// How deeply messages and groups may nest below the outermost message.
+    /// Bounds the recursion, so hostile input cannot exhaust the stack.
+    recursion_limit: u32 = default_recursion_limit,
+    /// Bytes read at a time when a length-delimited value is longer than
+    /// what the reader holds (see `readBytesAlloc`).
+    read_chunk: usize = default_read_chunk,
+    /// The decoding of the message holding this one as a singular (or oneof)
+    /// field, and the field number, so that merges of this message can be
+    /// accumulated (see `MergeFrame`). Set by `decodeMessage` only.
+    merge_parent: ?*MergeFrame = null,
+    merge_field: u32 = 0,
 };
+
+/// Default `recursion_limit` of decoding: how deeply messages and groups may
+/// nest, as in the reference implementations.
+pub const default_recursion_limit: u32 = 100;
+
+/// Default `read_chunk` of decoding.
+pub const default_read_chunk: usize = 64 * 1024;
+
+/// Checks a length prefix: it must fit a non-negative int32, as in the
+/// reference implementations. Longer lengths are refused rather than
+/// truncated.
+fn checkLen(value: u64) protobuf.DecodingError!usize {
+    if (value > std.math.maxInt(i32)) {
+        @branchHint(.cold);
+        return error.InvalidInput;
+    }
+    return @intCast(value);
+}
+
+/// Decodes the length prefix of a length-delimited value (see `checkLen`).
+/// Returns the length and the number of bytes consumed.
+pub fn decodeLen(reader: *std.Io.Reader) (std.Io.Reader.Error || protobuf.DecodingError)!struct { usize, usize } {
+    const value, const consumed = try decodeScalar(.uint64, reader);
+    return .{ try checkLen(value), consumed };
+}
+
+/// Reads `len` bytes into a new allocation. The memory grows with the bytes
+/// that actually arrive (at most `read_chunk` ahead of them), so a length
+/// prefix larger than the input fails with `error.EndOfStream` before
+/// anything near that size is allocated. A `read_chunk` of 0 counts as 1.
+pub fn readBytesAlloc(
+    allocator: std.mem.Allocator,
+    reader: *std.Io.Reader,
+    len: usize,
+    read_chunk: usize,
+) (std.Io.Reader.Error || std.mem.Allocator.Error)![]u8 {
+    if (len == 0) return &.{};
+    if (len <= reader.bufferedLen()) {
+        const out = try allocator.alloc(u8, len);
+        reader.readSliceAll(out) catch unreachable; // already buffered
+        return out;
+    }
+    var list: std.ArrayList(u8) = .empty;
+    errdefer list.deinit(allocator);
+    try appendBytes(allocator, reader, &list, len, read_chunk);
+    return list.toOwnedSlice(allocator);
+}
+
+/// Appends the next `len` bytes of `reader` to `list`, growing it with the
+/// bytes that arrive rather than by `len` up front.
+fn appendBytes(
+    allocator: std.mem.Allocator,
+    reader: *std.Io.Reader,
+    list: *std.ArrayList(u8),
+    len: usize,
+    read_chunk: usize,
+) (std.Io.Reader.Error || std.mem.Allocator.Error)!void {
+    const chunk = @max(read_chunk, 1);
+    var remaining = len;
+    while (remaining > 0) {
+        const n = @min(remaining, @max(reader.bufferedLen(), chunk));
+        try list.ensureUnusedCapacity(allocator, n);
+        try reader.readSliceAll(list.unusedCapacitySlice()[0..n]);
+        list.items.len += n;
+        remaining -= n;
+    }
+}
 
 /// Stores a closed-enum value that matches none of the enumerators as an
 /// unknown varint field, as the protobuf spec requires for closed enums.
@@ -631,6 +726,26 @@ pub fn decodeMessage(
     const ResultField = std.meta.FieldEnum(Result);
     comptime std.debug.assert(@TypeOf(result) == *Result);
     const desc_table = Result._desc_table;
+
+    if (options.depth > options.recursion_limit) {
+        @branchHint(.cold);
+        return error.InvalidInput;
+    }
+
+    // Only messages that may keep records track merges (see `MergeFrame`).
+    const tracks_merges = comptime tracksMerges(Result);
+    var frame: if (tracks_merges) MergeFrame else void = if (comptime tracks_merges) .{
+        .parent = options.merge_parent,
+        .field = options.merge_field,
+        .node = if (options.merge_parent) |parent| parent.childNode(options.merge_field) else null,
+        .msg = result,
+        .depth = options.depth,
+        .flush = flushMerged(Result),
+    } else {};
+    // The outermost decoding owns the accumulated merges.
+    defer if (comptime tracks_merges) {
+        if (frame.parent == null) if (frame.node) |node| node.destroy(allocator);
+    };
 
     var consumed: usize = 0;
     // Accumulate unknown fields if the struct declares _unknown_fields.
@@ -672,7 +787,7 @@ pub fn decodeMessage(
         // their type id and message.
         if (comptime extension.isMessageSet(Result)) {
             if (tag.field == 1 and tag.wire_type == .sgroup) {
-                consumed += try extension.readMessageSetItem(allocator, reader, &extension_buf);
+                consumed += try extension.readMessageSetItemWithOptions(allocator, reader, &extension_buf, options);
                 continue :main_loop;
             }
         }
@@ -727,24 +842,12 @@ pub fn decodeMessage(
                             return error.InvalidInput;
                         }
                         std.debug.assert(tag.wire_type == .len);
-                        const len, const len_c =
-                            try decodeScalar(.int32, reader);
+                        const len, const len_c = try decodeLen(reader);
                         consumed += len_c;
-                        if (len < 0) {
-                            @branchHint(.cold);
-                            return error.InvalidInput;
-                        }
 
-                        const new: []u8 = if (len > 0)
-                            try allocator.alloc(u8, @intCast(len))
-                        else
-                            &.{};
+                        const new = try readBytesAlloc(allocator, reader, len, options.read_chunk);
                         errdefer if (len > 0) allocator.free(new);
-
-                        if (len > 0) {
-                            _ = try reader.readSliceAll(new);
-                            consumed += @intCast(len);
-                        }
+                        consumed += len;
                         if (comptime field_desc.verifiesUtf8()) {
                             if (!std.unicode.utf8ValidateSlice(new)) {
                                 @branchHint(.cold);
@@ -825,12 +928,8 @@ pub fn decodeMessage(
 
                     // Packed encoding.
                     if (tag.wire_type == .len) {
-                        const len, const c = try decodeScalar(.int32, reader);
+                        const len, const c = try decodeLen(reader);
                         consumed += c;
-                        if (len < 0) {
-                            @branchHint(.cold);
-                            return error.InvalidInput;
-                        }
 
                         consumed += try decodeRepeated(
                             if (comptime field_ti == .optional)
@@ -841,10 +940,13 @@ pub fn decodeMessage(
                             repeated,
                             reader,
                             .{
-                                .bytes = @intCast(len),
+                                .bytes = len,
                                 .unknown_fields = if (comptime has_unknown_fields) &unknown_buf else null,
                                 .field_number = tag.field,
                                 .extensions = options.extensions,
+                                .depth = options.depth + 1,
+                                .recursion_limit = options.recursion_limit,
+                                .read_chunk = options.read_chunk,
                             },
                         );
                     }
@@ -862,6 +964,9 @@ pub fn decodeMessage(
                                 .unknown_fields = if (comptime has_unknown_fields) &unknown_buf else null,
                                 .field_number = tag.field,
                                 .extensions = options.extensions,
+                                .depth = options.depth + 1,
+                                .recursion_limit = options.recursion_limit,
+                                .read_chunk = options.read_chunk,
                             },
                         );
                     }
@@ -880,13 +985,9 @@ pub fn decodeMessage(
                         }
                     };
                     const len: ?usize = if (tag.wire_type == .len) b: {
-                        const len, const c = try decodeScalar(.int32, reader);
+                        const len, const c = try decodeLen(reader);
                         consumed += c;
-                        if (len < 0) {
-                            @branchHint(.cold);
-                            return error.InvalidInput;
-                        }
-                        break :b @intCast(len);
+                        break :b len;
                     } else null;
                     consumed += try decodeRepeated(
                         &@field(result, field_name),
@@ -900,6 +1001,9 @@ pub fn decodeMessage(
                             .unknown_fields = if (comptime has_unknown_fields) &unknown_buf else null,
                             .field_number = tag.field,
                             .extensions = options.extensions,
+                            .depth = options.depth + 1,
+                            .recursion_limit = options.recursion_limit,
+                            .read_chunk = options.read_chunk,
                         },
                     );
                 },
@@ -909,19 +1013,21 @@ pub fn decodeMessage(
 
                     // Delimited submessages have no length prefix; they end
                     // at the matching EGROUP tag instead.
-                    const len: i32 = if (delimited) -1 else b: {
-                        const len, const c = try decodeScalar(.int32, reader);
+                    const len: ?usize = if (delimited) null else b: {
+                        const len, const c = try decodeLen(reader);
                         consumed += c;
-                        if (len < 0) {
-                            @branchHint(.cold);
-                            return error.InvalidInput;
-                        }
                         break :b len;
                     };
-                    const sub_options: SubmessageOptions = if (delimited)
-                        .{ .group = tag.field, .extensions = options.extensions }
-                    else
-                        .{ .bytes = @intCast(len), .extensions = options.extensions };
+                    const sub_options: SubmessageOptions = .{
+                        .bytes = len,
+                        .group = if (delimited) tag.field else null,
+                        .extensions = options.extensions,
+                        .depth = options.depth + 1,
+                        .recursion_limit = options.recursion_limit,
+                        .read_chunk = options.read_chunk,
+                        .merge_parent = if (comptime tracks_merges) &frame else null,
+                        .merge_field = tag.field,
+                    };
 
                     // All submessages must be optional; submessages always
                     // have an explicit field presence, which means the
@@ -953,19 +1059,17 @@ pub fn decodeMessage(
                             @field(result, field_name) = null;
                         };
 
-                        if (delimited or len > 0) {
-                            const message_consumed = try decodeMessage(
-                                @field(result, field_name).?,
-                                allocator,
-                                reader,
-                                sub_options,
-                            );
-                            if (!delimited and message_consumed > len) {
-                                @branchHint(.cold);
-                                return error.InvalidInput;
-                            }
-                            consumed += message_consumed;
-                        }
+                        const message_consumed = try decodeMessage(
+                            @field(result, field_name).?,
+                            allocator,
+                            reader,
+                            sub_options,
+                        );
+                        if (len) |l| if (message_consumed > l) {
+                            @branchHint(.cold);
+                            return error.InvalidInput;
+                        };
+                        consumed += message_consumed;
                     } else {
                         const SubMessage = field_ti.optional.child;
                         const is_null = b: {
@@ -981,19 +1085,17 @@ pub fn decodeMessage(
                             @field(result, field_name) = null;
                         };
 
-                        if (delimited or len > 0) {
-                            const message_consumed = try decodeMessage(
-                                &@field(result, field_name).?,
-                                allocator,
-                                reader,
-                                sub_options,
-                            );
-                            if (!delimited and message_consumed > len) {
-                                @branchHint(.cold);
-                                return error.InvalidInput;
-                            }
-                            consumed += message_consumed;
-                        }
+                        const message_consumed = try decodeMessage(
+                            &@field(result, field_name).?,
+                            allocator,
+                            reader,
+                            sub_options,
+                        );
+                        if (len) |l| if (message_consumed > l) {
+                            @branchHint(.cold);
+                            return error.InvalidInput;
+                        };
+                        consumed += message_consumed;
                     }
                 },
                 .oneof => |OneOf| {
@@ -1034,25 +1136,12 @@ pub fn decodeMessage(
                                     );
 
                                     std.debug.assert(tag.wire_type == .len);
-                                    const len, const len_c =
-                                        try decodeScalar(.int32, reader);
+                                    const len, const len_c = try decodeLen(reader);
                                     consumed += len_c;
 
-                                    if (len < 0) {
-                                        @branchHint(.cold);
-                                        return error.InvalidInput;
-                                    }
-
-                                    const new: []u8 = if (len > 0)
-                                        try allocator.alloc(u8, @intCast(len))
-                                    else
-                                        &.{};
+                                    const new = try readBytesAlloc(allocator, reader, len, options.read_chunk);
                                     errdefer if (len > 0) allocator.free(new);
-
-                                    if (len > 0) {
-                                        _ = try reader.readSliceAll(new);
-                                        consumed += @intCast(len);
-                                    }
+                                    consumed += len;
                                     if (comptime inner_desc.verifiesUtf8()) {
                                         if (!std.unicode.utf8ValidateSlice(new)) {
                                             @branchHint(.cold);
@@ -1062,8 +1151,10 @@ pub fn decodeMessage(
 
                                     // Free potentially existing union field
                                     // just before replacing.
-                                    protobuf.deinitOneof(
+                                    deinitOneof(
+                                        OneOf,
                                         &@field(result, field_name),
+                                        if (comptime tracks_merges) &frame else null,
                                         allocator,
                                     );
 
@@ -1076,6 +1167,16 @@ pub fn decodeMessage(
                                     const val, const c =
                                         try decodeScalar(scalar, reader);
                                     consumed += c;
+
+                                    // Free potentially existing union field
+                                    // just before replacing.
+                                    deinitOneof(
+                                        OneOf,
+                                        &@field(result, field_name),
+                                        if (comptime tracks_merges) &frame else null,
+                                        allocator,
+                                    );
+
                                     @field(result, field_name) = @unionInit(
                                         OneOf,
                                         oo_field_name,
@@ -1101,8 +1202,10 @@ pub fn decodeMessage(
 
                                 // Free potentially existing union field just
                                 // before replacing.
-                                protobuf.deinitOneof(
+                                deinitOneof(
+                                    OneOf,
                                     &@field(result, field_name),
+                                    if (comptime tracks_merges) &frame else null,
                                     allocator,
                                 );
 
@@ -1118,21 +1221,21 @@ pub fn decodeMessage(
 
                                 // Delimited submessages have no length prefix;
                                 // they end at the matching EGROUP tag instead.
-                                const len: i32 = if (delimited) -1 else b: {
-                                    const len, const c =
-                                        try decodeScalar(.int32, reader);
+                                const len: ?usize = if (delimited) null else b: {
+                                    const len, const c = try decodeLen(reader);
                                     consumed += c;
-
-                                    if (len < 0) {
-                                        @branchHint(.cold);
-                                        return error.InvalidInput;
-                                    }
                                     break :b len;
                                 };
-                                const sub_options: SubmessageOptions = if (delimited)
-                                    .{ .group = tag.field, .extensions = options.extensions }
-                                else
-                                    .{ .bytes = @intCast(len), .extensions = options.extensions };
+                                const sub_options: SubmessageOptions = .{
+                                    .bytes = len,
+                                    .group = if (delimited) tag.field else null,
+                                    .extensions = options.extensions,
+                                    .depth = options.depth + 1,
+                                    .recursion_limit = options.recursion_limit,
+                                    .read_chunk = options.read_chunk,
+                                    .merge_parent = if (comptime tracks_merges) &frame else null,
+                                    .merge_field = tag.field,
+                                };
 
                                 // Submessages are non-optional, as `oneof`s
                                 // also have explicit presence.
@@ -1159,8 +1262,10 @@ pub fn decodeMessage(
                                     if (std.meta.activeTag(
                                         @field(result, field_name).?,
                                     ) != incoming_tag) {
-                                        protobuf.deinitOneof(
+                                        deinitOneof(
+                                            OneOf,
                                             &@field(result, field_name),
+                                            if (comptime tracks_merges) &frame else null,
                                             allocator,
                                         );
 
@@ -1174,43 +1279,39 @@ pub fn decodeMessage(
                                     @field(result, field_name) == null;
                                 if (comptime oo_field_ti == .pointer) {
                                     if (is_null) {
+                                        const sub = try allocator.create(SubMessage);
+                                        errdefer allocator.destroy(sub);
+                                        sub.* = try protobuf.init(SubMessage, allocator);
                                         @field(result, field_name) = @unionInit(
                                             OneOf,
                                             oo_field_name,
-                                            try allocator.create(SubMessage),
+                                            sub,
                                         );
-                                        @field(
-                                            @field(result, field_name).?,
-                                            oo_field_name,
-                                        ) = try .init(allocator);
                                     }
                                     errdefer if (is_null) {
-                                        @field(@field(
-                                            result,
-                                            field_name,
-                                        ).?, oo_field_name).deinit(allocator);
-                                        allocator.destroy(
+                                        const sub = @field(
                                             @field(result, field_name).?,
+                                            oo_field_name,
                                         );
+                                        sub.deinit(allocator);
+                                        allocator.destroy(sub);
                                         @field(result, field_name) = null;
                                     };
 
-                                    if (delimited or len > 0) {
-                                        const m_consumed = try decodeMessage(
-                                            @field(
-                                                @field(result, field_name).?,
-                                                oo_field_name,
-                                            ),
-                                            allocator,
-                                            reader,
-                                            sub_options,
-                                        );
-                                        if (!delimited and m_consumed > len) {
-                                            @branchHint(.cold);
-                                            return error.InvalidInput;
-                                        }
-                                        consumed += m_consumed;
-                                    }
+                                    const m_consumed = try decodeMessage(
+                                        @field(
+                                            @field(result, field_name).?,
+                                            oo_field_name,
+                                        ),
+                                        allocator,
+                                        reader,
+                                        sub_options,
+                                    );
+                                    if (len) |l| if (m_consumed > l) {
+                                        @branchHint(.cold);
+                                        return error.InvalidInput;
+                                    };
+                                    consumed += m_consumed;
                                 } else {
                                     if (is_null) {
                                         @field(result, field_name) =
@@ -1231,22 +1332,20 @@ pub fn decodeMessage(
                                         @field(result, field_name) = null;
                                     };
 
-                                    if (delimited or len > 0) {
-                                        const m_consumed = try decodeMessage(
-                                            &@field(
-                                                @field(result, field_name).?,
-                                                oo_field_name,
-                                            ),
-                                            allocator,
-                                            reader,
-                                            sub_options,
-                                        );
-                                        if (!delimited and m_consumed > len) {
-                                            @branchHint(.cold);
-                                            return error.InvalidInput;
-                                        }
-                                        consumed += m_consumed;
-                                    }
+                                    const m_consumed = try decodeMessage(
+                                        &@field(
+                                            @field(result, field_name).?,
+                                            oo_field_name,
+                                        ),
+                                        allocator,
+                                        reader,
+                                        sub_options,
+                                    );
+                                    if (len) |l| if (m_consumed > l) {
+                                        @branchHint(.cold);
+                                        return error.InvalidInput;
+                                    };
+                                    consumed += m_consumed;
                                 }
                             },
                             .oneof,
@@ -1269,23 +1368,314 @@ pub fn decodeMessage(
                 allocator,
                 reader,
                 tag,
+                options,
                 if (comptime has_unknown_fields) &unknown_buf else null,
                 if (comptime has_extensions) &extension_buf else null,
             );
         }
     }
     if (comptime has_unknown_fields) {
-        try appendOwned(allocator, &result._unknown_fields, &unknown_buf);
+        if (frame.merges(result._unknown_fields)) {
+            try frame.append(allocator, .unknown, result._unknown_fields, unknown_buf.items);
+        } else {
+            try appendOwned(allocator, &result._unknown_fields, &unknown_buf);
+        }
     }
     if (comptime has_extensions) {
-        try appendOwned(allocator, &result._extensions.records, &extension_buf);
-        if (options.extensions) |registry| {
-            try registry.validate(Result, result._extensions.records, allocator);
+        if (frame.merges(result._extensions.records)) {
+            // Validated once merged (see `flushMerged`).
+            try frame.append(allocator, .extensions, result._extensions.records, extension_buf.items);
+        } else {
+            try appendOwned(allocator, &result._extensions.records, &extension_buf);
+            if (options.extensions) |registry| {
+                try registry.validateWithOptions(Result, result._extensions.records, allocator, options);
+            }
         }
+    }
+    if (comptime tracks_merges) {
+        if (frame.parent == null) if (frame.node) |node| try node.flushAll(allocator, options);
     }
     return consumed;
 }
 
+/// Deinitializes the oneof `field`, and drops the merges accumulated for its
+/// submessages, which are freed with it.
+fn deinitOneof(
+    comptime OneOf: type,
+    field: *?OneOf,
+    frame: ?*MergeFrame,
+    allocator: std.mem.Allocator,
+) void {
+    if (frame) |f| if (f.node != null) {
+        inline for (@typeInfo(@TypeOf(OneOf._desc_table)).@"struct".field_names) |name| {
+            const desc: protobuf.FieldDescriptor = comptime @field(OneOf._desc_table, name);
+            if (comptime desc.ftype == .submessage) f.dropChild(desc.field_number.?, allocator);
+        }
+    };
+    protobuf.deinitOneof(field, allocator);
+}
+
+/// Whether decoding a `T` tracks merges (see `MergeFrame`): whether it keeps
+/// unknown fields or extensions, or holds a message that does in a singular
+/// or oneof field, however deep. Repeated fields do not count, as their
+/// elements are never merged.
+fn tracksMerges(comptime T: type) bool {
+    return comptime reachesRecords(T);
+}
+
+fn reachesRecords(comptime T: type) bool {
+    // The messages reachable from `T`, each once. Each message reached is
+    // compared with those reached before it, so the work grows with their
+    // number, and the quota with the work.
+    var reached: []const type = &.{T};
+    var quota: usize = 0;
+    var i: usize = 0;
+    while (i < reached.len) : (i += 1) {
+        const M = reached[i];
+        if (@hasField(M, "_unknown_fields") or @hasField(M, "_extensions")) return true;
+        quota += protobuf.evalBranchQuotaFor(M);
+        @setEvalBranchQuota(quota);
+        const subs = submessageTypes(M);
+        quota += subs.len * (reached.len + subs.len);
+        @setEvalBranchQuota(quota);
+        for (subs) |Sub| {
+            for (reached) |R| {
+                if (R == Sub) break;
+            } else reached = reached ++ .{Sub};
+        }
+    }
+    return false;
+}
+
+/// The message types of the singular and oneof submessage fields of `T`.
+fn submessageTypes(comptime T: type) []const type {
+    comptime {
+        var types: []const type = &.{};
+        const desc_table = T._desc_table;
+        for (@typeInfo(@TypeOf(desc_table)).@"struct".field_names) |name| {
+            const desc: protobuf.FieldDescriptor = @field(desc_table, name);
+            switch (desc.ftype) {
+                .submessage => types = types ++ .{MessageOf(@FieldType(T, name))},
+                .oneof => |OneOf| for (@typeInfo(@TypeOf(OneOf._desc_table)).@"struct".field_names) |oo_name| {
+                    const oo_desc: protobuf.FieldDescriptor = @field(OneOf._desc_table, oo_name);
+                    if (oo_desc.ftype == .submessage) types = types ++ .{MessageOf(@FieldType(OneOf, oo_name))};
+                },
+                else => {},
+            }
+        }
+        return types;
+    }
+}
+
+test tracksMerges {
+    const fd = protobuf.fd;
+    const Plain = struct {
+        a: ?i32 = null,
+        pub const _desc_table = .{ .a = fd(1, .{ .scalar = .int32 }) };
+    };
+    const Keeps = struct {
+        _unknown_fields: []const u8 = &.{},
+        pub const _desc_table = .{};
+    };
+    const Holds = struct {
+        plain: ?Plain = null,
+        keeps: ?*Keeps = null,
+        pub const _desc_table = .{ .plain = fd(1, .submessage), .keeps = fd(2, .submessage) };
+    };
+    const Lists = struct {
+        keeps: std.ArrayList(Keeps) = .empty,
+        pub const _desc_table = .{ .keeps = fd(1, .{ .repeated = .submessage }) };
+    };
+    const SelfRef = struct {
+        next: ?*@This() = null,
+        plain: ?Plain = null,
+        pub const _desc_table = .{ .next = fd(1, .submessage), .plain = fd(2, .submessage) };
+    };
+    const Choice = union(enum) {
+        holds: Holds,
+        pub const _desc_table = .{ .holds = fd(1, .submessage) };
+    };
+    const InOneof = struct {
+        choice: ?Choice = null,
+        pub const _desc_table = .{ .choice = fd(null, .{ .oneof = Choice }) };
+    };
+    try std.testing.expect(!tracksMerges(Plain));
+    try std.testing.expect(tracksMerges(Keeps));
+    try std.testing.expect(tracksMerges(Holds));
+    // Elements of repeated fields are never merged.
+    try std.testing.expect(!tracksMerges(Lists));
+    try std.testing.expect(!tracksMerges(SelfRef));
+    try std.testing.expect(tracksMerges(InOneof));
+}
+
+/// The message type of a singular or oneof submessage field of type `F`.
+fn MessageOf(comptime F: type) type {
+    return switch (@typeInfo(F)) {
+        .optional => |o| MessageOf(o.child),
+        .pointer => |p| p.child,
+        else => F,
+    };
+}
+
+const FlushError = std.Io.Reader.Error || std.mem.Allocator.Error || protobuf.DecodingError;
+
+/// Writes the merged records of a `MergeNode` to its message.
+const FlushFn = fn (node: *MergeNode, allocator: std.mem.Allocator, options: SubmessageOptions) FlushError!void;
+
+/// The decoding of a message (one `decodeMessage` call), on its stack.
+///
+/// A singular submessage that repeats on the wire is merged: decoded again
+/// into the same message. Appending its unknown fields and extension records
+/// to those of the earlier occurrences each time would copy them over and
+/// over, quadratically. Instead, from the second time on, they accumulate in
+/// a `MergeNode`, and are written to the message once, when the outermost
+/// decoding (the frame without `parent`) ends.
+///
+/// Only singular and oneof submessages pass their frame down. Elements of
+/// repeated fields are decoded once each and start over, so the messages that
+/// nodes point to never move while the nodes exist; oneof members that are
+/// freed drop their nodes (see `deinitOneof`).
+pub const MergeFrame = struct {
+    parent: ?*MergeFrame,
+    /// The field number of the message in its parent.
+    field: u32,
+    /// Where the merges of the message accumulate, once there are some here
+    /// or below.
+    node: ?*MergeNode,
+    msg: *anyopaque,
+    depth: u32,
+    flush: *const FlushFn,
+
+    /// The node of the field `field` of this message, if any.
+    fn childNode(self: *const MergeFrame, field: u32) ?*MergeNode {
+        const node = self.node orelse return null;
+        for (node.children.items) |child| {
+            if (child.field == field) return child;
+        }
+        return null;
+    }
+
+    /// Drops the node of the field `field`, if any, with its merges.
+    fn dropChild(self: *MergeFrame, field: u32, allocator: std.mem.Allocator) void {
+        const node = self.node orelse return;
+        for (node.children.items, 0..) |child, i| {
+            if (child.field == field) {
+                _ = node.children.swapRemove(i);
+                child.destroy(allocator);
+                return;
+            }
+        }
+    }
+
+    /// Whether the records of the message go to its node: when it is a
+    /// submessage that has records already (a merge), or a node.
+    fn merges(self: *const MergeFrame, records: []const u8) bool {
+        return self.parent != null and (self.node != null or records.len > 0);
+    }
+
+    /// The node of the message, made with those of its parents as needed.
+    fn ensureNode(self: *MergeFrame, allocator: std.mem.Allocator) std.mem.Allocator.Error!*MergeNode {
+        if (self.node) |node| return node;
+        const node = try allocator.create(MergeNode);
+        node.* = .{ .field = self.field, .msg = self.msg, .depth = self.depth, .flush = self.flush };
+        if (self.parent) |parent| {
+            errdefer allocator.destroy(node);
+            const parent_node = try parent.ensureNode(allocator);
+            try parent_node.children.append(allocator, node);
+        }
+        self.node = node;
+        return node;
+    }
+
+    /// Appends the `new` records of the message, whose records are `records`
+    /// so far, to its node.
+    fn append(
+        self: *MergeFrame,
+        allocator: std.mem.Allocator,
+        comptime kind: MergeNode.Kind,
+        records: []const u8,
+        new: []const u8,
+    ) std.mem.Allocator.Error!void {
+        if (new.len == 0) return;
+        const node = try self.ensureNode(allocator);
+        const buf = &@field(node, @tagName(kind));
+        const taken = &@field(node, @tagName(kind) ++ "_taken");
+        if (!taken.*) {
+            try buf.ensureUnusedCapacity(allocator, records.len + new.len);
+            buf.appendSliceAssumeCapacity(records);
+            taken.* = true;
+        }
+        try buf.appendSlice(allocator, new);
+    }
+};
+
+/// The records of a message merged several times (see `MergeFrame`), and
+/// the nodes of its submessages.
+pub const MergeNode = struct {
+    field: u32,
+    msg: *anyopaque,
+    depth: u32,
+    flush: *const FlushFn,
+    /// All the unknown fields of the message, once `unknown_taken`.
+    unknown: std.ArrayList(u8) = .empty,
+    unknown_taken: bool = false,
+    /// All the extension records of the message, once `extensions_taken`.
+    extensions: std.ArrayList(u8) = .empty,
+    extensions_taken: bool = false,
+    children: std.ArrayList(*MergeNode) = .empty,
+
+    const Kind = enum { unknown, extensions };
+
+    /// Writes the records of this node and of its children to their
+    /// messages, children first.
+    fn flushAll(self: *MergeNode, allocator: std.mem.Allocator, options: SubmessageOptions) FlushError!void {
+        for (self.children.items) |child| try child.flushAll(allocator, options);
+        try self.flush(self, allocator, options);
+    }
+
+    /// Frees this node and its children, with any records left.
+    fn destroy(self: *MergeNode, allocator: std.mem.Allocator) void {
+        for (self.children.items) |child| child.destroy(allocator);
+        self.children.deinit(allocator);
+        self.unknown.deinit(allocator);
+        self.extensions.deinit(allocator);
+        allocator.destroy(self);
+    }
+};
+
+/// The `FlushFn` of messages of type `Result`: the records taken replace
+/// those of the message, and its extensions are validated.
+fn flushMerged(comptime Result: type) *const FlushFn {
+    return &struct {
+        fn flush(node: *MergeNode, allocator: std.mem.Allocator, options: SubmessageOptions) FlushError!void {
+            const result: *Result = @ptrCast(@alignCast(node.msg));
+            if (comptime @hasField(Result, "_unknown_fields")) {
+                if (node.unknown_taken) {
+                    try replaceOwned(allocator, &result._unknown_fields, &node.unknown);
+                    node.unknown_taken = false;
+                }
+            }
+            if (comptime @hasField(Result, "_extensions")) {
+                if (node.extensions_taken) {
+                    try replaceOwned(allocator, &result._extensions.records, &node.extensions);
+                    node.extensions_taken = false;
+                    if (options.extensions) |registry| {
+                        var validate_options = options;
+                        validate_options.depth = node.depth;
+                        try registry.validateWithOptions(Result, result._extensions.records, allocator, validate_options);
+                    }
+                }
+            }
+        }
+    }.flush;
+}
+
+/// Replaces the owned slice `dest` by the bytes of `buf`.
+fn replaceOwned(allocator: std.mem.Allocator, dest: *[]const u8, buf: *std.ArrayList(u8)) std.mem.Allocator.Error!void {
+    const new = try buf.toOwnedSlice(allocator);
+    if (dest.len > 0) allocator.free(dest.*);
+    dest.* = new;
+}
 /// Stores a field that matches no field of `Result`: in the extension records
 /// when it is in an extension range, else in the unknown fields if they are
 /// kept. Returns the number of bytes consumed after the tag.
@@ -1294,6 +1684,7 @@ fn captureUnmatched(
     allocator: std.mem.Allocator,
     reader: *std.Io.Reader,
     tag: Tag,
+    options: SubmessageOptions,
     unknown: ?*std.ArrayList(u8),
     extensions: ?*std.ArrayList(u8),
 ) (std.Io.Reader.Error || std.mem.Allocator.Error || protobuf.DecodingError)!usize {
@@ -1301,13 +1692,13 @@ fn captureUnmatched(
         if (extensions) |buf| {
             inline for (Result._extensions_info.ranges) |range| {
                 if (tag.field >= range[0] and tag.field < range[1]) {
-                    return captureField(allocator, reader, tag, buf);
+                    return captureField(allocator, reader, tag, buf, options);
                 }
             }
         }
     }
-    if (unknown) |buf| return captureField(allocator, reader, tag, buf);
-    return skipField(reader, tag);
+    if (unknown) |buf| return captureField(allocator, reader, tag, buf, options);
+    return skipFieldAt(reader, tag, options.depth, options.recursion_limit);
 }
 
 /// Appends the bytes of `buf` to the owned slice `dest`. Messages may be
@@ -1323,7 +1714,15 @@ fn appendOwned(allocator: std.mem.Allocator, dest: *[]const u8, buf: *std.ArrayL
     dest.* = merged;
 }
 
-pub fn skipField(reader: *std.Io.Reader, tag: Tag) !usize {
+/// Skips the value of a field whose tag was just read. Returns the number of
+/// bytes consumed after the tag.
+pub fn skipField(reader: *std.Io.Reader, tag: Tag) (std.Io.Reader.Error || protobuf.DecodingError)!usize {
+    return skipFieldAt(reader, tag, 0, default_recursion_limit);
+}
+
+/// `skipField` for a field of a message nested `depth` deep, with groups
+/// nesting at most `recursion_limit` deep (see `SubmessageOptions`).
+pub fn skipFieldAt(reader: *std.Io.Reader, tag: Tag, depth: u32, recursion_limit: u32) (std.Io.Reader.Error || protobuf.DecodingError)!usize {
     var consumed: usize = 0;
 
     // If field number was not found, skip unknown field.
@@ -1341,20 +1740,21 @@ pub fn skipField(reader: *std.Io.Reader, tag: Tag) !usize {
             consumed += 8;
         },
         .len => {
-            const skip, const c = try decodeScalar(.int32, reader);
+            const skip, const c = try decodeLen(reader);
             consumed += c;
-            if (skip < 0) {
-                @branchHint(.cold);
-                return error.InvalidInput;
-            }
-            try reader.discardAll(@intCast(skip));
-            consumed += @intCast(skip);
+            try reader.discardAll(skip);
+            consumed += skip;
         },
         .varint => {
             _, const c = try decodeScalar(.uint64, reader);
             consumed += c;
         },
         .sgroup => {
+            // A group nests like a submessage.
+            if (depth >= recursion_limit) {
+                @branchHint(.cold);
+                return error.InvalidInput;
+            }
             // Skip the entire group by consuming fields until the matching egroup tag.
             while (true) {
                 const inner_tag, const tag_c = try Tag.decode(reader);
@@ -1364,7 +1764,7 @@ pub fn skipField(reader: *std.Io.Reader, tag: Tag) !usize {
                         return error.InvalidInput;
                     break;
                 }
-                consumed += try skipField(reader, inner_tag);
+                consumed += try skipFieldAt(reader, inner_tag, depth + 1, recursion_limit);
             }
         },
         .egroup => {
@@ -1391,13 +1791,15 @@ fn encodeTagBytes(tag: Tag, buf: *[10]u8) usize {
     return i + 1;
 }
 
-// Capture an unknown field's tag+data bytes into buf, return total bytes consumed (after tag).
+// Capture an unknown field's tag+data bytes into buf, return total bytes
+// consumed (after tag). `options` are those of the message holding the field.
 fn captureField(
     allocator: std.mem.Allocator,
     reader: *std.Io.Reader,
     tag: Tag,
     buf: *std.ArrayList(u8),
-) !usize {
+    options: SubmessageOptions,
+) (std.Io.Reader.Error || std.mem.Allocator.Error || protobuf.DecodingError)!usize {
     var tag_bytes: [10]u8 = undefined;
     const tag_len = encodeTagBytes(tag, &tag_bytes);
     try buf.appendSlice(allocator, tag_bytes[0..tag_len]);
@@ -1405,12 +1807,10 @@ fn captureField(
     var data_consumed: usize = 0;
     switch (tag.wire_type) {
         .varint => {
-            while (true) {
-                const b = try reader.takeByte();
-                try buf.append(allocator, b);
-                data_consumed += 1;
-                if (b & 0x80 == 0) break;
-            }
+            var varint_buf: [10]u8 = undefined;
+            const n = (try takeVarintBytes(reader, &varint_buf)).len;
+            try buf.appendSlice(allocator, varint_buf[0..n]);
+            data_consumed += n;
         },
         .fixed32 => {
             const bytes = try reader.takeArray(4);
@@ -1424,24 +1824,21 @@ fn captureField(
         },
         .len => {
             var len_buf: [10]u8 = undefined;
-            var len_i: usize = 0;
-            var len_val: u64 = 0;
-            var shift: u6 = 0;
-            while (true) {
-                const b = try reader.takeByte();
-                len_buf[len_i] = b;
-                len_i += 1;
-                len_val |= @as(u64, b & 0x7F) << shift;
-                shift += 7;
-                if (b & 0x80 == 0) break;
-            }
+            const varint = try takeVarintBytes(reader, &len_buf);
+            const len_i = varint.len;
+            // The same rule as where the records are read back (`skipField`).
+            const len = try checkLen(varint.value);
             try buf.appendSlice(allocator, len_buf[0..len_i]);
             data_consumed += len_i;
-            const data = try reader.take(@intCast(len_val));
-            try buf.appendSlice(allocator, data);
-            data_consumed += @intCast(len_val);
+            try appendBytes(allocator, reader, buf, len, options.read_chunk);
+            data_consumed += len;
         },
         .sgroup => {
+            // A group nests like a submessage.
+            if (options.depth >= options.recursion_limit) {
+                @branchHint(.cold);
+                return error.InvalidInput;
+            }
             // Capture every nested field up to and including the matching
             // EGROUP tag, so that the group round-trips verbatim.
             while (true) {
@@ -1456,7 +1853,9 @@ fn captureField(
                     try buf.appendSlice(allocator, tag_bytes[0..end_len]);
                     break;
                 }
-                data_consumed += try captureField(allocator, reader, inner_tag, buf);
+                var inner = options;
+                inner.depth += 1;
+                data_consumed += try captureField(allocator, reader, inner_tag, buf, inner);
             }
         },
         .egroup => {
@@ -1466,6 +1865,20 @@ fn captureField(
         },
     }
     return data_consumed;
+}
+
+/// Reads the bytes of one varint into `out` and decodes it in the same pass.
+/// A varint is at most 10 bytes long; a longer one is invalid. Returns the
+/// number of bytes read and the value.
+fn takeVarintBytes(reader: *std.Io.Reader, out: *[10]u8) (std.Io.Reader.Error || protobuf.DecodingError)!struct { len: usize, value: u64 } {
+    var value: u64 = 0;
+    for (out, 0..) |*slot, i| {
+        const b = try reader.takeByte();
+        slot.* = b;
+        value |= @as(u64, b & 0x7F) << @intCast(7 * i);
+        if (b & 0x80 == 0) return .{ .len = i + 1, .value = value };
+    }
+    return error.InvalidInput;
 }
 
 test {

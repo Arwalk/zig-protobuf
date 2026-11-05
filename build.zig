@@ -7,6 +7,7 @@ const mem = std.mem;
 const LazyPath = std.Build.LazyPath;
 const build_util = @import("build_util.zig");
 pub const RunProtocStep = build_util.RunProtocStep;
+pub const protocFromSource = build_util.protocFromSource;
 
 const PROTOC_VERSION = build_util.PROTOC_VERSION;
 
@@ -55,6 +56,10 @@ pub fn build(b: *std.Build) !void {
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).
     b.installArtifact(exe);
+
+    // All that follows is for the development of this project, and it needs protoc. A project
+    // that depends on this one chooses its own protoc, or none, so it must not download it here.
+    if (b.dep_prefix.len != 0) return;
 
     const test_step = b.step("test", "Run library tests");
 
@@ -180,6 +185,22 @@ pub fn build(b: *std.Build) !void {
                 .optimize = optimize,
             }),
         }),
+        b.addTest(.{
+            .name = "large_schema",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/large_schema.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        }),
+        b.addTest(.{
+            .name = "malformed_input",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("tests/malformed_input.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        }),
     };
 
     const convertStep = RunProtocStep.createWithGenerator(b, exe, .{
@@ -202,6 +223,22 @@ pub fn build(b: *std.Build) !void {
             b.path("tests/protos_for_test/whitespace-in-name.proto"),
         },
         .include_directories = &.{b.path("tests/protos_for_test")},
+    });
+
+    // Messages that keep their unknown fields.
+    const convertUnknownFields = RunProtocStep.createWithGenerator(b, exe, .{
+        .destination_directory = b.path("tests/generated"),
+        .source_files = &.{b.path("tests/protos_for_test/merge.proto")},
+        .include_directories = &.{b.path("tests/protos_for_test")},
+        .preserve_unknown_fields = true,
+    });
+
+    // The part of the Google Ads API reached by its search response, a large
+    // real schema (see tests/large_schema.zig).
+    const convertGoogleAds = RunProtocStep.createWithGenerator(b, exe, .{
+        .destination_directory = b.path("tests/.generated/googleads"),
+        .source_files = &.{b.path("tests/protos_for_test/googleads/google/ads/googleads/v26/services.proto")},
+        .include_directories = &.{b.path("tests/protos_for_test/googleads")},
     });
 
     // Upstream protobuf test protos for options, see tests/protos_for_test/upstream.
@@ -230,6 +267,8 @@ pub fn build(b: *std.Build) !void {
 
         test_item.step.dependOn(convertStep.step);
         test_item.step.dependOn(convertStep2.step);
+        test_item.step.dependOn(convertUnknownFields.step);
+        test_item.step.dependOn(convertGoogleAds.step);
         test_item.step.dependOn(convertUpstream.step);
 
         test_step.dependOn(&run_main_tests.step);

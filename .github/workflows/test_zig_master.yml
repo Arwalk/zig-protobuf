@@ -34,6 +34,34 @@ jobs:
       - run: zig build
       - run: git diff
 
+  source_protoc:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: "master"
+      - run: zig build test
+        working-directory: tests/source_protoc
+      # The point of protocFromSource: no binary release of protoc was downloaded.
+      - run: "! ls tests/source_protoc/zig-pkg/*/bin/protoc*"
+        shell: bash
+
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: "master"
+      - run: zig build
+      - run: zig build conformance-run
+        working-directory: conformance
+      - run: git diff --exit-code conformance/out
+
   lint:
     runs-on: ubuntu-latest
     steps:

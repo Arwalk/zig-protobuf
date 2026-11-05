@@ -156,20 +156,35 @@ pub const Duration = struct {
         if (dot_pos) |dp| {
             const sec_str = body[0..dp];
             const frac_str = body[dp + 1 ..];
-            const negative = sec_str.len > 0 and sec_str[0] == '-';
+            // parseInt also takes '+' and '_', which proto3 JSON does not.
+            if (!isSignedDigits(sec_str) or !isDigits(frac_str)) return error.UnexpectedToken;
+            const negative = sec_str[0] == '-';
             seconds = std.fmt.parseInt(i64, sec_str, 10) catch return error.UnexpectedToken;
-            if (frac_str.len == 0 or frac_str.len > 9) return error.UnexpectedToken;
+            if (frac_str.len > 9) return error.UnexpectedToken;
             var frac_buf: [9]u8 = @splat('0');
             @memcpy(frac_buf[0..frac_str.len], frac_str);
             const frac_val = std.fmt.parseInt(u32, &frac_buf, 10) catch return error.UnexpectedToken;
             nanos = @intCast(frac_val);
             if (negative) nanos = -nanos;
         } else {
+            if (!isSignedDigits(body)) return error.UnexpectedToken;
             seconds = std.fmt.parseInt(i64, body, 10) catch return error.UnexpectedToken;
         }
         // Proto3 JSON: duration must be in the range [-315576000000s, +315576000000s].
         if (seconds < -315576000000 or seconds > 315576000000) return error.UnexpectedToken;
         return @This(){ .seconds = seconds, .nanos = nanos };
+    }
+
+    /// Whether `text` is a non-empty run of ASCII digits.
+    fn isDigits(text: []const u8) bool {
+        if (text.len == 0) return false;
+        for (text) |ch| if (ch < '0' or ch > '9') return false;
+        return true;
+    }
+
+    /// Whether `text` is a non-empty run of ASCII digits after an optional '-'.
+    fn isSignedDigits(text: []const u8) bool {
+        return isDigits(if (text.len > 0 and text[0] == '-') text[1..] else text);
     }
 
     pub fn jsonStringify(self: @This(), jws: anytype) @TypeOf(jws.*).Error!void {
@@ -448,9 +463,6 @@ pub const Struct = struct {
 
 // ─── google.protobuf.Value ──────────────────────────────────────────────────
 
-/// Maximum nesting of `Value`s accepted when parsing JSON, the default
-/// recursion limit of the reference implementation.
-const max_value_depth = 100;
 /// Nesting of the `Value` being parsed from JSON. `jsonParse` cannot carry
 /// extra state, so it is tracked per thread.
 threadlocal var value_parse_depth: u32 = 0;
@@ -500,9 +512,11 @@ pub const Value = struct {
     }
 
     pub fn jsonParse(allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
-        // Values nest through Struct and ListValue. Deeply nested input is
-        // rejected, like other implementations do, to bound the recursion.
-        if (value_parse_depth >= max_value_depth) return error.SyntaxError;
+        // Values nest through Struct and ListValue. Input nested deeper than
+        // the recursion limit (`DecodeOptions.recursion_limit`, 100 by
+        // default, as in the reference implementation) is rejected, like
+        // other implementations do, to bound the recursion.
+        if (value_parse_depth >= protobuf.json.recursionLimit()) return error.SyntaxError;
         value_parse_depth += 1;
         defer value_parse_depth -= 1;
 
@@ -665,17 +679,25 @@ pub const Timestamp = struct {
             else => return error.UnexpectedToken,
         };
         if (str.len < 20) return error.UnexpectedToken;
-        const year = std.fmt.parseInt(i64, str[0..4], 10) catch return error.UnexpectedToken;
+        const year = digits(str[0..4]) orelse return error.UnexpectedToken;
         if (str[4] != '-') return error.UnexpectedToken;
-        const month = std.fmt.parseInt(u8, str[5..7], 10) catch return error.UnexpectedToken;
+        const month = digits(str[5..7]) orelse return error.UnexpectedToken;
         if (str[7] != '-') return error.UnexpectedToken;
-        const day = std.fmt.parseInt(u8, str[8..10], 10) catch return error.UnexpectedToken;
+        const day = digits(str[8..10]) orelse return error.UnexpectedToken;
         if (str[10] != 'T') return error.UnexpectedToken;
-        const hour = std.fmt.parseInt(u8, str[11..13], 10) catch return error.UnexpectedToken;
+        const hour = digits(str[11..13]) orelse return error.UnexpectedToken;
         if (str[13] != ':') return error.UnexpectedToken;
-        const minute = std.fmt.parseInt(u8, str[14..16], 10) catch return error.UnexpectedToken;
+        const minute = digits(str[14..16]) orelse return error.UnexpectedToken;
         if (str[16] != ':') return error.UnexpectedToken;
-        const second = std.fmt.parseInt(u8, str[17..19], 10) catch return error.UnexpectedToken;
+        const second = digits(str[17..19]) orelse return error.UnexpectedToken;
+        // Every field in range before any arithmetic (RFC 3339, section
+        // 5.6). Leap seconds (60) are refused, as by the reference
+        // implementations: protobuf timestamps smear them instead.
+        if (month < 1 or month > 12) return error.UnexpectedToken;
+        // The year has 4 digits, so it fits a `Year`.
+        const month_days = std.time.epoch.getDaysInMonth(@intCast(year), @fromBackingInt(@as(u4, @intCast(month))));
+        if (day < 1 or day > month_days) return error.UnexpectedToken;
+        if (hour > 23 or minute > 59 or second > 59) return error.UnexpectedToken;
         var pos: usize = 19;
         var nanos: i32 = 0;
         if (pos < str.len and str[pos] == '.') {
@@ -686,7 +708,7 @@ pub const Timestamp = struct {
             if (frac_len == 0 or frac_len > 9) return error.UnexpectedToken;
             var frac_buf: [9]u8 = @splat('0');
             @memcpy(frac_buf[0..frac_len], str[frac_start..pos]);
-            nanos = @intCast(std.fmt.parseInt(u32, &frac_buf, 10) catch return error.UnexpectedToken);
+            nanos = @intCast(digits(&frac_buf) orelse return error.UnexpectedToken);
         }
         var offset_secs: i64 = 0;
         if (pos >= str.len) return error.UnexpectedToken;
@@ -696,9 +718,10 @@ pub const Timestamp = struct {
             const sign: i64 = if (str[pos] == '+') 1 else -1;
             pos += 1;
             if (pos + 5 > str.len) return error.UnexpectedToken;
-            const off_h = std.fmt.parseInt(i64, str[pos .. pos + 2], 10) catch return error.UnexpectedToken;
+            const off_h = digits(str[pos .. pos + 2]) orelse return error.UnexpectedToken;
             if (str[pos + 2] != ':') return error.UnexpectedToken;
-            const off_m = std.fmt.parseInt(i64, str[pos + 3 .. pos + 5], 10) catch return error.UnexpectedToken;
+            const off_m = digits(str[pos + 3 .. pos + 5]) orelse return error.UnexpectedToken;
+            if (off_h > 23 or off_m > 59) return error.UnexpectedToken;
             offset_secs = sign * (off_h * 3600 + off_m * 60);
             pos += 5;
         } else return error.UnexpectedToken;
@@ -773,13 +796,27 @@ pub const Timestamp = struct {
 
     /// Converts a proleptic Gregorian calendar date to a Unix day count.
     /// Uses the Howard Hinnant days-from-civil algorithm (https://howardhinnant.github.io/date_algorithms.html).
-    fn days_from_civil(y: i64, m: u8, d: u8) i64 {
+    /// Signed throughout, so a date out of range gives a wrong day rather
+    /// than overflowing; callers check the month and day first.
+    fn days_from_civil(y: i64, m: i64, d: i64) i64 {
         const y2 = y - @as(i64, if (m <= 2) 1 else 0);
         const era: i64 = @divFloor(y2, years_per_era);
-        const yoe: u32 = @intCast(y2 - era * years_per_era);
-        const doy: u32 = (month_cycle_days * (@as(u32, if (m > 2) m - 3 else m + 9)) + 2) / month_cycle_years + d - 1;
-        const doe: u32 = yoe * 365 + yoe / 4 - yoe / 100 + doy;
-        return era * days_per_era + @as(i64, doe) - days_to_unix_epoch;
+        const yoe: i64 = y2 - era * years_per_era;
+        const doy: i64 = @divFloor(month_cycle_days * (if (m > 2) m - 3 else m + 9) + 2, month_cycle_years) + d - 1;
+        const doe: i64 = yoe * 365 + @divFloor(yoe, 4) - @divFloor(yoe, 100) + doy;
+        return era * days_per_era + doe - days_to_unix_epoch;
+    }
+
+    /// The value of a run of ASCII digits; null for anything else (no
+    /// sign, no separators).
+    fn digits(text: []const u8) ?i64 {
+        if (text.len == 0) return null;
+        var value: i64 = 0;
+        for (text) |ch| {
+            if (ch < '0' or ch > '9') return null;
+            value = value * 10 + (ch - '0');
+        }
+        return value;
     }
 };
 
