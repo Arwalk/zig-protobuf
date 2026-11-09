@@ -255,7 +255,9 @@ The `master` branch had these changes before version 6.0.0. They apply to you if
   * The encoder does not write a field with implicit presence that holds the zero value.
   * The well-known types have their special form: `Timestamp` and `Duration` are strings,
     wrappers are plain values, `Struct` and `Value` are plain JSON.
-  * An `Any` with a `type_url` needs `protobuf.wkt.any_json_resolver`.
+  * An `Any` with a `type_url` needs `protobuf.wkt.any_json_resolver`. Its `from_json` receives
+    `protobuf.DecodeOptions` (the extensions and the remaining recursion limit) to pass on to
+    `protobuf.json.decodeWithOptions`.
 * The well-known types of `google.protobuf` are declarations of `protobuf.wkt`. `Value` has no
   `_kind_case` declaration.
 * A message field with the type of a message that contains it is a pointer (`?*T`).

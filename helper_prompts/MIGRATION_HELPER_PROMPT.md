@@ -345,7 +345,9 @@ Find: `jsonDecode` of messages with proto2 enums.
 `Timestamp` is an RFC 3339 string, `Duration` is `"1.5s"`, `FieldMask` is a comma-separated
 string, wrappers are bare values, `Value`/`Struct`/`ListValue` are plain JSON (`1`, not
 `{"kind":{"numberValue":1}}`). A `Value` nested more than 100 levels is rejected. `Any` with a
-`type_url` fails to encode and to parse unless `protobuf.wkt.any_json_resolver` is set.
+`type_url` fails to encode and to parse unless `protobuf.wkt.any_json_resolver` is set; its
+`from_json` takes a fourth `protobuf.DecodeOptions` argument to pass on to
+`protobuf.json.decodeWithOptions`.
 Find: messages with these types on a JSON path.
 
 **C6. 64-bit integers are strings** [tag only] (OUTPUT). `int64`, `uint64`, `sint64`, `fixed64`,

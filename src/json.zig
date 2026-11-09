@@ -24,12 +24,20 @@ pub fn parse(
 ) !Self {
     @setEvalBranchQuota(comptime protobuf.evalBranchQuotaFor(Self));
 
+    // Called by `std.json` directly: the decode gets a state of its own.
+    if (comptime !isContextSource(@TypeOf(source.*))) {
+        var state: ParseState = .{};
+        var wrapped: ContextSource(@TypeOf(source.*)) = .{ .inner = source, .state = &state };
+        return parse(Self, allocator, &wrapped, options);
+    }
+
     // Messages nest by recursing through here. Input nested deeper than the
-    // recursion limit (see `recursionLimit`) is rejected, as by the binary
-    // decoder, so that it cannot exhaust the stack.
-    if (tl_parse_depth > recursionLimit()) return error.SyntaxError;
-    tl_parse_depth += 1;
-    defer tl_parse_depth -= 1;
+    // recursion limit (see `ParseState.recursion_limit`) is rejected, as by
+    // the binary decoder, so that it cannot exhaust the stack.
+    const state = source.state;
+    if (state.message_depth > state.recursion_limit) return error.SyntaxError;
+    state.message_depth += 1;
+    defer state.message_depth -= 1;
 
     if (.object_begin != try source.next()) {
         return error.UnexpectedToken;
@@ -261,25 +269,84 @@ pub fn parse(
     return result;
 }
 
-/// Extensions known while parsing JSON. `jsonParse` cannot carry extra
-/// state, so `decodeWithOptions` sets them for the current thread.
-threadlocal var tl_extensions: ?*const protobuf.ExtensionRegistry = null;
+/// State of one JSON decode. Internal: the hooks of `std.json` (`jsonParse`)
+/// take no extra arguments, so the state travels with the token source, in a
+/// `ContextSource`.
+pub const ParseState = struct {
+    /// Known extensions, decoded from their `[full.name]` keys.
+    extensions: ?*const protobuf.ExtensionRegistry = null,
+    /// How deeply messages, and separately values that nest by themselves
+    /// (`google.protobuf.Value`), may nest: the `recursion_limit` given to
+    /// `decodeWithOptions`, else the default. Messages nest at most as deep
+    /// as in the binary format; an extension parsed from JSON counts as two
+    /// levels, an `Any` as one.
+    recursion_limit: u32 = protobuf.wire.default_recursion_limit,
+    /// Nesting of the message being parsed by `parse`.
+    message_depth: u32 = 0,
+    /// Nesting of the `google.protobuf.Value` being parsed.
+    value_depth: u32 = 0,
 
-/// `DecodeOptions.recursion_limit` of the JSON being parsed on this thread,
-/// set by `decodeWithOptions` like `tl_extensions`.
-threadlocal var tl_recursion_limit: u32 = protobuf.wire.default_recursion_limit;
+    /// Options for a separate decode of a value nested in the message being
+    /// parsed, `levels` below it, such as the payload of an `Any`: the same
+    /// extensions, and what remains of the recursion limit. Fails when no
+    /// level remains.
+    pub fn nestedOptions(self: *const ParseState, levels: u32) error{SyntaxError}!protobuf.DecodeOptions {
+        const used = std.math.add(u32, self.message_depth, levels) catch return error.SyntaxError;
+        if (used > self.recursion_limit) return error.SyntaxError;
+        return .{ .extensions = self.extensions, .recursion_limit = self.recursion_limit - used };
+    }
+};
 
-/// How deeply messages, and separately values that nest by themselves
-/// (`google.protobuf.Value`), may nest in the JSON being parsed on this
-/// thread: the `recursion_limit` given to `decodeWithOptions`, else the
-/// default. Messages nest at most as deep as in the binary format; an
-/// extension parsed from JSON counts as two levels.
-pub fn recursionLimit() u32 {
-    return tl_recursion_limit;
+/// A `std.json` token source (`*std.json.Scanner` or `*std.json.Reader`)
+/// with the `ParseState` of the decode. Internal: `std.json` passes the
+/// source unchanged to every nested `jsonParse`, so the state reaches them.
+pub fn ContextSource(comptime Inner: type) type {
+    return struct {
+        inner: *Inner,
+        state: *ParseState,
+
+        const Self = @This();
+        pub const Source = Inner;
+        pub const NextError = Inner.NextError;
+        pub const PeekError = Inner.PeekError;
+        pub const AllocError = Inner.AllocError;
+        pub const SkipError = Inner.SkipError;
+
+        pub fn next(self: *Self) NextError!std.json.Token {
+            return self.inner.next();
+        }
+        pub fn nextAlloc(self: *Self, allocator: std.mem.Allocator, when: std.json.AllocWhen) AllocError!std.json.Token {
+            return self.inner.nextAlloc(allocator, when);
+        }
+        pub fn nextAllocMax(self: *Self, allocator: std.mem.Allocator, when: std.json.AllocWhen, max_value_len: usize) AllocError!std.json.Token {
+            return self.inner.nextAllocMax(allocator, when, max_value_len);
+        }
+        pub fn allocNextIntoArrayList(self: *Self, value_list: *std.array_list.Managed(u8), when: std.json.AllocWhen) @TypeOf(self.inner.allocNextIntoArrayList(value_list, when)) {
+            return self.inner.allocNextIntoArrayList(value_list, when);
+        }
+        pub fn allocNextIntoArrayListMax(self: *Self, value_list: *std.array_list.Managed(u8), when: std.json.AllocWhen, max_value_len: usize) @TypeOf(self.inner.allocNextIntoArrayListMax(value_list, when, max_value_len)) {
+            return self.inner.allocNextIntoArrayListMax(value_list, when, max_value_len);
+        }
+        pub fn peekNextTokenType(self: *Self) PeekError!std.json.TokenType {
+            return self.inner.peekNextTokenType();
+        }
+        pub fn skipValue(self: *Self) SkipError!void {
+            return self.inner.skipValue();
+        }
+        pub fn skipUntilStackHeight(self: *Self, terminal_stack_height: usize) NextError!void {
+            return self.inner.skipUntilStackHeight(terminal_stack_height);
+        }
+        pub fn stackHeight(self: *const Self) usize {
+            return self.inner.stackHeight();
+        }
+    };
 }
 
-/// Nesting of the message being parsed by `parse` on this thread.
-threadlocal var tl_parse_depth: u32 = 0;
+/// Whether `Source` is a `ContextSource`.
+pub fn isContextSource(comptime Source: type) bool {
+    return @typeInfo(Source) == .@"struct" and @hasDecl(Source, "Source") and
+        Source == ContextSource(Source.Source);
+}
 
 /// Parses the value of the key `name` as an extension of `Self`, if `name` is
 /// the `[full.name]` of a known extension. Returns whether it did.
@@ -291,14 +358,16 @@ fn parseExtension(
     source: anytype,
     options: std.json.ParseOptions,
 ) !bool {
-    const registry = tl_extensions orelse return false;
+    const registry = source.state.extensions orelse return false;
     if (name.len < 2 or name[0] != '[' or name[name.len - 1] != ']') return false;
     const entry = registry.findByName(Self, name[1 .. name.len - 1]) orelse return false;
 
+    // The holder of the extension stands in for this message.
+    const decode_options = try source.state.nestedOptions(0);
     var arena: std.heap.ArenaAllocator = .init(allocator);
     defer arena.deinit();
     const text = try nextValueText(arena.allocator(), source, options);
-    const records = entry.from_json(text, allocator, options) catch |err| switch (err) {
+    const records = entry.from_json(text, allocator, options, decode_options) catch |err| switch (err) {
         error.OutOfMemory => return error.OutOfMemory,
         else => return error.UnexpectedToken,
     };
@@ -310,12 +379,13 @@ fn parseExtension(
 /// Consumes the next value of `source` and returns its JSON text, which is
 /// either part of the input or allocated with `arena`.
 fn nextValueText(arena: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) ![]const u8 {
-    if (@TypeOf(source.*) == std.json.Scanner and source.is_end_of_input) {
+    const inner = source.inner;
+    if (@TypeOf(inner.*) == std.json.Scanner and inner.is_end_of_input) {
         // The scanner holds the whole input: the value is used as written.
-        _ = try source.peekNextTokenType(); // Moves to the start of the value.
-        const start = source.cursor;
-        try source.skipValue();
-        return source.input[start..source.cursor];
+        _ = try inner.peekNextTokenType(); // Moves to the start of the value.
+        const start = inner.cursor;
+        try inner.skipValue();
+        return inner.input[start..inner.cursor];
     }
     // Streamed input is not kept, so the value is parsed and written back.
     const value = try std.json.innerParse(std.json.Value, arena, source, options);
@@ -329,9 +399,9 @@ fn writeExtensions(
     jws: anytype,
     opts: Options,
     registry: *const protobuf.ExtensionRegistry,
+    allocator: std.mem.Allocator,
 ) !void {
     if (records.len == 0) return;
-    const allocator = protobuf.wkt.tl_any_alloc orelse return error.WriteFailed;
     const known = registry.of(Self);
     if (known.len == 0) return;
 
@@ -363,13 +433,20 @@ pub fn decodeWithOptions(
     pb_options: protobuf.DecodeOptions,
     allocator: std.mem.Allocator,
 ) !std.json.Parsed(T) {
-    const previous = tl_extensions;
-    tl_extensions = pb_options.extensions;
-    defer tl_extensions = previous;
-    const previous_limit = tl_recursion_limit;
-    tl_recursion_limit = pb_options.recursion_limit;
-    defer tl_recursion_limit = previous_limit;
-    return decode(T, input, options, allocator);
+    @setEvalBranchQuota(comptime protobuf.evalBranchQuotaFor(T));
+
+    var scanner: std.json.Scanner = .initCompleteInput(allocator, input);
+    defer scanner.deinit();
+    var state: ParseState = .{
+        .extensions = pb_options.extensions,
+        .recursion_limit = pb_options.recursion_limit,
+    };
+    var source: ContextSource(std.json.Scanner) = .{ .inner = &scanner, .state = &state };
+    // `std.json` only fills these defaults for a bare scanner.
+    var resolved = options;
+    if (resolved.max_value_len == null) resolved.max_value_len = input.len;
+    if (resolved.allocate == null) resolved.allocate = .alloc_if_needed;
+    return std.json.parseFromTokenSource(T, allocator, &source, resolved);
 }
 
 pub fn decode(
@@ -378,10 +455,7 @@ pub fn decode(
     options: std.json.ParseOptions,
     allocator: std.mem.Allocator,
 ) !std.json.Parsed(T) {
-    @setEvalBranchQuota(comptime protobuf.evalBranchQuotaFor(T));
-
-    const parsed = try std.json.parseFromSlice(T, allocator, input, options);
-    return parsed;
+    return decodeWithOptions(T, input, options, .{}, allocator);
 }
 
 pub fn encode(
@@ -396,23 +470,31 @@ pub fn encode(
     const CustomEncoder = struct {
         inner: DataType,
         opts: Options,
+        allocator: std.mem.Allocator,
         pub fn jsonStringify(self: *const @This(), jws: anytype) !void {
-            return stringifyOpts(DataType, &self.inner, jws, self.opts);
+            return stringifyOpts(DataType, &self.inner, jws, self.opts, self.allocator);
         }
     };
-    // Set thread-local allocator for Any.jsonStringify.
-    const prev_alloc = protobuf.wkt.tl_any_alloc;
-    protobuf.wkt.tl_any_alloc = allocator;
-    defer protobuf.wkt.tl_any_alloc = prev_alloc;
     return std.json.Stringify.valueAlloc(
         allocator,
-        CustomEncoder{ .inner = data, .opts = pb_options },
+        CustomEncoder{ .inner = data, .opts = pb_options, .allocator = allocator },
         std_options,
     );
 }
 
-fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std.meta.Child(@TypeOf(jws)).Error!void {
+fn stringifyOpts(
+    Self: type,
+    self: *const Self,
+    jws: anytype,
+    opts: Options,
+    allocator: std.mem.Allocator,
+) std.meta.Child(@TypeOf(jws)).Error!void {
     @setEvalBranchQuota(comptime protobuf.evalBranchQuotaFor(Self));
+
+    // `Any` needs an allocator to write its payload.
+    if (comptime Self == protobuf.wkt.Any) {
+        return self.jsonStringifyAlloc(jws, allocator);
+    }
 
     // Well-known types (e.g. Duration, Timestamp, wrappers) override jsonStringify
     // to emit their special JSON representation instead of a plain object.
@@ -460,6 +542,7 @@ fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std
                 descriptor,
                 jws,
                 opts,
+                allocator,
             );
         }
         // null optionals (including null oneofs): skip entirely
@@ -467,7 +550,7 @@ fn stringifyOpts(Self: type, self: *const Self, jws: anytype, opts: Options) std
 
     if (comptime @hasField(Self, "_extensions")) {
         if (opts.extensions) |registry| {
-            try writeExtensions(Self, self._extensions.records, jws, opts, registry);
+            try writeExtensions(Self, self._extensions.records, jws, opts, registry, allocator);
         }
     }
 
@@ -512,6 +595,7 @@ fn stringify_struct_field_with_options(
     field_descriptor: protobuf.FieldDescriptor,
     jws: anytype,
     pb_options: Options,
+    allocator: std.mem.Allocator,
 ) !void {
     var value: switch (@typeInfo(@TypeOf(struct_field))) {
         .optional => |optional| optional.child,
@@ -566,6 +650,7 @@ fn stringify_struct_field_with_options(
                         @field(Elem._desc_table, "value"),
                         jws,
                         pb_options,
+                        allocator,
                     );
                 }
                 try jws.endObject();
@@ -579,7 +664,7 @@ fn stringify_struct_field_with_options(
                             else => try print_numeric(el, jws),
                         },
                         .@"enum" => try print_numeric(el, jws),
-                        .submessage => try stringifyOpts(@TypeOf(el), &el, jws, pb_options),
+                        .submessage => try stringifyOpts(@TypeOf(el), &el, jws, pb_options, allocator),
                     }
                 }
                 try jws.endArray();
@@ -611,9 +696,9 @@ fn stringify_struct_field_with_options(
                         .submessage => {
                             const uf = @field(value, union_field_name);
                             if (comptime @typeInfo(UnionField) == .pointer) {
-                                try stringifyOpts(@typeInfo(UnionField).pointer.child, uf, jws, pb_options);
+                                try stringifyOpts(@typeInfo(UnionField).pointer.child, uf, jws, pb_options, allocator);
                             } else {
-                                try stringifyOpts(UnionField, &uf, jws, pb_options);
+                                try stringifyOpts(UnionField, &uf, jws, pb_options, allocator);
                             }
                         },
                         .repeated, .packed_repeated => {
@@ -634,99 +719,10 @@ fn stringify_struct_field_with_options(
         .submessage => {
             const V = @TypeOf(value);
             if (comptime @typeInfo(V) == .pointer) {
-                try stringifyOpts(@typeInfo(V).pointer.child, value, jws, pb_options);
+                try stringifyOpts(@typeInfo(V).pointer.child, value, jws, pb_options, allocator);
             } else {
-                try stringifyOpts(V, &value, jws, pb_options);
+                try stringifyOpts(V, &value, jws, pb_options, allocator);
             }
-        },
-    }
-}
-
-fn stringify_struct_field(
-    struct_field: anytype,
-    field_descriptor: protobuf.FieldDescriptor,
-    jws: anytype,
-) !void {
-    var value: switch (@typeInfo(@TypeOf(struct_field))) {
-        .optional => |optional| optional.child,
-        else => @TypeOf(struct_field),
-    } = undefined;
-
-    switch (@typeInfo(@TypeOf(struct_field))) {
-        .optional => {
-            if (struct_field) |v| {
-                value = v;
-            } else return;
-        },
-        else => {
-            value = struct_field;
-        },
-    }
-
-    switch (field_descriptor.ftype) {
-        .scalar => |scalar| switch (scalar) {
-            .bytes => try print_bytes(value, jws),
-            // `.string`s have their own jsonStringify implementation
-            .string => try jws.write(value),
-            else => try print_numeric(value, jws),
-        },
-        .@"enum" => try print_numeric(value, jws),
-        .repeated, .packed_repeated => |repeated| {
-            // ArrayListUnmanaged
-            const slice = value.items;
-            try jws.beginArray();
-            for (slice) |el| {
-                switch (repeated) {
-                    .scalar => |scalar| switch (scalar) {
-                        .bytes => try print_bytes(el, jws),
-                        .string => try jws.write(el),
-                        else => try print_numeric(el, jws),
-                    },
-                    .@"enum" => try print_numeric(el, jws),
-                    .submessage => try jws.write(el),
-                }
-            }
-            try jws.endArray();
-        },
-        .oneof => |oneof| {
-            // Tagged union type
-            const union_info = @typeInfo(@TypeOf(value)).@"union";
-            if (union_info.tag_type == null) {
-                @compileError("Untagged unions are not supported here");
-            }
-
-            try jws.beginObject();
-            inline for (union_info.field_names) |union_field_name| {
-                if (value == @field(
-                    union_info.tag_type.?,
-                    union_field_name,
-                )) {
-                    const union_camel_case_name = comptime to_camel_case(union_field_name);
-                    try jws.objectField(union_camel_case_name);
-                    switch (@field(oneof._desc_table, union_field_name).ftype) {
-                        .scalar => |scalar| switch (scalar) {
-                            .bytes => try print_bytes(@field(value, union_field_name), jws),
-                            .string => try jws.write(@field(value, union_field_name)),
-                            else => try print_numeric(@field(value, union_field_name), jws),
-                        },
-                        .@"enum" => try print_numeric(@field(value, union_field_name), jws),
-                        .submessage => try jws.write(@field(value, union_field_name)),
-                        .repeated, .packed_repeated => {
-                            @compileError("Repeated fields are not allowed in oneof");
-                        },
-                        .oneof => {
-                            @compileError("one oneof inside another? really?");
-                        },
-                    }
-                    break;
-                }
-            } else unreachable;
-
-            try jws.endObject();
-        },
-        .submessage => {
-            // `.submessage`s (generated structs) have their own jsonStringify implementation
-            try jws.write(value);
         },
     }
 }

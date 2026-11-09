@@ -189,10 +189,15 @@ pub fn Extension(
             return try allocator.dupe(u8, text[prefix.len .. text.len - 1]);
         }
 
-        fn fromJson(value_json: []const u8, allocator: std.mem.Allocator, parse_options: std.json.ParseOptions) anyerror![]const u8 {
+        fn fromJson(
+            value_json: []const u8,
+            allocator: std.mem.Allocator,
+            parse_options: std.json.ParseOptions,
+            decode_options: protobuf.DecodeOptions,
+        ) anyerror![]const u8 {
             const text = try std.mem.concat(allocator, u8, &.{ "{\"value\":", value_json, "}" });
             defer allocator.free(text);
-            const parsed = try std.json.parseFromSlice(Holder, allocator, text, parse_options);
+            const parsed = try json.decodeWithOptions(Holder, text, parse_options, decode_options, allocator);
             defer parsed.deinit();
             var w: std.Io.Writer.Allocating = .init(allocator);
             errdefer w.deinit();
@@ -229,8 +234,15 @@ pub const ExtensionRegistry = struct {
         /// Returns the JSON value of the extension, which must be set, or
         /// null when it has no value to write (an empty repeated extension).
         to_json: *const fn (records: []const u8, allocator: std.mem.Allocator, options: json.Options) anyerror!?[]const u8,
-        /// Returns the wire records of the extension from its JSON value.
-        from_json: *const fn (value_json: []const u8, allocator: std.mem.Allocator, options: std.json.ParseOptions) anyerror![]const u8,
+        /// Returns the wire records of the extension from its JSON value,
+        /// decoded with `decode_options`: the extensions of the enclosing
+        /// decode and what remains of its recursion limit.
+        from_json: *const fn (
+            value_json: []const u8,
+            allocator: std.mem.Allocator,
+            options: std.json.ParseOptions,
+            decode_options: protobuf.DecodeOptions,
+        ) anyerror![]const u8,
 
         fn lessThan(_: void, a: Entry, b: Entry) bool {
             return switch (std.mem.order(u8, a.extendee, b.extendee)) {

@@ -718,3 +718,37 @@ test "malformed input: repeated submessages merge in linear time" {
         }
     }
 }
+
+test "malformed input: std.json.parseFromSlice bounds JSON nesting by itself" {
+    // Without `decodeWithOptions`, the parse hooks start a decode state of
+    // their own, with the default limit.
+    const gpa = testing.allocator;
+    const limit = protobuf.wire.default_recursion_limit;
+
+    const Node = selfref.SelfRefNode;
+    const ok = try nestedJson(gpa, limit, "{\"node\":", "{}", "}");
+    defer gpa.free(ok);
+    const parsed = try std.json.parseFromSlice(Node, gpa, ok, .{});
+    parsed.deinit();
+    const too_deep = try nestedJson(gpa, limit + 1, "{\"node\":", "{}", "}");
+    defer gpa.free(too_deep);
+    try testing.expectError(error.SyntaxError, std.json.parseFromSlice(Node, gpa, too_deep, .{}));
+
+    const Value = protobuf.wkt.Value;
+    const values_ok = try nestedJson(gpa, limit - 1, "[", "1", "]");
+    defer gpa.free(values_ok);
+    const parsed_value = try std.json.parseFromSlice(Value, gpa, values_ok, .{});
+    parsed_value.deinit();
+    const values_too_deep = try nestedJson(gpa, limit, "[", "1", "]");
+    defer gpa.free(values_too_deep);
+    try testing.expectError(error.SyntaxError, std.json.parseFromSlice(Value, gpa, values_too_deep, .{}));
+
+    const Struct = protobuf.wkt.Struct;
+    const struct_ok = try nestedJson(gpa, limit, "{\"a\":", "1", "}");
+    defer gpa.free(struct_ok);
+    const parsed_struct = try std.json.parseFromSlice(Struct, gpa, struct_ok, .{});
+    parsed_struct.deinit();
+    const struct_too_deep = try nestedJson(gpa, limit + 1, "{\"a\":", "1", "}");
+    defer gpa.free(struct_too_deep);
+    try testing.expectError(error.SyntaxError, std.json.parseFromSlice(Struct, gpa, struct_too_deep, .{}));
+}
