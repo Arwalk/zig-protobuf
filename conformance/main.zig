@@ -82,10 +82,10 @@ fn jsonBytesToValue(alloc: std.mem.Allocator, json: []const u8) !std.json.Value 
 }
 
 // Parse the JSON for a WKT: extract the "value" field and decode the WKT from its JSON.
-fn parseWktFromValue(comptime T: type, obj: std.json.ObjectMap, alloc: std.mem.Allocator) ![]const u8 {
+fn parseWktFromValue(comptime T: type, obj: std.json.ObjectMap, alloc: std.mem.Allocator, options: protobuf.DecodeOptions) ![]const u8 {
     const val = obj.get("value") orelse return error.MissingField;
     const val_json = try jsonValueToBytes(alloc, val);
-    const parsed = try T.jsonDecode(val_json, .{}, alloc);
+    const parsed = try protobuf.json.decodeWithOptions(T, val_json, .{}, options, alloc);
     defer parsed.deinit();
     return try encodeToBytes(alloc, parsed.value);
 }
@@ -102,7 +102,7 @@ fn wkt_jsonEncode(msg: anytype, alloc: std.mem.Allocator) ![]const u8 {
 }
 
 // AnyJsonResolver.from_json: JSON object → binary protobuf bytes.
-fn anyFromJson(type_url: []const u8, obj: std.json.ObjectMap, alloc: std.mem.Allocator) anyerror![]const u8 {
+fn anyFromJson(type_url: []const u8, obj: std.json.ObjectMap, alloc: std.mem.Allocator, options: protobuf.DecodeOptions) anyerror![]const u8 {
     const name = typeUrlName(type_url);
 
     inline for (any_message_types) |entry| if (std.mem.eql(u8, name, entry[0])) {
@@ -118,47 +118,47 @@ fn anyFromJson(type_url: []const u8, obj: std.json.ObjectMap, alloc: std.mem.All
         }
         try s.endObject();
         const json_str = writer.written();
-        const parsed = try entry[1].jsonDecode(json_str, .{}, alloc);
+        const parsed = try protobuf.json.decodeWithOptions(entry[1], json_str, .{}, options, alloc);
         defer parsed.deinit();
         return try encodeToBytes(alloc, parsed.value);
     };
 
     if (std.mem.eql(u8, name, "google.protobuf.Duration"))
-        return parseWktFromValue(wkt.Duration, obj, alloc);
+        return parseWktFromValue(wkt.Duration, obj, alloc, options);
     if (std.mem.eql(u8, name, "google.protobuf.Timestamp"))
-        return parseWktFromValue(wkt.Timestamp, obj, alloc);
+        return parseWktFromValue(wkt.Timestamp, obj, alloc, options);
     if (std.mem.eql(u8, name, "google.protobuf.FieldMask"))
-        return parseWktFromValue(wkt.FieldMask, obj, alloc);
+        return parseWktFromValue(wkt.FieldMask, obj, alloc, options);
     if (std.mem.eql(u8, name, "google.protobuf.Int32Value"))
-        return parseWktFromValue(wkt.Int32Value, obj, alloc);
+        return parseWktFromValue(wkt.Int32Value, obj, alloc, options);
     if (std.mem.eql(u8, name, "google.protobuf.Int64Value"))
-        return parseWktFromValue(wkt.Int64Value, obj, alloc);
+        return parseWktFromValue(wkt.Int64Value, obj, alloc, options);
     if (std.mem.eql(u8, name, "google.protobuf.UInt32Value"))
-        return parseWktFromValue(wkt.UInt32Value, obj, alloc);
+        return parseWktFromValue(wkt.UInt32Value, obj, alloc, options);
     if (std.mem.eql(u8, name, "google.protobuf.UInt64Value"))
-        return parseWktFromValue(wkt.UInt64Value, obj, alloc);
+        return parseWktFromValue(wkt.UInt64Value, obj, alloc, options);
     if (std.mem.eql(u8, name, "google.protobuf.FloatValue"))
-        return parseWktFromValue(wkt.FloatValue, obj, alloc);
+        return parseWktFromValue(wkt.FloatValue, obj, alloc, options);
     if (std.mem.eql(u8, name, "google.protobuf.DoubleValue"))
-        return parseWktFromValue(wkt.DoubleValue, obj, alloc);
+        return parseWktFromValue(wkt.DoubleValue, obj, alloc, options);
     if (std.mem.eql(u8, name, "google.protobuf.BoolValue"))
-        return parseWktFromValue(wkt.BoolValue, obj, alloc);
+        return parseWktFromValue(wkt.BoolValue, obj, alloc, options);
     if (std.mem.eql(u8, name, "google.protobuf.StringValue"))
-        return parseWktFromValue(wkt.StringValue, obj, alloc);
+        return parseWktFromValue(wkt.StringValue, obj, alloc, options);
     if (std.mem.eql(u8, name, "google.protobuf.BytesValue"))
-        return parseWktFromValue(wkt.BytesValue, obj, alloc);
+        return parseWktFromValue(wkt.BytesValue, obj, alloc, options);
     if (std.mem.eql(u8, name, "google.protobuf.Struct"))
-        return parseWktFromValue(wkt.Struct, obj, alloc);
+        return parseWktFromValue(wkt.Struct, obj, alloc, options);
     if (std.mem.eql(u8, name, "google.protobuf.Value"))
-        return parseWktFromValue(wkt.Value, obj, alloc);
+        return parseWktFromValue(wkt.Value, obj, alloc, options);
     if (std.mem.eql(u8, name, "google.protobuf.ListValue"))
-        return parseWktFromValue(wkt.ListValue, obj, alloc);
+        return parseWktFromValue(wkt.ListValue, obj, alloc, options);
 
     if (std.mem.eql(u8, name, "google.protobuf.Any")) {
         // value field holds the nested Any JSON object.
         const val = obj.get("value") orelse return error.MissingField;
         const val_json = try jsonValueToBytes(alloc, val);
-        const parsed = try wkt.Any.jsonDecode(val_json, .{}, alloc);
+        const parsed = try protobuf.json.decodeWithOptions(wkt.Any, val_json, .{}, options, alloc);
         defer parsed.deinit();
         return try encodeToBytes(alloc, parsed.value);
     }

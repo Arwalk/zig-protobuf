@@ -18,13 +18,14 @@ pub const AnyJsonOutput = union(enum) {
 pub const AnyJsonResolver = struct {
     // Converts a JSON object to binary protobuf bytes.
     // obj includes all fields (including "@type").
-    from_json: *const fn (type_url: []const u8, obj: std.json.ObjectMap, alloc: std.mem.Allocator) anyerror![]const u8,
+    // `options` holds the extensions of the enclosing decode and what remains
+    // of its recursion limit: pass them on to `protobuf.json.decodeWithOptions`
+    // so that nested payloads stay bounded.
+    from_json: *const fn (type_url: []const u8, obj: std.json.ObjectMap, alloc: std.mem.Allocator, options: protobuf.DecodeOptions) anyerror![]const u8,
     // Converts binary protobuf bytes to a JSON value representation.
     to_json: *const fn (type_url: []const u8, bytes: []const u8, alloc: std.mem.Allocator) anyerror!AnyJsonOutput,
 };
 pub var any_json_resolver: ?AnyJsonResolver = null;
-// Thread-local allocator used by Any.jsonStringify (set by json.encode).
-pub threadlocal var tl_any_alloc: ?std.mem.Allocator = null;
 
 pub const Any = struct {
     type_url: []const u8 = &.{},
@@ -54,6 +55,9 @@ pub const Any = struct {
         return protobuf.json.encode(self, options, pb_options, allocator);
     }
 
+    /// Writes an empty `Any` as `{}`. Writing its payload needs an allocator:
+    /// `protobuf.json.encode` uses `jsonStringifyAlloc`, while here, without
+    /// one, an `Any` with a `type_url` fails with `error.WriteFailed`.
     pub fn jsonStringify(self: @This(), jws: anytype) @TypeOf(jws.*).Error!void {
         if (self.type_url.len == 0) {
             // Empty Any: emit as empty object {}.
@@ -61,7 +65,13 @@ pub const Any = struct {
             try jws.endObject();
             return;
         }
-        const alloc = tl_any_alloc orelse return error.WriteFailed;
+        return error.WriteFailed;
+    }
+
+    /// Writes the `Any` as JSON, its payload converted by `any_json_resolver`
+    /// with `alloc`.
+    pub fn jsonStringifyAlloc(self: @This(), jws: anytype, alloc: std.mem.Allocator) @TypeOf(jws.*).Error!void {
+        if (self.type_url.len == 0) return self.jsonStringify(jws);
         const resolver = any_json_resolver orelse return error.WriteFailed;
         const output = resolver.to_json(self.type_url, self.value, alloc) catch return error.WriteFailed;
         try jws.beginObject();
@@ -84,6 +94,14 @@ pub const Any = struct {
     }
 
     pub fn jsonParse(allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
+        if (comptime !protobuf.json.isContextSource(@TypeOf(source.*))) {
+            var state: protobuf.json.ParseState = .{};
+            var wrapped: protobuf.json.ContextSource(@TypeOf(source.*)) = .{ .inner = source, .state = &state };
+            return jsonParse(allocator, &wrapped, options);
+        }
+        // The payload is one level below the message holding the `Any`, as
+        // in the binary format.
+        const decode_options = try source.state.nestedOptions(1);
         const parsed = try std.json.innerParse(std.json.Value, allocator, source, options);
         const obj = switch (parsed) {
             .object => |o| o,
@@ -100,7 +118,7 @@ pub const Any = struct {
         const slash_idx = std.mem.lastIndexOfScalar(u8, type_url, '/') orelse return error.UnexpectedToken;
         if (slash_idx + 1 >= type_url.len) return error.UnexpectedToken;
         const resolver = any_json_resolver orelse return error.UnexpectedToken;
-        const bytes = resolver.from_json(type_url, obj, allocator) catch return error.UnexpectedToken;
+        const bytes = resolver.from_json(type_url, obj, allocator, decode_options) catch return error.UnexpectedToken;
         return @This(){
             .type_url = try allocator.dupe(u8, type_url),
             .value = bytes,
@@ -431,6 +449,11 @@ pub const Struct = struct {
     }
 
     pub fn jsonParse(allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
+        if (comptime !protobuf.json.isContextSource(@TypeOf(source.*))) {
+            var state: protobuf.json.ParseState = .{};
+            var wrapped: protobuf.json.ContextSource(@TypeOf(source.*)) = .{ .inner = source, .state = &state };
+            return jsonParse(allocator, &wrapped, options);
+        }
         if ((try source.peekNextTokenType()) != .object_begin) return error.UnexpectedToken;
         _ = try source.next();
         var result: @This() = .{};
@@ -462,10 +485,6 @@ pub const Struct = struct {
 };
 
 // ─── google.protobuf.Value ──────────────────────────────────────────────────
-
-/// Nesting of the `Value` being parsed from JSON. `jsonParse` cannot carry
-/// extra state, so it is tracked per thread.
-threadlocal var value_parse_depth: u32 = 0;
 
 pub const Value = struct {
     kind: ?kind_union = null,
@@ -516,9 +535,15 @@ pub const Value = struct {
         // the recursion limit (`DecodeOptions.recursion_limit`, 100 by
         // default, as in the reference implementation) is rejected, like
         // other implementations do, to bound the recursion.
-        if (value_parse_depth >= protobuf.json.recursionLimit()) return error.SyntaxError;
-        value_parse_depth += 1;
-        defer value_parse_depth -= 1;
+        if (comptime !protobuf.json.isContextSource(@TypeOf(source.*))) {
+            var state: protobuf.json.ParseState = .{};
+            var wrapped: protobuf.json.ContextSource(@TypeOf(source.*)) = .{ .inner = source, .state = &state };
+            return jsonParse(allocator, &wrapped, options);
+        }
+        const state = source.state;
+        if (state.value_depth >= state.recursion_limit) return error.SyntaxError;
+        state.value_depth += 1;
+        defer state.value_depth -= 1;
 
         switch (try source.peekNextTokenType()) {
             .null => {
@@ -614,6 +639,11 @@ pub const ListValue = struct {
     }
 
     pub fn jsonParse(allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
+        if (comptime !protobuf.json.isContextSource(@TypeOf(source.*))) {
+            var state: protobuf.json.ParseState = .{};
+            var wrapped: protobuf.json.ContextSource(@TypeOf(source.*)) = .{ .inner = source, .state = &state };
+            return jsonParse(allocator, &wrapped, options);
+        }
         if ((try source.peekNextTokenType()) != .array_begin) return error.UnexpectedToken;
         _ = try source.next();
         var result: @This() = .{};

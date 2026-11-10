@@ -2346,3 +2346,109 @@ test "JSON: map dedup no duplicates preserves all entries" {
     try expect(map.object.get("2").?.integer == 20);
     try expect(map.object.get("3").?.integer == 30);
 }
+
+// =============================================================================
+// google.protobuf.Any through a resolver
+// =============================================================================
+
+const AnyPayload = proto3.TestAllTypesProto3;
+const any_payload_url = "type.googleapis.com/protobuf_test_messages.proto3.TestAllTypesProto3";
+
+/// Options last given to `anyPayloadFromJson`.
+var any_payload_options: ?protobuf.DecodeOptions = null;
+
+fn anyPayloadFromJson(type_url: []const u8, obj: json.ObjectMap, alloc: Allocator, options: protobuf.DecodeOptions) anyerror![]const u8 {
+    if (!std.mem.eql(u8, type_url, any_payload_url)) return error.UnknownType;
+    any_payload_options = options;
+    var out: std.Io.Writer.Allocating = .init(alloc);
+    defer out.deinit();
+    var jws: json.Stringify = .{ .writer = &out.writer, .options = .{} };
+    try jws.beginObject();
+    var it = obj.iterator();
+    while (it.next()) |field| {
+        if (std.mem.eql(u8, field.key_ptr.*, "@type")) continue;
+        try jws.objectField(field.key_ptr.*);
+        try jws.write(field.value_ptr.*);
+    }
+    try jws.endObject();
+    const text = out.written();
+    const parsed = try protobuf.json.decodeWithOptions(AnyPayload, text, .{}, options, alloc);
+    defer parsed.deinit();
+    var w: std.Io.Writer.Allocating = .init(alloc);
+    errdefer w.deinit();
+    try protobuf.encode(&w.writer, alloc, parsed.value);
+    return w.toOwnedSlice();
+}
+
+/// `alloc` is expected to be an arena: the output is not freed.
+fn anyPayloadToJson(type_url: []const u8, bytes: []const u8, alloc: Allocator) anyerror!protobuf.wkt.AnyJsonOutput {
+    if (!std.mem.eql(u8, type_url, any_payload_url)) return error.UnknownType;
+    var reader: std.Io.Reader = .fixed(bytes);
+    var msg = try AnyPayload.decode(&reader, alloc);
+    defer msg.deinit(alloc);
+    const text = try msg.jsonEncode(.{}, .{}, alloc);
+    const value = try json.parseFromSliceLeaky(json.Value, alloc, text, .{});
+    return .{ .message = value.object };
+}
+
+fn encodedPayload(alloc: Allocator, payload: AnyPayload) !protobuf.wkt.Any {
+    var w: std.Io.Writer.Allocating = .init(alloc);
+    try protobuf.encode(&w.writer, alloc, payload);
+    return .{ .type_url = any_payload_url, .value = try w.toOwnedSlice() };
+}
+
+test "JSON: Any is encoded through the resolver at any depth" {
+    const previous = protobuf.wkt.any_json_resolver;
+    defer protobuf.wkt.any_json_resolver = previous;
+    protobuf.wkt.any_json_resolver = .{ .from_json = &anyPayloadFromJson, .to_json = &anyPayloadToJson };
+
+    var arena: std.heap.ArenaAllocator = .init(allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    const any = try encodedPayload(a, .{ .optional_int32 = 7 });
+    var inner: AnyPayload = .{ .optional_any = any };
+    try inner.repeated_any.append(a, any);
+    const outer: AnyPayload = .{ .recursive_message = &inner, .optional_any = any };
+
+    const encoded = try outer.jsonEncode(.{}, .{}, a);
+    const any_json = "{\"@type\":\"" ++ any_payload_url ++ "\",\"optionalInt32\":7}";
+    try std.testing.expectEqualStrings(
+        "{\"recursiveMessage\":{\"optionalAny\":" ++ any_json ++ ",\"repeatedAny\":[" ++ any_json ++
+            "]},\"optionalAny\":" ++ any_json ++ "}",
+        encoded,
+    );
+
+    // Without `json.encode`, there is no allocator for the payload.
+    var buffer: [256]u8 = undefined;
+    var writer: std.Io.Writer = .fixed(&buffer);
+    try std.testing.expectError(error.WriteFailed, json.Stringify.value(any, .{}, &writer));
+}
+
+test "JSON: the Any resolver gets the extensions and the remaining recursion limit" {
+    const previous = protobuf.wkt.any_json_resolver;
+    defer protobuf.wkt.any_json_resolver = previous;
+    protobuf.wkt.any_json_resolver = .{ .from_json = &anyPayloadFromJson, .to_json = &anyPayloadToJson };
+    defer any_payload_options = null;
+
+    const registry: protobuf.ExtensionRegistry = .{ .entries = &.{} };
+    const any_json = "{\"@type\":\"" ++ any_payload_url ++ "\",\"optionalInt32\":7}";
+
+    // The Any is one level below its message, as in the binary format.
+    const top = try protobuf.json.decodeWithOptions(AnyPayload, "{\"optionalAny\":" ++ any_json ++ "}", .{}, .{ .extensions = &registry, .recursion_limit = 10 }, allocator);
+    defer top.deinit();
+    var payload_reader: std.Io.Reader = .fixed(top.value.optional_any.?.value);
+    var payload = try AnyPayload.decode(&payload_reader, allocator);
+    defer payload.deinit(allocator);
+    try std.testing.expectEqual(@as(i32, 7), payload.optional_int32);
+    try std.testing.expectEqual(@as(u32, 8), any_payload_options.?.recursion_limit);
+    try std.testing.expectEqual(@as(?*const protobuf.ExtensionRegistry, &registry), any_payload_options.?.extensions);
+
+    const nested = try protobuf.json.decodeWithOptions(AnyPayload, "{\"recursiveMessage\":{\"optionalAny\":" ++ any_json ++ "}}", .{}, .{ .recursion_limit = 10 }, allocator);
+    defer nested.deinit();
+    try std.testing.expectEqual(@as(u32, 7), any_payload_options.?.recursion_limit);
+    try std.testing.expectEqual(@as(?*const protobuf.ExtensionRegistry, null), any_payload_options.?.extensions);
+
+    // No level left for the payload.
+    try std.testing.expectError(error.SyntaxError, protobuf.json.decodeWithOptions(AnyPayload, "{\"optionalAny\":" ++ any_json ++ "}", .{}, .{ .recursion_limit = 1 }, allocator));
+}
