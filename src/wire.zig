@@ -872,13 +872,10 @@ pub fn decodeMessage(
                         } else if (comptime Field == ?[]const u8) {
                             if (@field(result, field_name)) |existing| {
                                 if (existing.len > 0) {
-                                    if (comptime field_info.attrs.defaultValue(Field)) |opt| {
-                                        if (comptime opt != null) {
-                                            if (opt.?.ptr != existing.ptr) {
-                                                allocator.free(existing);
-                                            }
-                                        }
-                                    } else {
+                                    // The declared default, when there is a
+                                    // non-null one, is static memory.
+                                    const default: ?[]const u8 = comptime if (field_info.attrs.defaultValue(Field)) |opt| opt else null;
+                                    if (default == null or default.?.ptr != existing.ptr) {
                                         allocator.free(existing);
                                     }
                                 }
