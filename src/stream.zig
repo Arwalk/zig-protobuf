@@ -694,3 +694,38 @@ test "stream: unknown fields are skipped" {
     // Fields 2 (string) and 3 (uint32) are unknown and skipped.
     try testing.expectEqual(@as(?StreamDecoder(OnlyBefore).Event, null), try sd.next());
 }
+
+const MixedRepeated = struct {
+    names: std.ArrayList([]const u8) = .empty,
+    blobs: std.ArrayList([]const u8) = .empty,
+    numbers: std.ArrayList(u32) = .empty,
+
+    pub const _desc_table = .{
+        .names = fd(1, .{ .repeated = .{ .scalar = .string } }),
+        .blobs = fd(2, .{ .repeated = .{ .scalar = .bytes } }),
+        .numbers = fd(3, .{ .packed_repeated = .{ .scalar = .uint32 } }),
+    };
+};
+
+test "stream: repeated string and bytes fields next to a packed field" {
+    // names = "hi", "yo"; blobs = {1, 2}; numbers = packed [1, 300].
+    const bytes = "\x0a\x02hi\x0a\x02yo\x12\x02\x01\x02\x1a\x03\x01\xac\x02";
+    var reader: std.Io.Reader = .fixed(bytes);
+    var sd = StreamDecoder(MixedRepeated).init(&reader);
+
+    var text: std.ArrayList(u8) = .empty;
+    defer text.deinit(testing.allocator);
+    var numbers: std.ArrayList(u32) = .empty;
+    defer numbers.deinit(testing.allocator);
+    var buf: [8]u8 = undefined;
+    while (try sd.next()) |item| switch (item) {
+        .names, .blobs => |limited| {
+            const n = try limited.readSliceShort(&buf);
+            try text.appendSlice(testing.allocator, buf[0..n]);
+            try text.append(testing.allocator, '|');
+        },
+        .numbers => |v| try numbers.append(testing.allocator, v),
+    };
+    try testing.expectEqualStrings("hi|yo|\x01\x02|", text.items);
+    try testing.expectEqualSlices(u32, &.{ 1, 300 }, numbers.items);
+}
