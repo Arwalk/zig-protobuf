@@ -1152,7 +1152,7 @@ pub fn deinitField(
                 },
                 .@"struct" => {
                     // If arraylist, also free items inside.
-                    if (comptime @hasField(o.child, "items") and @hasField(o.child, "capacity")) {
+                    if (comptime desc.ftype == .repeated or desc.ftype == .packed_repeated) {
                         const ListItem = @typeInfo(@FieldType(o.child, "items")).pointer.child;
                         switch (comptime @typeInfo(ListItem)) {
                             .pointer => {
@@ -1166,6 +1166,7 @@ pub fn deinitField(
                                     item.deinit(allocator);
                                 }
                             },
+                            .bool, .@"enum", .float, .int => {},
                             else => unreachable,
                         }
                     }
@@ -1185,7 +1186,7 @@ pub fn deinitField(
         // Maps, `oneof` submessages, and `ArrayListUnmanaged`s
         .@"struct" => {
             // If arraylist, also free items inside.
-            if (comptime @hasField(Field, "items") and @hasField(Field, "capacity")) {
+            if (comptime desc.ftype == .repeated or desc.ftype == .packed_repeated) {
                 const ListItem = @typeInfo(@FieldType(Field, "items")).pointer.child;
                 switch (comptime @typeInfo(ListItem)) {
                     .pointer => {
