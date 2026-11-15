@@ -261,7 +261,14 @@ pub fn StreamDecoder(comptime T: type) type {
                 const field_desc: protobuf.FieldDescriptor = comptime @field(desc_table, sf_name);
                 switch (comptime field_desc.ftype) {
                     .repeated, .packed_repeated => |rep| {
-                        if (comptime field_desc.field_number != null) {
+                        // Only numbers and enums can be packed: a run is never
+                        // started for strings, bytes or submessages.
+                        const packable = comptime switch (rep) {
+                            .scalar => |s| !s.isSlice(),
+                            .@"enum" => true,
+                            .submessage => false,
+                        };
+                        if (comptime packable and field_desc.field_number != null) {
                             if (field_desc.field_number.? == fnum) {
                                 return try self.decodePackedOne(sf_name, rep, @FieldType(T, sf_name));
                             }
