@@ -6,6 +6,7 @@ const tests = @import("./generated/tests.pb.zig");
 const proto3 = @import("./generated/protobuf_test_messages/proto3.pb.zig");
 const longs = @import("./generated/tests/longs.pb.zig");
 const unittest = @import("./generated/unittest.pb.zig");
+const merge = @import("./generated/tests/merge.pb.zig");
 const editions = @import("./generated/tests/editions.pb.zig");
 const longName = @import("./generated/some/really/long/name/which/does/not/really/make/any/sense/but/sometimes/we/still/see/stuff/like/this.pb.zig");
 
@@ -143,4 +144,55 @@ test "leak: a submessage with fields named items and capacity is not taken for a
     try testing.expectEqual(3, decoded.stock.?.capacity);
     try testing.expectEqual(2, decoded.shelf.?.items.items.len);
     try testing.expectEqualStrings("b", decoded.shelf.?.items.items[1]);
+}
+
+/// A `unittest.TestAllTypes` with one field of each kind that owns memory:
+/// optional string (14) and bytes (15), repeated string (44) twice, repeated
+/// nested message (48) twice, and the oneof string (113).
+const all_types_bytes = "\x72\x05hello" ++ "\x7a\x03\x01\x02\x03" ++
+    "\xe2\x02\x03one" ++ "\xe2\x02\x03two" ++
+    "\x82\x03\x02\x08\x01" ++ "\x82\x03\x02\x08\x02" ++
+    "\x8a\x07\x05oneof";
+
+/// A `merge.Node` (generated with preserve_unknown_fields) with a child
+/// pointer (1) holding an unknown field (50) and an extension (100), two
+/// items (5), a leaf (7) holding an extension (100), and the oneof pointer
+/// member (2) holding an unknown field (50).
+const node_bytes = "\x0a\x06\x90\x03\x01\xa0\x06\x02" ++
+    "\x2a\x02\x30\x01" ++ "\x2a\x02\x30\x02" ++
+    "\x3a\x03\xa0\x06\x03" ++
+    "\x12\x03\x90\x03\x04";
+
+/// Functions for `std.testing.checkAllAllocationFailures`, which does not
+/// take a generic function.
+fn AllocationChecks(comptime T: type) type {
+    return struct {
+        fn dupeOnce(allocator: std.mem.Allocator, original: *const T) !void {
+            var copy = try original.dupe(allocator);
+            copy.deinit(allocator);
+        }
+
+        fn decodeOnce(allocator: std.mem.Allocator, bytes: []const u8) !void {
+            var reader: std.Io.Reader = .fixed(bytes);
+            var decoded = try T.decode(&reader, allocator);
+            decoded.deinit(allocator);
+        }
+    };
+}
+
+test "allocation failure: dupe frees its partial copies" {
+    inline for (.{ .{ unittest.TestAllTypes, all_types_bytes }, .{ merge.Node, node_bytes } }) |case| {
+        const T, const bytes = case;
+        var reader: std.Io.Reader = .fixed(bytes);
+        var original = try T.decode(&reader, testing.allocator);
+        defer original.deinit(testing.allocator);
+        try testing.checkAllAllocationFailures(testing.allocator, AllocationChecks(T).dupeOnce, .{&original});
+    }
+}
+
+test "allocation failure: decode frees what it decoded" {
+    inline for (.{ .{ unittest.TestAllTypes, all_types_bytes }, .{ merge.Node, node_bytes } }) |case| {
+        const T, const bytes = case;
+        try testing.checkAllAllocationFailures(testing.allocator, AllocationChecks(T).decodeOnce, .{@as([]const u8, bytes)});
+    }
 }
