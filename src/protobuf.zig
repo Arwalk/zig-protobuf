@@ -790,7 +790,11 @@ pub fn init(comptime T: type, allocator: std.mem.Allocator) std.mem.Allocator.Er
 pub fn dupe(comptime T: type, original: T, allocator: std.mem.Allocator) std.mem.Allocator.Error!T {
     @setEvalBranchQuota(comptime evalBranchQuotaFor(T));
 
+    // Start from an empty message, so that the copies made so far can be
+    // released with `deinit` when a later one fails.
     var result: T = undefined;
+    internal_init(T, &result);
+    errdefer deinit(allocator, &result);
 
     const struct_info = @typeInfo(T).@"struct";
     inline for (struct_info.field_names) |field_name| {
