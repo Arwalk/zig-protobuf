@@ -167,3 +167,22 @@ test "stream: oneof cases flatten into top-level events (scalar + enum)" {
         try testing.expectEqual(@as(i32, 7), inner_value);
     }
 }
+
+test "stream: WithRepeatedStrings emits one reader per element" {
+    var src: tests.WithRepeatedStrings = .{};
+    defer src.name.deinit(testing.allocator);
+    try src.name.appendSlice(testing.allocator, &.{ "alpha", "beta" });
+
+    const bytes = try encodeToOwned(src, testing.allocator);
+    defer testing.allocator.free(bytes);
+
+    var reader: std.Io.Reader = .fixed(bytes);
+    var sd = tests.WithRepeatedStrings.StreamDecoder.init(&reader);
+
+    var buf: [16]u8 = undefined;
+    var n = try (try sd.next()).?.name.readSliceShort(&buf);
+    try testing.expectEqualStrings("alpha", buf[0..n]);
+    n = try (try sd.next()).?.name.readSliceShort(&buf);
+    try testing.expectEqualStrings("beta", buf[0..n]);
+    try testing.expectEqual(@as(?tests.WithRepeatedStrings.StreamDecoder.Event, null), try sd.next());
+}
