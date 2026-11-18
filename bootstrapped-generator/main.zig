@@ -80,7 +80,7 @@ const GenerationContext = struct {
                 try lines.append(allocator, try std.fmt.allocPrint(
                     allocator,
                     "/// {s}\n",
-                    .{line},
+                    .{try sanitizeCommentLine(allocator, line)},
                 ));
             }
         }
@@ -395,7 +395,7 @@ const GenerationContext = struct {
                         "{s} {!s} = @import(\"{!s}\");\n",
                         .{
                             optional_pub_directive,
-                            escapeFqn(allocator, package.key_ptr.*),
+                            importAlias(allocator, package.key_ptr.*),
                             resolvePath(io, allocator, name.buf, package.key_ptr.*),
                         },
                     ));
@@ -533,7 +533,7 @@ const GenerationContext = struct {
 
             try lines.append(
                 allocator,
-                try std.fmt.allocPrint(allocator, "pub const {s} = enum(i32) {{\n", .{e.name.?}),
+                try std.fmt.allocPrint(allocator, "pub const {f} = enum(i32) {{\n", .{std.zig.fmtId(e.name.?)}),
             );
 
             for (e.value.items, 0..) |elem, elem_i| {
@@ -543,7 +543,7 @@ const GenerationContext = struct {
 
                 try lines.append(
                     allocator,
-                    try std.fmt.allocPrint(allocator, "   {s} = {},\n", .{ elem.name.?, elem.number orelse 0 }),
+                    try std.fmt.allocPrint(allocator, "   {f} = {},\n", .{ std.zig.fmtIdP(elem.name.?), elem.number orelse 0 }),
                 );
             }
 
@@ -613,10 +613,10 @@ const GenerationContext = struct {
                         fullTypeName.buf,
                         file.package.?,
                     ).?;
-                    return fullTypeName.buf[diff_idx + 1 ..];
+                    return try escapePath(allocator, fullTypeName.buf[diff_idx + 1 ..]);
                 }
                 if (parent.eql(FullName{ .buf = file.package.? })) {
-                    return fullTypeName.name().buf;
+                    return try escapePath(allocator, fullTypeName.name().buf);
                 }
             }
 
@@ -632,13 +632,13 @@ const GenerationContext = struct {
                     // it is in current package, return full name
                     if (filePackage.eql(parent.?)) {
                         const name = fullTypeName.buf[parent.?.buf.len + 1 ..];
-                        return name;
+                        return try escapePath(allocator, name);
                     }
 
                     // it is in different package. return fully qualified name including accessor
                     if (value.eql(parent.?)) {
-                        const prop = try escapeFqn(allocator, parent.?.buf);
-                        const name = fullTypeName.buf[prop.len + 1 ..];
+                        const prop = try importAlias(allocator, parent.?.buf);
+                        const name = try escapePath(allocator, fullTypeName.buf[parent.?.buf.len + 1 ..]);
                         return try std.fmt.allocPrint(allocator, "{s}.{s}", .{ prop, name });
                     }
                 }
@@ -1019,6 +1019,11 @@ const GenerationContext = struct {
                 }
             };
 
+            if (self.reservedMember(m)) |reserved| {
+                try self.reportMemberClash(allocator, messageFqn, reserved);
+                continue;
+            }
+
             // Build the path for this message: root_path + [message_field_number, message_i]
             var message_path: std.ArrayList(i32) = .empty;
             defer message_path.deinit(allocator);
@@ -1042,7 +1047,7 @@ const GenerationContext = struct {
 
             try lines.append(
                 allocator,
-                try std.fmt.allocPrint(allocator, "pub const {s} = struct {{\n", .{m.name.?}),
+                try std.fmt.allocPrint(allocator, "pub const {f} = struct {{\n", .{std.zig.fmtId(m.name.?)}),
             );
 
             // Oneof declarations of nested messages are referenced through
@@ -1051,7 +1056,7 @@ const GenerationContext = struct {
             const union_scope: []const u8 = if (parent == null) "" else try std.mem.concat(
                 allocator,
                 u8,
-                &.{ messageFqn.buf[file.package.?.len + 1 ..], "." },
+                &.{ try escapePath(allocator, messageFqn.buf[file.package.?.len + 1 ..]), "." },
             );
 
             // append all fields that are not part of a oneof
@@ -1077,10 +1082,14 @@ const GenerationContext = struct {
                 }
             }
             if (m.extension_range.items.len > 0) {
+                for ([_][]const u8{ "_extensions", "_extensions_info" }) |name| {
+                    if (self.definesMember(m, name)) try self.reportMemberClash(allocator, messageFqn, name);
+                }
                 // Wire records of the extensions, see `protobuf.Extension`.
                 try lines.append(allocator, "    _extensions: protobuf.ExtensionSet = .empty,\n");
             }
             if (self.shouldPreserveUnknownFields(m)) {
+                if (self.definesMember(m, "_unknown_fields")) try self.reportMemberClash(allocator, messageFqn, "_unknown_fields");
                 try lines.append(allocator, "    _unknown_fields: []const u8 = &.{},\n");
             }
 
@@ -1090,6 +1099,13 @@ const GenerationContext = struct {
                 const union_element_count = self.amountOfElementsInOneofUnion(m, @as(i32, @intCast(i)));
                 if (union_element_count > 1) {
                     const oneof_name = oneof.name.?;
+
+                    for ([_][]const u8{
+                        try std.fmt.allocPrint(allocator, "{s}_union", .{oneof_name}),
+                        try std.fmt.allocPrint(allocator, "_{s}_case", .{oneof_name}),
+                    }) |name| {
+                        if (self.definesMember(m, name)) try self.reportMemberClash(allocator, messageFqn, name);
+                    }
 
                     try lines.append(allocator, try std.fmt.allocPrint(allocator,
                         \\
@@ -1182,7 +1198,7 @@ const GenerationContext = struct {
 
             try self.generateDefaults(allocator, lines, messageFqn, file, m, message_features);
             try self.generateExtensionsInfo(allocator, lines, file, m);
-            try self.generateMessageOptions(allocator, lines, file, m);
+            try self.generateMessageOptions(allocator, lines, file, messageFqn, m);
 
             // For nested enums, root_path is the message's path and field number is 4 (enum_type in DescriptorProto)
             try self.generateEnums(allocator, lines, messageFqn, file, m.enum_type, message_path.items, 4, message_features);
@@ -1636,7 +1652,7 @@ const GenerationContext = struct {
     }
 
     /// Emits `pub const <decl> = .{ .<name> = <options>, ... };` for the
-    /// elements of `items` that have options.
+    /// elements of `items` that have options. Returns whether it emitted it.
     fn generateOptionsTable(
         self: *GenerationContext,
         allocator: std.mem.Allocator,
@@ -1645,7 +1661,7 @@ const GenerationContext = struct {
         comptime decl: []const u8,
         comptime doc: []const u8,
         items: anytype,
-    ) !void {
+    ) !bool {
         var emitted = false;
         for (items) |item| {
             const encoded = try self.encodeOptions(allocator, file, item.options) orelse continue;
@@ -1660,6 +1676,7 @@ const GenerationContext = struct {
             ));
         }
         if (emitted) try lines.append(allocator, "    };\n");
+        return emitted;
     }
 
     /// Emits the options of a message, of its fields and of its oneofs.
@@ -1668,31 +1685,37 @@ const GenerationContext = struct {
         allocator: std.mem.Allocator,
         lines: *std.ArrayList([]const u8),
         file: descriptor.FileDescriptorProto,
+        fqn: FullName,
         message: descriptor.DescriptorProto,
     ) !void {
         if (try self.encodeOptions(allocator, file, message.options)) |encoded| {
+            if (self.definesMember(message, "_options")) try self.reportMemberClash(allocator, fqn, "_options");
             try lines.append(allocator, try std.fmt.allocPrint(
                 allocator,
                 "\n    /// Options of the message (`google.protobuf.MessageOptions`).\n    pub const _options = {s};\n",
                 .{encoded},
             ));
         }
-        try self.generateOptionsTable(
+        if (try self.generateOptionsTable(
             allocator,
             lines,
             file,
             "_field_options",
             "Options of the fields that have some (`google.protobuf.FieldOptions`).",
             message.field.items,
-        );
-        try self.generateOptionsTable(
+        )) {
+            if (self.definesMember(message, "_field_options")) try self.reportMemberClash(allocator, fqn, "_field_options");
+        }
+        if (try self.generateOptionsTable(
             allocator,
             lines,
             file,
             "_oneof_options",
             "Options of the oneofs that have some (`google.protobuf.OneofOptions`).",
             message.oneof_decl.items,
-        );
+        )) {
+            if (self.definesMember(message, "_oneof_options")) try self.reportMemberClash(allocator, fqn, "_oneof_options");
+        }
     }
 
     /// Emits the options of an enum and of its values.
@@ -1710,7 +1733,7 @@ const GenerationContext = struct {
                 .{encoded},
             ));
         }
-        try self.generateOptionsTable(
+        _ = try self.generateOptionsTable(
             allocator,
             lines,
             file,
@@ -1735,7 +1758,7 @@ const GenerationContext = struct {
                 .{encoded},
             ));
         }
-        try self.generateOptionsTable(
+        _ = try self.generateOptionsTable(
             allocator,
             lines,
             file,
@@ -1778,7 +1801,7 @@ const GenerationContext = struct {
             const value = try formatDefaultValue(allocator, f) orelse continue;
 
             if (!emitted) {
-                if (definesDefaultsMember(message)) {
+                if (self.definesMember(message, "defaults")) {
                     self.res.@"error" = try std.fmt.allocPrint(
                         allocator,
                         "ERROR {s} declares a member named \"defaults\", which conflicts with the generated `defaults` declaration\n",
@@ -1858,7 +1881,7 @@ const GenerationContext = struct {
             const reference = if (scope_fqn.buf.len == package.len)
                 try std.fmt.allocPrint(allocator, "{f}", .{std.zig.fmtId(ext.name.?)})
             else
-                try std.fmt.allocPrint(allocator, "{s}.{f}", .{ scope_fqn.buf[package.len + 1 ..], std.zig.fmtId(ext.name.?) });
+                try std.fmt.allocPrint(allocator, "{s}.{f}", .{ try escapePath(allocator, scope_fqn.buf[package.len + 1 ..]), std.zig.fmtId(ext.name.?) });
             const entry = try self.package_extensions.getOrPut(package);
             if (!entry.found_existing) entry.value_ptr.* = .empty;
             try entry.value_ptr.append(allocator, reference);
@@ -1940,15 +1963,46 @@ const GenerationContext = struct {
         );
     }
 
-    /// Whether a field, oneof, nested message or nested enum of `message` is
-    /// named `defaults`, as Zig forbids members sharing a name.
-    fn definesDefaultsMember(message: descriptor.DescriptorProto) bool {
-        for (message.field.items) |f| if (std.mem.eql(u8, f.name.?, "defaults")) return true;
-        for (message.oneof_decl.items) |o| if (std.mem.eql(u8, o.name.?, "defaults")) return true;
-        for (message.nested_type.items) |m| if (std.mem.eql(u8, m.name.?, "defaults")) return true;
-        for (message.enum_type.items) |e| if (std.mem.eql(u8, e.name.?, "defaults")) return true;
-        for (message.extension.items) |x| if (std.mem.eql(u8, x.name.?, "defaults")) return true;
+    /// Names of the declarations that every generated message has.
+    const reserved_message_members = [_][]const u8{
+        "encode",     "decode",     "StreamDecoder", "deinit",      "dupe",
+        "jsonDecode", "jsonEncode", "jsonParse",     "_desc_table",
+    };
+
+    /// The first generated declaration of `message` that one of its members
+    /// is named after, as Zig forbids members sharing a name.
+    fn reservedMember(self: *GenerationContext, message: descriptor.DescriptorProto) ?[]const u8 {
+        for (reserved_message_members) |reserved| {
+            if (self.definesMember(message, reserved)) return reserved;
+        }
+        return null;
+    }
+
+    /// Whether a field, an emitted oneof, a nested message, a nested enum or
+    /// an extension of `message` is named `name`.
+    fn definesMember(self: *GenerationContext, message: descriptor.DescriptorProto, name: []const u8) bool {
+        for (message.field.items) |f| if (std.mem.eql(u8, f.name.?, name)) return true;
+        for (message.oneof_decl.items, 0..) |o, i| {
+            // Oneofs of a single member, as the ones of proto3 `optional`
+            // fields, are not emitted.
+            if (self.amountOfElementsInOneofUnion(message, @intCast(i)) <= 1) continue;
+            if (std.mem.eql(u8, o.name.?, name)) return true;
+        }
+        for (message.nested_type.items) |m| if (std.mem.eql(u8, m.name.?, name)) return true;
+        for (message.enum_type.items) |e| if (std.mem.eql(u8, e.name.?, name)) return true;
+        for (message.extension.items) |x| if (std.mem.eql(u8, x.name.?, name)) return true;
         return false;
+    }
+
+    /// Reports that the message `fqn` has a member named like the generated
+    /// declaration `name`, unless an error is already reported.
+    fn reportMemberClash(self: *GenerationContext, allocator: std.mem.Allocator, fqn: FullName, name: []const u8) !void {
+        if (self.res.@"error" != null) return;
+        self.res.@"error" = try std.fmt.allocPrint(
+            allocator,
+            "ERROR {s} declares a member named \"{s}\", which conflicts with the generated `{s}` declaration\n",
+            .{ fqn.buf, name, name },
+        );
     }
 
     fn generateServices(
@@ -1983,8 +2037,8 @@ const GenerationContext = struct {
                 allocator,
                 try std.fmt.allocPrint(
                     allocator,
-                    "pub fn {s}(comptime UserDataType: type, comptime ErrorSet: type) type {{\n",
-                    .{service_name},
+                    "pub fn {f}(comptime UserDataType: type, comptime ErrorSet: type) type {{\n",
+                    .{std.zig.fmtId(service_name)},
                 ),
             );
             try lines.append(allocator, "    return struct {\n");
@@ -2073,7 +2127,7 @@ const GenerationContext = struct {
 
             try lines.append(
                 allocator,
-                try std.fmt.allocPrint(allocator, "        {s}: {s},\n", .{ method_name, fn_sig }),
+                try std.fmt.allocPrint(allocator, "        {f}: {s},\n", .{ std.zig.fmtIdP(method_name), fn_sig }),
             );
         }
     }
@@ -2137,7 +2191,7 @@ const GenerationContext = struct {
         if (fullTypeName.parent()) |parent| {
             if (parent.eql(filePackage)) {
                 // Same package, return just the type name
-                return fullTypeName.name().buf;
+                return try escapePath(allocator, fullTypeName.name().buf);
             }
         }
 
@@ -2148,8 +2202,8 @@ const GenerationContext = struct {
             while (it.next()) |value| {
                 if (value.eql(parent.?)) {
                     // Found in an imported package
-                    const prop = try escapeFqn(allocator, parent.?.buf);
-                    const name = fullTypeName.buf[parent.?.buf.len + 1 ..];
+                    const prop = try importAlias(allocator, parent.?.buf);
+                    const name = try escapePath(allocator, fullTypeName.buf[parent.?.buf.len + 1 ..]);
                     return try std.fmt.allocPrint(allocator, "{s}.{s}", .{ prop, name });
                 }
             }
@@ -2304,6 +2358,44 @@ fn escapeFqn(allocator: std.mem.Allocator, n: []const u8) ![]const u8 {
     return r;
 }
 
+/// A dotted path of declarations (`Outer.Inner`), each name written as a
+/// Zig identifier.
+fn escapePath(allocator: std.mem.Allocator, path: []const u8) ![]const u8 {
+    var out: std.Io.Writer.Allocating = .init(allocator);
+    var segments = std.mem.splitScalar(u8, path, '.');
+    var first = true;
+    while (segments.next()) |segment| {
+        if (!first) try out.writer.writeByte('.');
+        first = false;
+        try out.writer.print("{f}", .{std.zig.fmtId(segment)});
+    }
+    return out.written();
+}
+
+/// Name of the constant that holds the import of `package`.
+fn importAlias(allocator: std.mem.Allocator, package: []const u8) ![]const u8 {
+    return try std.fmt.allocPrint(allocator, "{f}", .{std.zig.fmtId(try escapeFqn(allocator, package))});
+}
+
+/// A line of a proto comment, without the bytes that Zig refuses in a
+/// comment: a tab becomes spaces, other control characters are dropped.
+fn sanitizeCommentLine(allocator: std.mem.Allocator, line: []const u8) ![]const u8 {
+    var needs = false;
+    for (line) |c| {
+        if (c < 0x20 or c == 0x7f) needs = true;
+    }
+    if (!needs) return line;
+    var out: std.ArrayList(u8) = .empty;
+    for (line) |c| {
+        if (c == '\t') {
+            try out.appendSlice(allocator, "    ");
+        } else if (c >= 0x20 and c != 0x7f) {
+            try out.append(allocator, c);
+        }
+    }
+    return out.items;
+}
+
 fn isRepeated(field: descriptor.FieldDescriptorProto) bool {
     return (field.label orelse return false) == .LABEL_REPEATED;
 }
@@ -2369,4 +2461,47 @@ pub fn formatSliceEscapeImpl(allocator: std.mem.Allocator, str: []const u8) ![]c
     try w.writeByte('"');
 
     return try writer.toOwnedSlice();
+}
+
+test sanitizeCommentLine {
+    var arena: std.heap.ArenaAllocator = .init(std.testing.allocator);
+    defer arena.deinit();
+    try std.testing.expectEqualStrings("plain text", try sanitizeCommentLine(arena.allocator(), "plain text"));
+    try std.testing.expectEqualStrings(
+        "    indented example",
+        try sanitizeCommentLine(arena.allocator(), "\tindented\x01 example\x7f"),
+    );
+}
+
+test escapePath {
+    var arena: std.heap.ArenaAllocator = .init(std.testing.allocator);
+    defer arena.deinit();
+    try std.testing.expectEqualStrings("Outer.Inner", try escapePath(arena.allocator(), "Outer.Inner"));
+    try std.testing.expectEqualStrings("@\"test\".@\"type\"", try escapePath(arena.allocator(), "test.type"));
+}
+
+test importAlias {
+    var arena: std.heap.ArenaAllocator = .init(std.testing.allocator);
+    defer arena.deinit();
+    try std.testing.expectEqualStrings("google_protobuf", try importAlias(arena.allocator(), "google.protobuf"));
+    try std.testing.expectEqualStrings("@\"test\"", try importAlias(arena.allocator(), "test"));
+    try std.testing.expectEqualStrings("@\"bool\"", try importAlias(arena.allocator(), "bool"));
+}
+
+test "a member named after a generated declaration is reported" {
+    var arena: std.heap.ArenaAllocator = .init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+    var ctx: GenerationContext = try .init(allocator, .{});
+
+    var flags: descriptor.DescriptorProto = .{ .name = "Flags" };
+    try flags.field.append(allocator, .{ .name = "encode", .number = 1 });
+    try std.testing.expectEqualStrings("encode", ctx.reservedMember(flags).?);
+
+    var fine: descriptor.DescriptorProto = .{ .name = "Fine" };
+    try fine.field.append(allocator, .{ .name = "encoded", .number = 1 });
+    // The oneof of a proto3 `optional` field is not emitted: no clash.
+    try fine.field.append(allocator, .{ .name = "desc_table", .number = 2, .oneof_index = 0, .proto3_optional = true });
+    try fine.oneof_decl.append(allocator, .{ .name = "_desc_table" });
+    try std.testing.expectEqual(@as(?[]const u8, null), ctx.reservedMember(fine));
 }
