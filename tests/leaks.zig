@@ -85,3 +85,62 @@ test "leak: a merged submessage frees the optional string it replaces" {
     defer decoded.deinit(testing.allocator);
     try testing.expectEqualStrings("b", decoded.length_prefixed.?.s.?);
 }
+
+/// A message, not a list, whose fields have the names of the fields of
+/// `std.ArrayList`: `message Stock { string items = 1; int32 capacity = 2; }`.
+const Stock = struct {
+    items: []const u8 = &.{},
+    capacity: i32 = 0,
+
+    pub const _desc_table = .{
+        .items = protobuf.fd(1, .{ .scalar = .string }),
+        .capacity = protobuf.fd(2, .{ .scalar = .int32 }),
+    };
+
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+        protobuf.deinit(allocator, self);
+    }
+};
+
+/// `message Shelf { repeated string items = 1; int32 capacity = 2; }`.
+const Shelf = struct {
+    items: std.ArrayList([]const u8) = .empty,
+    capacity: i32 = 0,
+
+    pub const _desc_table = .{
+        .items = protobuf.fd(1, .{ .repeated = .{ .scalar = .string } }),
+        .capacity = protobuf.fd(2, .{ .scalar = .int32 }),
+    };
+
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+        protobuf.deinit(allocator, self);
+    }
+};
+
+/// `message Warehouse { Stock stock = 1; Shelf shelf = 2; }`.
+const Warehouse = struct {
+    stock: ?Stock = null,
+    shelf: ?Shelf = null,
+
+    pub const _desc_table = .{
+        .stock = protobuf.fd(1, .submessage),
+        .shelf = protobuf.fd(2, .submessage),
+    };
+
+    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+        protobuf.deinit(allocator, self);
+    }
+};
+
+test "leak: a submessage with fields named items and capacity is not taken for a list" {
+    // stock { items: "hi" capacity: 3 }
+    // shelf { items: "a" items: "b" capacity: 2 }
+    var reader: std.Io.Reader = .fixed("\x0a\x06\x0a\x02hi\x10\x03" ++ "\x12\x08\x0a\x01a\x0a\x01b\x10\x02");
+    var decoded = try protobuf.decode(Warehouse, &reader, testing.allocator);
+    defer decoded.deinit(testing.allocator);
+
+    try testing.expectEqualStrings("hi", decoded.stock.?.items);
+    try testing.expectEqual(3, decoded.stock.?.capacity);
+    try testing.expectEqual(2, decoded.shelf.?.items.items.len);
+    try testing.expectEqualStrings("b", decoded.shelf.?.items.items[1]);
+}
