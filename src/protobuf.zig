@@ -790,7 +790,11 @@ pub fn init(comptime T: type, allocator: std.mem.Allocator) std.mem.Allocator.Er
 pub fn dupe(comptime T: type, original: T, allocator: std.mem.Allocator) std.mem.Allocator.Error!T {
     @setEvalBranchQuota(comptime evalBranchQuotaFor(T));
 
+    // Start from an empty message, so that the copies made so far can be
+    // released with `deinit` when a later one fails.
     var result: T = undefined;
+    internal_init(T, &result);
+    errdefer deinit(allocator, &result);
 
     const struct_info = @typeInfo(T).@"struct";
     inline for (struct_info.field_names) |field_name| {
@@ -873,29 +877,30 @@ fn dupeField(
         .repeated => |repeated| {
             const capacity = @field(original, field_name).items.len;
             var list = try @TypeOf(@field(original, field_name)).initCapacity(allocator, capacity);
+            // The capacity is reserved, so only the copy of an element can fail.
             switch (repeated) {
                 .submessage => {
+                    errdefer {
+                        for (list.items) |*item| item.deinit(allocator);
+                        list.deinit(allocator);
+                    }
                     for (@field(original, field_name).items) |item| {
-                        try list.append(allocator, try item.dupe(allocator));
+                        list.appendAssumeCapacity(try item.dupe(allocator));
                     }
                 },
                 .scalar => |scalar| switch (scalar) {
                     .string, .bytes => {
+                        errdefer {
+                            for (list.items) |item| allocator.free(item);
+                            list.deinit(allocator);
+                        }
                         for (@field(original, field_name).items) |item| {
-                            try list.append(allocator, try allocator.dupe(u8, item));
+                            list.appendAssumeCapacity(try allocator.dupe(u8, item));
                         }
                     },
-                    else => {
-                        for (@field(original, field_name).items) |item| {
-                            try list.append(allocator, item);
-                        }
-                    },
+                    else => list.appendSliceAssumeCapacity(@field(original, field_name).items),
                 },
-                .@"enum" => {
-                    for (@field(original, field_name).items) |item| {
-                        try list.append(allocator, item);
-                    }
-                },
+                .@"enum" => list.appendSliceAssumeCapacity(@field(original, field_name).items),
             }
             return list;
         },
@@ -925,6 +930,7 @@ fn dupeField(
                             .pointer => |p| {
                                 std.debug.assert(p.size == .one);
                                 const result = try allocator.create(p.child);
+                                errdefer allocator.destroy(result);
                                 result.* = try val.dupe(allocator);
                                 return result;
                             },
@@ -947,6 +953,7 @@ fn dupeField(
                 .pointer => |p| {
                     comptime std.debug.assert(p.size == .one);
                     const result = try allocator.create(p.child);
+                    errdefer allocator.destroy(result);
                     result.* = try @field(original, field_name).dupe(allocator);
                     return result;
                 },
