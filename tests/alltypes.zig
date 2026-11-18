@@ -264,3 +264,27 @@ test "sint32 accepts a varint written with int64 sizing" {
     var too_long: std.Io.Reader = .fixed("\x28\x81\x80\x80\x80\x80\x80\x80\x80\x80\x80\x00");
     try testing.expectError(error.InvalidInput, unittest.TestAllTypes.decode(&too_long, testing.allocator));
 }
+
+test "negative zero is not the default value of an implicit float or double" {
+    const gpa = testing.allocator;
+    const original: proto3.TestAllTypesProto3 = .{ .optional_float = -0.0, .optional_double = -0.0 };
+    var w: std.Io.Writer.Allocating = .init(gpa);
+    defer w.deinit();
+    try original.encode(&w.writer, gpa);
+    // Field 11 (float, fixed32) and field 12 (double, fixed64): only the
+    // sign bit is set.
+    try testing.expectEqualSlices(u8, "\x5d\x00\x00\x00\x80" ++ "\x61\x00\x00\x00\x00\x00\x00\x00\x80", w.written());
+
+    var reader: std.Io.Reader = .fixed(w.written());
+    var decoded = try proto3.TestAllTypesProto3.decode(&reader, gpa);
+    defer decoded.deinit(gpa);
+    try testing.expect(std.math.signbit(decoded.optional_float));
+    try testing.expect(std.math.signbit(decoded.optional_double));
+
+    // Positive zero is the default value, and is still not written.
+    const zero: proto3.TestAllTypesProto3 = .{ .optional_float = 0.0, .optional_double = 0.0 };
+    var w_zero: std.Io.Writer.Allocating = .init(gpa);
+    defer w_zero.deinit();
+    try zero.encode(&w_zero.writer, gpa);
+    try testing.expectEqual(0, w_zero.written().len);
+}
