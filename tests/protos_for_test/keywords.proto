@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package tests.keywords;
+
+import "keyword_package.proto";
+
+// Names that are Zig keywords or primitive types, where proto allows them.
+//	A comment line that starts with a tab.
+enum Level {
+  info = 0;
+  error = 1;
+  u8 = 2;
+}
+
+message struct {
+  message type {
+    int32 fn = 1;
+  }
+  type t = 1;
+  oneof union {
+    string a = 2;
+    type b = 3;
+  }
+}
+
+message Holder {
+  struct e = 1;
+  struct.type t = 2;
+  repeated struct es = 3;
+  Level level = 4;
+  .test.Thing thing = 5;
+}
+
+service async {
+  rpc export(struct) returns (struct);
+}

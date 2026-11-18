@@ -9,6 +9,7 @@ const oneofselfref = @import("./generated/oneofselfref.pb.zig");
 const unittest = @import("./generated/unittest.pb.zig");
 const jspb = @import("./generated/jspb/test.pb.zig");
 const pblogs = @import("./generated/opentelemetry/proto/logs/v1.pb.zig");
+const keywords = @import("./generated/tests/keywords.pb.zig");
 
 pub fn printAllDecoded(input: []const u8) !void {
     var iterator = protobuf.WireDecoderIterator{ .input = input };
@@ -179,4 +180,35 @@ test "self ref test: messages that hold each other" {
 
     // jspb's TestMessageWithOneof { rone { rtwo: "x" } }
     try expectRoundTrips(jspb.TestMessageWithOneof, "\x32\x03\x3a\x01x");
+}
+
+test "generator: names that are Zig keywords or primitive types" {
+    const Ctx = struct {
+        fn exportImpl(_: *@This(), _: keywords.@"struct") error{}!keywords.@"struct" {
+            return .{ .t = .{ .@"fn" = 7 } };
+        }
+    };
+
+    var holder: keywords.Holder = .{
+        .e = .{ .t = .{ .@"fn" = 1 }, .@"union" = .{ .b = .{ .@"fn" = 2 } } },
+        .level = .@"error",
+        .thing = .{ .id = 3 },
+    };
+
+    var w: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer w.deinit();
+    try holder.encode(&w.writer, std.testing.allocator);
+    var reader: std.Io.Reader = .fixed(w.written());
+    var decoded = try keywords.Holder.decode(&reader, std.testing.allocator);
+    defer decoded.deinit(std.testing.allocator);
+
+    try std.testing.expectEqual(keywords.Level.@"error", decoded.level);
+    try std.testing.expectEqual(@as(i32, 2), @backingInt(keywords.Level.u8));
+    try std.testing.expectEqual(@as(i32, 2), decoded.e.?.@"union".?.b.@"fn");
+    try std.testing.expectEqual(@as(i32, 3), decoded.thing.?.id);
+
+    const Service = keywords.async(Ctx, error{});
+    const impl: Service = .{ .@"export" = Ctx.exportImpl };
+    var ctx: Ctx = .{};
+    try std.testing.expectEqual(@as(i32, 7), (try impl.@"export"(&ctx, .{})).t.?.@"fn");
 }
