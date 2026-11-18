@@ -566,7 +566,10 @@ fn writeValue(
         .@"enum" => value == comptime enumDefault(@TypeOf(value)),
         else => switch (@TypeOf(value)) {
             bool => value == false,
-            i32, u32, i64, u64, f32, f64 => value == 0,
+            i32, u32, i64, u64 => value == 0,
+            // Only positive zero is the default: negative zero is written.
+            f32 => @as(u32, @bitCast(value)) == 0,
+            f64 => @as(u64, @bitCast(value)) == 0,
             []const u8 => value.len == 0,
             else => false,
         },

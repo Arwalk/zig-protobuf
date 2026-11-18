@@ -752,3 +752,18 @@ test "malformed input: std.json.parseFromSlice bounds JSON nesting by itself" {
     defer gpa.free(struct_too_deep);
     try testing.expectError(error.SyntaxError, std.json.parseFromSlice(Struct, gpa, struct_too_deep, .{}));
 }
+
+test "malformed input: the input may not end inside a tag" {
+    const gpa = testing.allocator;
+    // Field 1 (optional_int32) = 1, then the first byte of a two-byte tag.
+    var cut: std.Io.Reader = .fixed("\x08\x01\x80");
+    try testing.expectError(error.EndOfStream, proto3.TestAllTypesProto3.decode(&cut, gpa));
+    // The same first byte alone.
+    var alone: std.Io.Reader = .fixed("\x80");
+    try testing.expectError(error.EndOfStream, proto3.TestAllTypesProto3.decode(&alone, gpa));
+    // The end of the input between two fields is the end of the message.
+    var complete: std.Io.Reader = .fixed("\x08\x01");
+    var decoded = try proto3.TestAllTypesProto3.decode(&complete, gpa);
+    defer decoded.deinit(gpa);
+    try testing.expectEqual(1, decoded.optional_int32);
+}

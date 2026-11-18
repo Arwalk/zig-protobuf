@@ -100,6 +100,8 @@ pub fn StreamDecoder(comptime T: type) type {
             // length-delimited field, so we're positioned on the next tag.
             if (self.internals.pending_limited) {
                 _ = try self.internals.limited.interface.discardRemaining();
+                // The source ended before the declared length of the field.
+                if (self.internals.limited.remaining != .nothing) return error.EndOfStream;
                 self.internals.pending_limited = false;
             }
 
@@ -114,10 +116,13 @@ pub fn StreamDecoder(comptime T: type) type {
                     self.internals.packed_field = null;
                 }
 
-                const tag: wire.Tag, _ = wire.Tag.decode(self.internals.source) catch |err| switch (err) {
+                // The stream ends where the source ends, but only between
+                // two fields: the end of the source inside a tag is an error.
+                _ = self.internals.source.peekByte() catch |err| switch (err) {
                     error.EndOfStream => return null,
                     else => |e| return e,
                 };
+                const tag: wire.Tag, _ = try wire.Tag.decode(self.internals.source);
                 if (try self.dispatch(tag)) |ev| return ev;
                 // Otherwise no event was produced: a packed run was started
                 // (its elements are emitted above), or the field was unknown

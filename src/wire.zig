@@ -243,10 +243,11 @@ pub fn decodeScalar(
 
     if (comptime scalar.isVariable()) {
         // int32 uses i64 to handle negative values sign-extended to 64 bits.
-        // uint32 uses u64 to handle over-long encodings; truncated to 32 bits.
+        // uint32 and sint32 use u64 to handle over-long encodings; truncated
+        // to 32 bits.
         const Result = if (comptime scalar == .int32)
             i64
-        else if (comptime scalar == .uint32)
+        else if (comptime scalar == .uint32 or scalar == .sint32)
             u64
         else
             comptime scalar.toType();
@@ -258,8 +259,8 @@ pub fn decodeScalar(
                 byte_count += 1;
             }
 
-            // int32/uint32 may be encoded with int64 sizing (up to 10 bytes).
-            if (scalar == .int32 or scalar == .uint32) byte_count = 10;
+            // int32/uint32/sint32 may be encoded with int64 sizing (up to 10 bytes).
+            if (scalar == .int32 or scalar == .uint32 or scalar == .sint32) byte_count = 10;
             break :b byte_count;
         };
         const consumed = for (0..max_bytes) |i| {
@@ -279,6 +280,11 @@ pub fn decodeScalar(
         }
         if (comptime scalar == .uint32) {
             return .{ @truncate(val), consumed };
+        }
+        if (comptime scalar == .sint32) {
+            // Truncated to 32 bits, then zigzag-decoded.
+            const low: u32 = @truncate(val);
+            return .{ ZigZag.decode(@as(i32, @bitCast(low))), consumed };
         }
 
         if (comptime scalar.isZigZag()) {
@@ -767,10 +773,13 @@ pub fn decodeMessage(
                     break :b try Tag.decode(reader);
                 } else break :main_loop;
             } else {
-                break :b Tag.decode(reader) catch |e| switch (e) {
+                // The message ends where the input ends, but only between
+                // two fields: the end of the input inside a tag is an error.
+                _ = reader.peekByte() catch |e| switch (e) {
                     error.EndOfStream => break :main_loop,
                     else => return e,
                 };
+                break :b try Tag.decode(reader);
             }
         };
         consumed += tag_c;

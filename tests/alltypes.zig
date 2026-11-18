@@ -244,3 +244,47 @@ test "TestExtremeDefaultValues" {
     try testing.expectEqualSlices(u8, "12\x003", defaults.cord_with_zero);
     try testing.expectEqualSlices(u8, "${unknown}", defaults.replacement_string);
 }
+
+test "sint32 accepts a varint written with int64 sizing" {
+    // Field 5 (optional_sint32). The varint is 2 + 2^35: a peer whose schema
+    // says sint64 wrote it. The low 32 bits are 2, which zigzag-decodes to 1.
+    var reader: std.Io.Reader = .fixed("\x28\x82\x80\x80\x80\x80\x01");
+    var decoded = try unittest.TestAllTypes.decode(&reader, testing.allocator);
+    defer decoded.deinit(testing.allocator);
+    try testing.expectEqual(@as(?i32, 1), decoded.optional_sint32);
+
+    // The longest varint is 10 bytes: here zigzag 1 (-1) with redundant
+    // continuation bytes.
+    var padded: std.Io.Reader = .fixed("\x28\x81\x80\x80\x80\x80\x80\x80\x80\x80\x00");
+    var decoded_padded = try unittest.TestAllTypes.decode(&padded, testing.allocator);
+    defer decoded_padded.deinit(testing.allocator);
+    try testing.expectEqual(@as(?i32, -1), decoded_padded.optional_sint32);
+
+    // 11 bytes are not a varint.
+    var too_long: std.Io.Reader = .fixed("\x28\x81\x80\x80\x80\x80\x80\x80\x80\x80\x80\x00");
+    try testing.expectError(error.InvalidInput, unittest.TestAllTypes.decode(&too_long, testing.allocator));
+}
+
+test "negative zero is not the default value of an implicit float or double" {
+    const gpa = testing.allocator;
+    const original: proto3.TestAllTypesProto3 = .{ .optional_float = -0.0, .optional_double = -0.0 };
+    var w: std.Io.Writer.Allocating = .init(gpa);
+    defer w.deinit();
+    try original.encode(&w.writer, gpa);
+    // Field 11 (float, fixed32) and field 12 (double, fixed64): only the
+    // sign bit is set.
+    try testing.expectEqualSlices(u8, "\x5d\x00\x00\x00\x80" ++ "\x61\x00\x00\x00\x00\x00\x00\x00\x80", w.written());
+
+    var reader: std.Io.Reader = .fixed(w.written());
+    var decoded = try proto3.TestAllTypesProto3.decode(&reader, gpa);
+    defer decoded.deinit(gpa);
+    try testing.expect(std.math.signbit(decoded.optional_float));
+    try testing.expect(std.math.signbit(decoded.optional_double));
+
+    // Positive zero is the default value, and is still not written.
+    const zero: proto3.TestAllTypesProto3 = .{ .optional_float = 0.0, .optional_double = 0.0 };
+    var w_zero: std.Io.Writer.Allocating = .init(gpa);
+    defer w_zero.deinit();
+    try zero.encode(&w_zero.writer, gpa);
+    try testing.expectEqual(0, w_zero.written().len);
+}
