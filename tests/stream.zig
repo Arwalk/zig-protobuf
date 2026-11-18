@@ -186,3 +186,23 @@ test "stream: WithRepeatedStrings emits one reader per element" {
     try testing.expectEqualStrings("beta", buf[0..n]);
     try testing.expectEqual(@as(?tests.WithRepeatedStrings.StreamDecoder.Event, null), try sd.next());
 }
+
+test "stream: a length-delimited field cut short is an error" {
+    // Field 1 (name), declared 10 bytes long, with only 2 bytes of data.
+    var reader: std.Io.Reader = .fixed("\x0a\x0ahi");
+    var sd = tests.WithStrings.StreamDecoder.init(&reader);
+
+    const ev = (try sd.next()).?;
+    var buf: [32]u8 = undefined;
+    const n = try ev.name.readSliceShort(&buf);
+    try testing.expectEqualStrings("hi", buf[0..n]);
+
+    try testing.expectError(error.EndOfStream, sd.next());
+}
+
+test "stream: the source may not end inside a tag" {
+    // The first byte of a two-byte tag.
+    var reader: std.Io.Reader = .fixed("\x80");
+    var sd = tests.WithStrings.StreamDecoder.init(&reader);
+    try testing.expectError(error.EndOfStream, sd.next());
+}
