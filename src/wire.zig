@@ -773,10 +773,13 @@ pub fn decodeMessage(
                     break :b try Tag.decode(reader);
                 } else break :main_loop;
             } else {
-                break :b Tag.decode(reader) catch |e| switch (e) {
+                // The message ends where the input ends, but only between
+                // two fields: the end of the input inside a tag is an error.
+                _ = reader.peekByte() catch |e| switch (e) {
                     error.EndOfStream => break :main_loop,
                     else => return e,
                 };
+                break :b try Tag.decode(reader);
             }
         };
         consumed += tag_c;
