@@ -30,7 +30,7 @@ pub const Type = enum(u3) {
 };
 
 /// Record tag.
-pub const Tag = packed struct(u32) {
+pub const Tag = bitpack struct(u32) {
     /// Wire type.
     wire_type: Type,
     /// Field number.

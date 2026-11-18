@@ -2,7 +2,7 @@
     .name = .conformance,
     .version = "0.0.0",
     .fingerprint = 0xe81515e77c853519,
-    .minimum_zig_version = "0.18.0-dev.861+1a0778dc2",
+    .minimum_zig_version = "0.18.0-dev.1180+2e9bb03df",
     .dependencies = .{
         .jsoncpp = .{ .path = "pkg/jsoncpp" },
         .zig_protobuf = .{ .path = ".." },
