@@ -218,6 +218,8 @@ pub fn build(b: *std.Build) !void {
             b.path("tests/protos_for_test/editions2026.proto"),
             b.path("tests/protos_for_test/extensions.proto"),
             b.path("tests/protos_for_test/extensions_editions.proto"),
+            b.path("tests/protos_for_test/keyword_package.proto"),
+            b.path("tests/protos_for_test/keywords.proto"),
             b.path("tests/protos_for_test/options.proto"),
             b.path("tests/protos_for_test/test_service.proto"),
             b.path("tests/protos_for_test/whitespace-in-name.proto"),

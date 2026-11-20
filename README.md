@@ -129,7 +129,14 @@ This is not the only change in version 6.0.0. Refer to [Update from version 5](#
 
 ### Names
 
-`defaults` is a declaration of the message. Thus, a message must not have a field, oneof, message or enum with the name `defaults`. If it has one, the generator stops with an error.
+The generator adds declarations to each message. Thus, a message must not have a field, oneof, nested message, nested enum or extension with the name of one of these declarations:
+
+* `encode`, `decode`, `StreamDecoder`, `deinit`, `dupe`, `jsonDecode`, `jsonEncode`, `jsonParse` and `_desc_table`, in every message.
+* `defaults`, `_extensions`, `_extensions_info`, `_unknown_fields`, `_options`, `_field_options`, `_oneof_options`, `<oneof>_union` and `_<oneof>_case`, when the message has them.
+
+If it has one, the generator stops with an error that names the message and the member.
+
+A name that is a Zig keyword is generated quoted. For example, an enum value `error` is `.@"error"`.
 
 ## Update from version 5
 
