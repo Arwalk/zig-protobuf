@@ -399,6 +399,29 @@ and removes the [source-retention](https://protobuf.dev/programming-guides/proto
 options. It removes them only in the files to generate, so the generator does not keep the
 options of the files that are only imported.
 
+## Cycles
+
+A message field with the type of a message that contains it is a pointer (`?*T`). Thus, you can build
+a message that leads back to itself. `encode`, `jsonEncode`, `dupe` and `deinit` do not look for such
+a cycle: they follow it until the program crashes. If your code can build a cycle, call
+`protobuf.hasCycle` first:
+
+```zig
+if (try protobuf.hasCycle(&msg, allocator)) return error.CyclicMessage;
+try msg.encode(&writer, allocator);
+```
+
+* It takes any message, or a pointer to one.
+* A decoded message has no cycle. You do not need to call `hasCycle` for it.
+* If a message type cannot hold a cycle, the result is `false` at compile time. The call has no cost at run time.
+* The allocator is for temporary memory, which is free again when `hasCycle` returns.
+* `hasCycle` does not use more stack for a deep message. `encode` does: it can overflow the stack
+  for a very deep message without a cycle.
+* If a message has a cycle, break it before you call `deinit`: set one of its pointers to `null`.
+* `hasCycle` finds the cycles of message types that lead back to themselves through a pointer field.
+  If a message type does this only through repeated fields and fields held by value (for example,
+  `google.protobuf.Struct`), its result is always `false`.
+
 ## Branches
 
 There are 2 branches you can use for your development.

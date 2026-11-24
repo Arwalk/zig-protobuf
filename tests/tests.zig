@@ -10,6 +10,7 @@ const unittest = @import("./generated/unittest.pb.zig");
 const jspb = @import("./generated/jspb/test.pb.zig");
 const pblogs = @import("./generated/opentelemetry/proto/logs/v1.pb.zig");
 const keywords = @import("./generated/tests/keywords.pb.zig");
+const proto3 = @import("./generated/protobuf_test_messages/proto3.pb.zig");
 
 pub fn printAllDecoded(input: []const u8) !void {
     var iterator = protobuf.WireDecoderIterator{ .input = input };
@@ -180,6 +181,129 @@ test "self ref test: messages that hold each other" {
 
     // jspb's TestMessageWithOneof { rone { rtwo: "x" } }
     try expectRoundTrips(jspb.TestMessageWithOneof, "\x32\x03\x3a\x01x");
+}
+
+/// `msg`, a pointer to a message, holds a cycle, by pointer and by value.
+fn expectCyclic(msg: anytype) !void {
+    try std.testing.expect(try protobuf.hasCycle(msg, std.testing.allocator));
+    try std.testing.expect(try protobuf.hasCycle(msg.*, std.testing.allocator));
+}
+
+test "cycles: a message pointing to itself" {
+    var n: SelfRefNode = .{ .version = 1 };
+    n.node = &n;
+    try expectCyclic(&n);
+}
+
+test "cycles: two messages pointing to each other" {
+    var a: SelfRefNode = .{ .version = 1 };
+    var b: SelfRefNode = .{ .version = 2 };
+    a.node = &b;
+    b.node = &a;
+    try expectCyclic(&a);
+}
+
+test "cycles: a oneof member of the message's own type" {
+    var t: oneofselfref.Tree = .{};
+    t.kind = .{ .branch = &t };
+    try expectCyclic(&t);
+}
+
+test "cycles: through a oneof and another message" {
+    var node: oneofselfref.Node = .{};
+    var sub: oneofselfref.SubNode = .{};
+    node.node = .{ .sub_node = &sub };
+    sub.sub = &node;
+    try expectCyclic(&node);
+}
+
+test "cycles: below the root" {
+    var sub: oneofselfref.SubNode = .{};
+    var r: oneofselfref.Result = .{ .version = 1, .node = .{ .node = .{ .sub_node = &sub } } };
+    sub.sub = &r.node.?;
+    try expectCyclic(&r);
+}
+
+test "cycles: messages that hold each other" {
+    var a: unittest.TestMutualRecursionA = .{};
+    var b: unittest.TestMutualRecursionB = .{};
+    a.bb = &b;
+    b.a = &a;
+    try expectCyclic(&a);
+}
+
+test "cycles: through a by-value submessage" {
+    var m: proto3.TestAllTypesProto3 = .{};
+    m.optional_nested_message = .{ .corecursive = &m };
+    try expectCyclic(&m);
+}
+
+test "cycles: through a by-value oneof member" {
+    var m: proto3.TestAllTypesProto3 = .{};
+    m.oneof_field = .{ .oneof_nested_message = .{ .corecursive = &m } };
+    try expectCyclic(&m);
+}
+
+test "cycles: through a map entry pointing back to its parent" {
+    var m: jspb.TestMapFieldsNoBinary = .{};
+    var buf: [1]jspb.TestMapFieldsNoBinary.MapStringTestmapfieldsEntry = undefined;
+    m.map_string_testmapfields = .initBuffer(&buf);
+    m.map_string_testmapfields.appendAssumeCapacity(.{ .key = "k", .value = &m });
+    try expectCyclic(&m);
+}
+
+test "cycles: through a repeated field" {
+    var arr: [1]unittest.NestedTestAllTypes = .{.{}};
+    arr[0].repeated_child = .fromOwnedSlice(&arr);
+    try expectCyclic(&arr[0]);
+}
+
+test "cycles: shared and diamond submessages are not cycles" {
+    const gpa = std.testing.allocator;
+    var leaf: unittest.NestedTestAllTypes = .{ .payload = .{ .optional_int32 = 5 } };
+    const shared: unittest.NestedTestAllTypes = .{ .child = &leaf, .lazy_child = &leaf };
+    try std.testing.expect(!try protobuf.hasCycle(&shared, gpa));
+
+    var arr: [2]unittest.NestedTestAllTypes = .{ .{ .child = &leaf }, .{ .child = &leaf } };
+    const diamond: unittest.NestedTestAllTypes = .{ .repeated_child = .fromOwnedSlice(&arr) };
+    try std.testing.expect(!try protobuf.hasCycle(&diamond, gpa));
+}
+
+test "cycles: a decoded message holds none" {
+    // Tree { branch { branch { leaf: 7 } } }
+    var reader: std.Io.Reader = .fixed("\x0a\x04\x0a\x02\x10\x07");
+    var tree: oneofselfref.Tree = try .decode(&reader, std.testing.allocator);
+    defer tree.deinit(std.testing.allocator);
+    try std.testing.expect(!try protobuf.hasCycle(&tree, std.testing.allocator));
+}
+
+test "cycles: known at compile time for messages that cannot hold one" {
+    var plain: tests.WithEnum = .{};
+    var metric: metrics.MetricsData = .{};
+    var allocator = std.testing.failing_allocator;
+    _ = .{ &plain, &metric, &allocator };
+    if (try protobuf.hasCycle(&plain, allocator)) @compileError("compiled");
+    if (try protobuf.hasCycle(&metric, allocator)) @compileError("compiled");
+}
+
+test "cycles: known at compile time for the well-known messages" {
+    var checked: usize = 0;
+    inline for (comptime std.meta.declarations(protobuf.wkt)) |decl| {
+        const T = @field(protobuf.wkt, decl);
+        if (@TypeOf(T) != type) continue;
+        if (@typeInfo(T) != .@"struct" or !@hasDecl(T, "_desc_table")) continue;
+        var msg: T = .{};
+        _ = &msg;
+        if (try protobuf.hasCycle(&msg, std.testing.failing_allocator)) @compileError("compiled");
+        checked += 1;
+    }
+    try std.testing.expect(checked >= 17);
+}
+
+test "cycles: encoding does not look for them" {
+    const plain = (std.Io.Writer.Error || std.mem.Allocator.Error)!void;
+    try std.testing.expect(@typeInfo(@TypeOf(selfref.SelfRefNode.encode)).@"fn".return_type.? == plain);
+    try std.testing.expect(@typeInfo(@TypeOf(proto3.TestAllTypesProto3.encode)).@"fn".return_type.? == plain);
 }
 
 test "generator: names that are Zig keywords or primitive types" {

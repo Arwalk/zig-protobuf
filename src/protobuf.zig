@@ -7,11 +7,15 @@ pub const wire = @import("wire.zig");
 pub const wkt = @import("wkt.zig");
 pub const stream = @import("stream.zig");
 pub const extension = @import("extension.zig");
+const cycles = @import("cycles.zig");
 
 /// See `src/extension.zig`.
 pub const Extension = extension.Extension;
 pub const ExtensionRegistry = extension.ExtensionRegistry;
 pub const ExtensionSet = extension.ExtensionSet;
+
+/// See `src/cycles.zig`.
+pub const hasCycle = cycles.hasCycle;
 
 /// Streaming pull-decoder for the generated message type `T`.
 /// See `src/stream.zig`. Generated messages also expose this as
@@ -1463,4 +1467,5 @@ test {
     _ = stream;
     _ = wkt;
     _ = extension;
+    _ = cycles;
 }
