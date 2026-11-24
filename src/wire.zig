@@ -4,6 +4,7 @@ const std = @import("std");
 const protobuf = @import("protobuf.zig");
 const extension = @import("extension.zig");
 const ExtensionRegistry = extension.ExtensionRegistry;
+const heldMessages = @import("cycles.zig").heldMessages;
 const builtin = @import("builtin");
 const log = if (builtin.os.tag != .freestanding) std.log.scoped(.zig_protobuf) else struct {
     // no-op log implementation for freestanding targets
@@ -1441,36 +1442,17 @@ fn reachesRecords(comptime T: type) bool {
         if (@hasField(M, "_unknown_fields") or @hasField(M, "_extensions")) return true;
         quota += protobuf.evalBranchQuotaFor(M);
         @setEvalBranchQuota(quota);
-        const subs = submessageTypes(M);
-        quota += subs.len * (reached.len + subs.len);
+        const held = heldMessages(M);
+        quota += held.len * (reached.len + held.len);
         @setEvalBranchQuota(quota);
-        for (subs) |Sub| {
+        for (held) |h| {
+            if (h.kind == .repeated) continue;
             for (reached) |R| {
-                if (R == Sub) break;
-            } else reached = reached ++ .{Sub};
+                if (R == h.Message) break;
+            } else reached = reached ++ .{h.Message};
         }
     }
     return false;
-}
-
-/// The message types of the singular and oneof submessage fields of `T`.
-fn submessageTypes(comptime T: type) []const type {
-    comptime {
-        var types: []const type = &.{};
-        const desc_table = T._desc_table;
-        for (@typeInfo(@TypeOf(desc_table)).@"struct".field_names) |name| {
-            const desc: protobuf.FieldDescriptor = @field(desc_table, name);
-            switch (desc.ftype) {
-                .submessage => types = types ++ .{MessageOf(@FieldType(T, name))},
-                .oneof => |OneOf| for (@typeInfo(@TypeOf(OneOf._desc_table)).@"struct".field_names) |oo_name| {
-                    const oo_desc: protobuf.FieldDescriptor = @field(OneOf._desc_table, oo_name);
-                    if (oo_desc.ftype == .submessage) types = types ++ .{MessageOf(@FieldType(OneOf, oo_name))};
-                },
-                else => {},
-            }
-        }
-        return types;
-    }
 }
 
 test tracksMerges {
@@ -1512,15 +1494,6 @@ test tracksMerges {
     try std.testing.expect(!tracksMerges(Lists));
     try std.testing.expect(!tracksMerges(SelfRef));
     try std.testing.expect(tracksMerges(InOneof));
-}
-
-/// The message type of a singular or oneof submessage field of type `F`.
-fn MessageOf(comptime F: type) type {
-    return switch (@typeInfo(F)) {
-        .optional => |o| MessageOf(o.child),
-        .pointer => |p| p.child,
-        else => F,
-    };
 }
 
 const FlushError = std.Io.Reader.Error || std.mem.Allocator.Error || protobuf.DecodingError;
