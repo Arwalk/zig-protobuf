@@ -185,7 +185,6 @@ test "self ref test: messages that hold each other" {
 
 /// `msg`, a pointer to a message, holds a cycle, by pointer and by value.
 fn expectCyclic(msg: anytype) !void {
-    try std.testing.expect(try msg.hasCycle(std.testing.allocator));
     try std.testing.expect(try protobuf.hasCycle(msg, std.testing.allocator));
     try std.testing.expect(try protobuf.hasCycle(msg.*, std.testing.allocator));
 }
@@ -263,11 +262,11 @@ test "cycles: shared and diamond submessages are not cycles" {
     const gpa = std.testing.allocator;
     var leaf: unittest.NestedTestAllTypes = .{ .payload = .{ .optional_int32 = 5 } };
     const shared: unittest.NestedTestAllTypes = .{ .child = &leaf, .lazy_child = &leaf };
-    try std.testing.expect(!try shared.hasCycle(gpa));
+    try std.testing.expect(!try protobuf.hasCycle(&shared, gpa));
 
     var arr: [2]unittest.NestedTestAllTypes = .{ .{ .child = &leaf }, .{ .child = &leaf } };
     const diamond: unittest.NestedTestAllTypes = .{ .repeated_child = .fromOwnedSlice(&arr) };
-    try std.testing.expect(!try diamond.hasCycle(gpa));
+    try std.testing.expect(!try protobuf.hasCycle(&diamond, gpa));
 }
 
 test "cycles: a decoded message holds none" {
@@ -275,7 +274,7 @@ test "cycles: a decoded message holds none" {
     var reader: std.Io.Reader = .fixed("\x0a\x04\x0a\x02\x10\x07");
     var tree: oneofselfref.Tree = try .decode(&reader, std.testing.allocator);
     defer tree.deinit(std.testing.allocator);
-    try std.testing.expect(!try tree.hasCycle(std.testing.allocator));
+    try std.testing.expect(!try protobuf.hasCycle(&tree, std.testing.allocator));
 }
 
 test "cycles: known at compile time for messages that cannot hold one" {
@@ -283,11 +282,11 @@ test "cycles: known at compile time for messages that cannot hold one" {
     var metric: metrics.MetricsData = .{};
     var allocator = std.testing.failing_allocator;
     _ = .{ &plain, &metric, &allocator };
-    if (try plain.hasCycle(allocator)) @compileError("compiled");
-    if (try metric.hasCycle(allocator)) @compileError("compiled");
+    if (try protobuf.hasCycle(&plain, allocator)) @compileError("compiled");
+    if (try protobuf.hasCycle(&metric, allocator)) @compileError("compiled");
 }
 
-test "cycles: every well-known message has the method" {
+test "cycles: known at compile time for the well-known messages" {
     var checked: usize = 0;
     inline for (comptime std.meta.declarations(protobuf.wkt)) |decl| {
         const T = @field(protobuf.wkt, decl);
@@ -295,14 +294,10 @@ test "cycles: every well-known message has the method" {
         if (@typeInfo(T) != .@"struct" or !@hasDecl(T, "_desc_table")) continue;
         var msg: T = .{};
         _ = &msg;
-        if (try msg.hasCycle(std.testing.failing_allocator)) @compileError("compiled");
+        if (try protobuf.hasCycle(&msg, std.testing.failing_allocator)) @compileError("compiled");
         checked += 1;
     }
     try std.testing.expect(checked >= 17);
-    // A map entry.
-    var entry: protobuf.wkt.Struct.FieldsEntry = .{};
-    _ = &entry;
-    if (try entry.hasCycle(std.testing.failing_allocator)) @compileError("compiled");
 }
 
 test "cycles: encoding does not look for them" {
