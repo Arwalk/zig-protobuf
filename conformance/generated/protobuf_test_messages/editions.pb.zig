@@ -54,6 +54,14 @@ pub const ComplexMessage = struct {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Whether the message holds a cycle: a message that leads back to itself
+    /// through pointer fields, which encoding would follow until the stack
+    /// overflows. The allocator is used for temporary memory. Known to be
+    /// `false` at compile time for a message that cannot hold a cycle.
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
+    }
+
     /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
@@ -605,6 +613,14 @@ pub const TestAllTypesEdition2023 = struct {
             return protobuf.dupe(@This(), self, allocator);
         }
 
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
+        }
+
         /// Decodes the message from the JSON string.
         pub fn jsonDecode(
             input: []const u8,
@@ -681,6 +697,14 @@ pub const TestAllTypesEdition2023 = struct {
         /// Duplicates the message.
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
+        }
+
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
         }
 
         /// Decodes the message from the JSON string.
@@ -761,6 +785,14 @@ pub const TestAllTypesEdition2023 = struct {
             return protobuf.dupe(@This(), self, allocator);
         }
 
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
+        }
+
         /// Decodes the message from the JSON string.
         pub fn jsonDecode(
             input: []const u8,
@@ -837,6 +869,14 @@ pub const TestAllTypesEdition2023 = struct {
         /// Duplicates the message.
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
+        }
+
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
         }
 
         /// Decodes the message from the JSON string.
@@ -917,6 +957,14 @@ pub const TestAllTypesEdition2023 = struct {
             return protobuf.dupe(@This(), self, allocator);
         }
 
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
+        }
+
         /// Decodes the message from the JSON string.
         pub fn jsonDecode(
             input: []const u8,
@@ -993,6 +1041,14 @@ pub const TestAllTypesEdition2023 = struct {
         /// Duplicates the message.
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
+        }
+
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
         }
 
         /// Decodes the message from the JSON string.
@@ -1073,6 +1129,14 @@ pub const TestAllTypesEdition2023 = struct {
             return protobuf.dupe(@This(), self, allocator);
         }
 
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
+        }
+
         /// Decodes the message from the JSON string.
         pub fn jsonDecode(
             input: []const u8,
@@ -1149,6 +1213,14 @@ pub const TestAllTypesEdition2023 = struct {
         /// Duplicates the message.
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
+        }
+
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
         }
 
         /// Decodes the message from the JSON string.
@@ -1229,6 +1301,14 @@ pub const TestAllTypesEdition2023 = struct {
             return protobuf.dupe(@This(), self, allocator);
         }
 
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
+        }
+
         /// Decodes the message from the JSON string.
         pub fn jsonDecode(
             input: []const u8,
@@ -1305,6 +1385,14 @@ pub const TestAllTypesEdition2023 = struct {
         /// Duplicates the message.
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
+        }
+
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
         }
 
         /// Decodes the message from the JSON string.
@@ -1385,6 +1473,14 @@ pub const TestAllTypesEdition2023 = struct {
             return protobuf.dupe(@This(), self, allocator);
         }
 
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
+        }
+
         /// Decodes the message from the JSON string.
         pub fn jsonDecode(
             input: []const u8,
@@ -1461,6 +1557,14 @@ pub const TestAllTypesEdition2023 = struct {
         /// Duplicates the message.
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
+        }
+
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
         }
 
         /// Decodes the message from the JSON string.
@@ -1541,6 +1645,14 @@ pub const TestAllTypesEdition2023 = struct {
             return protobuf.dupe(@This(), self, allocator);
         }
 
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
+        }
+
         /// Decodes the message from the JSON string.
         pub fn jsonDecode(
             input: []const u8,
@@ -1617,6 +1729,14 @@ pub const TestAllTypesEdition2023 = struct {
         /// Duplicates the message.
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
+        }
+
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
         }
 
         /// Decodes the message from the JSON string.
@@ -1697,6 +1817,14 @@ pub const TestAllTypesEdition2023 = struct {
             return protobuf.dupe(@This(), self, allocator);
         }
 
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
+        }
+
         /// Decodes the message from the JSON string.
         pub fn jsonDecode(
             input: []const u8,
@@ -1773,6 +1901,14 @@ pub const TestAllTypesEdition2023 = struct {
         /// Duplicates the message.
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
+        }
+
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
         }
 
         /// Decodes the message from the JSON string.
@@ -1853,6 +1989,14 @@ pub const TestAllTypesEdition2023 = struct {
             return protobuf.dupe(@This(), self, allocator);
         }
 
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
+        }
+
         /// Decodes the message from the JSON string.
         pub fn jsonDecode(
             input: []const u8,
@@ -1929,6 +2073,14 @@ pub const TestAllTypesEdition2023 = struct {
         /// Duplicates the message.
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
+        }
+
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
         }
 
         /// Decodes the message from the JSON string.
@@ -2009,6 +2161,14 @@ pub const TestAllTypesEdition2023 = struct {
             return protobuf.dupe(@This(), self, allocator);
         }
 
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
+        }
+
         /// Decodes the message from the JSON string.
         pub fn jsonDecode(
             input: []const u8,
@@ -2087,6 +2247,14 @@ pub const TestAllTypesEdition2023 = struct {
             return protobuf.dupe(@This(), self, allocator);
         }
 
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
+        }
+
         /// Decodes the message from the JSON string.
         pub fn jsonDecode(
             input: []const u8,
@@ -2159,6 +2327,14 @@ pub const TestAllTypesEdition2023 = struct {
         /// Duplicates the message.
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
+        }
+
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
         }
 
         /// Decodes the message from the JSON string.
@@ -2239,6 +2415,14 @@ pub const TestAllTypesEdition2023 = struct {
             return protobuf.dupe(@This(), self, allocator);
         }
 
+        /// Whether the message holds a cycle: a message that leads back to itself
+        /// through pointer fields, which encoding would follow until the stack
+        /// overflows. The allocator is used for temporary memory. Known to be
+        /// `false` at compile time for a message that cannot hold a cycle.
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
+        }
+
         /// Decodes the message from the JSON string.
         pub fn jsonDecode(
             input: []const u8,
@@ -2300,6 +2484,14 @@ pub const TestAllTypesEdition2023 = struct {
     /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
+    }
+
+    /// Whether the message holds a cycle: a message that leads back to itself
+    /// through pointer fields, which encoding would follow until the stack
+    /// overflows. The allocator is used for temporary memory. Known to be
+    /// `false` at compile time for a message that cannot hold a cycle.
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
     }
 
     /// Decodes the message from the JSON string.
@@ -2373,6 +2565,14 @@ pub const ForeignMessageEdition2023 = struct {
         return protobuf.dupe(@This(), self, allocator);
     }
 
+    /// Whether the message holds a cycle: a message that leads back to itself
+    /// through pointer fields, which encoding would follow until the stack
+    /// overflows. The allocator is used for temporary memory. Known to be
+    /// `false` at compile time for a message that cannot hold a cycle.
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
+    }
+
     /// Decodes the message from the JSON string.
     pub fn jsonDecode(
         input: []const u8,
@@ -2442,6 +2642,14 @@ pub const GroupLikeType = struct {
     /// Duplicates the message.
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
+    }
+
+    /// Whether the message holds a cycle: a message that leads back to itself
+    /// through pointer fields, which encoding would follow until the stack
+    /// overflows. The allocator is used for temporary memory. Known to be
+    /// `false` at compile time for a message that cannot hold a cycle.
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
     }
 
     /// Decodes the message from the JSON string.
