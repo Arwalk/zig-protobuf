@@ -14,6 +14,9 @@ pub const Extension = extension.Extension;
 pub const ExtensionRegistry = extension.ExtensionRegistry;
 pub const ExtensionSet = extension.ExtensionSet;
 
+/// See `src/cycles.zig`.
+pub const hasCycle = cycles.hasCycle;
+
 /// Streaming pull-decoder for the generated message type `T`.
 /// See `src/stream.zig`. Generated messages also expose this as
 /// `MyMessage.StreamDecoder`.

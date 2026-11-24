@@ -85,4 +85,5 @@ jobs:
       - uses: mlugg/setup-zig@v2
         with:
           version: "0.17.1"
-      - run: zig fmt --check src/protobuf.zig
+      - run: zig fmt --check src/protobuf.zig src/cycles.zig
+      - run: zig test -OReleaseSmall src/protobuf.zig
