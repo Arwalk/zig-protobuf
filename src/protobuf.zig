@@ -7,6 +7,7 @@ pub const wire = @import("wire.zig");
 pub const wkt = @import("wkt.zig");
 pub const stream = @import("stream.zig");
 pub const extension = @import("extension.zig");
+const cycles = @import("cycles.zig");
 
 /// See `src/extension.zig`.
 pub const Extension = extension.Extension;
@@ -1463,4 +1464,5 @@ test {
     _ = stream;
     _ = wkt;
     _ = extension;
+    _ = cycles;
 }
