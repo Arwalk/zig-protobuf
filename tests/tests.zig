@@ -182,6 +182,24 @@ test "self ref test: messages that hold each other" {
     try expectRoundTrips(jspb.TestMessageWithOneof, "\x32\x03\x3a\x01x");
 }
 
+test "cycles: every well-known message has the method" {
+    var checked: usize = 0;
+    inline for (comptime std.meta.declarations(protobuf.wkt)) |decl| {
+        const T = @field(protobuf.wkt, decl);
+        if (@TypeOf(T) != type) continue;
+        if (@typeInfo(T) != .@"struct" or !@hasDecl(T, "_desc_table")) continue;
+        var msg: T = .{};
+        _ = &msg;
+        if (try msg.hasCycle(std.testing.failing_allocator)) @compileError("compiled");
+        checked += 1;
+    }
+    try std.testing.expect(checked >= 17);
+    // A map entry.
+    var entry: protobuf.wkt.Struct.FieldsEntry = .{};
+    _ = &entry;
+    if (try entry.hasCycle(std.testing.failing_allocator)) @compileError("compiled");
+}
+
 test "generator: names that are Zig keywords or primitive types" {
     const Ctx = struct {
         fn exportImpl(_: *@This(), _: keywords.@"struct") error{}!keywords.@"struct" {

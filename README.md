@@ -131,7 +131,7 @@ This is not the only change in version 6.0.0. Refer to [Update from version 5](#
 
 The generator adds declarations to each message. Thus, a message must not have a field, oneof, nested message, nested enum or extension with the name of one of these declarations:
 
-* `encode`, `decode`, `StreamDecoder`, `deinit`, `dupe`, `jsonDecode`, `jsonEncode`, `jsonParse` and `_desc_table`, in every message.
+* `encode`, `decode`, `StreamDecoder`, `deinit`, `dupe`, `hasCycle`, `jsonDecode`, `jsonEncode`, `jsonParse` and `_desc_table`, in every message.
 * `defaults`, `_extensions`, `_extensions_info`, `_unknown_fields`, `_options`, `_field_options`, `_oneof_options`, `<oneof>_union` and `_<oneof>_case`, when the message has them.
 
 If it has one, the generator stops with an error that names the message and the member.
@@ -398,6 +398,28 @@ protoc checks the [option targets](https://protobuf.dev/programming-guides/proto
 and removes the [source-retention](https://protobuf.dev/programming-guides/proto3/#option-retention)
 options. It removes them only in the files to generate, so the generator does not keep the
 options of the files that are only imported.
+
+## Cycles
+
+A message field with the type of a message that contains it is a pointer (`?*T`). Thus, you can build
+a message that leads back to itself. `encode`, `jsonEncode`, `dupe` and `deinit` do not look for such
+a cycle: they follow it until the program crashes. If your code can build a cycle, call `hasCycle` first:
+
+```zig
+if (try msg.hasCycle(allocator)) return error.CyclicMessage;
+try msg.encode(&writer, allocator);
+```
+
+* Every message has this method. `protobuf.hasCycle(msg, allocator)` does the same.
+* A decoded message has no cycle. You do not need to call `hasCycle` for it.
+* If a message type cannot hold a cycle, the result is `false` at compile time. The call has no cost at run time.
+* The allocator is for temporary memory, which is free again when `hasCycle` returns.
+* `hasCycle` does not use more stack for a deep message. `encode` does: it can overflow the stack
+  for a very deep message without a cycle.
+* If a message has a cycle, break it before you call `deinit`: set one of its pointers to `null`.
+* `hasCycle` finds the cycles of message types that lead back to themselves through a pointer field.
+  If a message type does this only through repeated fields and fields held by value (for example,
+  `google.protobuf.Struct`), its result is always `false`.
 
 ## Branches
 

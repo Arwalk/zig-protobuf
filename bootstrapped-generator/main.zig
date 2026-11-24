@@ -1241,6 +1241,14 @@ const GenerationContext = struct {
                 \\        return protobuf.dupe(@This(), self, allocator);
                 \\    }}
                 \\
+                \\    /// Whether the message holds a cycle: a message that leads back to itself
+                \\    /// through pointer fields, which encoding would follow until the stack
+                \\    /// overflows. The allocator is used for temporary memory. Known to be
+                \\    /// `false` at compile time for a message that cannot hold a cycle.
+                \\    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {{
+                \\        return protobuf.hasCycle(self, allocator);
+                \\    }}
+                \\
                 \\    /// Decodes the message from the JSON string.
                 \\    pub fn jsonDecode(
                 \\        input: []const u8,
@@ -1965,8 +1973,8 @@ const GenerationContext = struct {
 
     /// Names of the declarations that every generated message has.
     const reserved_message_members = [_][]const u8{
-        "encode",     "decode",     "StreamDecoder", "deinit",      "dupe",
-        "jsonDecode", "jsonEncode", "jsonParse",     "_desc_table",
+        "encode",   "decode",     "StreamDecoder", "deinit",    "dupe",
+        "hasCycle", "jsonDecode", "jsonEncode",    "jsonParse", "_desc_table",
     };
 
     /// The first generated declaration of `message` that one of its members
@@ -2497,6 +2505,13 @@ test "a member named after a generated declaration is reported" {
     var flags: descriptor.DescriptorProto = .{ .name = "Flags" };
     try flags.field.append(allocator, .{ .name = "encode", .number = 1 });
     try std.testing.expectEqualStrings("encode", ctx.reservedMember(flags).?);
+
+    // Every declaration of a generated message without options or extensions.
+    for (@typeInfo(descriptor.OneofDescriptorProto).@"struct".decl_names) |name| {
+        var message: descriptor.DescriptorProto = .{ .name = "Message" };
+        try message.field.append(allocator, .{ .name = name, .number = 1 });
+        try std.testing.expectEqualStrings(name, ctx.reservedMember(message) orelse "");
+    }
 
     var fine: descriptor.DescriptorProto = .{ .name = "Fine" };
     try fine.field.append(allocator, .{ .name = "encoded", .number = 1 });

@@ -48,6 +48,9 @@ pub const Any = struct {
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
+    }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
@@ -148,6 +151,9 @@ pub const Duration = struct {
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
+    }
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
     }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
@@ -261,6 +267,9 @@ pub const FieldMask = struct {
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
+    }
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
     }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
@@ -423,6 +432,9 @@ pub const Struct = struct {
         pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
             return protobuf.dupe(@This(), self, allocator);
         }
+        pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+            return protobuf.hasCycle(self, allocator);
+        }
     };
 
     pub const _desc_table = .{
@@ -440,6 +452,9 @@ pub const Struct = struct {
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
+    }
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
     }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
@@ -522,6 +537,9 @@ pub const Value = struct {
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
+    }
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
     }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
@@ -631,6 +649,9 @@ pub const ListValue = struct {
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
+    }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
@@ -690,6 +711,9 @@ pub const Timestamp = struct {
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
+    }
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
     }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
@@ -871,6 +895,9 @@ pub const DoubleValue = struct {
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
+    }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
@@ -917,6 +944,9 @@ pub const FloatValue = struct {
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
+    }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
@@ -962,6 +992,9 @@ pub const Int64Value = struct {
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
+    }
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
     }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
@@ -1012,6 +1045,9 @@ pub const UInt64Value = struct {
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
+    }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
@@ -1061,6 +1097,9 @@ pub const Int32Value = struct {
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
+    }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
@@ -1098,6 +1137,9 @@ pub const UInt32Value = struct {
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
+    }
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
     }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
@@ -1137,6 +1179,9 @@ pub const BoolValue = struct {
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
+    }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
@@ -1175,6 +1220,9 @@ pub const StringValue = struct {
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
     }
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
+    }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
     }
@@ -1212,6 +1260,9 @@ pub const BytesValue = struct {
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
+    }
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
     }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
@@ -1252,6 +1303,9 @@ pub const Empty = struct {
     }
     pub fn dupe(self: @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!@This() {
         return protobuf.dupe(@This(), self, allocator);
+    }
+    pub inline fn hasCycle(self: *const @This(), allocator: std.mem.Allocator) std.mem.Allocator.Error!bool {
+        return protobuf.hasCycle(self, allocator);
     }
     pub fn jsonDecode(input: []const u8, options: std.json.ParseOptions, allocator: std.mem.Allocator) !std.json.Parsed(@This()) {
         return protobuf.json.decode(@This(), input, options, allocator);
