@@ -1,0 +1,10 @@
+.{
+    .name = .example,
+    .version = "0.0.0",
+    .fingerprint = 0x6eec9b9fbf47197b,
+    .minimum_zig_version = "0.17.1",
+    .dependencies = .{
+        .protobuf = .{ .path = "../.." },
+    },
+    .paths = .{""},
+}

@@ -1,1 +1,2 @@
 tests/json_data/**/*.json text eol=lf
+doc/example/expected_output.txt text eol=lf
