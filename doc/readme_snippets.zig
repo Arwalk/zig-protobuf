@@ -1,16 +1,18 @@
-//! Keeps the code blocks of the README equal to the sources that they show.
+//! Keeps the blocks of the README equal to the sources that they show.
 //!
-//! A marker on the line above a code block names its source, relative to the repository:
+//! A marker on the line above a block names its source, relative to the repository:
 //!
 //!   <!-- snippet: path#tag -->  the block is the region of the file between the comments
 //!                               `tag::tag[]` and `end::tag[]` (the syntax of AsciiDoc)
-//!   <!-- snippet: path -->      the block is some consecutive lines of the file, for the files
-//!                               that cannot have comments (generated code, output)
+//!   <!-- snippet: path -->      the block is the file
+//!   <!-- excerpt: path -->      the block is some consecutive lines of the file, for a file that
+//!                               cannot have comments (generated code)
 //!
-//! The common indentation of the lines is not compared. A block of Zig or protobuf must have a
-//! marker.
+//! The comments of the tags and the common indentation of the lines are not shown. All blocks must
+//! have a marker, except those of `sh`. Markdown has many ways to write a block, thus all the ways
+//! that this program does not read are faults.
 //!
-//! Run with `zig build check-readme`, or `zig build update-readme` to write the regions into the
+//! Run with `zig build check-readme`, or `zig build update-readme` to write the snippets into the
 //! README.
 
 const std = @import("std");
@@ -129,6 +131,15 @@ fn region(arena: Allocator, source: []const u8, tag: []const u8) error{ TagNotFo
     };
 }
 
+/// The lines of a file, without the comments of the tags.
+fn whole(arena: Allocator, source: []const u8) error{OutOfMemory}![]const u8 {
+    var lines: std.ArrayList([]const u8) = .empty;
+    for (try splitLines(arena, source)) |line| {
+        if (tagName(line, "tag::") == null and tagName(line, "end::") == null) try lines.append(arena, line);
+    }
+    return dedent(arena, lines.items);
+}
+
 /// If the lines of the block are consecutive lines of the source.
 fn contains(arena: Allocator, source: []const u8, block: []const u8) error{OutOfMemory}!bool {
     const source_lines = try splitLines(arena, source);
@@ -146,61 +157,78 @@ fn contains(arena: Allocator, source: []const u8, block: []const u8) error{OutOf
     return false;
 }
 
-/// The text of a line, without the characters of the lists and quotes that it is in.
-fn markdown(line: []const u8) []const u8 {
-    return std.mem.trimEnd(u8, std.mem.trimStart(u8, line, " \t>-*+.)0123456789"), " \t");
-}
-
 const Fence = struct {
     char: u8,
     len: usize,
     /// What follows the characters of the fence.
     info: []const u8,
 
-    fn parse(line: []const u8) ?Fence {
-        const text = markdown(line);
+    /// A fence at the start of the text.
+    fn parse(text: []const u8) ?Fence {
         if (text.len == 0 or (text[0] != '`' and text[0] != '~')) return null;
         const len = std.mem.indexOfNone(u8, text, text[0..1]) orelse text.len;
         if (len < 3) return null;
-        return .{ .char = text[0], .len = len, .info = std.mem.trim(u8, text[len..], " \t") };
+        const info = std.mem.trim(u8, text[len..], " \t");
+        // Code in a line of text.
+        if (text[0] == '`' and std.mem.indexOfScalar(u8, info, '`') != null) return null;
+        return .{ .char = text[0], .len = len, .info = info };
+    }
+
+    /// A fence that is indented, in a list or in a quote.
+    fn isNested(line: []const u8) bool {
+        const text = std.mem.trimStart(u8, line, " \t>-*+.)0123456789");
+        return text.len < line.len and parse(text) != null;
     }
 
     fn isClosedBy(open: Fence, line: []const u8) bool {
-        const close = parse(line) orelse return false;
+        const text = std.mem.trimStart(u8, line, " ");
+        if (line.len - text.len > 3) return false;
+        const close = parse(text) orelse return false;
         return close.char == open.char and close.len >= open.len and close.info.len == 0;
-    }
-
-    fn needsMarker(open: Fence) bool {
-        const end = std.mem.indexOfAny(u8, open.info, " \t,{") orelse open.info.len;
-        for ([_][]const u8{ "zig", "zon", "proto", "protobuf" }) |language| {
-            if (std.ascii.eqlIgnoreCase(language, open.info[0..end])) return true;
-        }
-        return false;
     }
 };
 
 const Marker = struct {
+    kind: enum { snippet, excerpt },
     path: []const u8,
-    tag: ?[]const u8,
+    tag: ?[]const u8 = null,
 
     fn parse(line: []const u8) error{InvalidMarker}!?Marker {
-        const text = markdown(line);
-        if (!std.mem.startsWith(u8, text, "<!--")) return null;
-        const comment = std.mem.trim(u8, text["<!--".len..], " \t");
-        if (!std.mem.startsWith(u8, comment, "snippet")) return null;
-
-        const prefix = "<!-- snippet: ";
+        if (std.mem.indexOf(u8, line, "<!--") == null) return null;
         const suffix = " -->";
-        if (text.len <= prefix.len + suffix.len or
-            !std.mem.startsWith(u8, text, prefix) or
-            !std.mem.endsWith(u8, text, suffix)) return error.InvalidMarker;
-        const target = text[prefix.len .. text.len - suffix.len];
-        const hash = std.mem.indexOfScalar(u8, target, '#') orelse return .{ .path = target, .tag = null };
-        return .{ .path = target[0..hash], .tag = target[hash + 1 ..] };
+        if (!std.mem.endsWith(u8, line, suffix)) return error.InvalidMarker;
+        const text = line[0 .. line.len - suffix.len];
+
+        const excerpt = "<!-- excerpt: ";
+        if (std.mem.startsWith(u8, text, excerpt)) {
+            const path = text[excerpt.len..];
+            if (!isPath(path)) return error.InvalidMarker;
+            return .{ .kind = .excerpt, .path = path };
+        }
+        const snippet = "<!-- snippet: ";
+        if (!std.mem.startsWith(u8, text, snippet)) return error.InvalidMarker;
+        const named = text[snippet.len..];
+        const end = std.mem.indexOfScalar(u8, named, '#') orelse named.len;
+        if (!isPath(named[0..end])) return error.InvalidMarker;
+        return .{
+            .kind = .snippet,
+            .path = named[0..end],
+            .tag = if (end < named.len) named[end + 1 ..] else null,
+        };
+    }
+
+    fn isPath(text: []const u8) bool {
+        return text.len > 0 and std.mem.indexOfAny(u8, text, " #") == null;
+    }
+
+    /// As it is written in the README.
+    fn target(marker: Marker, arena: Allocator) error{OutOfMemory}![]const u8 {
+        const tag = marker.tag orelse return marker.path;
+        return std.fmt.allocPrint(arena, "{s}#{s}", .{ marker.path, tag });
     }
 };
 
-/// Returns the README with its tagged blocks refreshed. Adds one line to `problems` per fault.
+/// Returns the README with its snippets refreshed. Adds one line to `problems` per fault.
 fn process(
     arena: Allocator,
     readme: []const u8,
@@ -212,25 +240,29 @@ fn process(
     var i: usize = 0;
     while (i < lines.len) {
         var number = i + 1;
+        var invalid_marker = false;
         const marker: ?Marker = Marker.parse(lines[i]) catch marker: {
-            try report(arena, problems, number, "a snippet marker is `<!-- snippet: path#tag -->`", .{});
+            invalid_marker = true;
+            try report(arena, problems, number, "a comment must be `<!-- snippet: path -->`, " ++
+                "`<!-- snippet: path#tag -->` or `<!-- excerpt: path -->`", .{});
             break :marker null;
         };
         if (marker != null) {
             try result.append(arena, lines[i]);
             i += 1;
             if (i == lines.len or Fence.parse(lines[i]) == null) {
-                try report(arena, problems, number, "a snippet marker must be on the line above a code block", .{});
+                try report(arena, problems, number, "a marker must be on the line above a block", .{});
                 continue;
             }
         }
 
-        const fence = Fence.parse(lines[i]) orelse {
-            try result.append(arena, lines[i]);
+        const open = i;
+        const fence = Fence.parse(lines[open]) orelse {
+            if (!invalid_marker) try checkText(arena, lines[open], number, problems);
+            try result.append(arena, lines[open]);
             i += 1;
             continue;
         };
-        const open = i;
         const close = for (lines[open + 1 ..], open + 1..) |line, n| {
             if (fence.isClosedBy(line)) break n;
         } else {
@@ -238,10 +270,16 @@ fn process(
             try result.appendSlice(arena, lines[open..]);
             break;
         };
-        if (marker == null) number = open + 1;
         const body = lines[open + 1 .. close];
         try result.append(arena, lines[open]);
-        try result.appendSlice(arena, try processBody(arena, lines[open], body, fence, marker, number, files, problems));
+        if (marker) |m| {
+            try result.appendSlice(arena, try processBlock(arena, body, fence, m, number, files, problems));
+        } else {
+            number = open + 1;
+            if (!std.mem.eql(u8, fence.info, "sh"))
+                try report(arena, problems, number, "a block must have a snippet or excerpt marker on the line above", .{});
+            try result.appendSlice(arena, body);
+        }
         try result.append(arena, lines[close]);
         i = close + 1;
     }
@@ -252,51 +290,58 @@ fn process(
     return std.mem.concat(arena, u8, &.{ text, eol });
 }
 
+/// Reports the code of a line that is not in a block.
+fn checkText(arena: Allocator, line: []const u8, number: usize, problems: *std.ArrayList([]const u8)) error{OutOfMemory}!void {
+    if (Fence.isNested(line)) {
+        try report(arena, problems, number, "a block must not be indented, in a list or in a quote", .{});
+    } else if (std.ascii.findIgnoreCase(line, "<pre") != null) {
+        try report(arena, problems, number, "use a block with a marker, not <pre>", .{});
+    } else if (!isBlank(line) and (line[0] == '\t' or std.mem.startsWith(u8, line, "    "))) {
+        try report(arena, problems, number, "an indented line can be code, use a block with a marker", .{});
+    }
+}
+
 /// Returns the lines that the block must have, or `body` if they are not known.
-fn processBody(
+fn processBlock(
     arena: Allocator,
-    fence_line: []const u8,
     body: []const []const u8,
     fence: Fence,
-    optional_marker: ?Marker,
+    marker: Marker,
     number: usize,
     files: Files,
     problems: *std.ArrayList([]const u8),
 ) error{OutOfMemory}![]const []const u8 {
-    const marker = optional_marker orelse {
-        if (fence.needsMarker())
-            try report(arena, problems, number, "a block of code must have a snippet marker on the line above", .{});
-        return body;
-    };
-    if (fence_line[0] != fence.char) {
-        try report(arena, problems, number, "a block with a snippet marker must not be indented", .{});
-        return body;
-    }
     const source = try files.read(arena, marker.path) orelse {
         try report(arena, problems, number, "cannot read {s}", .{marker.path});
         return body;
     };
-
     const text = try std.mem.join(arena, "\n", body);
-    const tag = marker.tag orelse {
+    const target = try marker.target(arena);
+    if (marker.kind == .excerpt) {
         if (!try contains(arena, source, text))
-            try report(arena, problems, number, "the block is not consecutive lines of {s}, edit it", .{marker.path});
+            try report(arena, problems, number, "the block is not consecutive lines of {s}, edit it", .{target});
         return body;
-    };
-    const expected = region(arena, source, tag) catch |err| switch (err) {
+    }
+
+    const expected = if (marker.tag) |tag| region(arena, source, tag) catch |err| switch (err) {
         error.OutOfMemory => return error.OutOfMemory,
         else => {
-            try report(arena, problems, number, "{s}#{s}: {s}", .{ marker.path, tag, @errorName(err) });
+            try report(arena, problems, number, "{s}: {s}", .{ target, @errorName(err) });
             return body;
         },
-    };
-    if (isBlank(std.mem.trim(u8, expected, "\n"))) {
-        try report(arena, problems, number, "{s}#{s} is empty", .{ marker.path, tag });
+    } else try whole(arena, source);
+    if (std.mem.trim(u8, expected, " \t\n").len == 0) {
+        try report(arena, problems, number, "{s} is empty", .{target});
         return body;
     }
     const expected_lines = try splitLines(arena, expected);
+    for (expected_lines) |line| {
+        if (!fence.isClosedBy(line)) continue;
+        try report(arena, problems, number, "{s} has a line that closes the block", .{target});
+        return body;
+    }
     if (!std.mem.eql(u8, text, try std.mem.join(arena, "\n", expected_lines)))
-        try report(arena, problems, number, "the block is not {s}#{s}, run `zig build update-readme`", .{ marker.path, tag });
+        try report(arena, problems, number, "the block is not {s}, run `zig build update-readme`", .{target});
     return expected_lines;
 }
 
@@ -342,6 +387,10 @@ const TestFile = struct { path: []const u8, content: []const u8 };
 const test_files = [_]TestFile{
     .{ .path = "a.zig", .content = test_source },
     .{ .path = "crlf.zig", .content = "// tag::x[]\r\nconst x = 1;\r\n// end::x[]\r\n" },
+    .{ .path = "whole.txt", .content = "one\n\ntwo\n" },
+    .{ .path = "comment.txt", .content = "/*\n * ```\n */\n" },
+    .{ .path = "fence.txt", .content = "a\n```\nb\n" },
+    .{ .path = "md.txt", .content = "```zig\na\n```\n" },
     .{ .path = "bad.zig", .content =
     \\// tag::twice[]
     \\const a = 1;
@@ -437,7 +486,8 @@ test "a file contains consecutive lines" {
 test "blocks equal to their sources" {
     try expectProblems(
         "# Title\n\n<!-- snippet: a.zig#body -->\n```zig\n" ++ test_region ++ "```\n\ntext\n" ++
-            "<!-- snippet: a.zig -->\n```zig\nconst a = 1;\n```\n```sh\nzig build\n```",
+            "<!-- excerpt: a.zig -->\n```zig\nconst a = 1;\n```\n" ++
+            "<!-- snippet: whole.txt -->\n```text\none\n\ntwo\n```\n```sh\nzig build\n```",
         &.{},
     );
 }
@@ -456,55 +506,96 @@ test "a region that changed is refreshed" {
     );
 }
 
+test "a file is shown whole, without its tags" {
+    const refreshed = "<!-- snippet: whole.txt -->\n```text\none\n\ntwo\n```\n";
+    const problem = "1: the block is not whole.txt, run `zig build update-readme`";
+    try expectProcess("<!-- snippet: whole.txt -->\n```text\none\n```\n", refreshed, &.{problem});
+    try expectProcess("<!-- snippet: whole.txt -->\n```text\ntwo\n```\n", refreshed, &.{problem});
+    try expectProblems("<!-- snippet: crlf.zig -->\n```zig\nconst x = 1;\n```\n", &.{});
+}
+
 test "lines that are not in the file stay" {
-    try expectProblems(
-        "<!-- snippet: a.zig -->\n```zig\nconst a = 2;\n```\n",
-        &.{"1: the block is not consecutive lines of a.zig, edit it"},
-    );
-    try expectProblems(
-        "<!-- snippet: a.zig -->\n```zig\n```\n",
-        &.{"1: the block is not consecutive lines of a.zig, edit it"},
-    );
+    const problem = "1: the block is not consecutive lines of a.zig, edit it";
+    try expectProblems("<!-- excerpt: a.zig -->\n```zig\nconst a = 2;\n```\n", &.{problem});
+    try expectProblems("<!-- excerpt: a.zig -->\n```zig\n```\n", &.{problem});
 }
 
 test "a source that cannot be shown" {
     try expectProblems("<!-- snippet: no.zig#a -->\n```zig\n```\n", &.{"1: cannot read no.zig"});
+    try expectProblems("<!-- excerpt: no.zig -->\n```zig\n```\n", &.{"1: cannot read no.zig"});
     try expectProblems("<!-- snippet: a.zig#no -->\n```zig\n```\n", &.{"1: a.zig#no: TagNotFound"});
     try expectProblems("<!-- snippet: bad.zig#open -->\n```zig\n```\n", &.{"1: bad.zig#open: TagNotClosed"});
     try expectProblems("<!-- snippet: bad.zig#twice -->\n```zig\n```\n", &.{"1: bad.zig#twice: TagDuplicated"});
     try expectProblems("<!-- snippet: bad.zig#empty -->\n```zig\n```\n", &.{"1: bad.zig#empty is empty"});
     try expectProblems("<!-- snippet: a.zig# -->\n```zig\n```\n", &.{"1: a.zig#: TagNotFound"});
+    try expectProblems("<!-- snippet: fence.txt -->\n```text\n```\n", &.{"1: fence.txt has a line that closes the block"});
+}
+
+test "a fence in a comment of the source does not close the block" {
+    const block = "<!-- snippet: comment.txt -->\n```text\n/*\n * ```\n */\n```\n";
+    try expectProblems(block, &.{});
+    try expectProcess(
+        "<!-- snippet: comment.txt -->\n```text\n```\n",
+        block,
+        &.{"1: the block is not comment.txt, run `zig build update-readme`"},
+    );
 }
 
 test "a block without a marker" {
-    const problem = "a block of code must have a snippet marker on the line above";
-    for ([_][]const u8{ "zig", "Zig", "proto", "protobuf", "zon", "zig title=x", " zig" }) |info| {
+    const problem = "a block must have a snippet or excerpt marker on the line above";
+    for ([_][]const u8{
+        "",     "zig",     "Zig",    "zig title=x", " zig",     "{.zig}", "zig:main",
+        "text", "ziglang", "zig,sh", "sh,zig",      "sh title",
+    }) |info| {
         const readme = try std.mem.concat(testing.allocator, u8, &.{ "\n```", info, "\na\n```\n" });
         defer testing.allocator.free(readme);
         try expectProblems(readme, &.{"2: " ++ problem});
     }
     try expectProblems("~~~zig\na\n~~~\n", &.{"1: " ++ problem});
-    try expectProblems("1. x\n    ```zig\n    a\n    ```\n", &.{"2: " ++ problem});
-    try expectProblems("- ```zig\n  a\n  ```\n", &.{"1: " ++ problem});
-    try expectProblems("1. ```zig\n   a\n   ```\n", &.{"1: " ++ problem});
-    try expectProblems("> ```zig\n> a\n> ```\n", &.{"1: " ++ problem});
-    try expectProblems("<!-- snippet: a.zig -->\n\n```zig\na\n```\n", &.{
-        "1: a snippet marker must be on the line above a code block",
+    try expectProblems("<!-- snippet: a.zig#body -->\n\n```zig\na\n```\n", &.{
+        "1: a marker must be on the line above a block",
         "3: " ++ problem,
     });
-    // Not code.
-    try expectProblems("````md\n```zig\na\n```\n````\n```sh\na\n```\n", &.{});
+    // A block in another block is only text.
+    try expectProblems("<!-- snippet: md.txt -->\n````md\n```zig\na\n```\n````\n```sh\na\n```\n", &.{});
+    // Not a fence, so it does not hide the block that follows.
+    try expectProblems("```a``` b\n```zig\na\n```\n", &.{"2: " ++ problem});
+}
+
+test "code in other forms" {
+    const indented = "a block must not be indented, in a list or in a quote";
+    for ([_][]const u8{ " ```sh", "- ```sh", "1. ```zig", "> ```sh", "  ~~~zig" }) |line| {
+        const readme = try std.mem.concat(testing.allocator, u8, &.{ line, "\n```sh\na\n```\n" });
+        defer testing.allocator.free(readme);
+        try expectProblems(readme, &.{"1: " ++ indented});
+    }
+    try expectProblems("x\n\n    const a = 1;\n", &.{"3: an indented line can be code, use a block with a marker"});
+    try expectProblems("x\n\n\tconst a = 1;\n", &.{"3: an indented line can be code, use a block with a marker"});
+    for ([_][]const u8{ "<pre>", "x <PRE lang=\"zig\">" }) |line| {
+        try expectProblems(line, &.{"1: use a block with a marker, not <pre>"});
+    }
 }
 
 test "a block that cannot be refreshed" {
-    try expectProblems(
-        "1. x\n    <!-- snippet: a.zig#body -->\n    ```zig\n    a\n    ```\n",
-        &.{"2: a block with a snippet marker must not be indented"},
-    );
-    try expectProblems("<!-- snippet: a.zig#body -->\n", &.{"1: a snippet marker must be on the line above a code block"});
+    try expectProblems("<!-- snippet: a.zig#body -->\n", &.{"1: a marker must be on the line above a block"});
     try expectProblems("<!-- snippet: a.zig#body -->\n```zig\na\n", &.{"2: the block is not closed"});
     try expectProblems("```sh\na\n", &.{"1: the block is not closed"});
-    try expectProblems("<!--snippet a.zig-->\n```sh\na\n```\n", &.{"1: a snippet marker is `<!-- snippet: path#tag -->`"});
+}
+
+test "a comment that is not a marker" {
+    for ([_][]const u8{
+        "<!--snippet a.zig-->",
+        "<!-- Snippet: a.zig -->",
+        "<!-- snipet: a.zig -->",
+        "x <!-- snippet: a.zig -->",
+        " <!-- snippet: a.zig -->",
+        "<!-- snippet:  -->",
+        "<!-- excerpt: a.zig#body -->",
+    }) |line| {
+        const readme = try std.mem.concat(testing.allocator, u8, &.{ line, "\n```sh\na\n```\n" });
+        defer testing.allocator.free(readme);
+        try expectProblems(readme, &.{"1: a comment must be `<!-- snippet: path -->`, `<!-- snippet: path#tag -->` or `<!-- excerpt: path -->`"});
+    }
 }
 
 test "line endings" {

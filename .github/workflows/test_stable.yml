@@ -67,10 +67,11 @@ jobs:
         working-directory: doc/example
       - run: zig build test
         working-directory: doc/example
-      # The README shows the generated code.
-      - run: zig build gen-proto
+      # The README shows the generated code: it must be all there, and up to date.
+      - run: rm -r src/proto && zig build gen-proto
         working-directory: doc/example
-      - run: git diff --exit-code doc/example
+        shell: bash
+      - run: git add -A doc/example && git diff --cached --exit-code doc/example
         if: matrix.os == 'ubuntu-latest'
 
   readme:

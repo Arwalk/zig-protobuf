@@ -15,8 +15,8 @@ This project is mature enough to be used in production. It passes the upstream
 The sections below are enough to start. [doc/legacy.md](doc/legacy.md) has the rest, such as
 default values, extensions, options, streaming decode and the update from version 5.
 
-The code below comes from [doc/example](doc/example/), a small project that you can build and run
-with `zig build run`.
+Most of the code below comes from [doc/example](doc/example/), a small project. To build and run it,
+run `zig build run` in `doc/example`.
 
 ## How to use
 
@@ -45,42 +45,51 @@ exe.root_module.addImport("protobuf", protobuf_dep.module("protobuf"));
 
 ### Decode and encode a message
 
-Import the code generated from your `.proto` files (refer to
+This program decodes a message, prints it, encodes it back and prints the bytes. It imports the code
+generated from a `.proto` file (refer to
 [the next section](#generating-zig-files-out-of-proto-definitions)):
 
-<!-- snippet: doc/example/src/main.zig#imports -->
+<!-- snippet: doc/example/src/main.zig -->
 ```zig
 const std = @import("std");
 const example = @import("proto/example.pb.zig");
-```
 
-Decode a message from bytes, and read its fields:
+// A `Project` message, in hexadecimal.
+const encoded_project = "0a180a0e70726f6a6563745f617574686f721206417277616c6b" ++
+    "0a1c0a0c70726f6a6563745f6e616d65120c7a69672d70726f746f627566" ++
+    "0a170a1070726f6a6563745f6c616e677561676512035a6967";
 
-<!-- snippet: doc/example/src/main.zig#decode -->
-```zig
-// `input` is a `[]const u8`. Any other `std.Io.Reader` works too.
-var reader: std.Io.Reader = .fixed(input);
-var project: example.Project = try .decode(&reader, allocator);
-defer project.deinit(allocator);
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.gpa;
 
-for (project.data.items) |entry| {
-    try stdout.print("{s}: {s}\n", .{ entry.key, entry.value });
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    const stdout = &stdout_writer.interface;
+
+    var input_buffer: [encoded_project.len / 2]u8 = undefined;
+    const input = try std.fmt.hexToBytes(&input_buffer, encoded_project);
+
+    // Decode the message. This reader is for bytes, any other `std.Io.Reader` works too.
+    var reader: std.Io.Reader = .fixed(input);
+    var project: example.Project = try .decode(&reader, allocator);
+    defer project.deinit(allocator);
+
+    for (project.data.items) |entry| {
+        try stdout.print("{s}: {s}\n", .{ entry.key, entry.value });
+    }
+
+    // Encode it back. This writer is for memory, any other `std.Io.Writer` works too.
+    var output: std.Io.Writer.Allocating = .init(allocator);
+    defer output.deinit();
+    try project.encode(&output.writer, allocator);
+
+    try stdout.print("{x}\n", .{output.written()});
+
+    try stdout.flush();
 }
 ```
 
-Encode it back:
-
-<!-- snippet: doc/example/src/main.zig#encode -->
-```zig
-// `Allocating` is a `std.Io.Writer` to memory. Any other `std.Io.Writer` works too.
-var output: std.Io.Writer.Allocating = .init(allocator);
-defer output.deinit();
-try project.encode(&output.writer, allocator);
-
-try stdout.print("{x}\n", .{output.written()});
-```
-
-In the example, this prints:
+It prints:
 
 <!-- snippet: doc/example/expected_output.txt -->
 ```text
@@ -136,10 +145,11 @@ const protoc_step = protobuf.RunProtocStep.create(protobuf_dep.builder, b.graph.
 gen_proto.dependOn(protoc_step.step);
 ```
 
-The generated file has the name of the package, here `src/proto/example.pb.zig`. Each message is a
-struct, with functions such as `decode`, `encode` and `deinit`. A map is a list of entries:
+The path of the generated file is the package: `src/proto/example.pb.zig` here, and
+`src/proto/a/b.pb.zig` for a package `a.b`. Each message is a struct, with functions such as
+`decode`, `encode` and `deinit`. A map is a list of entries:
 
-<!-- snippet: doc/example/src/proto/example.pb.zig -->
+<!-- excerpt: doc/example/src/proto/example.pb.zig -->
 ```zig
 pub const Project = struct {
     data: std.ArrayList(Project.DataEntry) = .empty,
