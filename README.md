@@ -20,6 +20,14 @@ run `zig build run` in `doc/example`.
 
 ## How to use
 
+### Which branch ?
+
+The `master` branch always targets the Latest Stable Version of zig.
+
+If you want a version targeting the Bleeding Edge Development Version (zig's master branch), use the `zig-master` branch. It is updated regularly to be compatible, and merge semi-regularly master's development.
+
+Each branch has its own README, with the instructions for that branch.
+
 ### Add the library to your project
 
 Add `protobuf` to your `build.zig.zon`:
