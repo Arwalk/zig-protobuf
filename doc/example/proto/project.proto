@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package example;
+
+message Project {
+  map<string, string> data = 1;
+}

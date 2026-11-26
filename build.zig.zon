@@ -55,6 +55,8 @@
         ".devcontainer",
         ".github",
         "bootstrapped-generator",
+        // Part of the test suite.
+        "doc/readme_snippets.zig",
         "pkg",
         "src",
         "tests",

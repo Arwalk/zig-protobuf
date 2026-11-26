@@ -14,7 +14,9 @@ pub fn build(b: *std.Build) void {
     const generate = protobuf.RunProtocStep.create(b, target, .{
         .destination_directory = b.path(".generated"),
         .generator = protobuf_dep.artifact("protoc-gen-zig"),
+        // tag::protoc-from-source[]
         .protoc = protobuf.protocFromSource(protobuf_dep.builder),
+        // end::protoc-from-source[]
         .source_files = &.{b.path("protos/event.proto")},
         .include_directories = &.{b.path("protos")},
     });

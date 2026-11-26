@@ -201,6 +201,14 @@ pub fn build(b: *std.Build) !void {
                 .optimize = optimize,
             }),
         }),
+        b.addTest(.{
+            .name = "readme_snippets",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("doc/readme_snippets.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        }),
     };
 
     const convertStep = RunProtocStep.createWithGenerator(b, exe, .{
@@ -290,4 +298,23 @@ pub fn build(b: *std.Build) !void {
     });
 
     bootstrap.dependOn(bootstrapConversion.step);
+
+    const readme_snippets = b.addExecutable(.{
+        .name = "readme_snippets",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("doc/readme_snippets.zig"),
+            .target = b.graph.host,
+        }),
+    });
+    for ([_][2][]const u8{
+        .{ "check", "Check that the code blocks of the README are equal to their sources" },
+        .{ "update", "Update the code blocks of the README from their sources" },
+    }) |command| {
+        const run = b.addRunArtifact(readme_snippets);
+        run.addArgs(&.{ command[0], "README.md" });
+        // It reads the files that the README names.
+        run.setCwd(b.path("."));
+        run.has_side_effects = true;
+        b.step(b.fmt("{s}-readme", .{command[0]}), command[1]).dependOn(&run.step);
+    }
 }

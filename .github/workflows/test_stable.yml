@@ -53,6 +53,36 @@ jobs:
       - run: "! ls tests/source_protoc/zig-pkg/*/bin/protoc*"
         shell: bash
 
+  example:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: "0.17.1"
+      - run: zig build run
+        working-directory: doc/example
+      - run: zig build test
+        working-directory: doc/example
+      # The README shows the generated code: it must be all there, and up to date.
+      - run: rm -r src/proto && zig build gen-proto
+        working-directory: doc/example
+        shell: bash
+      - run: git add -A doc/example && git diff --cached --exit-code doc/example
+        if: matrix.os == 'ubuntu-latest'
+
+  readme:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: "0.17.1"
+      - run: zig build check-readme
+
   conformance:
     runs-on: ubuntu-latest
     steps:
@@ -85,5 +115,5 @@ jobs:
       - uses: mlugg/setup-zig@v2
         with:
           version: "0.17.1"
-      - run: zig fmt --check src/protobuf.zig src/cycles.zig
+      - run: zig fmt --check src/protobuf.zig src/cycles.zig doc
       - run: zig test -OReleaseSmall src/protobuf.zig
